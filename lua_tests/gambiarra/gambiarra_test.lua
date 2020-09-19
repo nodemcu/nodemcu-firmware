@@ -1,6 +1,6 @@
-local N = require('gambiarra')
+local N = require('gambiarra')("selftest")
 
-local expected = {}
+local expected, currentTest = {}
 local failed, passed = 0,0
 
 local orig_node = node
@@ -70,24 +70,30 @@ N.report(function(e, test, msg, errormsg)
       except = {}
     }
   elseif e == 'end' then
+    local pass = true
     if not comparetables(expected[1].pass, currentTest.pass) then
       print("--- FAIL "..expected[1].name..' (passed): expected ['..
         stringify(expected[1].pass)..'] vs ['..
         stringify(currentTest.pass)..']')
-      failed = failed + 1
-    elseif not comparetables(expected[1].fail, currentTest.fail) then
+      pass = false
+    end
+    if not comparetables(expected[1].fail, currentTest.fail) then
       print("--- FAIL "..expected[1].name..' (failed): expected ['..
         stringify(expected[1].fail)..'] vs ['..
         stringify(currentTest.fail)..']')
-      failed = failed + 1
-    elseif not comparetables(expected[1].except, currentTest.except) then
+      pass = false
+    end
+    if not comparetables(expected[1].except, currentTest.except) then
       print("--- FAIL "..expected[1].name..' (failed): expected ['..
         stringify(expected[1].except)..'] vs ['..
         stringify(currentTest.except)..']')
-      failed = failed + 1
-    else
+      pass = false
+    end
+    if pass then
       print("+++ Pass "..expected[1].name)
       passed = passed + 1
+    else
+      failed = failed + 1
     end
     table.remove(expected, 1)
   elseif e == 'pass' then
@@ -99,6 +105,10 @@ N.report(function(e, test, msg, errormsg)
   elseif e == 'except' then
     table.insert(currentTest.except, msg)
     if errormsg then table.insert(currentTest.except, errormsg) end
+  elseif e == 'start' or e == 'finish' then
+    -- ignore
+  else
+    print("Extra output: ", e, test, msg, errormsg)
   end
 end)
 
@@ -160,19 +170,21 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:161'}, {'gambiarra_test.lua:162'})
+end, {'gambiarra_test.lua:175'}, {'gambiarra_test.lua:176'})
 
 metatest('nok without a message', function()
-  nok(1 == 2)
+  nok(1 == "")
   nok(1 == 1)
-end, {'gambiarra_test.lua:166'}, {'gambiarra_test.lua:167'})
+end, {'gambiarra_test.lua:180'}, {'gambiarra_test.lua:181'})
 
 --
 -- Equality tests
 --
 metatest('eq nil', function()
   ok(eq(nil, nil), 'nil == nil')
-end, {'nil == nil'}, {})
+  nok(eq("", nil), '"" != nil')
+  nok(eq(nil, ""), 'nil != ""')
+end, {'nil == nil', '"" != nil', 'nil != ""'}, {})
 
 metatest('eq primitives', function()
   ok(eq('foo', 'foo'), 'str == str')
@@ -211,7 +223,7 @@ metatest('eq nested objects', function()
     ['1'] = { name = 'mhc', age = 28 },
     ['2'] = { name = 'arb', age = 27 }
   }), 'not equal')
-end, {'equal'}, {'not equal'})
+end, {'equal'}, {'not equal', 'different numbers expected 26 vs. 27'})
 
 metatest('eq functions', function()
   ok(eq(function(x) return x end, function(x) return x end), 'equal')
@@ -221,10 +233,11 @@ end, {'equal', 'wrong variable', 'wrong code'}, {})
 
 metatest('eq different types', function()
   local eqos = eq({a=1,b=2}, "text")
-  ok(eq(eqos[2], "type 1 is table, type 2 is string"), 'object/string')
+  ok(eq(eqos.msg, "type 1 is table, type 2 is string"), 'object/string')
   local eqfn = eq(function(x) return x end, 12)
-  ok(eq(eqfn[2], "type 1 is function, type 2 is number"), 'function/int')
-end, {"object/string", "function/int"}, {})
+  ok(eq(eqfn.msg, "type 1 is function, type 2 is number"), 'function/int')
+  nok(eq(12, "Hallo"), 'int/string')
+end, {"object/string", "function/int", 'int/string'}, {})
 
 --
 -- Spies
@@ -241,7 +254,7 @@ end, {'not called', 'called', 'called once', 'called twice'}, {})
 
 metatest('spy with arguments', function()
   local x = 0
-  function setX(n) x = n end
+  local function setX(n) x = n end
   local f = spy(setX)
   f(1)
   ok(x == 1, 'x == 1')
@@ -252,15 +265,15 @@ metatest('spy with arguments', function()
 end, {'x == 1', 'called with 1', 'x == 42', 'called with 42'}, {})
 
 metatest('spy with nils', function()
-  function nils(a, dummy, b) return a, nil, b, nil end
+  local function nils(a, dummy, b) return a, nil, b, nil end
   local f = spy(nils)
-  r1, r2, r3, r4 = f(1, nil, 2)
+  local r1, r2, r3, r4 = f(1, nil, 2)
   ok(eq(f.called, {{1, nil, 2}}), 'nil in args')
   ok(r1 == 1 and r2 == nil and r3 == 2 and r4 == nil, 'nil in returns')
 end, {'nil in args', 'nil in returns'}, {})
 
 metatest('spy with exception', function()
-  function throwSomething(s)
+  local function throwSomething(s)
     if s ~= 'nopanic' then error('panic: '..s) end
   end
   local f = spy(throwSomething)
@@ -296,13 +309,13 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:296: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:313: my error" to contain "different error"'})
 
 metatest('fail with incorrect errormessage default message', function()
   fail(function() error("my error") end, "different error")
   ok(true, 'unreachable code')
-end, {}, {'gambiarra_test.lua:302',
-      'expected errormessage "gambiarra_test.lua:302: my error" to contain "different error"'})
+end, {}, {'gambiarra_test.lua:319',
+      'expected errormessage "gambiarra_test.lua:319: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
   fail(function() end, "my error", "did not fail")
@@ -322,7 +335,7 @@ end, {}, {"did not fail", 'Expected to fail with Error'})
 metatest('fail with not failing code default message', function()
   fail(function() end)
   ok(true, 'unreachable code')
-end, {}, {"gambiarra_test.lua:323", 'Expected to fail with Error'})
+end, {}, {"gambiarra_test.lua:340", 'Expected to fail with Error'})
 
 --
 -- except tests
@@ -330,7 +343,7 @@ end, {}, {"gambiarra_test.lua:323", 'Expected to fail with Error'})
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:331: lua error'})
+end, {}, {}, {'gambiarra_test.lua:348: lua error'})
 
 --
 -- called function except
@@ -343,9 +356,9 @@ end
 metatest('subroutine error should panic', function()
   subfunc()
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:340: lua error'})
+end, {}, {}, {'gambiarra_test.lua:357: lua error'})
 
-drain_post_queue()
+--drain_post_queue()
 
 --
 -- Async tests
@@ -370,7 +383,7 @@ metatest('async fail in main', function(next)
   ok(false, "async fail")
 end, {}, {'async fail'}, {}, true)
 
-drain_post_queue()
+--drain_post_queue()
 
 metatest('another async test after async queue drained', function(next)
   async(function() 
@@ -385,8 +398,8 @@ end, {'foo', 'bar'}, {}, {}, true)
 --
 metatest('async except in main', function(next)
   error("async except")
-  ok(true, 'foo')
-end, {}, {}, {'gambiarra_test.lua:387: async except'}, true)
+  ok(true, 'unreachable code')
+end, {}, {}, {'gambiarra_test.lua:404: async except'}, true)
 
 metatest('async fail in callback', function(next)
   async(function() 
@@ -402,7 +415,7 @@ metatest('async except in callback', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:401: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:418: async Lua error'}, true)
 
 --
 -- sync after async test

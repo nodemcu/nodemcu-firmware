@@ -1,26 +1,6 @@
-local test = require('gambiarra')
+local N = require('gambiarra')("tmr")
 
--- set the output handler
-local function TERMINAL_HANDLER(e, test, msg, errormsg)
-  if errormsg then
-    errormsg = ": "..errormsg
-  else
-    errormsg = ""
-  end
-  if e == 'pass' then
-    print("  "..e.." "..test..': '..msg)
-  elseif e == 'fail' then
-    print(" ==>  "..e.." "..test..': '..msg..errormsg)
-  elseif e == 'except' then
-    print(" ==>  "..e.." "..test..': '..msg..errormsg)
-  else
-    print(e.." "..test)
-  end
-end
--- set the output handler
-test(TERMINAL_HANDLER)
-
-test('SINGLE alarm', function(next)
+N.testasync('SINGLE alarm', function(next)
   local t = tmr.create();
   local count = 0
   t:alarm(200, tmr.ALARM_SINGLE,
@@ -31,9 +11,9 @@ test('SINGLE alarm', function(next)
     end)
 
   ok(true, "sync end")
-end, true)
+end)
 
-test('SEMI alarm', function(next)
+N.testasync('SEMI alarm', function(next)
   local t = tmr.create();
   local count = 0
   t:alarm(200, tmr.ALARM_SEMI, 
@@ -47,9 +27,9 @@ test('SEMI alarm', function(next)
       next()
     end)
   ok(true, "sync end")
-end, true)
+end)
 
-test('AUTO alarm', function(next)
+N.testasync('AUTO alarm', function(next)
   local t = tmr.create();
   local count = 0
   t:alarm(200, tmr.ALARM_AUTO, 
@@ -62,5 +42,4 @@ test('AUTO alarm', function(next)
       ok(count < 2, "only 2 invocations")
     end)
   ok(true, "sync end")
-end, true)
-
+end)
