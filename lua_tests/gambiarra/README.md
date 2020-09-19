@@ -15,7 +15,7 @@ NOTE: you will have to use LFS to run this as it is too big to fit in memory.
 
 ``` Lua
 -- Simple synchronous test
-local tests = require("gambiarra.lua")
+local tests = require("gambiarra.lua")("first testrun")
 
 tests.test('Check dogma', function()
   ok(2+2 == 5, 'two plus two equals five')
@@ -32,9 +32,17 @@ end)
 
 ## API
 
-`require('gambiarra')` returns an object with the following functions:
+`require('gambiarra')`  returns an new function which must be called with a string.
 
-	local tests = require('gambiarra')
+``` Lua
+	local new = require('gambiarra')
+```
+
+`new(testrunname:string)`       returns an object with the following functions:
+
+``` Lua
+	local tests = new("first testrun")
+```
 
 `test(name:string, f:function)` allows you to define a new test:
 
