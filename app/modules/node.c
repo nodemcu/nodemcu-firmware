@@ -643,6 +643,28 @@ static int node_writercr (lua_State *L) {
   lua_pushinteger(L, n);
   return 1;
 }
+
+static int node_int2float(lua_State *L) {
+  union {
+    lua_Integer i;
+    lua_Float f;
+  } u;
+
+  u.i = luaL_checkinteger(L, 1);
+  lua_pushnumber(L, u.f);
+  return 1;
+}
+
+static int node_float2int(lua_State *L) {
+  union {
+    lua_Integer i;
+    lua_Float f;
+  } u;
+
+  u.f = luaL_checknumber(L, 1);
+  lua_pushinteger(L, u.i);
+  return 1;
+}
 #endif
 
 // Lua: n = node.LFS.reload(lfsimage)
@@ -915,6 +937,8 @@ LROT_BEGIN(node, NULL, 0)
 #endif
 #ifdef DEVELOPMENT_TOOLS
   LROT_FUNCENTRY( osprint, node_osprint )
+  LROT_FUNCENTRY( int2float, node_int2float )
+  LROT_FUNCENTRY( float2int, node_float2int )
 #endif
   LROT_FUNCENTRY( getpartitiontable, node_getpartitiontable )
   LROT_FUNCENTRY( setpartitiontable, node_setpartitiontable )
