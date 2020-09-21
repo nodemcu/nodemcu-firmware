@@ -153,28 +153,40 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed.
+Returns information about the software version.
 
 #### Syntax
-`node.info()`
+`node.info([group])`
 
 #### Parameters
-none
+`group` A designator for a group of properties. Only `"sw_version"` is supported at this time.
 
 #### Returns
- - `majorVer` (number)
- - `minorVer` (number)
- - `devVer` (number)
- - `chipid` (number)
- - `flashid` (number)
- - `flashsize` (number)
- - `flashmode` (number)
- - `flashspeed` (number)
+If a `group` is given the return value will be a table containing the following elements:
+
+- for `group` = `"sw_version"`
+	- `git_branch` (string)
+	- `git_commit_id` (string)
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403"
+	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
+	- `node_version_major` (number)
+	- `node_version_minor` (number)
+	- `node_version_revision` (number)
+  - `node_version` (string)
+
+!!! attention
+
+	Not providing a `group` will result in the "sw_version" group being returned.
 
 #### Example
 ```lua
-majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = node.info()
-print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
+for k,v in pairs(node.info("sw_version")) do
+  print (k,v)
+end
+```
+
+```lua
+print(node.info("sw_version").git_release)
 ```
 
 ## node.input()
@@ -446,11 +458,11 @@ provides more detailed information on the EGC.
 #### Parameters
 - `mode`
 	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
-	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
+	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error.
 	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error.
 	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
 - `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
-  
+
 #### Returns
 `nil`
 
@@ -463,11 +475,11 @@ provides more detailed information on the EGC.
 
 ## node.task.post()
 
-Enable a Lua callback or task to post another task request. Note that as per the 
-example multiple tasks can be posted in any task, but the highest priority is 
+Enable a Lua callback or task to post another task request. Note that as per the
+example multiple tasks can be posted in any task, but the highest priority is
 always delivered first.
 
-If the task queue is full then a queue full error is raised.  
+If the task queue is full then a queue full error is raised.
 
 ####Syntax
 `node.task.post([task_priority], function)`
@@ -477,7 +489,7 @@ If the task queue is full then a queue full error is raised.
 	- `node.task.LOW_PRIORITY` = 0
 	- `node.task.MEDIUM_PRIORITY` = 1
 	- `node.task.HIGH_PRIORITY` = 2
-- `function` a callback function to be executed when the task is run. 
+- `function` a callback function to be executed when the task is run.
 
 If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
 
@@ -486,12 +498,12 @@ If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
 
 #### Example
 ```lua
-for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do 
+for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do
   node.task.post(i,function(p2)
     print("priority is "..p2)
-  end) 
-end      
-``` 
+  end)
+end
+```
 prints
 ```
 priority is 2

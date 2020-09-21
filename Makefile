@@ -21,6 +21,7 @@ ESP32_TOOLCHAIN_DL:=$(THIS_DIR)/cache/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VE
 
 all: | $(ESP32_GCC)
 %: | $(ESP32_GCC)
+	@tools/update_buildinfo.sh
 	@echo Setting IDF_PATH and re-invoking...
 	@env IDF_PATH=$(IDF_PATH) PATH="$(PATH):$(ESP32_BIN)" $(MAKE) -f $(THIS_MK_FILE) $@
 	@if test "$@" = "clean"; then rm -rf $(THIS_DIR)/tools/toolchains/esp32-*; fi

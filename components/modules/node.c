@@ -15,6 +15,7 @@
 #include "esp_vfs.h"
 #include "lnodeaux.h"
 #include "lflash.h"
+#include "user_version.h"
 
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
@@ -149,6 +150,36 @@ static int node_dsleep (lua_State *L)
   return 0;
 }
 
+static void add_int_field( lua_State* L, lua_Integer i, const char *name){
+  lua_pushinteger(L, i);
+  lua_setfield(L, -2, name);
+}
+
+static void add_string_field( lua_State* L, const char *s, const char *name) {
+  lua_pushstring(L, s);
+  lua_setfield(L, -2, name);
+}
+
+static int node_info( lua_State* L ){
+  const char* options[] = {"sw_version", "default", NULL};
+  int option = luaL_checkoption (L, 1, options[1], options);
+
+  switch (option) {
+    case 0: // sw_version
+    default: { // default
+      lua_createtable(L, 0, 7);
+      add_string_field(L, NODE_VERSION,          "node_version");
+      add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
+      add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
+      add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
+      add_string_field(L, BUILDINFO_BRANCH,      "git_branch");
+      add_string_field(L, BUILDINFO_COMMIT_ID,   "git_commit_id");
+      add_string_field(L, BUILDINFO_RELEASE,     "git_release");
+      add_string_field(L, BUILDINFO_RELEASE_DTS, "git_commit_dts");
+      return 1;
+    }
+  }
+}
 
 extern lua_Load gLoad;
 extern bool user_process_input(bool force);
@@ -492,6 +523,7 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( flashreload,luaN_reload_reboot )
   LROT_FUNCENTRY( flashindex, luaN_index )
   LROT_FUNCENTRY( heap,       node_heap )
+  LROT_FUNCENTRY( info,       node_info )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )
   LROT_FUNCENTRY( osprint,    node_osprint )
