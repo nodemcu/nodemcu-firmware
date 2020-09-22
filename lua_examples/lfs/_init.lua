@@ -28,13 +28,13 @@
    of the code is skipped.
 ---------------------------------------------------------------------------------]]
 
-local index = node.flashindex
+local lfsindex = node.LFS and node.LFS.get or node.flashindex
 local G=_ENV or getfenv()
 local lfs_t
 if _VERSION == 'Lua 5.1' then
     lfs_t = {
     __index = function(_, name)
-        local fn_ut, ba, ma, size, modules = index(name)
+        local fn_ut, ba, ma, size, modules = lfsindex(name)
         if not ba then
           return fn_ut
         elseif name == '_time' then
@@ -78,21 +78,19 @@ package.loaders[3] = function(module) -- loader_flash
   return lfs_t[module]
 end
 
---[[-------------------------------------------------------------------------------
-  These replaces the builtins loadfile & dofile with ones which preferentially
-  loads the corresponding module from LFS if present.  Flipping the search order
+--[[----------------------------------------------------------------------------
+  These replace the builtins loadfile & dofile with ones which preferentially
+  load from the filesystem and fall back to LFS.  Flipping the search order
   is an exercise left to the reader.-
----------------------------------------------------------------------------------]]
+------------------------------------------------------------------------------]]
 
-local lf, df = loadfile, dofile
+local lf = loadfile
 G.loadfile = function(n)
-  local mod, ext = n:match("(.*)%.(l[uc]a?)");
-  local fn, ba   = index(mod)
-  if ba or (ext ~= 'lc' and ext ~= 'lua') then return lf(n) else return fn end
+  if file.exists(n) then return lf(n) end
+  local mod = n:match("(.*)%.l[uc]a?$")
+  local fn  = mod and lfsindex(mod)
+  return (fn or error (("Cannot find '%s' in FS or LFS"):format(n))) and fn
 end
 
-G.dofile = function(n)
-  local mod, ext = n:match("(.*)%.(l[uc]a?)");
-  local fn, ba   = index(mod)
-  if ba or (ext ~= 'lc' and ext ~= 'lua') then return df(n) else return fn() end
-end
+-- Lua's dofile (luaB_dofile) reaches directly for luaL_loadfile; shim instead
+G.dofile = function(n) return assert(loadfile(n))() end
