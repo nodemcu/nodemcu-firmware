@@ -725,9 +725,9 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       char value[50];
 
       if (lua_isinteger(L, -1)) {
-        l_sprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
+        snprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
       } else {
-        l_sprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
+        snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
       }
       lua_pop(L, 1);
       if (strcmp(value, "-Infinity") == 0 || strcmp(value, "NaN") == 0 || strcmp(value, "Infinity") == 0) {
