@@ -724,13 +724,21 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       lua_pushvalue(L, argno);
       char value[50];
 
+#if LUA_VERSION_NUM == 501
+#ifdef LUA_NUMBER_INTEGRAL
+        snprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
+#else
+        snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
+#endif
+#else
       if (lua_isinteger(L, -1)) {
         snprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
       } else {
         snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
       }
+#endif
       lua_pop(L, 1);
-      if (strcmp(value, "-Infinity") == 0 || strcmp(value, "NaN") == 0 || strcmp(value, "Infinity") == 0) {
+      if (strcmp(value, "-inf") == 0 || strcmp(value, "nan") == 0 || strcmp(value, "inf") == 0) {
         luaL_addstring(&b, "null");   // According to ECMA-262 section 24.5.2 Note 4
       } else {
         luaL_addstring(&b, value);
