@@ -726,7 +726,7 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
 
 #if LUA_VERSION_NUM == 501
 #ifdef LUA_NUMBER_INTEGRAL
-        snprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
+        snprintf(value, sizeof(value), "%d", lua_tointeger(L, -1));
 #else
         snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
 #endif
