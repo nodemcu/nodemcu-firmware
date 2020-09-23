@@ -14,8 +14,9 @@ extern void output_redirect(const char *str, size_t l);
 
 #define printf(...) do { \
   char __printf_buf[BUFSIZ]; \
-  sprintf(__printf_buf, __VA_ARGS__); \
+  snprintf(__printf_buf, BUFSIZ, __VA_ARGS__); \
   puts(__printf_buf); \
 } while(0)
+
 
 #endif
