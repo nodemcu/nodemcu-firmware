@@ -1167,11 +1167,19 @@ static void lowest_prio_task(os_event_t *event) {
 }
 
 void platform_set_lowest_task(platform_task_handle_t handle, lowest_task_t fn) {
+  static char initialized_loop_task;
+  static os_event_t lowest_task_queue[LOWEST_TASK_QUEUE_SIZE];
+
   do_task_handle = handle;
   do_task = fn;
+
+  if (!initialized_loop_task) {
+    initialized_loop_task = 1;
+    ets_task(lowest_prio_task, LOWEST_TASK_PRIORITY, lowest_task_queue, LOWEST_TASK_QUEUE_SIZE);
+  }
 }
 
-bool ets_post_works(uint8 prio, ETSSignal sig, ETSParam par) {
+bool ICACHE_RAM_ATTR ets_post_works(uint8 prio, ETSSignal sig, ETSParam par) {
   uint32_t saved;
   __asm__ __volatile__ ("rsr %0,ps":"=a" (saved));
   bool rc = ets_post(prio, sig, par);
@@ -1179,18 +1187,9 @@ bool ets_post_works(uint8 prio, ETSSignal sig, ETSParam par) {
   return rc;
 }
 
-
-bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
-  //dbg_printf("platform_post(%d, %d, %d)\n", prio, handle, par);
+bool ICACHE_RAM_ATTR platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
   if (prio == LUA_TASK_LOW && do_task && handle == do_task_handle) {
-    static char initialized_loop_task;
-    static os_event_t lowest_task_queue[LOWEST_TASK_QUEUE_SIZE];
-    if (!initialized_loop_task) {
-      initialized_loop_task = 1;
-      ets_task(lowest_prio_task, LOWEST_TASK_PRIORITY, lowest_task_queue, LOWEST_TASK_QUEUE_SIZE);
-    }
-    ets_post_works(LOWEST_TASK_PRIORITY, 0, par);
-    return 1;
+    return !ets_post_works(LOWEST_TASK_PRIORITY, 0, par);
   }
   return system_os_post(prio, handle | prio, par);
 }

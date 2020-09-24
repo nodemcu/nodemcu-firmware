@@ -628,7 +628,6 @@ extern void lua_main(void);
 ** Task callback handler. Uses luaN_call to do a protected call with full traceback
 */
 static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
-  //dbg_printf("do_task(%d, %d)\n", task_fn_ref, prio);
   lua_State* L = lua_getstate();
   if(task_fn_ref == (platform_task_param_t)~0 && prio == LUA_TASK_HIGH) {
     lua_main();                   /* Undocumented hook for lua_main() restart */
