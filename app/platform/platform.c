@@ -14,6 +14,16 @@
 #include "driver/uart.h"
 #include "driver/sigma_delta.h"
 
+#define LOWEST_TASK_PRIORITY      1
+#define LOWEST_TASK_QUEUE_SIZE    8
+#define LUA_TASK_LOW 0
+
+static lowest_task_t do_task;
+static platform_task_handle_t do_task_handle;
+bool ets_task(ETSTask task, uint8 prio, ETSEvent *queue, uint8 qlen);
+bool ets_post(uint8 prio, ETSSignal sig, ETSParam par);
+#define xt_wsr_ps(state)  __asm__ __volatile__("wsr %0,ps; isync" :: "a" (state) : "memory")
+
 #define INTERRUPT_TYPE_IS_LEVEL(x)   ((x) >= GPIO_PIN_INTR_LOLEVEL)
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -1152,6 +1162,35 @@ platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
   return TH_MONIKER + ((TQB.task_count-1) << TH_SHIFT);
 }
 
+static void lowest_prio_task(os_event_t *event) {
+  do_task(event->par, LUA_TASK_LOW);
+}
+
+void platform_set_lowest_task(platform_task_handle_t handle, lowest_task_t fn) {
+  do_task_handle = handle;
+  do_task = fn;
+}
+
+bool ets_post_works(uint8 prio, ETSSignal sig, ETSParam par) {
+  uint32_t saved;
+  __asm__ __volatile__ ("rsr %0,ps":"=a" (saved));
+  bool rc = ets_post(prio, sig, par);
+  xt_wsr_ps(saved);
+  return rc;
+}
+
+
 bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
+  //dbg_printf("platform_post(%d, %d, %d)\n", prio, handle, par);
+  if (prio == LUA_TASK_LOW && do_task && handle == do_task_handle) {
+    static char initialized_loop_task;
+    static os_event_t lowest_task_queue[LOWEST_TASK_QUEUE_SIZE];
+    if (!initialized_loop_task) {
+      initialized_loop_task = 1;
+      ets_task(lowest_prio_task, LOWEST_TASK_PRIORITY, lowest_task_queue, LOWEST_TASK_QUEUE_SIZE);
+    }
+    ets_post_works(LOWEST_TASK_PRIORITY, 0, par);
+    return 1;
+  }
   return system_os_post(prio, handle | prio, par);
 }

@@ -628,13 +628,14 @@ extern void lua_main(void);
 ** Task callback handler. Uses luaN_call to do a protected call with full traceback
 */
 static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
+  //dbg_printf("do_task(%d, %d)\n", task_fn_ref, prio);
   lua_State* L = lua_getstate();
   if(task_fn_ref == (platform_task_param_t)~0 && prio == LUA_TASK_HIGH) {
     lua_main();                   /* Undocumented hook for lua_main() restart */
     return;
   }
   if (prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
-    luaL_error(L, "invalid posk task");
+    luaL_error(L, "invalid post task");
 /* Pop the CB func from the Reg */
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
   luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -648,8 +649,10 @@ static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
 */
 LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
   static platform_task_handle_t task_handle = 0;
-  if (!task_handle)
+  if (!task_handle) {
     task_handle = platform_task_get_id(do_task);
+    platform_set_lowest_task(task_handle, do_task);
+  }
   if (L == NULL && prio == LUA_TASK_HIGH+1) { /* Undocumented hook for lua_main */
     platform_post(LUA_TASK_HIGH, task_handle, (platform_task_param_t)~0);
     return -1;
@@ -662,7 +665,7 @@ LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
     }
     return task_fn_ref;
   } else {
-    return luaL_error(L, "invalid posk task");
+    return luaL_error(L, "invalid post task");
   }
 }
 #else
