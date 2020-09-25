@@ -401,7 +401,7 @@
 @@ l_sprintf is equivalent to 'snprintf' or 'sprintf' in C89.
 ** (All uses in Lua have only one format item.)
 */
-#if !defined(LUA_USE_C89) || defined(LUA_USE_ESP8266)
+#if !defined(LUA_USE_C89)
 #define l_sprintf(s,sz,f,i)	snprintf(s,sz,f,i)
 #else
 #define l_sprintf(s,sz,f,i)	((void)(sz), sprintf(s,f,i))
