@@ -12,6 +12,9 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
+UP_EXTRACT_DIR = ..
+SUBDIRS = sdm
+COMPONENTS_libmodules:= sdm/libsdm.a
 GEN_LIBS = libmodules.a
 endif
 
