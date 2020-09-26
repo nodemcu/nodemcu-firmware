@@ -296,8 +296,8 @@ extern void mbedtls_free_wrap(void *p);
 //#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
 #define MBEDTLS_PLATFORM_PRINTF_MACRO        ets_printf /**< Default printf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    ets_snprintf /**< Default snprintf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_VSNPRINTF_MACRO    ets_vsnprintf /**< Default vsnprintf macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    ets_snprintf /**< Default snprintf macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_VSNPRINTF_MACRO    ets_vsnprintf /**< Default vsnprintf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT       86400 /**< 1 day  */
