@@ -966,7 +966,7 @@ extern struct netif *eagle_lwip_getif(uint8);
 static void
 push_ipaddr(lua_State *L, ip_addr_t *addr) {
   char temp[20];
-  ssize_t ipl = ets_snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
+  ssize_t ipl = snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
   lua_assert (ipl >= 0 && ipl < 20);
   lua_pushlstring( L, temp, ipl );
 }
