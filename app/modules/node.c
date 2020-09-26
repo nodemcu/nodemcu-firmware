@@ -934,7 +934,6 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( restore, node_restore )
   LROT_FUNCENTRY( random, node_random )
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
-  LROT_FUNCENTRY( peek, node_peek )
 #if LUA_VERSION_NUM == 501
   LROT_TABENTRY( egc, node_egc )
 #endif
