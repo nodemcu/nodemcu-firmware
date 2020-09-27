@@ -376,7 +376,9 @@ uint32_t platform_rcr_write (uint8_t rec_id, const void *rec, uint8_t size);
 typedef void (*platform_task_callback_t)(platform_task_param_t param, uint8 prio);
 platform_task_handle_t platform_task_get_id(platform_task_callback_t t);
 
-bool platform_post(uint8 prio, platform_task_handle_t h, platform_task_param_t par);
+static inline bool platform_post(uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
+  return system_os_post(prio, handle | prio, par);
+}
 #define platform_freeheap() system_get_free_heap_size()
 
 // Get current value of CCOUNt register
