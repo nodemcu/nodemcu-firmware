@@ -321,6 +321,11 @@ void user_init(void) {
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
+    char hostname[33];
+    uint8_t mac[6];
+    wifi_get_macaddr(SOFTAP_IF, mac);
+    snprintf(hostname, sizeof(hostname), "%s-%02X%02X%02X", DHCP_HOSTNAME_PREFIX, mac[3], mac[4], mac[5]);
+    wifi_station_set_hostname(hostname);
     if( platform_init() != PLATFORM_OK ) {
         // This should never happen
         NODE_DBG("Can not init platform for modules.\n");

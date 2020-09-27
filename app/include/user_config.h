@@ -177,6 +177,11 @@
 #define ENDUSER_SETUP_AP_SSID "NodeMCU"
 
 
+// This controls the hostname provided as part of the DHCP exchange
+// It is suffixed with "-<last 6 hex of mac>"
+#define DHCP_HOSTNAME_PREFIX    ENDUSER_SETUP_AP_SSID
+
+
 // I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
 // GPIO16 does not support open-drain mode and works in push-pull mode,
 // so clock stretching will not be possible, because circuit in slave device that
