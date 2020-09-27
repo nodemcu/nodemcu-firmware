@@ -1,47 +1,49 @@
 /*
-** The pipe algo is somewhat similar to the luaL_Buffer algo, except that it uses
-** table to store the LUAL_BUFFERSIZE byte array chunks instead of the stack.
-** Writing is always to the last UD in the table and overflow pushes a new UD to
-** the end of the table.  Reading is always from the first UD in the table and
-** underrun removes the first UD to shift a new one into slot 2. (Slot 1 of the
-** table is reserved for the pipe reader function with 0 denoting no reader.)
+** The pipe algo is somewhat similar to the luaL_Buffer algo, except that it
+** uses table to store the LUAL_BUFFERSIZE byte array chunks instead of the
+** stack.  Writing is always to the last UD in the table and overflow pushes a
+** new UD to the end of the table.  Reading is always from the first UD in the
+** table and underrun removes the first UD to shift a new one into slot 2. (Slot
+** 1 of the table is reserved for the pipe reader function with 0 denoting no
+** reader.)
 **
-** Reads and writes may span multiple UD buffers and if the read spans multiple UDs
-** then the parts are collected as strings on the Lua stack and then concatenated
-** with a lua_concat().
+** Reads and writes may span multiple UD buffers and if the read spans multiple
+** UDs then the parts are collected as strings on the Lua stack and then
+** concatenated with a lua_concat().
 **
 ** Note that pipe tables also support the undocumented length and tostring
 ** operators for debugging puposes, so if p is a pipe then #p[i] gives the
 ** effective length of pipe slot i and printing p[i] gives its contents.
 **
-** The pipe library also supports the automatic scheduling of a reader task. This
-** is declared by including a Lua CB function and an optional prioirty for it to
-** execute at in the pipe.create() call. The reader task may or may not empty the
-** FIFO (and there is also nothing to stop the task also writing to the FIFO.  The
-** reader automatically reschedules itself if the pipe contains unread content.
+** The pipe library also supports the automatic scheduling of a reader task.
+** This is declared by including a Lua CB function and an optional prioirty for
+** it to execute at in the pipe.create() call. The reader task may or may not
+** empty the FIFO (and there is also nothing to stop the task also writing to
+** the FIFO.  The reader automatically reschedules itself if the pipe contains
+** unread content.
 **
-** The reader tasks may be interleaved with other tasks that write to the pipe and
-** others that don't. Any task writing to the pipe will also trigger the posting
-** of a read task if one is not already pending.  In this way at most only one
-** pending reader task is pending, and this prevents overrun of the task queueing
-** system.
+** The reader tasks may be interleaved with other tasks that write to the pipe
+** and others that don't. Any task writing to the pipe will also trigger the
+** posting of a read task if one is not already pending.  In this way at most
+** only one pending reader task is pending, and this prevents overrun of the
+** task queueing system.
 **
 ** Implementation Notes:
 **
-** -  The Pipe slot 1 is used to store the Lua CB function reference of the reader
-**    task. Note that is actually an auxiliary wrapper around the supplied Lua CB
-**    function, and this wrapper also uses upvals to store internal pipe state.
-**    The remaining slots are the Userdata buffer chunks.
+** -  The Pipe slot 1 is used to store the Lua CB function reference of the
+**    reader task. Note that is actually an auxiliary wrapper around the
+**    supplied Lua CB function, and this wrapper also uses upvals to store
+**    internal pipe state.  The remaining slots are the Userdata buffer chunks.
 **
 ** -  This internal state needs to be shared with the pipe_write function, but a
-**    limitation of Lua 5.1 is that C functions cannot share upvals; to avoid this
-**    constraint, this function is also denormalised to act as the pipe_write
-**    function: if Arg1 is the pipe then its a pipe:write() otherwise its a
-**    CB wrapper.
+**    limitation of Lua 5.1 is that C functions cannot share upvals; to avoid
+**    this constraint, this function is also denormalised to act as the
+**    pipe_write function: if Arg1 is the pipe then its a pipe:write() otherwise
+**    its a CB wrapper.
 **
 ** Also note that the pipe module is used by the Lua VM and therefore the create
 ** read, and unread methods are exposed as directly callable C functions. (Write
-** is available throogh pipe[1].)
+** is available through pipe[1].)
 **
 ** Read the docs/modules/pipe.md documentation for a functional description.
 */
@@ -105,13 +107,14 @@ static buffer_t *checkPipeUD (lua_State *L, int ndx) {            // [-0, +0, v]
   }
 }
 
+/* Create new buffer chunk at `n` in the table which is at stack `ndx` */
 static buffer_t *newPipeUD(lua_State *L, int ndx, int n) {   // [-0,+0,-]
   buffer_t *ud = (buffer_t *) lua_newuserdata(L, sizeof(buffer_t));
   lua_pushrotable(L, LROT_TABLEREF(pipe_meta));         /* push the metatable */
 	lua_setmetatable(L, -2);                /* set UD's metabtable to pipe_meta */
 	ud->start = ud->end = 0;
-  lua_rawseti(L, ndx, n);                                 /* T[#T+1] = new UD */
-  return ud;                                        /* ud points to new T[#T] */
+  lua_rawseti(L, ndx, n);                                    /* T[n] = new UD */
+  return ud;                                         /* ud points to new T[n] */
 }
 
 #define CHAR_DELIM      -1
@@ -140,8 +143,8 @@ static char getsize_delim (lua_State *L, int ndx, int *len) {     // [-0, +0, v]
 
 /*
 ** Read CB Initiator AND pipe_write. If arg1 == the pipe, then this is a pipe
-** write(); otherwise it is the Lua CB wapper for the task post. This botch allows
-** these two functions to share Upvals within the Lua 5.1 VM:
+** write(); otherwise it is the Lua CB wapper for the task post. This botch
+** allows these two functions to share Upvals within the Lua 5.1 VM:
 */
 #define UVpipe  lua_upvalueindex(1)  // The pipe table object
 #define UVfunc  lua_upvalueindex(2)  // The CB's Lua function
@@ -155,10 +158,10 @@ static char getsize_delim (lua_State *L, int ndx, int *len) {     // [-0, +0, v]
 ** Note that nothing precludes the Lua CB function from itself writing to the
 ** pipe and in this case this routine will call itself recursively.
 **
-** The Lua CB itself takes the pipe object as a parameter and returns an optional
-** boolean to force or to suppress automatic retasking if needed.  If omitted,
-** then the default is to repost if the pipe is not empty, otherwise the task
-** chain is left to lapse.
+** The Lua CB itself takes the pipe object as a parameter and returns an
+** optional boolean to force or to suppress automatic retasking if needed.  If
+** omitted, then the default is to repost if the pipe is not empty, otherwise
+** the task chain is left to lapse.
 */
 static int pipe_write_and_read_poster (lua_State *L) {
   int state = lua_tointeger(L, UVstate);
@@ -221,13 +224,14 @@ int pipe_create(lua_State *L) {
   lua_settop(L, 2);                                     /* fix stack sze as 2 */
 
   if (!lua_isnil(L, 1)) {
-    luaL_checktype(L, 1, LUA_TFUNCTION);           /* non-nil arg1 must be a function */
+    luaL_checktype(L, 1, LUA_TFUNCTION);   /* non-nil arg1 must be a function */
     if (lua_isnil(L, 2)) {
       prio = PLATFORM_TASK_PRIORITY_MEDIUM;
     } else {
       prio = (int) lua_tointeger(L, 2);
       luaL_argcheck(L, prio >= PLATFORM_TASK_PRIORITY_LOW &&
-                       prio <= PLATFORM_TASK_PRIORITY_HIGH, 2, "invalid priority");
+                       prio <= PLATFORM_TASK_PRIORITY_HIGH, 2,
+                       "invalid priority");
     }
   }
 
@@ -239,8 +243,8 @@ int pipe_create(lua_State *L) {
   lua_pushvalue(L, 1);                                    /* UV2: CB function */
   lua_pushinteger(L, prio);                             /* UV3: task priority */
   lua_pushinteger(L, prio == -1 ? CB_NOT_USED : CB_QUIESCENT);
-  lua_pushcclosure(L, pipe_write_and_read_poster, 4); /* post aux func as C task */
-	lua_rawseti(L, -2, 1);                                 /* and wrtie to T[1] */
+  lua_pushcclosure(L, pipe_write_and_read_poster, 4);  /* aux func for C task */
+	lua_rawseti(L, -2, 1);                                 /* and write to T[1] */
 	return 1;                                               /* return the table */
 }
 
@@ -345,7 +349,7 @@ int pipe_unread(lua_State *L) {
       /* Filling leftwards; make this chunk "empty but at the right end" */
       ud->start = ud->end = LUAL_BUFFERSIZE;
     } else if (ud->start < l) {
-      /* If the unread can't fit it before the start then shift content to end */
+      /* If the unread can't fit it before the start, shift content to end */
       memmove(ud->buf + lrem,
               ud->buf + ud->start, used); /* must be memmove not cpy */
       ud->start = lrem; ud->end = LUAL_BUFFERSIZE;
@@ -354,15 +358,17 @@ int pipe_unread(lua_State *L) {
     if (l <= (unsigned )lrem)
       break;
 
-    /* If we've got here then the remaining string is strictly longer than the */
-    /* remaining buffer space, so top off the buffer before looping around again */
+    /* If we're here then the remaining string is strictly longer than the */
+    /* remaining buffer space; top off the buffer before looping around again */
     l -= lrem;
     memcpy(ud->buf, s + l, lrem);
     ud->start = 0;
 
   } while(1);
 
-  /* Copy any residual tail to the UD buffer.  Note that this is l>0 and  */
+  /* Copy any residual tail to the UD buffer.
+   * Here, ud != NULL and 0 <= l <= ud->start */
+
   ud->start -= l;
   memcpy(ud->buf + ud->start, s, l);
 	return 0;
