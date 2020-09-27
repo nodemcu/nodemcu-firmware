@@ -336,12 +336,14 @@ int pipe_unread(lua_State *L) {
     if (used == LUAL_BUFFERSIZE) {
       /* If the current UD is full insert a new UD at T[2] */
       int i, nUD = lua_objlen(L, 1);
-      for (i = nUD; i > 0; i--) {                       /* for i = nUD-1,1,-1 */
+      for (i = nUD; i > 1; i--) {                         /* for i = nUD,1,-1 */
         lua_rawgeti(L, 1, i); lua_rawseti(L, 1, i+1);        /* T[i+1] = T[i] */
       }
-      ud = newPipeUD(L, 1, 1);
+      ud = newPipeUD(L, 1, 2);
       used = 0; lrem = LUAL_BUFFERSIZE;
 
+      /* Filling leftwards; make this chunk "empty but at the right end" */
+      ud->start = ud->end = LUAL_BUFFERSIZE;
     } else if (ud->start < l) {
       /* If the unread can't fit it before the start then shift content to end */
       memmove(ud->buf + lrem,
