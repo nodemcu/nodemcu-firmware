@@ -1151,7 +1151,3 @@ platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
   TQB.task_func[TQB.task_count++] = t;
   return TH_MONIKER + ((TQB.task_count-1) << TH_SHIFT);
 }
-
-bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
-  return system_os_post(prio, handle | prio, par);
-}
