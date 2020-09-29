@@ -452,7 +452,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
     for (i = 0; i < nread; ++i) {
       luaL_addchar(&b, p[i]);
       if (p[i] == end_char) {
-        vfs_lseek(fd, -nread + j + i + 1, VFS_SEEK_CUR); //reposition after end char found
+        vfs_lseek(fd, -nread + i + 1, VFS_SEEK_CUR); //reposition after end char found
         nread = 0;   // force break on outer loop
         break;
       }
