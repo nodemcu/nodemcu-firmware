@@ -311,9 +311,6 @@ void user_init(void) {
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
-#ifdef LUA_USE_MODULES_WIFI
-    wifi_change_default_host_name();
-#endif
     if( platform_init() != PLATFORM_OK ) {
         // This should never happen
         NODE_DBG("Can not init platform for modules.\n");
@@ -321,6 +318,9 @@ void user_init(void) {
     }
     UartBautRate br = BIT_RATE_DEFAULT;
     uart_init (br, br);
+#ifdef LUA_USE_MODULES_WIFI
+    wifi_change_default_host_name();
+#endif
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif

@@ -1970,23 +1970,32 @@ void wifi_change_default_host_name(void)
   wifi_set_opmode_current(STATION_MODE);
   char temp[33] = {0};//32 chars + NULL
 
+#if defined(WIFI_STA_HOSTNAME)
+  const char *hostname = WIFI_STA_HOSTNAME;
+#else
   const char *hostname = "NODE";
-#ifdef WIFI_STA_HOSTNAME
-  if (wifi_sta_checkhostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME))) {
-    hostname = WIFI_STA_HOSTNAME;
-  }
 #endif
 
 #if defined(WIFI_STA_HOSTNAME_APPEND_MAC) || !defined(WIFI_STA_HOSTNAME)
   uint8_t mac[6];
   wifi_get_macaddr(STATION_IF, mac);
 
-  snprintf(temp, sizeof(temp), "%s-%02X%02X%02X", hostname, (mac)[3], (mac)[4], (mac)[5]);
+  int len = snprintf(temp, sizeof(temp), "%s-%02X%02X%02X", hostname, (mac)[3], (mac)[4], (mac)[5]);
 #else
-  snprintf(temp, sizeof(temp), "%s", hostname);
+  int len = snprintf(temp, sizeof(temp), "%s", hostname);
+#endif
+
+#if defined(WIFI_STA_HOSTNAME)
+  if (wifi_sta_checkhostname(temp, len)) {
 #endif
 
   wifi_station_set_hostname(temp);
+
+#if defined(WIFI_STA_HOSTNAME)
+  } else {
+    dbg_printf("\nInvalid hostname: %s\n", temp);
+  }
+#endif
 
   if(opmode_temp != wifi_get_opmode()){
     wifi_set_opmode_current(opmode_temp);
