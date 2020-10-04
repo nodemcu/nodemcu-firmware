@@ -610,8 +610,10 @@ node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
 ## node.startupcounts()
 
 Query the performance of system startup.
-Note that this is only available if
-the firmware is built with `PLATFORM_STARTUP_COUNT` defined.
+
+!!! Important
+
+    This function is only available if the firmware is built with `PLATFORM_STARTUP_COUNT` defined.
 
 #### Syntax
 `node.startupcounts([marker])`
