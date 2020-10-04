@@ -82,17 +82,16 @@ To increase the precision of the floating point variables, a double build can be
 is also the default in the Lua 5.1 builds. The downside is that more memory is consumed when
 storing variables.
 You can change this
-either by uncommenting `LUA_NUMBER_DOUBLE` in `app/include/user_config.h`:
+either by uncommenting `LUA_NUMBER_64BITS` in `app/include/user_config.h`:
 
 ```c
-//#define LUA_NUMBER_DOUBLE
+//#define LUA_NUMBER_64BITS
 ```
 
-OR by overriding this with the `make` command as it's [done during the CI
-build](https://github.com/nodemcu/nodemcu-firmware/blob/master/.travis.yml#L30):
+OR by overriding this with the `make` command 
 
 ```
-make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....
+make EXTRA_CCFLAGS="-DLUA_NUMBER_64BITS ....
 ```
 
 ### Integer build (Lua 5.1 only)

@@ -72,17 +72,15 @@ just the `luac.cross` image.  You must first ensure that the following options i
 //#define LUA_NUMBER_INTEGRAL
 
 // When using Lua 5.3, two different builds are now supported. 
-// The main difference is in the // processing of numeric data types.
-// If LUA_NUMBER_DOUBLE is defined, then doubles are used to hold floating
-// point numbers. Integers can be converted to doubles and back without any
-// loss of precision.
-// Otherwise all floating point operations use floats. Only integers under 2^24
-// can be represented exactly in floating point.
+// If LUA_NUMBER_64BITS is defined, then doubles are used to hold floating
+// point numbers and integers are 64 bits long. Integers smaller than 2^53 can be i
+// converted to doubles and back without any loss of precision.
+// Otherwise all floating point operations use floats, and integers are 32-bit.
+// Only integers under 2^24 can be represented exactly in floating point.
 // Note that Lua 5.3 also supports Integers natively, but you have to be careful 
-// not to promote an integer to a floating point variable if you are using a float build
-// as you can lose precision.
+// not to promote an integer to a floating point variable as you can lose precision.
 
-//#define LUA_NUMBER_DOUBLE
+//#define LUA_NUMBER_64BITS
 ```
 
 Note that the use of LFS and the LFS region size is now configured through the partition table.
