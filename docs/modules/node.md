@@ -1,7 +1,7 @@
 # node Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [node.c](../../app/modules/node.c)|
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [TerryE](https://github.com/TerryE) | [node.c](../../app/modules/node.c)|
 
 The node module provides access to system-level features such as sleep, restart and various info and IDs.
 
@@ -174,36 +174,13 @@ flash ID (number)
 
 ## node.flashindex()
 
-Returns the function reference for a function in the [LFS (Lua Flash Store)](../lfs.md).
+Deprecated synonym for [`node.LFS.get()`](#nodelfsget) to return an LFS function reference.
 
-#### Syntax
-`node.flashindex(modulename)`
-
-#### Parameters
-`modulename`  The name of the module to be loaded.  If this is `nil` or invalid then an info list is returned
-
-#### Returns
--  In the case where the LFS in not loaded, `node.flashindex` evaluates to `nil`, followed by the flash mapped base addresss of the LFS, its flash offset, and the size of the LFS.
--  If the LFS is loaded and the function is called with the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do.
--  Otherwise an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS.
-
-#### Example
-
-The `node.flashindex()` is a low level API call that is normally wrapped using standard Lua code to present a simpler application API.  See the module `_init.lua` in the `lua_examples/lfs` directory for an example of how to do this.
+Note that this returns `nil` if the function does not exist in LFS. 
 
 ## node.flashreload()
 
-Reload the [LFS (Lua Flash Store)](../lfs.md) with the flash image provided. Flash images are generated on the host machine using the `luac.cross`commnad.
-
-#### Syntax
-`node.flashreload(imageName)`
-
-#### Parameters
-`imageName` The name of a image file in the filesystem to be loaded into the LFS.
-
-#### Returns
-`Error message`  LFS images are now gzip compressed.  In the case of the `imagename` being a valid LFS image, this is expanded and loaded into flash.  The ESP is then immediately rebooted, _so control is not returned to the calling Lua application_ in the case of a successful reload.  This reload process internally makes two passes through the LFS image file; and on the first it validates the file and header formats and detects any errors.  If any is detected then an error string is returned.
-
+Deprecated synonym for [`node.LFS.reload()`](#nodelfsreload) to reload [LFS (Lua Flash Store)](../lfs.md) with the named flash image provided.
 
 ## node.flashsize()
 
@@ -278,7 +255,6 @@ system heap size left in bytes (number)
 
 Returns information about hardware, software version and build configuration.
 
-
 #### Syntax
 `node.info([group])`
 
@@ -294,6 +270,13 @@ If a `group` is given the return value will be a table containing the following 
 	- `flash_size` (number)
 	- `flash_mode` (number) 0 = QIO, 1 = QOUT, 2 = DIO, 15 = DOUT.
 	- `flash_speed` (number)
+
+- for `group` = `"lfs"`
+	- `lfs_base` (number)	Flash offset of selected LFS region 
+	- `lfs_mapped` (number)	Mapped memory address of selected LFS region
+	- `lfs_size` (number)	size of selected LFS region
+	- `lfs_used` (number)	actual size used by current LFS image
+
 - for `group` = `"sw_version"`
 	- `git_branch` (string)
 	- `git_commit_id` (string)
@@ -302,6 +285,7 @@ If a `group` is given the return value will be a table containing the following 
 	- `node_version_major` (number)
 	- `node_version_minor` (number)
 	- `node_version_revision` (number)
+
 - for `group` = `"build_config"`
 	- `ssl` (boolean)
 	- `lfs_size` (number) as defined at build time
@@ -360,6 +344,65 @@ See the `telnet/telnet.lua` in `lua_examples` for a more comprehensive example.
 
 #### See also
 [`node.output()`](#nodeoutput)
+
+
+## node.LFS
+
+Sub-table containing the API for [Lua Flash Store](../lfs.md)(**LFS**) access.  Programmers might prefer to map this to a global or local variable for convenience for example:
+```lua
+local LFS = node.LFS
+```
+This table contains the following methods and properties:
+
+Property/Method | Description
+-------|---------
+`config` | A synonym for [`node.info('lfs')`](#nodeinfo).  Returns the properties `lfs_base`, `lfs_mapped`, `lfs_size`, `lfs_used`.
+`get()` | See [node.LFS.get()](#nodelfsget).
+`list()` | See [node.LFS.list()](#nodelfslist).
+`reload()` |See [node.LFS.reload()](#nodelfsreload).
+`time` | Returns the Unix timestamp at time of image creation.
+
+
+## node.LFS.get() 
+
+Returns the function reference for a function in LFS.
+
+Note that unused `node.LFS` properties map onto the equialent `get()` call so for example: `node.LFS.mySub1` is a synonym for `node.LFS.get('mySub1')`.
+
+#### Syntax
+`node.LFS.get(modulename)`
+
+#### Parameters
+`modulename`  The name of the module to be loaded.
+
+#### Returns
+-  If the LFS is loaded and the `modulename` is a string that is the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do
+-  Otherwise `nil` is returned.
+
+
+## node.LFS.list() 
+
+List the modules in LFS.
+
+
+#### Returns
+-  If no LFS image IS LOADED then `nil` is returned.
+-  Otherwise an sorted array of the name of modules in LFS is returned.
+
+## node.LFS.reload()
+
+Reload LFS with the flash image provided. Flash images can be generated on the host machine using the `luac.cross`command.
+
+#### Syntax
+`node.LFS.reload(imageName)`
+
+#### Parameters
+`imageName` The name of a image file in the filesystem to be loaded into the LFS.
+
+#### Returns
+-  In the case when the `imagename` is a valid LFS image, this is expanded and loaded into flash, and the ESP is then immediately rebooted, _so control is not returned to the calling Lua application_ in the case of a successful reload.
+-  The reload process internally makes multiple passes through the LFS image file. The first pass validates the file and header formats and detects many errors.  If any is detected then an error string is returned.
+
 
 ## node.output()
 

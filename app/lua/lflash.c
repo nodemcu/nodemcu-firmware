@@ -194,20 +194,19 @@ static int loadLFS (lua_State *L);
 static int loadLFSgc (lua_State *L);
 static void procFirstPass (void);
 
-/* lua_lfsreload() and lua_lfsindex() are exported via lua.h */
+/* luaL_lfsreload() is exported via lauxlib.h */
 
 /*
  * Library function called by node.flashreload(filename).
  */
-LUALIB_API int lua_lfsreload (lua_State *L) {
+LUALIB_API void luaL_lfsreload (lua_State *L) {
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
 
   if (G(L)->LFSsize == 0) {
     lua_pushstring(L, "No LFS partition allocated");
-    return 1;
+    return;
   }
-
 
  /*
   * Do a protected call of loadLFS.
@@ -237,7 +236,7 @@ LUALIB_API int lua_lfsreload (lua_State *L) {
     lua_cpcall(L, &loadLFSgc, NULL);
     lua_settop(L, 0);
     lua_pushstring(L, msg);
-    return 1;
+    return;
   }
 
   if (status == 0) {
@@ -257,60 +256,21 @@ LUALIB_API int lua_lfsreload (lua_State *L) {
   NODE_ERR(msg);
 
   while (1) {}  // Force WDT as the ROM software_reset() doesn't seem to work
-  return 0;
 }
 
 
-/*
- * If the arg is a valid LFS module name then return the LClosure
- * pointing to it. Otherwise return:
- *  -  The Unix time that the LFS was built
- *  -  The base address and length of the LFS
- *  -  An array of the module names in the LFS
- */
-LUAI_FUNC int lua_lfsindex (lua_State *L) {
-  int n = lua_gettop(L);
-
-  /* Return nil + the LFS base address if the LFS size > 0 and it isn't loaded */
-  if (!(G(L)->ROpvmain)) {
-    lua_settop(L, 0);
-    lua_pushnil(L);
-    if (G(L)->LFSsize) {
-      lua_pushinteger(L, (lua_Integer) flashAddr);
-      lua_pushinteger(L, flashAddrPhys);
-      lua_pushinteger(L, G(L)->LFSsize);
-      return 4;
-    } else {
-      return 1;
-    }
-  }
-
-  /* Push the LClosure of the LFS index function */
-  Closure *cl = luaF_newLclosure(L, 0, hvalue(gt(L)));
-  cl->l.p = G(L)->ROpvmain;
-  lua_settop(L, n+1);
-  setclvalue(L, L->top-1, cl);
-
-  /* Move it infront of the arguments and call the index function */
-  lua_insert(L, 1);
-  lua_call(L, n, LUA_MULTRET);
-
-  /* Return it if the response if a single value (the function) */
-  if (lua_gettop(L) == 1)
-    return 1;
-
-  lua_assert(lua_gettop(L) == 2);
-
-  /* Otherwise add the base address of the LFS, and its size bewteen the */
-  /* Unix time and the module list, then return all 4 params. */
-  lua_pushinteger(L, (lua_Integer) flashAddr);
-  lua_insert(L, 2);
-  lua_pushinteger(L, flashAddrPhys);
-  lua_insert(L, 3);
-  lua_pushinteger(L, cast(FlashHeader *, flashAddr)->flash_size);
-  lua_insert(L, 4);
-  return 5;
+LUA_API void lua_getlfsconfig (lua_State *L, int *config) {
+  if (!config)
+    return;
+  config[0] = (int) flashAddr;                   /* LFS region mapped address */
+  config[1] = flashAddrPhys;                 /* LFS region base flash address */
+  config[2] = G(L)->LFSsize;                        /* LFS region actual size */
+  config[3] = (G(L)->ROstrt.hash) ? cast(FlashHeader *, flashAddr)->flash_size : 0;
+                                                           /* LFS region used */
+  config[4] = 0;                                       /* Not used in Lua 5.1 */
 }
+
+
 /* =====================================================================================
  * The following routines use my uzlib which was based on pfalcon's inflate and
  * deflate routines.  The standard NodeMCU make also makes two host tools uz_zip
@@ -483,7 +443,7 @@ void procSecondPass (void) {
 }
 
 /*
- * loadLFS)() is protected called from luaN_reload_reboot so that it can recover
+ * loadLFS)() is protected called from luaL_lfsreload() so that it can recover
  * from out of memory and other thrown errors.  loadLFSgc() GCs any resources.
  */
 static int loadLFS (lua_State *L) {

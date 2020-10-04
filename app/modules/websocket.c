@@ -60,7 +60,7 @@ static void websocketclient_onReceiveCallback(ws_info *ws, int len, char *messag
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onReceive); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
     lua_pushlstring(L, message, len); // #2 callback argument
-    lua_pushnumber(L, opCode); // #3 callback argument
+    lua_pushinteger(L, opCode); // #3 callback argument
     luaL_pcallx(L, 3, 0);
   }
 }
@@ -79,7 +79,7 @@ static void websocketclient_onCloseCallback(ws_info *ws, int errorCode) {
   if (data->onClose != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onClose); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
-    lua_pushnumber(L, errorCode); // pass the error code, #2 callback argument
+    lua_pushinteger(L, errorCode); // pass the error code, #2 callback argument
     luaL_pcallx(L, 2, 0);
   }
 
@@ -284,7 +284,7 @@ static int websocketclient_gc(lua_State *L) {
     if (ws->connectionState != 4) { // only call if connection open
       lua_rawgeti(L, LUA_REGISTRYINDEX, data->onClose);
 
-      lua_pushnumber(L, -100);
+      lua_pushinteger(L, -100);
       luaL_pcallx(L, 1, 0);
     }
     luaL_unref(L, LUA_REGISTRYINDEX, data->onClose);

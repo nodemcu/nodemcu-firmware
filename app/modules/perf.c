@@ -115,20 +115,20 @@ static int perf_stop(lua_State *L)
   DATA *d = data;
   data = NULL;
 
-  lua_pushnumber(L, d->total_samples);
-  lua_pushnumber(L, d->outside_samples);
+  lua_pushunsigned(L, d->total_samples);
+  lua_pushunsigned(L, d->outside_samples);
   lua_newtable(L);
   int i;
   uint32_t addr = d->start;
   for (i = 0; i < d->bucket_count; i++, addr += (1 << d->bucket_shift)) {
     if (d->bucket[i]) {
-      lua_pushnumber(L, addr);
-      lua_pushnumber(L, d->bucket[i]);
+      lua_pushunsigned(L, addr);
+      lua_pushunsigned(L, d->bucket[i]);
       lua_settable(L, -3);
     }
   }
 
-  lua_pushnumber(L, 1 << d->bucket_shift);
+  lua_pushunsigned(L, 1 << d->bucket_shift);
 
   luaL_unref(L, LUA_REGISTRYINDEX, d->ref);
 

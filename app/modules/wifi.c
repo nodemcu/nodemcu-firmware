@@ -228,15 +228,15 @@ static int wifi_getcountry( lua_State* L ){
     lua_rawset(L, -3);
 
     lua_pushstring(L, "start_ch");
-    lua_pushnumber(L, cfg.schan);
+    lua_pushinteger(L, cfg.schan);
     lua_rawset(L, -3);
 
     lua_pushstring(L, "end_ch");
-    lua_pushnumber(L, (cfg.schan + cfg.nchan)-1);
+    lua_pushinteger(L, (cfg.schan + cfg.nchan)-1);
     lua_rawset(L, -3);
 
     lua_pushstring(L, "policy");
-    lua_pushnumber(L, cfg.policy);
+    lua_pushinteger(L, cfg.policy);
     lua_rawset(L, -3);
 
     return 1;
@@ -276,7 +276,7 @@ static int wifi_setcountry( lua_State* L ){
     lua_getfield(L, 1, "start_ch");
     if (!lua_isnil(L, -1)){
       if(lua_isnumber(L, -1)){
-        start_ch = (uint8)luaL_checknumber(L, -1);
+        start_ch = (uint8)luaL_checkinteger(L, -1);
         luaL_argcheck(L, (start_ch >= 1 && start_ch <= 14), 1, "start_ch: Range:1-14");
         cfg.schan = start_ch;
       }
@@ -291,7 +291,7 @@ static int wifi_setcountry( lua_State* L ){
     lua_getfield(L, 1, "end_ch");
     if (!lua_isnil(L, -1)){
       if(lua_isnumber(L, -1)){
-        end_ch = (uint8)luaL_checknumber(L, -1);
+        end_ch = (uint8)luaL_checkinteger(L, -1);
         luaL_argcheck(L, (end_ch >= 1 && end_ch <= 14), 1, "end_ch: Range:1-14");
         luaL_argcheck(L, (end_ch >= cfg.schan), 1, "end_ch: can't be less than start_ch");
         cfg.nchan = (end_ch-cfg.schan)+1; //cfg.nchan must equal total number of channels
@@ -306,7 +306,7 @@ static int wifi_setcountry( lua_State* L ){
     lua_getfield(L, 1, "policy");
     if (!lua_isnil(L, -1)){
       if(lua_isnumber(L, -1)){
-        uint8 policy = (uint8)luaL_checknumber(L, -1);
+        uint8 policy = (uint8)luaL_checkinteger(L, -1);
         luaL_argcheck(L, (policy == WIFI_COUNTRY_POLICY_AUTO || policy == WIFI_COUNTRY_POLICY_MANUAL), 1, "policy: must be 0 or 1");
         cfg.policy = policy;
       }
@@ -437,7 +437,7 @@ void wifi_pmSleep_suspend_CB(void)
   {
     lua_State* L = lua_getstate(); // Get main Lua thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
-    luaL_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    luaL_unref(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
     wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
     luaL_pcallx(L, 0, 0); // Execute suspend callback
   }
@@ -465,7 +465,7 @@ static int wifi_suspend(lua_State* L)
   if (lua_isnone(L, 1))
   {
     // Return current WiFi suspension state
-    lua_pushnumber(L, pmSleep_get_state());
+    lua_pushinteger(L, pmSleep_get_state());
     return 1; // Return WiFi suspension state
   }
 
@@ -670,7 +670,7 @@ static int wifi_station_get_ap_info4lua( lua_State* L )
   char debug_temp[128];
 #endif
   lua_newtable(L);
-  lua_pushnumber(L, number_of_aps);
+  lua_pushinteger(L, number_of_aps);
   lua_setfield(L, -2, "qty");
   WIFI_DBG("\n\t# of APs stored in flash:%d\n", number_of_aps);
   WIFI_DBG(" %-6s %-32s %-64s %-17s\n", "index:", "ssid:", "password:", "bssid:");
@@ -709,7 +709,7 @@ static int wifi_station_get_ap_info4lua( lua_State* L )
 #if defined(WIFI_DEBUG)
     WIFI_DBG("%s%-17s \n", debug_temp, temp);
 #endif
-    lua_pushnumber(L, i+1); //Add one, so that AP index follows Lua Conventions
+    lua_pushinteger(L, i+1); //Add one, so that AP index follows Lua Conventions
     lua_insert(L, -2);
     lua_settable(L, -3);
   }
@@ -737,7 +737,7 @@ static int wifi_station_change_ap( lua_State* L )
 // Lua: wifi.setapnumber(number_of_aps_to_save)
 static int wifi_station_get_ap_index( lua_State* L )
 {
-  lua_pushnumber(L, wifi_station_get_current_ap_id()+1);
+  lua_pushinteger(L, wifi_station_get_current_ap_id()+1);
   return 1;
 }
 
@@ -978,7 +978,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+          lua_pushinteger(L, EVENT_STAMODE_CONNECTED);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -996,7 +996,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+          lua_pushinteger(L, EVENT_STAMODE_DISCONNECTED);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1014,7 +1014,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_STAMODE_AUTHMODE_CHANGE);
+          lua_pushinteger(L, EVENT_STAMODE_AUTHMODE_CHANGE);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1032,7 +1032,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_STAMODE_GOT_IP);
+          lua_pushinteger(L, EVENT_STAMODE_GOT_IP);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1050,7 +1050,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_STAMODE_DHCP_TIMEOUT);
+          lua_pushinteger(L, EVENT_STAMODE_DHCP_TIMEOUT);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1111,7 +1111,7 @@ static int wifi_station_connect4lua( lua_State* L )
 {
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
   if(lua_isfunction(L, 1)){
-    lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+    lua_pushinteger(L, EVENT_STAMODE_CONNECTED);
     lua_pushvalue(L, 1);
     lua_remove(L, 1);
     wifi_event_monitor_register(L);
@@ -1126,7 +1126,7 @@ static int wifi_station_disconnect4lua( lua_State* L )
 {
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
   if(lua_isfunction(L, 1)){
-    lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+    lua_pushinteger(L, EVENT_STAMODE_DISCONNECTED);
     lua_pushvalue(L, 1);
     lua_remove(L, 1);
     wifi_event_monitor_register(L);
@@ -1214,7 +1214,7 @@ static int wifi_station_listap( lua_State* L )
     {
       if( lua_isnumber(L, -1) )   // deal with the ssid string
       {
-        channel = luaL_checknumber( L, -1);
+        channel = luaL_checkinteger( L, -1);
         if(!(channel>=0 && channel<=13))
           return luaL_error( L, "channel: 0 or 1-13" );
         scan_cfg.channel=channel;
@@ -1231,7 +1231,7 @@ static int wifi_station_listap( lua_State* L )
     {
       if( lua_isnumber(L, -1) )   // deal with the ssid string
       {
-        show_hidden = luaL_checknumber( L, -1);
+        show_hidden = luaL_checkinteger( L, -1);
         if(show_hidden!=0 && show_hidden!=1)
           return luaL_error( L, "show_hidden: 0 or 1" );
         scan_cfg.show_hidden=show_hidden;
@@ -1457,15 +1457,15 @@ static int wifi_ap_getconfig( lua_State* L, bool get_flash_cfg)
       lua_pushstring(L, temp);
       lua_setfield(L, -2, "pwd");
     }
-    lua_pushnumber(L, config.authmode);
+    lua_pushinteger(L, config.authmode);
     lua_setfield(L, -2, "auth");
-    lua_pushnumber(L, config.channel);
+    lua_pushinteger(L, config.channel);
     lua_setfield(L, -2, "channel");
     lua_pushboolean(L, (bool)config.ssid_hidden);
     lua_setfield(L, -2, "hidden");
-    lua_pushnumber(L, config.max_connection);
+    lua_pushinteger(L, config.max_connection);
     lua_setfield(L, -2, "max");
-    lua_pushnumber(L, config.beacon_interval);
+    lua_pushinteger(L, config.beacon_interval);
     lua_setfield(L, -2, "beacon");
     return 1;
   }
@@ -1696,7 +1696,7 @@ static int wifi_ap_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_SOFTAPMODE_STACONNECTED);
+          lua_pushinteger(L, EVENT_SOFTAPMODE_STACONNECTED);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1714,7 +1714,7 @@ static int wifi_ap_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_SOFTAPMODE_STADISCONNECTED);
+          lua_pushinteger(L, EVENT_SOFTAPMODE_STADISCONNECTED);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);
@@ -1732,7 +1732,7 @@ static int wifi_ap_config( lua_State* L )
       if (lua_isfunction(L, -1))
       {
           L_temp = lua_newthread(L);
-          lua_pushnumber(L, EVENT_SOFTAPMODE_PROBEREQRECVED);
+          lua_pushinteger(L, EVENT_SOFTAPMODE_PROBEREQRECVED);
           lua_pushvalue(L, -3);
           lua_xmove(L, L_temp, 2);
           wifi_event_monitor_register(L_temp);

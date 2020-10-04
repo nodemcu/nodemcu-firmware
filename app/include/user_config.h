@@ -138,7 +138,7 @@
 
 // The net module optionally offers net info functionnality. Uncomment the following
 // to enable the functionnality.
-#define NET_PING_ENABLE 
+#define NET_PING_ENABLE
 
 // The WiFi module optionally offers an enhanced level of WiFi connection
 // management, using internal timer callbacks.  Whilst many Lua developers
@@ -174,7 +174,7 @@
 // If you use the enduser_setup module, then you can also set the default
 // SSID when this module is running in AP mode.
 
-#define ENDUSER_SETUP_AP_SSID "SetupGadget"
+#define ENDUSER_SETUP_AP_SSID "NodeMCU"
 
 
 // I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
@@ -239,7 +239,11 @@
 #  define LUA_FLASH_STORE                 0x0
 #endif
 
-#define SPIFFS_FIXED_LOCATION             0x0
+#ifndef SPIFFS_FIXED_LOCATION
+  #define SPIFFS_FIXED_LOCATION           0x0
+  // You'll rarely need to customize this, because nowadays
+  // it's usually overruled by the partition table anyway.
+#endif
 #ifndef SPIFFS_MAX_FILESYSTEM_SIZE
 #  define SPIFFS_MAX_FILESYSTEM_SIZE      0xFFFFFFFF
 #endif
@@ -252,11 +256,12 @@
 
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2
-#define LUA_OPTIMIZE_DEBUG        2
+// LUAI_OPTIMIZE_DEBUG 0 = Keep all debug; 1 = keep line number info; 2 = remove all debug
+#define LUAI_OPTIMIZE_DEBUG       1
 #define READLINE_INTERVAL        80
 #define STRBUF_DEFAULT_INCREMENT  3
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
- 
+
 #if defined(DEVELOPMENT_TOOLS) && defined(DEVELOPMENT_USE_GDB)
 extern void LUA_DEBUG_HOOK (void);
 #define lua_assert(x)    ((x) ? (void) 0 : LUA_DEBUG_HOOK ())

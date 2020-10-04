@@ -87,12 +87,13 @@ typedef struct global_State {
   lu_mem gcdept;  /* how much GC is `behind schedule' */
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC `granularity' */
+  int stripdefault;  /* default stripping level for compilation */
   int egcmode;    /* emergency garbage collection operation mode */
   lua_CFunction panic;  /* to be called in unprotected errors */
   TValue l_registry;
   struct lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  struct Table *mt[NUM_TAGS];  /* metatables for basic types */
+  struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
 #ifndef LUA_CROSS_COMPILER
   stringtable ROstrt;  /* Flash-based hash table for RO strings */

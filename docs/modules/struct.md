@@ -99,7 +99,7 @@ print(s)
 ## struct.unpack()
 
 Returns the values packed in string `s` according to the format
-string `fmt`. An optional `i` marks where in `s` to start reading
+string `fmt`. An optional `offset` marks where in `s` to start reading
 (default is 1). After the read values, this function also returns
 the index in `s` where it stopped reading, which is also where you
 should start to read the rest of the string.
@@ -116,7 +116,7 @@ should start to read the rest of the string.
 
 #### Returns
 
-All the unpacked data.
+All the unpacked data and index in `s` where it stoppped reading.
 
 #### Example
 

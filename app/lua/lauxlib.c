@@ -25,9 +25,9 @@
 */
 
 #define lauxlib_c
+#include "lauxlib.h"
 #define LUA_LIB
 
-#include "lauxlib.h"
 #include "lgc.h"
 #include "ldo.h"
 #include "lobject.h"

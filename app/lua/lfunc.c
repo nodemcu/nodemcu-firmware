@@ -125,12 +125,7 @@ Proto *luaF_newproto (lua_State *L) {
   f->numparams = 0;
   f->is_vararg = 0;
   f->maxstacksize = 0;
-#ifdef LUA_OPTIMIZE_DEBUG
   f->packedlineinfo = NULL;
-#else
-  f->sizelineinfo = 0;
-  f->lineinfo = NULL;
-#endif
   f->sizelocvars = 0;
   f->locvars = NULL;
   f->linedefined = 0;
@@ -146,13 +141,9 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
   luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
   luaM_freearray(L, f->code, f->sizecode, Instruction);
-#ifdef LUA_OPTIMIZE_DEBUG
   if (f->packedlineinfo) {
     luaM_freearray(L, f->packedlineinfo, strlen(cast(char *, f->packedlineinfo))+1, unsigned char);
   }
-#else
-  luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
-#endif
   luaM_free(L, f);
 }
 

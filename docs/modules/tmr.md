@@ -185,7 +185,8 @@ print( timeIt(function() tmr.ccount() end) )
 
 ### tobj:alarm()
 
-This is a convenience function combining [`tobj:register()`](#tobjregister) and [`tobj:start()`](#tobjstart) into a single call.
+This is a convenience function combining [`tobj:register()`](#tobjregister) and [`tobj:start()`](#tobjstart) into a single call. This is the reason why this method has the same parameters as `tobj:register()`.
+If `tobj:alarm()` is invoked on an already running timer the timer is stopped, new parameters are set and timer is (re)started (similar to call `tobj:start(true)`).
 
 To free up the resources with this timer when done using it, call [`tobj:unregister()`](#tobjunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
@@ -273,16 +274,16 @@ mytimer:start()
 
 ### tobj:start()
 
-Starts or restarts a previously configured timer.
+Starts or restarts a previously configured timer. If the timer is running the timer is restarted only when `restart` parameter is `true`. Otherwise `false` is returned signaling error.
 
 #### Syntax
-`tobj:start()`
+`tobj:start([restart])`
 
 #### Parameters
-None
+- `restart` optional boolean parameter forcing to restart already running timer
 
 #### Returns
-`true` if the timer was started, `false` on error
+`true` if the timer was (re)started, `false` on error
 
 #### Example
 ```lua

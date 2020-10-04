@@ -145,3 +145,17 @@ Write string or byte to the UART.
 uart.write(0, "Hello, world\n")
 ```
 
+## uart.fifodepth()
+
+Report the depth, in bytes, of TX or RX hardware queues associated with the
+UART.
+
+#### Syntax
+`uart.fifodepth(id, dir)`
+
+#### Parameters
+- `id` UART id (0 or 1).
+- `dir` `uart.DIR_RX` for the RX FIFO, `uart.DIR_TX` for TX FIFO.
+
+#### Returns
+The number of bytes in the selected FIFO.

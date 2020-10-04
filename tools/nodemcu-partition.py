@@ -57,9 +57,10 @@ PARTITION_TYPE  = {
      106: 'SPIFFS0',
      107: 'SPIFFS1'}
 
-IROM0TEXT = 102
-LFS       = 103
-SPIFFS    = 106
+SYSTEM_PARAMETER = 6
+IROM0TEXT        = 102
+LFS              = 103
+SPIFFS           = 106
 
 MAX_PT_SIZE = 20*3
 FLASH_SIG          = 0xfafaa150
@@ -145,13 +146,15 @@ def load_PT(data, args):
     # and SPIFFS is the last partition.  We will need to revisit these algos if
     # we adopt a more flexible partiton allocation policy.  *** BOTCH WARNING ***
 
-    for i in range (0, len(PTrec), 3):
+    i = 0
+    while i < len(PTrec):
         if PTrec[i] == IROM0TEXT and args.ls is not None and \
             (len(PTrec) == i+3  or PTrec[i+3] != LFS):
             PTrec[i+3:i+3] = [LFS, 0, 0]
-            break
-    if PTrec[-3] != SPIFFS:
-        PTrec.extend([SPIFFS, 0, 0])
+        i += 3
+        
+    if PTrec[-6] != SPIFFS:
+        PTrec[-6:-6] = [SPIFFS, PTrec[-5] + PTrec[-4], 0x1000]
 
     lastEnd, newPT, map = 0,[], dict()
     print "  Partition          Start   Size \n  ------------------ ------ ------"
@@ -208,6 +211,9 @@ def load_PT(data, args):
             if Psize > 0:
                 map['SPIFFS'] = {"addr" : Paddr, "size" : Psize}
 
+        elif Ptype == SYSTEM_PARAMETER and Paddr == 0:
+            Paddr = flash_size - Psize
+ 
         if Psize > 0:
             Pname = PARTITION_TYPE[Ptype] if Ptype in PARTITION_TYPE \
                                           else ("Type %d" % Ptype)

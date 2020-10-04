@@ -966,7 +966,7 @@ extern struct netif *eagle_lwip_getif(uint8);
 static void
 push_ipaddr(lua_State *L, ip_addr_t *addr) {
   char temp[20];
-  ssize_t ipl = ets_snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
+  ssize_t ipl = snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
   lua_assert (ipl >= 0 && ipl < 20);
   lua_pushlstring( L, temp, ipl );
 }
@@ -983,7 +983,10 @@ field_from_ipaddr(lua_State *L, const char * field_name, ip_addr_t* addr) {
 
 static int net_ifinfo( lua_State* L ) {
   int ifidx = luaL_optint(L, 1, 0);
-
+  if (ifidx != 0 && ifidx != 1) {
+    return 0;
+  }
+  
   struct netif * nif = eagle_lwip_getif(ifidx);
   if (nif == NULL) {
     return 0;
@@ -1004,8 +1007,8 @@ static int net_ifinfo( lua_State* L ) {
     field_from_ipaddr(L, "server_ip" , &nif->dhcp->server_ip_addr  );
     field_from_ipaddr(L, "client_ip" , &nif->dhcp->offered_ip_addr );
     field_from_ipaddr(L, "ntp_server", &nif->dhcp->offered_ntp_addr);
+    lua_setfield(L, -2, "dhcp");
   }
-  lua_setfield(L, -2, "dhcp");
 
   return 1;
 }

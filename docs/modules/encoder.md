@@ -29,7 +29,7 @@ Decodes a Base64 representation of a (binary) Lua string back into the original 
 thrown if the string is not a valid base64 encoding.
 
 #### Syntax
-`binary_string = encoder.toBase64(b64)`
+`binary_string = encoder.fromBase64(b64)`
 
 #### Parameters
 `b64` Base64 encoded input string

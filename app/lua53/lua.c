@@ -243,9 +243,20 @@ static int pmain (lua_State *L) {
   */
   platform_rcr_read(PLATFORM_RCR_INITSTR, (void**) &init);
   STARTUP_COUNT;
-  status = (init[0] == '@') ?
-           luaL_loadfile(L, init+1) :
-           luaL_loadbuffer(L, init, strlen(init), "=INIT");
+  if (init[0] == '!') { /* !module is a compile-free way of executing LFS module */
+    luaL_pushlfsmodule(L);
+    lua_pushstring(L, init+1);
+    lua_call(L, 1, 1);  /* return LFS.module or nil */
+    status = LUA_OK;
+    if (!lua_isfunction(L, -1)) {
+      lua_pushfstring(L, "cannot load LFS.%s", init+1);
+      status = LUA_ERRRUN;
+    }
+  } else {
+    status = (init[0] == '@') ?
+             luaL_loadfile(L, init+1) :
+             luaL_loadbuffer(L, init, strlen(init), "=INIT");
+  }
   STARTUP_COUNT;
   if (status == LUA_OK)
     status = docall(L, 0);

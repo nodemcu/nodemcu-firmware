@@ -206,7 +206,7 @@ static int ws2812_effects_set_color(lua_State* L) {
 
 static int ws2812_effects_get_speed(lua_State* L) {
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  lua_pushnumber(L, state->speed);
+  lua_pushinteger(L, state->speed);
   return 1;
 }
 
@@ -221,7 +221,7 @@ static int ws2812_effects_set_speed(lua_State* L) {
 
 static int ws2812_effects_get_delay(lua_State* L) {
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  lua_pushnumber(L, state->mode_delay);
+  lua_pushinteger(L, state->mode_delay);
   return 1;
 }
 

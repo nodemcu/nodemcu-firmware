@@ -8,10 +8,10 @@
   module related initialisaion in this. This example uses standard Lua features to
   simplify the LFS API.
 
-  The first section adds a 'LFS' table to _G and uses the __index metamethod to
-  resolve functions in the LFS, so you can execute the main function of module
-  'fred' by executing LFS.fred(params), etc. It also implements some standard
-  readonly properties:
+  For Lua 5.1, the first section adds a 'LFS' table to _G and uses the __index
+  metamethod to resolve functions in the LFS, so you can execute the main
+  function of module 'fred' by executing LFS.fred(params), etc.
+  It also implements some standard readonly properties:
 
   LFS._time    The Unix Timestamp when the luac.cross was executed.  This can be
                used as a version identifier.
@@ -24,36 +24,44 @@
                  print(table.concat(LFS._list,'\n'))
                gives you a single column listing of all modules in the LFS.
 
+   For Lua 5.3 LFS table is populated by the LFS implementation in C so this part
+   of the code is skipped.
 ---------------------------------------------------------------------------------]]
 
 local index = node.flashindex
+local G=_ENV or getfenv()
+local lfs_t
+if _VERSION == 'Lua 5.1' then
+    lfs_t = {
+    __index = function(_, name)
+        local fn_ut, ba, ma, size, modules = index(name)
+        if not ba then
+          return fn_ut
+        elseif name == '_time' then
+          return fn_ut
+        elseif name == '_config' then
+          local fs_ma, fs_size = file.fscfg()
+          return {lfs_base = ba, lfs_mapped = ma, lfs_size = size,
+                  fs_mapped = fs_ma, fs_size = fs_size}
+        elseif name == '_list' then
+          return modules
+        else
+          return nil
+        end
+      end,
 
-local lfs_t = {
-  __index = function(_, name)
-      local fn_ut, ba, ma, size, modules = index(name)
-      if not ba then
-        return fn_ut
-      elseif name == '_time' then
-        return fn_ut
-      elseif name == '_config' then
-        local fs_ma, fs_size = file.fscfg()
-        return {lfs_base = ba, lfs_mapped = ma, lfs_size = size,
-                fs_mapped = fs_ma, fs_size = fs_size}
-      elseif name == '_list' then
-        return modules
-      else
-        return nil
-      end
-    end,
+    __newindex = function(_, name, value) -- luacheck: no unused
+        error("LFS is readonly. Invalid write to LFS." .. name, 2)
+      end,
+    }
 
-  __newindex = function(_, name, value) -- luacheck: no unused
-      error("LFS is readonly. Invalid write to LFS." .. name, 2)
-    end,
-
-  }
-
-local G=getfenv()
-G.LFS = setmetatable(lfs_t,lfs_t)
+    setmetatable(lfs_t,lfs_t)
+    G.module       = nil    -- disable Lua 5.0 style modules to save RAM
+    package.seeall = nil
+else
+    lfs_t = node.LFS
+end
+G.LFS = lfs_t
 
 --[[-------------------------------------------------------------------------------
   The second section adds the LFS to the require searchlist, so that you can
@@ -67,17 +75,8 @@ G.LFS = setmetatable(lfs_t,lfs_t)
 ---------------------------------------------------------------------------------]]
 
 package.loaders[3] = function(module) -- loader_flash
-  local fn, ba = index(module)
-  return ba and "Module not in LFS" or fn
+  return lfs_t[module]
 end
-
---[[-------------------------------------------------------------------------------
-  You can add any other initialisation here, for example a couple of the globals
-  are never used, so setting them to nil saves a couple of global entries
----------------------------------------------------------------------------------]]
-
-G.module       = nil    -- disable Lua 5.0 style modules to save RAM
-package.seeall = nil
 
 --[[-------------------------------------------------------------------------------
   These replaces the builtins loadfile & dofile with ones which preferentially
@@ -97,5 +96,3 @@ G.dofile = function(n)
   local fn, ba   = index(mod)
   if ba or (ext ~= 'lc' and ext ~= 'lua') then return df(n) else return fn() end
 end
-
-
