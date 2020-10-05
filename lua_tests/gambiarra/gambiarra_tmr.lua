@@ -43,3 +43,44 @@ N.testasync('AUTO alarm', function(next)
     end)
   ok(true, "sync end")
 end)
+
+N.testco('SINGLE alarm coroutine', function(getCB, waitCB)
+  local t = tmr.create();
+  t:alarm(200, tmr.ALARM_SINGLE, getCB("timer"))
+  
+  local name, timer = waitCB()
+  ok(eq("timer", name), "CB name matches")
+
+  ok(true, "coroutine end")
+end)
+
+N.testco('SEMI alarm coroutine', function(getCB, waitCB)
+  local t = tmr.create();
+  t:alarm(200, tmr.ALARM_SEMI, getCB("timer"))
+  
+  local name, timer = waitCB()
+  ok(eq("timer", name), "CB name matches")
+
+  timer:start()
+  
+  name, timer = waitCB()
+  ok(eq("timer", name), "CB name matches again")
+
+  ok(true, "coroutine end")
+end)
+
+N.testco('AUTO alarm coroutine', function(getCB, waitCB)
+  local t = tmr.create();
+  t:alarm(200, tmr.ALARM_AUTO, getCB("timer"))
+
+  local name, timer = waitCB()
+  ok(eq("timer", name), "CB name matches")
+  
+  name, timer = waitCB()
+  ok(eq("timer", name), "CB name matches again")
+
+  timer:stop()
+  
+  ok(true, "coroutine end")
+end)
+

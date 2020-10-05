@@ -15,7 +15,7 @@ NOTE: you will have to use LFS to run this as it is too big to fit in memory.
 
 ``` Lua
 -- Simple synchronous test
-local tests = require("gambiarra.lua")("first testrun")
+local tests = require("gambiarra")("first testrun")
 
 tests.test('Check dogma', function()
   ok(2+2 == 5, 'two plus two equals five')
@@ -27,6 +27,13 @@ tests.testasync('Do it later', function(done)
     ok(result == expected)
     done()     -- this starts the next async test
   end)
+end)
+
+-- An asynchronous test using a coroutine
+tests.testco('Do it in place', function(getCB, waitCB)
+  someAsyncFn(getCB("callback"))
+  local CBName = waitCB()
+  ok(CBName, "callback")
 end)
 ```
 
@@ -60,6 +67,31 @@ some callback to be called before it is finished.
 tests.testasync('My async test', function(done)
   done()
 end)
+```
+
+`testco(name:string, f:function(getCB:function, waitCB:function))` allows you to define a new asynchronous
+test which runs in a coroutine:
+This allows handling callbacks in the test in a linear way. simply use getCB to create a new callback stub.
+waitCB blocks the test until the callback is called and returns the parameters.
+
+``` Lua
+tests.testco('My coroutine test', function(getCB, waitCB)
+end)
+
+tests.testco('My coroutine test with callback', function(getCB, waitCB)
+  local t = tmr.create();
+  t:alarm(200, tmr.ALARM_AUTO, getCB("timer"))
+  local name, tCB = waitCB()
+  ok(eq(name, "timer"), "CB name matches")
+  
+  name, tCB = waitCB()
+  ok(eq("timer", name), "CB name matches")
+
+  tCB:stop()
+  
+  ok(true, "coroutine end")
+end)
+
 ```
 
 All test functions also define some helper functions that are added when the test is

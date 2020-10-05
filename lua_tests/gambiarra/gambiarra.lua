@@ -92,7 +92,7 @@ local function assertok(handler, name, invert, cond, msg)
     -- debug.getinfo() does not exist in NodeMCU
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
-    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'")
+    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'") or msg:match(".*: in.-\n\t*.*in function '[n]?ok'\n\t*([^\n]*)\n")
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
 
@@ -112,7 +112,7 @@ local function fail(handler, name, func, expected, msg)
     -- debug.getinfo() does not exist in NodeMCU
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
-    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'")
+    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'") or msg:match(".*: in.-\n\t*.*in function 'fail'\n\t*([^\n]*)\n")
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
   local status, err = pcall(func)
@@ -169,7 +169,6 @@ local function NTest(testrunname, failoldinterface)
 
       local restore = function(err)
         if err then
-          print("failed with", err)
           err = err:match(".-([^\\/]*)$") -- cut off path of filename
           if not err:match('_*_TestAbort_*_') then
             handler('except', name, err)
@@ -245,8 +244,52 @@ local function NTest(testrunname, failoldinterface)
     end
   end
 
+  local currentCoName
 
-  return {test = test, testasync = testasync, report = report}
+  local function testco(name, func)
+  --  local t = tmr.create();
+    local co
+    testasync(name, function(Next)
+      currentCoName = name
+
+      local function getCB(cbName)
+        return  function(...) -- upval: co, cbName
+                  local result, err = coroutine.resume(co, cbName, ...)
+                  if (not result) then
+                    if (name == currentCoName) then
+                      currentCoName = nil
+                      Next(err)
+                    else
+                      outputhandler('fail', name, "Found stray Callback '"..cbName.."' from test '"..name.."'")
+                    end
+                  elseif coroutine.status(co) == "dead" then
+                    currentCoName = nil
+                    Next()
+                  end
+                end
+      end
+
+      local function waitCb()
+        return coroutine.yield()
+      end
+
+      co = coroutine.create(function(wr, wa)
+        func(wr, wa)
+      end)
+      
+      local result, err = coroutine.resume(co, getCB, waitCb)
+      if (not result) then
+        currentCoName = nil
+        Next(err)
+      elseif coroutine.status(co) == "dead" then
+        currentCoName = nil
+        Next()
+      end
+    end)
+  end
+
+
+  return {test = test, testasync = testasync, testco = testco, report = report}
 end
 
 return NTest

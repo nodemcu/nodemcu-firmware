@@ -1,6 +1,8 @@
 local N = require('gambiarra')("selftest")
 
-local expected, currentTest = {}
+local expected = {}
+local currentTest = {}
+
 local failed, passed = 0,0
 
 local orig_node = node
@@ -8,21 +10,30 @@ local orig_node = node
 local cbWrap = function(cb) return cb end
 
 -- implement pseudo task handling for on host testing
-local post_queue = {}
 local drain_post_queue = function() end
-if not node then 
-  node = {task = {}}
-  node.task.post = function (p, f)
-      table.insert(post_queue, f)
-    end
+
+if not node then
+  local post_queue = {{},{},{}}
+
   drain_post_queue = function()
-      while #post_queue > 0 do
-        local f = table.remove(post_queue, 1)
-        if f then
-          f()
+    while #post_queue[1] + #post_queue[2] + #post_queue[3] > 0 do
+      for i = 3, 1, -1 do
+        if #post_queue[i] > 0 then
+          local f = table.remove(post_queue[i], 1)
+          if f then
+            f()
+          end
+          break
         end
       end
     end
+  end
+
+  node = {}
+  node.task = {LOW_PRIORITY = 1, MEDIUM_PRIORITY = 2, HIGH_PRIORITY = 3}
+  node.task.post = function (p, f)
+    table.insert(post_queue[p], f)
+  end
 
   local errorfunc
   node.setonerror = function(fn) errorfunc = fn end
@@ -45,15 +56,15 @@ end
 -- Helper function to print arrays
 local function stringify(t)
   local s = ''
-  for i=1,#t do
-    s = s .. '"' .. t[i] .. '"' .. ' '
+  for i=1,#(t or {}) do
+    s = s .. '"' .. t[i] .. '"' .. ', '
   end
-  return s:gsub('%s*$', '')
+  return s:gsub('..$', '')
 end
 
 -- Helper function to compare two tables
 local function comparetables(t1, t2)
-  if #t1 ~= #t2 then return false end
+  if #t1 ~= (t2 and #t2 or 0) then return false end
   for i=1,#t1 do
     if t1[i] ~= t2[i] then return false end
   end
@@ -63,12 +74,7 @@ end
 -- Set meta test handler
 N.report(function(e, test, msg, errormsg)
   if e == 'begin' then
-    currentTest = {
-      name = test,
-      pass = {},
-      fail = {},
-      except = {}
-    }
+    currentTest.name = test
   elseif e == 'end' then
     local pass = true
     if not comparetables(expected[1].pass, currentTest.pass) then
@@ -95,14 +101,18 @@ N.report(function(e, test, msg, errormsg)
     else
       failed = failed + 1
     end
+    currentTest = {}
     table.remove(expected, 1)
   elseif e == 'pass' then
+    currentTest.pass = currentTest.pass or {}
     table.insert(currentTest.pass, msg)
     if errormsg then table.insert(currentTest.pass, errormsg) end
   elseif e == 'fail' then
+    currentTest.fail = currentTest.fail or {}
     table.insert(currentTest.fail, msg)
     if errormsg then table.insert(currentTest.fail, errormsg) end
   elseif e == 'except' then
+    currentTest.except = currentTest.except or {}
     table.insert(currentTest.except, msg)
     if errormsg then table.insert(currentTest.except, errormsg) end
   elseif e == 'start' or e == 'finish' then
@@ -134,7 +144,11 @@ local function metatest(name, f, expectedPassed, expectedFailed, expectedExcept,
       f(...)
       drain_async_queue()
     end
-    N.testasync(name, ff)
+    if (async == "co") then
+      N.testco(name,ff)
+    else
+      N.testasync(name, ff)
+    end
   else
     N.test(name, ff)
   end
@@ -170,12 +184,12 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:175'}, {'gambiarra_test.lua:176'})
+end, {'gambiarra_test.lua:185'}, {'gambiarra_test.lua:186'})
 
 metatest('nok without a message', function()
   nok(1 == "")
   nok(1 == 1)
-end, {'gambiarra_test.lua:180'}, {'gambiarra_test.lua:181'})
+end, {'gambiarra_test.lua:190'}, {'gambiarra_test.lua:191'})
 
 --
 -- Equality tests
@@ -309,13 +323,13 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:313: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:323: my error" to contain "different error"'})
 
 metatest('fail with incorrect errormessage default message', function()
   fail(function() error("my error") end, "different error")
   ok(true, 'unreachable code')
-end, {}, {'gambiarra_test.lua:319',
-      'expected errormessage "gambiarra_test.lua:319: my error" to contain "different error"'})
+end, {}, {'gambiarra_test.lua:329',
+      'expected errormessage "gambiarra_test.lua:329: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
   fail(function() end, "my error", "did not fail")
@@ -335,7 +349,7 @@ end, {}, {"did not fail", 'Expected to fail with Error'})
 metatest('fail with not failing code default message', function()
   fail(function() end)
   ok(true, 'unreachable code')
-end, {}, {"gambiarra_test.lua:340", 'Expected to fail with Error'})
+end, {}, {"gambiarra_test.lua:350", 'Expected to fail with Error'})
 
 --
 -- except tests
@@ -343,7 +357,7 @@ end, {}, {"gambiarra_test.lua:340", 'Expected to fail with Error'})
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:348: lua error'})
+end, {}, {}, {'gambiarra_test.lua:358: lua error'})
 
 --
 -- called function except
@@ -356,7 +370,7 @@ end
 metatest('subroutine error should panic', function()
   subfunc()
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:357: lua error'})
+end, {}, {}, {'gambiarra_test.lua:367: lua error'})
 
 --drain_post_queue()
 
@@ -381,6 +395,7 @@ end, {'bar'}, {}, {}, true)
 
 metatest('async fail in main', function(next)
   ok(false, "async fail")
+  ok(true, 'unreachable code')
 end, {}, {'async fail'}, {}, true)
 
 --drain_post_queue()
@@ -399,7 +414,7 @@ end, {'foo', 'bar'}, {}, {}, true)
 metatest('async except in main', function(next)
   error("async except")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:404: async except'}, true)
+end, {}, {}, {'gambiarra_test.lua:415: async except'}, true)
 
 metatest('async fail in callback', function(next)
   async(function() 
@@ -415,7 +430,7 @@ metatest('async except in callback', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:418: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:429: async Lua error'}, true)
 
 --
 -- sync after async test
@@ -433,6 +448,83 @@ end, {'foo', 'async bar'}, {}, {}, true)
 metatest('check marker async', function()
   ok(eq(marker, "marked"), "marker check")
 end, {"marker check"}, {})
+
+--
+-- coroutine async tests
+--
+metatest('coroutine pass', function(getCB, waitCb)
+  ok(true, "passing")
+end, {"passing"}, {}, {}, "co")
+
+metatest('coroutine fail in main', function(getCB, waitCb)
+  ok(false, "coroutine fail")
+  ok(true, 'unreachable code')
+end, {}, {'coroutine fail'}, {}, "co")
+
+metatest('coroutine fail in main', function(getCB, waitCb)
+  nok(true, "coroutine fail")
+  nok(false, 'unreachable code')
+end, {}, {'coroutine fail'}, {}, "co")
+
+metatest('coroutine fail error', function(getCB, waitCb)
+  fail(function() error("my error") end, "my error", "Failed with correct error")
+  fail(function() error("my error") end, "other error", "Failed with other error")
+  ok(true, 'unreachable code')
+end, {'Failed with correct error'}, {'Failed with other error', 'expected errormessage "gambiarra_test.lua:471: my error" to contain "other error"'}, {}, "co")
+
+metatest('coroutine except in main', function(getCB, waitCb)
+  error("coroutine except")
+  ok(true, 'unreachable code')
+end, {}, {}, {'gambiarra_test.lua:476: coroutine except'}, "co")
+
+--local function coasync(f) table.insert(post_queue, 1, f) end
+local function coasync(f, p1, p2) node.task.post(node.task.MEDIUM_PRIORITY, function() f(p1,p2) end) end
+
+metatest('coroutine with callback', function(getCB, waitCb)
+  coasync(getCB("testCb"))
+  name = waitCb()
+  ok(eq(name, "testCb"), "cb")
+end, {"cb"}, {}, {}, "co")
+
+metatest('coroutine with callback with values', function(getCB, waitCb)
+  coasync(getCB("testCb"), "p1", 2)
+  name, p1, p2 = waitCb()
+  ok(eq(name, "testCb"), "cb")
+  ok(eq(p1, "p1"), "p1")
+  ok(eq(p2, 2), "p2")
+end, {"cb", "p1", "p2"}, {}, {}, "co")
+
+metatest('coroutine fail after callback', function(getCB, waitCb)
+  coasync(getCB("testCb"))
+  name = waitCb()
+  ok(eq(name, "testCb"), "cb")
+  ok(false, "fail")
+  ok(true, 'unreachable code')
+end, {"cb"}, {"fail"}, {}, "co")
+
+metatest('coroutine except after callback', function(getCB, waitCb)
+  coasync(getCB("testCb"))
+  name = waitCb()
+  ok(eq(name, "testCb"), "cb")
+  error("error")
+  ok(true, 'unreachable code')
+end, {"cb"}, {}, {"gambiarra_test.lua:509: error"}, "co")
+
+--- detect stray callbacks after the test has finished
+local strayCb
+local function rewrap()
+  coasync(strayCb)
+end
+
+metatest('leave stray callback', function(getCB, waitCb)
+  strayCb = getCB("testa")
+  coasync(rewrap)
+end, {}, {}, {}, "co")
+
+metatest('test after stray cb', function(getCB, waitCb)
+end, {}, {"Found stray Callback 'testa' from test 'leave stray callback'"}, {}, "co")
+
+
 
 --
 -- Finalize: check test results
