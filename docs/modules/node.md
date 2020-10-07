@@ -613,7 +613,7 @@ Query the performance of system startup.
 
 !!! Important
 
-    This function is only available if the firmware is built with `PLATFORM_STARTUP_COUNT` defined.
+    This function is only available if the firmware is built with `PLATFORM_STARTUP_COUNT` defined. This would normally be done by uncommenting the `#define PLATFORM_STARTUP_COUNT` line in `app/include/user_config.h`.
 
 #### Syntax
 `node.startupcounts([marker])`
