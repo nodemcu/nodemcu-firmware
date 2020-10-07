@@ -664,9 +664,9 @@ If the argument is omitted, then no change is made to the current set of startup
 reset to their default values.
 
 - `table` one or more options:
-    - `banner` - set to true or false to indicate whether the startup banner should be displayed or not.
-    - `frequency` - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed.
-    - `delay_mount` - set to true or false to indicate whether the SPIFFS filesystem mount is delayed until it is first needed or not.
+    - `banner` - set to true or false to indicate whether the startup banner should be displayed or not. (default: true)
+    - `frequency` - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed. (default: node.CPU80MHZ)
+    - `delay_mount` - set to true or false to indicate whether the SPIFFS filesystem mount is delayed until it is first needed or not. (default: false)
     - `command` - set to a string which is the initial command that is run. This is the same string as in the `node.startupcommand`.
 
 ####  Returns
