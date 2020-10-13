@@ -416,7 +416,9 @@ static int gpio_pulse_start(lua_State *L) {
     return luaL_error( L, "missing callback" );
   }
 
-  luaL_unref(L, LUA_REGISTRYINDEX, pulser->cb_ref);
+  if (pulser->cb_ref) {
+    luaL_unref(L, LUA_REGISTRYINDEX, pulser->cb_ref);
+  }
   pulser->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   active_pulser = pulser;
