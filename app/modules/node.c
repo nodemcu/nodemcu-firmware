@@ -16,6 +16,10 @@
 #define CPU80MHZ 80
 #define CPU160MHZ 160
 
+#ifdef PLATFORM_STARTUP_COUNT
+platform_startup_counts_t platform_startup_counts;
+#endif
+
 #define DELAY2SEC 2000
 
 #ifndef LUA_MAXINTEGER
@@ -52,8 +56,8 @@ static int node_setonerror( lua_State* L ) {
   return 0;
 }
 
-
 // Lua: startupcommand(string)
+// The lua.startup({command="string"}) should be used instead
 static int node_startupcommand( lua_State* L ) {
   size_t l, lrcr;
   const char *cmd = luaL_checklstring(L, 1, &l);
@@ -62,6 +66,91 @@ static int node_startupcommand( lua_State* L ) {
   return 1;
 }
 
+// Lua: startup([table])
+static int node_startup( lua_State* L ) {
+  uint32_t option, *option_p;
+
+  option = 0;
+
+  if (platform_rcr_read(PLATFORM_RCR_STARTUP_OPTION, (void **) &option_p) == sizeof(option)) {
+    option = *option_p;
+  }
+
+  if (lua_gettop(L) > 0) {
+    // Lets hope it is a table
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    int has_entries = 0;
+    lua_pushnil(L);
+    while (lua_next(L, 1) != 0) {
+      if (lua_isstring(L, -2)) {
+        const char *key = lua_tostring(L, -2);
+        has_entries++;
+
+        if (strcmp(key, "command") == 0) {
+          size_t l, lrcr;
+          const char *cmd = luaL_checklstring(L, -1, &l);
+          lrcr = platform_rcr_write(PLATFORM_RCR_INITSTR, cmd, l+1);
+          if (lrcr == ~0) {
+            return luaL_error( L, "failed to set command" );
+          }
+        }
+
+        if (strcmp(key, "banner") == 0) {
+          int enable = lua_toboolean(L, -1);
+          option = (option & ~STARTUP_OPTION_NO_BANNER) | (enable ? 0 : STARTUP_OPTION_NO_BANNER);
+        }
+
+        if (strcmp(key, "frequency") == 0) {
+          int frequency = lua_tointeger(L, -1);
+          option = (option & ~STARTUP_OPTION_CPU_FREQ_MAX) | (frequency == CPU160MHZ ? STARTUP_OPTION_CPU_FREQ_MAX : 0);
+        }
+
+        if (strcmp(key, "delay_mount") == 0) {
+          int enable = lua_toboolean(L, -1);
+          option = (option & ~STARTUP_OPTION_DELAY_MOUNT) | (enable ? STARTUP_OPTION_DELAY_MOUNT : 0);
+        }
+      }
+      lua_pop(L, 1);
+    }
+
+    if (has_entries) {
+      platform_rcr_write(PLATFORM_RCR_STARTUP_OPTION, &option, sizeof(option));
+    } else {
+      // This is a special reset everything case
+      platform_rcr_delete(PLATFORM_RCR_STARTUP_OPTION);
+      platform_rcr_delete(PLATFORM_RCR_INITSTR);
+      option = 0;
+    }
+  }
+
+  // Now we construct the return table
+  lua_createtable(L, 0, 4);
+
+  const char *init_string;
+  size_t l;
+
+  l = platform_rcr_read(PLATFORM_RCR_INITSTR, (void **) &init_string);
+  if (l != ~0) {
+    // when reading it back it can be padded with nulls
+    while (l > 0 && init_string[l - 1] == 0) {
+      l--;
+    }
+    lua_pushlstring(L, init_string, l);
+    lua_setfield(L, -2, "command");
+  }
+
+  lua_pushboolean(L, !(option & STARTUP_OPTION_NO_BANNER));
+  lua_setfield(L, -2, "banner");
+
+  lua_pushboolean(L, (option & STARTUP_OPTION_DELAY_MOUNT));
+  lua_setfield(L, -2, "delay_mount");
+
+  lua_pushinteger(L, (option & STARTUP_OPTION_CPU_FREQ_MAX) ? CPU160MHZ : CPU80MHZ);
+  lua_setfield(L, -2, "frequency");
+
+  return 1;
+}
 
 // Lua: restart()
 static int node_restart( lua_State* L )
@@ -625,6 +714,30 @@ static int node_random (lua_State *L) {
   return 1;
 }
 
+// Just return the startup as an array of tables
+static int node_startup_counts(lua_State *L) {
+  // If the first argument is a number, then add an entry for that line
+  if (lua_isnumber(L, 1)) {
+    int lineno = lua_tointeger(L, 1);
+    STARTUP_ENTRY(lineno);
+  }
+  lua_createtable(L, platform_startup_counts.used, 0);
+  for (int i = 0; i < platform_startup_counts.used; i++) {
+    const platform_count_entry_t *p = &platform_startup_counts.entries[i];
+
+    lua_createtable(L, 0, 3);
+    lua_pushstring(L, p->name);
+    lua_setfield(L, -2, "name");
+    lua_pushinteger(L, p->line);
+    lua_setfield(L, -2, "line");
+    lua_pushinteger(L, p->ccount);
+    lua_setfield(L, -2, "ccount");
+
+    lua_rawseti(L, -2, i + 1);
+  }
+  return 1;
+}
+
 #ifdef DEVELOPMENT_TOOLS
 // Lua: rec = node.readrcr(id)
 static int node_readrcr (lua_State *L) {
@@ -907,6 +1020,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_TABENTRY( LFS, node_lfs )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
+  LROT_FUNCENTRY( startup, node_startup )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
   LROT_FUNCENTRY( dsleepMax, dsleepMax )
@@ -917,6 +1031,9 @@ LROT_BEGIN(node, NULL, 0)
 #ifdef DEVELOPMENT_TOOLS
   LROT_FUNCENTRY( readrcr, node_readrcr )
   LROT_FUNCENTRY( writercr, node_writercr )
+#endif
+#ifdef PLATFORM_STARTUP_COUNT
+  LROT_FUNCENTRY( startupcounts, node_startup_counts )
 #endif
   LROT_FUNCENTRY( chipid, node_chipid )
   LROT_FUNCENTRY( flashid, node_flashid )

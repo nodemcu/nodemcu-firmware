@@ -21,6 +21,8 @@
 
 static spiffs fs;
 
+static void (*automounter)();
+
 #define LOG_PAGE_SIZE       	256
 #define LOG_BLOCK_SIZE		(INTERNAL_FLASH_SECTOR_SIZE * 2)
 #define LOG_BLOCK_SIZE_SMALL_FS	(INTERNAL_FLASH_SECTOR_SIZE)
@@ -121,6 +123,7 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, bool force_create) {
 
 
 static bool myspiffs_mount(bool force_mount) {
+  STARTUP_COUNT;
   spiffs_config cfg;
   if (!myspiffs_set_cfg(&cfg, force_mount) && !force_mount) {
     return FALSE;
@@ -142,6 +145,7 @@ static bool myspiffs_mount(bool force_mount) {
     // myspiffs_check_callback);
     0);
   NODE_DBG("mount res: %d, %d\n", res, fs.err_code);
+  STARTUP_COUNT;
   return res == SPIFFS_OK;
 }
 
@@ -503,12 +507,21 @@ static void myspiffs_vfs_clearerr( void ) {
   SPIFFS_clearerr( &fs );
 }
 
+// The callback will be called on the first file operation
+void myspiffs_set_automount(void (*mounter)()) {
+  automounter = mounter;
+}
 
 // ---------------------------------------------------------------------------
 // VFS interface functions
 //
 
 vfs_fs_fns *myspiffs_realm( const char *inname, char **outname, int set_current_drive ) {
+  if (automounter) {
+    void (*mounter)() = automounter;
+    automounter = NULL;
+    mounter();
+  }
   if (inname[0] == '/') {
     // logical drive is specified, check if it's our id
     if (0 == strncmp(inname + 1, MY_LDRV_ID, sizeof(MY_LDRV_ID)-1)) {

@@ -582,9 +582,9 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 
 ## node.startupcommand()
 
-Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists.
+Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists. This is now deprecated in favor of `node.startup({command="the command"})`.
 
-####Syntax
+#### Syntax
 `node.startupcommand(string)`
 
 #### Parameters
@@ -604,6 +604,78 @@ node.startupcommand("@myappstart.lc")  -- Execute the compiled file myappstart.l
 ```lua
 -- Execute the LFS routine init() in preference to init.lua
 node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
+```
+
+
+## node.startupcounts()
+
+Query the performance of system startup.
+
+!!! Important
+
+    This function is only available if the firmware is built with `PLATFORM_STARTUP_COUNT` defined. This would normally be done by uncommenting the `#define PLATFORM_STARTUP_COUNT` line in `app/include/user_config.h`.
+
+#### Syntax
+`node.startupcounts([marker])`
+
+#### Parameters
+
+- `marker` If present, this will add another entry into the startup counts
+
+####  Returns
+An array of tables which indicate how many CPU cycles had been consumed at each step of platform boot.
+
+#### Example
+```lua
+=sjson.encode(node.startupcounts()) 
+```
+
+This might generate the output (formatted for readability):
+
+```
+[
+ {"ccount":3774328,"name":"user_pre_init","line":124},
+ {"ccount":3842297,"name":"user_pre_init","line":180},
+ {"ccount":9849869,"name":"user_init","line":327},
+ {"ccount":10008843,"name":"nodemcu_init","line":293},
+ {"ccount":10295779,"name":"pmain","line":234},
+ {"ccount":11378766,"name":"pmain","line":256},
+ {"ccount":11565912,"name":"pmain","line":260},
+ {"ccount":12158242,"name":"node_startup_counts","line":1},
+ {"ccount":12425790,"name":"myspiffs_mount","line":126},
+ {"ccount":12741862,"name":"myspiffs_mount","line":148},
+ {"ccount":13983567,"name":"pmain","line":265}
+]
+```
+
+The crucial entry is the one for `node_startup_counts` which is when the application had started running. This was on a Wemos D1 Mini with flash running at 80MHz. The startup options were all turned on. 
+Note that the clock speed changes in `user_pre_init` to 160MHz. The total time was (approximately): `3.8 / 80 + (12 - 3.8) / 160 = 98ms`. With startup options of 0, the time is 166ms. These times may be slightly optimistic as the clock is only 52MHz for a time during boot.
+
+## node.startup()
+
+Get/set options that control the startup process. This interface will grow over time.
+
+#### Syntax
+`node.startup([{table}])`
+
+#### Parameters
+
+If the argument is omitted, then no change is made to the current set of startup options. If the argument is the empty table `{}` then all options are
+reset to their default values.
+
+- `table` one or more options:
+    - `banner` - set to true or false to indicate whether the startup banner should be displayed or not. (default: true)
+    - `frequency` - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed. (default: node.CPU80MHZ)
+    - `delay_mount` - set to true or false to indicate whether the SPIFFS filesystem mount is delayed until it is first needed or not. (default: false)
+    - `command` - set to a string which is the initial command that is run. This is the same string as in the `node.startupcommand`.
+
+####  Returns
+`table` This is the complete set of options in the state that will take effect on the next boot. Note that the `command` key may be missing -- in which
+        case the default value will be used.
+
+#### Example
+```lua
+node.startup({banner=false, frequency=node.CPU160MHZ})  -- Prevent printing the banner and run at 160MHz
 ```
 
 
@@ -765,4 +837,3 @@ priority is 2
 priority is 1
 priority is 0
 ```
-

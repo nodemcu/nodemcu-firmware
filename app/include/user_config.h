@@ -249,6 +249,11 @@
 #endif
 //#define SPIFFS_SIZE_1M_BOUNDARY
 
+// The following define enables recording of the number of CPU cycles at certain
+// points in the startup process. It can be used to see where the time is being
+// consumed. It enables a nice node.startupcounts() function to get the results.
+//#define PLATFORM_STARTUP_COUNT
+
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2
 // LUAI_OPTIMIZE_DEBUG 0 = Keep all debug; 1 = keep line number info; 2 = remove all debug

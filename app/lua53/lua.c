@@ -216,6 +216,8 @@ static void dojob (lua_State *L) {
 static int pmain (lua_State *L) {
   const char *init = LUA_INIT_STRING;
   int status;
+  STARTUP_COUNT;
+
   lua_gc(L, LUA_GCSTOP, 0);                  /* stop GC during initialization */
   luaL_openlibs(L);        /* Nodemcu open will throw to signal an LFS reload */
 #ifdef LUA_VERSION_51
@@ -230,7 +232,9 @@ static int pmain (lua_State *L) {
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
 
 #ifndef DISABLE_STARTUP_BANNER
-  print_version(L);
+  if ((platform_rcr_get_startup_option() & STARTUP_OPTION_NO_BANNER) == 0) {
+    print_version(L);
+  }
 #endif
  /*
   * And last of all, kick off application initialisation.  Note that if
@@ -238,6 +242,7 @@ static int pmain (lua_State *L) {
   * then attempting the open will trigger a file system format.
   */
   platform_rcr_read(PLATFORM_RCR_INITSTR, (void**) &init);
+  STARTUP_COUNT;
   if (init[0] == '!') { /* !module is a compile-free way of executing LFS module */
     luaL_pushlfsmodule(L);
     lua_pushstring(L, init+1);
@@ -252,10 +257,12 @@ static int pmain (lua_State *L) {
              luaL_loadfile(L, init+1) :
              luaL_loadbuffer(L, init, strlen(init), "=INIT");
   }
+  STARTUP_COUNT;
   if (status == LUA_OK)
     status = docall(L, 0);
   if (status != LUA_OK)
     l_print (L, 1);
+  STARTUP_COUNT;
   return 0;
 }
 
