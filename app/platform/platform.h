@@ -347,13 +347,19 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame);
 #define PLATFORM_RCR_REFLASH   0x3
 #define PLATFORM_RCR_FLASHLFS  0x4
 #define PLATFORM_RCR_INITSTR   0x5
+#define PLATFORM_RCR_STARTUP_OPTION   0x6
 #define PLATFORM_RCR_FREE      0xFF
 typedef union {
     uint32_t hdr;
     struct { uint8_t len,id; };
 } platform_rcr_t;
 
+#define STARTUP_OPTION_NO_BANNER        (1 << 0)
+#define STARTUP_OPTION_CPU_FREQ_MAX     (1 << 1)
+#define STARTUP_OPTION_DELAY_MOUNT      (1 << 2)
+
 uint32_t platform_rcr_read (uint8_t rec_id, void **rec);
+uint32_t platform_rcr_get_startup_option();
 uint32_t platform_rcr_delete (uint8_t rec_id);
 uint32_t platform_rcr_write (uint8_t rec_id, const void *rec, uint8_t size);
 
@@ -383,5 +389,30 @@ static inline bool platform_post(uint8 prio, platform_task_handle_t handle, plat
 
 // Get current value of CCOUNt register
 #define CCOUNT_REG ({ int32_t r; asm volatile("rsr %0, ccount" : "=r"(r)); r;})
+
+typedef struct {
+  const char *name;
+  int line;
+  int32_t ccount;
+} platform_count_entry_t;
+
+typedef struct {
+  int used;
+  platform_count_entry_t entries[32];
+} platform_startup_counts_t;
+
+extern platform_startup_counts_t platform_startup_counts;
+
+#define PLATFORM_STARTUP_COUNT_ENTRIES (sizeof(platform_startup_counts.entries) \
+                                        / sizeof(platform_startup_counts.entries[0]))
+
+#ifdef PLATFORM_STARTUP_COUNT
+#define STARTUP_ENTRY(lineno) do { if (platform_startup_counts.used < PLATFORM_STARTUP_COUNT_ENTRIES) {\
+        platform_count_entry_t *p = &platform_startup_counts.entries[platform_startup_counts.used++]; \
+        p->name = __func__; p->ccount = CCOUNT_REG; p->line = lineno; }  } while(0)
+#else
+#define STARTUP_ENTRY(line)
+#endif
+#define STARTUP_COUNT   STARTUP_ENTRY(__LINE__)
 
 #endif

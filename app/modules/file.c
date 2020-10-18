@@ -4,6 +4,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "spiffs/nodemcu_spiffs.h"
 
 #include <stdint.h>
 #include "vfs.h"
@@ -28,6 +29,17 @@ static int rtc_cb_ref = LUA_NOREF;
 typedef struct _file_fd_ud {
   int fd;
 } file_fd_ud;
+
+static void do_flash_mount() {
+    if (!vfs_mount("/FLASH", 0)) {
+        // Failed to mount -- try reformat
+        dbg_printf("Formatting file system. Please wait...\n");
+        if (!vfs_format()) {
+            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+    }
+}
 
 static void table2tm( lua_State *L, vfs_time *tm )
 {
@@ -703,13 +715,11 @@ LROT_END(file, NULL, 0)
 
 
 int luaopen_file( lua_State *L ) {
-  if (!vfs_mount("/FLASH", 0)) {
-      // Failed to mount -- try reformat
-      dbg_printf("Formatting file system. Please wait...\n");
-      if (!vfs_format()) {
-          NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
-          NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-      }
+  int startup_option = platform_rcr_get_startup_option();
+  if ((startup_option & STARTUP_OPTION_DELAY_MOUNT) == 0) {
+      do_flash_mount();
+  } else {
+      myspiffs_set_automount(do_flash_mount);
   }
   luaL_rometatable( L, "file.vol",  LROT_TABLEREF(file_vol));
   luaL_rometatable( L, "file.obj",  LROT_TABLEREF(file_obj));

@@ -985,6 +985,20 @@ uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
     return ~0;
 }
 
+uint32_t platform_rcr_get_startup_option() {
+  static uint32_t option = ~0;
+  uint32_t *option_p;
+
+  if (option == ~0) {
+    option = 0;
+
+    if (platform_rcr_read(PLATFORM_RCR_STARTUP_OPTION, (void **) &option_p) == sizeof(*option_p)) {
+      option = *option_p;
+    }
+  }
+  return option;
+}
+
 uint32_t platform_rcr_delete (uint8_t rec_id) {
   uint32_t *rec = NULL;
   platform_rcr_read(rec_id, (void**)&rec);

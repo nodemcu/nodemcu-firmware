@@ -23,4 +23,6 @@
 #define SPIFFS_GC_MAX_RUNS          256
 
 #define SPIFFS_SECURE_ERASE         0
+
+extern void myspiffs_set_automount();
 #endif
