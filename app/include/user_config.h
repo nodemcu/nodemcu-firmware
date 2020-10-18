@@ -165,7 +165,9 @@
 // alphanumeric characters. If you are imaging multiple modules with this
 // firmware then you must also define WIFI_STA_HOSTNAME_APPEND_MAC to
 // append the last 3 octets of the MAC address.  Note that the total
-// Hostname MUST be 32 chars or less.
+// Hostname MUST be 32 chars or less. If the resulting hostname is 
+// invalid, then it will not be used, and a message will be printed
+// during boot.
 
 //#define WIFI_STA_HOSTNAME "NodeMCU"
 //#define WIFI_STA_HOSTNAME_APPEND_MAC
