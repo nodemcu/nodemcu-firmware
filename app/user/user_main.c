@@ -25,6 +25,7 @@
 #include "mem.h"
 #include "espconn.h"
 #include "sections.h"
+#include "../modules/wifi_common.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -316,17 +317,6 @@ void nodemcu_init(void) {
      lua_main();  // If it returns true then LFS restart is needed
 }
 
-#ifdef LUA_USE_MODULES_WIFI
-#include "../modules/wifi_common.h"
-
-void user_rf_pre_init(void)
-{
-//set WiFi hostname before RF initialization (adds ~479 us to boot time)
-  wifi_change_default_host_name();
-}
-#endif
-
-
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -344,6 +334,9 @@ void user_init(void) {
     }
     UartBautRate br = BIT_RATE_DEFAULT;
     uart_init (br, br);
+#ifdef LUA_USE_MODULES_WIFI
+    wifi_change_default_host_name();
+#endif
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif
