@@ -68,7 +68,7 @@ tmr.create():alarm(7000, tmr.ALARM_AUTO, function()
     end
 
     local b = mcp:readGPIO(mcp.GPB)
-    if b ~=nil then
+    if b ~= nil then
         print("GPIO B input states: " .. b)
     else
         print("GPIO B unreadable, check device")
