@@ -184,7 +184,7 @@ static int lwiegand_create(lua_State* L)
   unsigned pinD1 = luaL_checkinteger(L, 2);
   luaL_argcheck(L, platform_gpio_exists(pinD0) && pinD0>0, 1, "Invalid pin for D0");
   luaL_argcheck(L, platform_gpio_exists(pinD1) && pinD1>0 && pinD0 != pinD1, 2, "Invalid pin for D1");
-  luaL_checkfunction(L, 3);
+  luaL_checktype(L, 3, LUA_TFUNCTION);
 
   if (pins_to_wiegand_state[pin_num[pinD0]] || pins_to_wiegand_state[pin_num[pinD1]])
     return luaL_error(L, "pin already in use");
