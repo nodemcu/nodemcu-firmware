@@ -17,7 +17,8 @@
 	@version 1.0.0
 ]]
 
-local i2c, string, issetBit, setBit, clearBit, error = i2c, string, bit.isset, bit.set, bit.clear, error
+local i2c, string, issetBit, setBit, clearBit, error =
+      i2c, string, bit.isset, bit.set, bit.clear, error
 local isINPUT, isGPB, isHIGH = true, true, true
 
 -- registers (not used registers are commented out)
