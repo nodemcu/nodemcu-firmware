@@ -1,25 +1,30 @@
 --[[
-	This Lua module provides access to the MCP23017 module.
+    This Lua module provides access to the MCP23017 module.
 
-    The MCP23017 is a port expander and provides 16 channels for inputs and outputs.
-    Up to 8 devices (128 channels) are possible by the configurable address (A0 - A2 Pins).
+    The MCP23017 is a port expander and provides 16 channels for inputs and
+    outputs.  Up to 8 devices (128 channels) are possible by the configurable
+    address (A0 - A2 Pins).
 
-    Due to the 16 channels, 2 bytes are required for switching outputs or reading input signals. These are A and B.
-    A single pin can be set or a whole byte.
+    Due to the 16 channels, 2 bytes are required for switching outputs or
+    reading input signals. These are A and B.  A single pin can be set or a
+    whole byte.
 
-    The numbering of the individual pins starts at 0 and ends with 7.
-    The numbers are for each register GPIO A and GPIO B.
+    The numbering of the individual pins starts at 0 and ends with 7.  The
+    numbers are for each register GPIO A and GPIO B.
 
-	The module requires `i2c` and `bit` C module built into firmware.
+    The module requires `i2c` and `bit` C module built into firmware.
 
-	@author Marcel P. | Plomi.net
-	@github https://github.com/plomi-net
-	@version 1.0.0
+    For register name <-> number mapping, see the MCP23017 data sheet, table
+    3-1 on page 12 (as of Revision C, July 2016).  This module uses the
+    IOCON.BANK=0 numbering (the default) throughout.
+
+    @author Marcel P. | Plomi.net
+    @github https://github.com/plomi-net
+    @version 1.0.0
 ]]
 
-local i2c, string, issetBit, setBit, clearBit, error =
-      i2c, string, bit.isset, bit.set, bit.clear, error
-local isINPUT, isGPB, isHIGH = true, true, true
+local i2c, string, issetBit, setBit, clearBit =
+      i2c, string, bit.isset, bit.set, bit.clear
 
 -- registers (not used registers are commented out)
 local MCP23017_IODIRA = 0x00
@@ -51,12 +56,13 @@ local MCP23017_OLATB = 0x15
 
 -- metatable
 local mcp23017 = {
-    INPUT = isINPUT,
-    OUTPUT = not isINPUT,
-    GPA = not isGPB,
-    GPB = isGPB,
-    HIGH = isHIGH,
-    LOW = not isHIGH
+    -- convenience parameter enumeration names
+    INPUT = true,
+    OUTPUT = false,
+    GPA = false,
+    GPB = true,
+    HIGH = true,
+    LOW = false
 }
 mcp23017.__index = mcp23017
 
@@ -98,13 +104,65 @@ local function checkPinIsInRange(pin)
     return pin
 end
 
-local function reset(address, i2cId)
-    writeByte(address, i2cId, MCP23017_IODIRA, 0xFF)
-    writeByte(address, i2cId, MCP23017_IODIRB, 0xFF)
+function mcp23017:writeIODIR(bReg, newByte)
+    writeByte(self.address, self.i2cId,
+        bReg and MCP23017_IODIRB or MCP23017_IODIRA, newByte)
 end
 
--- setup device
-local function setup(address, i2cId)
+function mcp23017:writeGPIO(bReg, newByte)
+    writeByte(self.address, self.i2cId,
+        bReg and MCP23017_GPIOB or MCP23017_GPIOA, newByte)
+end
+
+function mcp23017:readGPIO(bReg)
+    return readByte(self.address, self.i2cId,
+        bReg and MCP23017_GPIOB or MCP23017_GPIOA)
+end
+
+-- read pin input
+function mcp23017:getPinState(bReg, pin)
+    return issetBit(readByte(self.address, self.i2cId,
+        bReg and MCP23017_GPIOB or MCP23017_GPIOA),
+        checkPinIsInRange(pin))
+end
+
+-- set pin to low or high
+function mcp23017:setPin(bReg, pin, state)
+    local a, i = self.address, self.i2cId
+    local inReq = bReg and MCP23017_GPIOB or MCP23017_GPIOA
+    local inPin = checkPinIsInRange(pin)
+    local response = readByte(a, i, inReq)
+    writeByte(a, i, inReq,
+        state and setBit(response, inPin) or clearBit(response, inPin))
+    return true
+end
+
+-- set mode for a pin
+function mcp23017:setMode(bReg, pin, mode)
+    local a, i = self.address, self.i2cId
+    local inReq = bReg and MCP23017_IODIRB or MCP23017_IODIRA
+    local inPin = checkPinIsInRange(pin)
+    local response = readByte(a, i, inReq)
+    writeByte(a, i, inReq,
+        mode and setBit(response, inPin) or clearBit(response, inPin))
+    return true
+end
+
+-- reset gpio mode
+function mcp23017:reset()
+    local a, i = self.address, self.i2cId
+    writeByte(a, i, MCP23017_IODIRA, 0xFF)
+    writeByte(a, i, MCP23017_IODIRB, 0xFF)
+end
+
+-- setup internal pullup
+function mcp23017:setInternalPullUp(bReg, iByte)
+    writeByte(self.address, self.i2cId,
+        bReg and MCP23017_DEFVALB or MCP23017_DEFVALA, iByte)
+end
+
+return function(address, i2cId)
+    local self = setmetatable({}, mcp23017)
 
     -- check device address (0x20 to 0x27)
     if (address < 32 or address > 39) then
@@ -113,73 +171,13 @@ local function setup(address, i2cId)
 
     if (checkDevice(address, i2cId) ~= true) then
         error("MCP23017 device on " .. string.format('0x%02X', address) .. " not found")
-    else
-        reset(address, i2cId)
-        return 1
     end
-end
 
-return function(address, i2cId)
-    local self = setmetatable({}, mcp23017)
+    self.address = address
+    self.i2cId = i2cId
 
-    if setup(address, i2cId) then
-        self.writeIODIR = function(sf, bReg, newByte) -- luacheck: no unused
-            writeByte(address, i2cId,
-                bReg == isGPB and MCP23017_IODIRB or MCP23017_IODIRA,
-                newByte)
-        end
-
-        self.writeGPIO = function(sf, bReg, newByte) -- luacheck: no unused
-            writeByte(address, i2cId,
-                bReg == isGPB and MCP23017_GPIOB or MCP23017_GPIOA, newByte)
-        end
-
-        self.readGPIO = function(sf, bReg) -- luacheck: no unused
-            return readByte(address, i2cId, -- upvals
-                bReg == isGPB and MCP23017_GPIOB or MCP23017_GPIOA)
-        end
-
-        -- read pin input
-        self.getPinState = function(sf, bReg, pin) -- luacheck: no unused
-            return issetBit(readByte(address, i2cId,
-                bReg == isGPB and MCP23017_GPIOB or MCP23017_GPIOA),
-                checkPinIsInRange(pin))
-        end
-
-        -- set pin to low or high
-        self.setPin = function(sf, bReg, pin, state) -- luacheck: no unused
-            local inReq = bReg == isGPB and MCP23017_GPIOB or MCP23017_GPIOA
-            local inPin = checkPinIsInRange(pin)
-            local response = readByte(address, i2cId, inReq)
-            writeByte(address, i2cId, inReq,
-                state == isHIGH and setBit(response, inPin) or clearBit(response, inPin))
-            return true
-        end
-
-        -- set mode for a pin
-        self.setMode = function(sf, bReg, pin, mode) -- luacheck: no unused
-            local inReq = bReg == isGPB and MCP23017_IODIRB or MCP23017_IODIRA
-            local inPin = checkPinIsInRange(pin)
-            local response = readByte(address, i2cId, inReq)
-            writeByte(address, i2cId, inReq,
-                mode == isINPUT and setBit(response, inPin) or clearBit(response, inPin))
-            return true
-        end
-
-        -- reset gpio mode
-        self.reset = function(sf) -- luacheck: no unused
-            reset(address, i2cId)
-        end
-
-        -- setup internal pullup
-        self.setInternalPullUp = function(sf, bReg, iByte) -- luacheck: no unused
-            writeByte(address, i2cId,
-                bReg == isGPB and MCP23017_DEFVALB or MCP23017_DEFVALA, iByte)
-        end
-
-        return self
-    end
-    return nil
+    self:reset()
+    return self
 end
 
 
