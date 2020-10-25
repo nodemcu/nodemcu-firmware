@@ -26,34 +26,6 @@
 local i2c, string, issetBit, setBit, clearBit =
       i2c, string, bit.isset, bit.set, bit.clear
 
--- registers (not used registers are commented out)
-local MCP23017_IODIRA = 0x00
-local MCP23017_IODIRB = 0x01
-local MCP23017_DEFVALA = 0x06
-local MCP23017_DEFVALB = 0x07
-local MCP23017_GPIOA = 0x12
-local MCP23017_GPIOB = 0x13
---[[
-local MCP23017_IPOLA = 0x02
-local MCP23017_IPOLB = 0x03
-local MCP23017_GPINTENA = 0x04
-local MCP23017_GPINTENB = 0x05
-local MCP23017_DEFVALA = 0x06
-local MCP23017_DEFVALB = 0x07
-local MCP23017_INTCONA = 0x08
-local MCP23017_INTCONB = 0x09
-local MCP23017_IOCON = 0x0A
-local MCP23017_IOCON2 = 0x0B
-local MCP23017_GPPUA = 0x0C
-local MCP23017_GPPUB = 0x0D
-local MCP23017_INTFA = 0x0E
-local MCP23017_INTFB = 0x0F
-local MCP23017_INTCAPA = 0x10
-local MCP23017_INTCAPB = 0x11
-local MCP23017_OLATA = 0x14
-local MCP23017_OLATB = 0x15
-]]
-
 -- metatable
 local mcp23017 = {
     -- convenience parameter enumeration names
@@ -106,30 +78,30 @@ end
 
 function mcp23017:writeIODIR(bReg, newByte)
     writeByte(self.address, self.i2cId,
-        bReg and MCP23017_IODIRB or MCP23017_IODIRA, newByte)
+        bReg and 0x1 --[[IODIRB register]] or 0x0 --[[IODIRA register]], newByte)
 end
 
 function mcp23017:writeGPIO(bReg, newByte)
     writeByte(self.address, self.i2cId,
-        bReg and MCP23017_GPIOB or MCP23017_GPIOA, newByte)
+        bReg and 0x13 --[[GPIOB register]] or 0x12 --[[GPIOA register]], newByte)
 end
 
 function mcp23017:readGPIO(bReg)
     return readByte(self.address, self.i2cId,
-        bReg and MCP23017_GPIOB or MCP23017_GPIOA)
+        bReg and 0x13 --[[GPIOB register]] or 0x12 --[[GPIOA register]])
 end
 
 -- read pin input
 function mcp23017:getPinState(bReg, pin)
     return issetBit(readByte(self.address, self.i2cId,
-        bReg and MCP23017_GPIOB or MCP23017_GPIOA),
+        bReg and 0x13 --[[GPIOB register]] or 0x12 --[[GPIOA register]]),
         checkPinIsInRange(pin))
 end
 
 -- set pin to low or high
 function mcp23017:setPin(bReg, pin, state)
     local a, i = self.address, self.i2cId
-    local inReq = bReg and MCP23017_GPIOB or MCP23017_GPIOA
+    local inReq = bReg and 0x13 --[[GPIOB register]] or 0x12 --[[GPIOA register]]
     local inPin = checkPinIsInRange(pin)
     local response = readByte(a, i, inReq)
     writeByte(a, i, inReq,
@@ -140,7 +112,7 @@ end
 -- set mode for a pin
 function mcp23017:setMode(bReg, pin, mode)
     local a, i = self.address, self.i2cId
-    local inReq = bReg and MCP23017_IODIRB or MCP23017_IODIRA
+    local inReq = bReg and 0x1 --[[IODIRB register]] or 0x0 --[[IODIRA register]]
     local inPin = checkPinIsInRange(pin)
     local response = readByte(a, i, inReq)
     writeByte(a, i, inReq,
@@ -151,14 +123,14 @@ end
 -- reset gpio mode
 function mcp23017:reset()
     local a, i = self.address, self.i2cId
-    writeByte(a, i, MCP23017_IODIRA, 0xFF)
-    writeByte(a, i, MCP23017_IODIRB, 0xFF)
+    writeByte(a, i, 0x0 --[[IODIRA register]], 0xFF)
+    writeByte(a, i, 0x1 --[[IODIRB register]], 0xFF)
 end
 
 -- setup internal pullup
 function mcp23017:setInternalPullUp(bReg, iByte)
     writeByte(self.address, self.i2cId,
-        bReg and MCP23017_DEFVALB or MCP23017_DEFVALA, iByte)
+        bReg and 0x7 --[[DEFVALB register]] or 0x6 --[[DEFVALA register]], iByte)
 end
 
 return function(address, i2cId)
