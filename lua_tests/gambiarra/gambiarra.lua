@@ -92,7 +92,7 @@ local function assertok(handler, name, invert, cond, msg)
     -- debug.getinfo() does not exist in NodeMCU
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
-    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'") or msg:match(".*: in.-\n\t*.*in function '[n]?ok'\n\t*([^\n]*)\n")
+    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
 
@@ -112,7 +112,7 @@ local function fail(handler, name, func, expected, msg)
     -- debug.getinfo() does not exist in NodeMCU
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
-    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'") or msg:match(".*: in.-\n\t*.*in function 'fail'\n\t*([^\n]*)\n")
+    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
   local status, err = pcall(func)
