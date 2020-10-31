@@ -82,6 +82,28 @@ local function spy(f)
   return s
 end
 
+local function getstackframe()
+    -- debug.getinfo() does not exist in NodeMCU Lua 5.1
+    if debug.getinfo then
+      return debug.getinfo(5, 'S').short_src:match("([^\\/]*)$")..":"..debug.getinfo(5, 'l').currentline
+    end
+
+node.heap = function() return 123 end
+    print(node.heap())
+    collectgarbage()
+    print(node.heap())
+    collectgarbage()
+    print("before debug.traceback()")
+    msg = debug.traceback()
+--    file.putcontents("stack", msg)
+    print(node.heap(), "stack: ", msg)
+    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
+    print(node.heap(), "stack: ", msg)
+    msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
+    print(node.heap(), "stack: ", msg)
+    return msg
+end
+
 local function assertok(handler, name, invert, cond, msg)
   local errormsg
   if type(cond) == 'table' and cond.msg then
@@ -89,11 +111,7 @@ local function assertok(handler, name, invert, cond, msg)
     cond = false
   end
   if not msg then
-    -- debug.getinfo() does not exist in NodeMCU
-    -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
-    msg = debug.traceback()
-    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
-    msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
+    msg = getstackframe()
   end
 
   if invert then
@@ -109,11 +127,7 @@ end
 
 local function fail(handler, name, func, expected, msg)
   if not msg then
-    -- debug.getinfo() does not exist in NodeMCU
-    -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
-    msg = debug.traceback()
-    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
-    msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
+    msg = getstackframe()
   end
   local status, err = pcall(func)
   if status then
