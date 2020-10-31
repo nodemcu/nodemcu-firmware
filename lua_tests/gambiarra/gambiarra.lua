@@ -183,6 +183,7 @@ local function NTest(testrunname, failoldinterface)
         copyenv(env, prev)
         outputhandler('end', name)
         table.remove(pendingtests, 1)
+        if collectgarbage then collectgarbage() end
         if next then next() end
       end
       

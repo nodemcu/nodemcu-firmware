@@ -4,7 +4,7 @@ local metatest
 local async
 local expected = {}
 local failed, passed = 0,0
-
+local load_tests2
 local function load_tests()
   --
   -- Basic tests
@@ -197,13 +197,20 @@ local function load_tests()
     ok(true, 'unreachable code')
   end, {}, {"gambiarra_test.lua:196", 'Expected to fail with Error'})
 
+  metatest('=== load more tests ===', function()
+    load_tests2()
+  end, {}, {})
+
+end
+
+load_tests2 = function()
   --
   -- except tests
   --
   metatest('error should panic', function()
     error("lua error")
     ok(true, 'unreachable code')
-  end, {}, {}, {'gambiarra_test.lua:204: lua error'})
+  end, {}, {}, {'gambiarra_test.lua:211: lua error'})
 
   --
   -- called function except
@@ -216,7 +223,7 @@ local function load_tests()
   metatest('subroutine error should panic', function()
     subfuncerror()
     ok(true, 'unreachable code')
-  end, {}, {}, {'gambiarra_test.lua:213: lua error'})
+  end, {}, {}, {'gambiarra_test.lua:220: lua error'})
 
   local function subfuncok()
     ok(false)
@@ -225,7 +232,7 @@ local function load_tests()
   metatest('subroutine ok should fail', function()
     subfuncok()
     ok(true, 'unreachable code')
-  end, {}, {'gambiarra_test.lua:222'})
+  end, {}, {'gambiarra_test.lua:229'})
 
   --drain_post_queue()
 
@@ -269,7 +276,7 @@ local function load_tests()
   metatest('async except in main', function(next)
     error("async except")
     ok(true, 'unreachable code')
-  end, {}, {}, {'gambiarra_test.lua:270: async except'}, true)
+  end, {}, {}, {'gambiarra_test.lua:277: async except'}, true)
 
   metatest('async fail in callback', function(next)
     async(function() 
@@ -285,7 +292,7 @@ local function load_tests()
       next()
     end)
     ok(true, 'foo')
-  end, {'foo'}, {}, {'gambiarra_test.lua:284: async Lua error'}, true)
+  end, {'foo'}, {}, {'gambiarra_test.lua:291: async Lua error'}, true)
 
   --
   -- sync after async test
@@ -325,12 +332,12 @@ local function load_tests()
     fail(function() error("my error") end, "my error", "Failed with correct error")
     fail(function() error("my error") end, "other error", "Failed with other error")
     ok(true, 'unreachable code')
-  end, {'Failed with correct error'}, {'Failed with other error', 'expected errormessage "gambiarra_test.lua:326: my error" to contain "other error"'}, {}, "co")
+  end, {'Failed with correct error'}, {'Failed with other error', 'expected errormessage "gambiarra_test.lua:333: my error" to contain "other error"'}, {}, "co")
 
   metatest('coroutine except in main', function(getCB, waitCb)
     error("coroutine except")
     ok(true, 'unreachable code')
-  end, {}, {}, {'gambiarra_test.lua:331: coroutine except'}, "co")
+  end, {}, {}, {'gambiarra_test.lua:338: coroutine except'}, "co")
 
   --local function coasync(f) table.insert(post_queue, 1, f) end
   local function coasync(f, p1, p2) node.task.post(node.task.MEDIUM_PRIORITY, function() f(p1,p2) end) end
@@ -363,7 +370,7 @@ local function load_tests()
     ok(eq(name, "testCb"), "cb")
     error("error")
     ok(true, 'unreachable code')
-  end, {"cb"}, {}, {"gambiarra_test.lua:364: error"}, "co")
+  end, {"cb"}, {}, {"gambiarra_test.lua:371: error"}, "co")
 
   --- detect stray callbacks after the test has finished
   local strayCb
