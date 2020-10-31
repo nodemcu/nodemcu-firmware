@@ -462,31 +462,41 @@ local function comparetables(t1, t2)
   return true
 end
 
+local pass
 -- Set meta test handler
 N.report(function(e, test, msg, errormsg)
-  local pass = true
+  local function consumemsg(msg, area)
+    if not expected[1][area][1] then
+      print("--- FAIL "..expected[1].name..' ('..area..'ed): unexpected "'..
+        msg..'"')
+      pass = false
+      return
+    end
+    
+    if msg ~= expected[1][area][1] then
+      print("--- FAIL "..expected[1].name..' ('..area..'ed): expected "'..
+        expected[1][area][1]..'" vs "'..
+        msg..'"')
+      pass = false
+    end
+    table.remove(expected[1][area], 1)
+  end
+
+  local function consumeremainder(area)
+    if #expected[1][area] > 0 then
+      print("--- FAIL "..expected[1].name..' ('..area..'ed): expected ['..
+        stringify(expected[1][area])..']')
+      pass = false
+    end
+  end
+
   if e == 'begin' then
     currentTest.name = test
     pass = true
   elseif e == 'end' then
-    if not comparetables(expected[1].pass, currentTest.pass) then
-      print("--- FAIL "..expected[1].name..' (passed): expected ['..
-        stringify(expected[1].pass)..'] vs ['..
-        stringify(currentTest.pass)..']')
-      pass = false
-    end
-    if not comparetables(expected[1].fail, currentTest.fail) then
-      print("--- FAIL "..expected[1].name..' (failed): expected ['..
-        stringify(expected[1].fail)..'] vs ['..
-        stringify(currentTest.fail)..']')
-      pass = false
-    end
-    if not comparetables(expected[1].except, currentTest.except) then
-      print("--- FAIL "..expected[1].name..' (failed): expected ['..
-        stringify(expected[1].except)..'] vs ['..
-        stringify(currentTest.except)..']')
-      pass = false
-    end
+    consumeremainder("pass")
+    consumeremainder("fail")
+    consumeremainder("except")
     if pass then
       print("+++ Pass "..expected[1].name)
       passed = passed + 1
@@ -496,17 +506,14 @@ N.report(function(e, test, msg, errormsg)
     currentTest = {}
     table.remove(expected, 1)
   elseif e == 'pass' then
-    currentTest.pass = currentTest.pass or {}
-    table.insert(currentTest.pass, msg)
-    if errormsg then table.insert(currentTest.pass, errormsg) end
+    consumemsg(msg, "pass")
+    if errormsg then consumemsg(errormsg, "pass") end
   elseif e == 'fail' then
-    currentTest.fail = currentTest.fail or {}
-    table.insert(currentTest.fail, msg)
-    if errormsg then table.insert(currentTest.fail, errormsg) end
+    consumemsg(msg, "fail")
+    if errormsg then consumemsg(errormsg, "fail") end
   elseif e == 'except' then
-    currentTest.except = currentTest.except or {}
-    table.insert(currentTest.except, msg)
-    if errormsg then table.insert(currentTest.except, errormsg) end
+    consumemsg(msg, "except")
+    if errormsg then consumemsg(errormsg, "except") end
   elseif e == 'start' or e == 'finish' then
     -- ignore
   else
