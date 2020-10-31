@@ -88,24 +88,15 @@ local function getstackframe()
       return debug.getinfo(5, 'S').short_src:match("([^\\/]*)$")..":"..debug.getinfo(5, 'l').currentline
     end
 
-node.heap = function() return 123 end
-    print(node.heap())
-    collectgarbage()
-    print(node.heap())
-    collectgarbage()
-    print("before debug.traceback()")
     msg = debug.traceback()
---    file.putcontents("stack", msg)
-    print(node.heap(), "stack: ", msg)
-    msg = msg:match("([^\t]*): in[^\n]*\n\t[^\n]*in function '[ROM.]*pcall'")
-    print(node.heap(), "stack: ", msg)
+    msg = msg:match("\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t([^\t]*): in")  -- Get 5th stack frame
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
-    print(node.heap(), "stack: ", msg)
     return msg
 end
 
 local function assertok(handler, name, invert, cond, msg)
   local errormsg
+  -- check if cond is return object of 'eq' call
   if type(cond) == 'table' and cond.msg then
     errormsg = cond.msg
     cond = false
@@ -126,16 +117,16 @@ local function assertok(handler, name, invert, cond, msg)
 end
 
 local function fail(handler, name, func, expected, msg)
+  local status, err = pcall(func)
   if not msg then
     msg = getstackframe()
   end
-  local status, err = pcall(func)
   if status then
-    local messagePart = ""
+    local messageParts = {"Expected to fail with Error"}
     if expected then
-        messagePart = " containing \"" .. expected .. "\""
+        messageParts[2] = " containing \"" .. expected .. "\""
     end
-    handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
+    handler('fail', name, msg, table.concat(messageParts, ""))
     error('_*_TestAbort_*_')
   end
   if (expected and not string.find(err, expected)) then
