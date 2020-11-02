@@ -8,6 +8,6 @@ if ! [ -x "cache/luacheck.exe" ]; then
 fi
 
 echo "Static analysys of"
-find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
+find lua_modules lua_examples tests/NTest -iname "*.lua" -print0 | xargs -0 echo
 
-(find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 cache/luacheck.exe --config tools/luacheck_config.lua) || exit
+(find lua_modules lua_examples tests/NTest -iname "*.lua" -print0 | xargs -0 cache/luacheck.exe --config tools/luacheck_config.lua) || exit
