@@ -1,21 +1,18 @@
-# Gambiarra
+# NTest
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2020-11-01 | [Gregor Hartmann](https://github.com/HHHartmann) | [Gregor Hartmann](https://github.com/HHHartmann) | [NTest.lua](NTest.lua) |
 
-Gambiarra is a Lua version of Kludjs, and follows the idea of ultimately
-minimal unit testing.
+NTest is a test system for NodeMCU which is originally based on gambiarra. It is designed to run on chip but also runs on the host using luac.cross.
 
-## Install
-
-Get the sources:
-
-https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_tests/gambiarra/gambiarra.lua
-
-NOTE: you will have to use LFS to run this as it is too big to fit in memory.
+!!! attention
+  You will have to use LFS to run this as it is too big to fit in memory.
 
 ## Example
 
 ``` Lua
 -- Simple synchronous test
-local tests = require("gambiarra")("first testrun")
+local tests = require("NTest")("first testrun")
 
 tests.test('Check dogma', function()
   ok(2+2 == 5, 'two plus two equals five')
@@ -39,16 +36,16 @@ end)
 
 ## API
 
-`require('gambiarra')`  returns an new function which must be called with a string.
+`require('NTest')`  returns an new function which must be called with a string.
 
 ``` Lua
-	local new = require('gambiarra')
+local new = require('NTest')
 ```
 
 `new(testrunname:string)`       returns an object with the following functions:
 
 ``` Lua
-	local tests = new("first testrun")
+local tests = new("first testrun")
 ```
 
 `test(name:string, f:function)` allows you to define a new test:
@@ -59,7 +56,7 @@ end)
 ```
 
 `testasync(name:string, f:function(done:function))` allows you to define a new asynchronous test:
-To tell gambuarra that the test is finished you need to call the function `done` which gets passed in.
+To tell NTest that the test is finished you need to call the function `done` which gets passed in.
 In async scenarios the test function will usually terminate quickly but the test is still waiting for
 some callback to be called before it is finished.
 
@@ -85,7 +82,7 @@ tests.testco('My coroutine test with callback', function(getCB, waitCB)
   ok(eq(name, "timer"), "CB name matches")
   
   name, tCB = waitCB()
-  ok(eq("timer", name), "CB name matches")
+  ok(eq(name, "timer"), "CB name matches again")
 
   tCB:stop()
   
@@ -94,15 +91,12 @@ end)
 
 ```
 
-All test functions also define some helper functions that are added when the test is
-executed - `ok`, `nok`, `fail`, `eq` and `spy`.
+All test functions also define some helper functions that are added when the test is executed - `ok`, `nok`, `fail`, `eq` and `spy`.
 
 `ok`, `nok`, `fail` are assert functions which will break the test if the condition is not met.
 
-`ok(cond:bool, [msg:string])`. It takes any
-boolean condition and an optional assertion message. If no message is defined -
-current filename and line will be used. If the condition evaluetes to thuthy nothing happens.
-If it is falsy the message is printed and the test is aborted and the next test is executed.
+`ok(cond:bool, [msg:string])`. It takes any boolean condition and an optional assertion message. If no message is defined - current filename and line will be used. If the condition evaluetes to thuthy nothing happens.
+If it is falsy the message is printed and the test is aborted. The next test will then be executed.
 
 ``` Lua
 ok(1 == 2)                   -- prints 'foo.lua:42'
@@ -117,8 +111,7 @@ nok(1 == 1)                   -- prints 'foo.lua:42'
 nok(1 == 1, 'one equals one') -- prints 'one equals one'
 ```
 
-`fail(func:function, [expected:string], [msg:string])` tests a function for failure. If expected is given the errormessage poduced by the function must contain the given string else `fail` will fail the test. If no message is defined -
-current filename and line will be used.  
+`fail(func:function, [expected:string], [msg:string])` tests a function for failure. If expected is given the errormessage poduced by the function must also contain the given string else `fail` will fail the test. If no message is defined the current filename and line will be used.
 
 ``` Lua
 local function f() error("my error") end
@@ -127,10 +120,8 @@ fail(f, "expected error", "Failed with incorrect error")
      --            'expected errormessage "foo.lua:2: my error" to contain "expected error"'
 ``` 
 
-`eq(a, b)` is a helper to deeply compare lua variables. It supports numbers,
-strings, booleans, nils, functions and tables. It's mostly useful within ok() and nok():
-If the variables are equal it returns `true`
-else it returns `{msg='<reason>'}` This is spechially handled by `ok` and `nok`
+`eq(a, b)` is a helper to deeply compare lua variables. It supports numbers, strings, booleans, nils, functions and tables. It's mostly useful within ok() and nok():
+If the variables are equal it returns `true` else it returns `{msg='<reason>'}` This is recognized by `ok` and `nok` and results in also logging the reason for difference.
 
 ``` Lua
 ok(eq(1, 1))
@@ -138,11 +129,8 @@ ok(eq({a='b',c='d'}, {c='d',a='b'})
 ok(eq('foo', 'bar'))     -- will fail
 ```
 
-`spy([f])` creates function wrappers that remember each call
-(arguments, errors) but behaves much like the real function. Real function is
-optional, in this case spy will return nil, but will still record its calls.
-Spies are most helpful when passing them as callbacks and testing that they
-were called with correct values.
+`spy([f])` creates function wrappers that remember each call (arguments, errors) but behaves much like the real function. Real function is optional, in this case spy will return nil, but will still record its calls.
+Spies are most helpful when passing them as callbacks and testing that they were called with correct values.
 
 ``` Lua
 local f = spy(function(s) return #s end)
@@ -157,11 +145,7 @@ ok(f.errors[3] ~= nil)
 
 ## Reports
 
-Another useful feature is that you can customize test reports as you need.
-The default reports just more or less prints out a basic report.
-You can easily override this behavior as well as add any other
-information you need (number of passed/failed assertions, time the test took
-etc):
+Another useful feature is that you can customize test reports as you need. The default `reports` just more or less prints out a basic report. You can easily override this behavior as well as add any other information you need (number of passed/failed assertions, time the test took etc):
 
 Events are:
 `start`   when testing starts
@@ -196,8 +180,7 @@ end)
 ```
 
 Additionally, you can pass a different environment to keep `_G` unpolluted:
-You need to set it, so the helper functions mentioned above can be added before calling
-the test function.
+You need to set it, so the helper functions mentioned above can be added before calling the test function.
 
 ``` Lua
 local myenv = {}
@@ -214,4 +197,4 @@ end)
 
 This Library is for NodeMCU versions Lua 5.1 and Lua 5.3. 
 
-It is based on https://bitbucket.org/zserge/gambiarra and includes bugfixes, extensions of functionality and adaptions to NodeMCU requirements.
+It is based on https://bitbucket.org/zserge/gambiarra and includes bugfixes, substantial extensions of functionality and adaptions to NodeMCU requirements.

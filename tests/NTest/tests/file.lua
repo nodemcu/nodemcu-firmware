@@ -1,4 +1,4 @@
-local N = require('gambiarra')("file")
+local N = require('NTest')("file")
 
 local function cleanup() 
     file.remove("testfile")

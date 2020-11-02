@@ -1,4 +1,4 @@
-local N = require('gambiarra')("tmr")
+local N = require('NTest')("tmr")
 
 N.testasync('SINGLE alarm', function(next)
   local t = tmr.create();
