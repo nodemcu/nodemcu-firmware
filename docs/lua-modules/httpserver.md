@@ -38,7 +38,6 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
 - `url`: Requested URL
 - `onheader`: assign a function to this value which will be called as soon as HTTP headers like `content-type` are available.
               This handler function has 3 parameters:
-
 	- `self`: `req` object
 	- `name`: Header name. Will allways be lowercase.
 	- `value`: Header value
@@ -51,20 +50,18 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
 The second object holds functions:
 
 - `send(self, data, [response_code])`: Function to send data to client. 
-  
-  - `self`: `res` object
-  - `data`: data to send (may be nil)
-  - `response_code`: the HTTP response code like `200`(default) or `404` (for example) *NOTE* if there are several calls with response_code given only the first one will be used. Any further codes given will be ignored.
+	- `self`: `res` object
+	- `data`: data to send (may be nil)
+	- `response_code`: the HTTP response code like `200`(default) or `404` (for example) *NOTE* if there are several calls with response_code given only the first one will be used. Any further codes given will be ignored.
   
 - `send_header(self, header_name, header_data)`: Function to send HTTP headers to client. This function will not be available after data has been sent. (It will be nil.)
-
-  - `self`: `res` object
-  - `header_name`: the HTTP header name
-  - `header_data`: the HTTP header data
+	- `self`: `res` object
+	- `header_name`: the HTTP header name
+	- `header_data`: the HTTP header data
 
 - `finish([data[, response_code]])`: Function to finalize connection, optionally sending data and return code.
 
-  - `data`: optional data to send on connection finalizing
-  - `response_code`: the HTTP response code like `200`(default) or `404` (for example) *NOTE* if there are several calls with response_code given only the first one will be used. Any further codes given will be ignored.
+	- `data`: optional data to send on connection finalizing
+	- `response_code`: the HTTP response code like `200`(default) or `404` (for example) *NOTE* if there are several calls with response_code given only the first one will be used. Any further codes given will be ignored.
 
 Full example can be found in [http-example.lua](../../lua_modules/http/http-example.lua)

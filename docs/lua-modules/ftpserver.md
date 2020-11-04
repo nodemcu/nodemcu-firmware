@@ -34,7 +34,7 @@ This implementation is by [Terry Ellison](https://github.com/TerryE), but I wish
 Create the FTP server on the standard ports 20 and 21.  The global variable `FTP` is set to the server object.
 
 #### Syntax
-`FTP.createServer(user, pass[, dbgFlag])`
+`FTP:createServer(user, pass[, dbgFlag])`
 
 #### Parameters
 - `user`: Username for access to the server
@@ -46,14 +46,14 @@ Create the FTP server on the standard ports 20 and 21.  The global variable `FTP
 
 #### Example
 ```Lua
-require("ftpserver").createServer('user', 'password')
+require("ftpserver"):createServer('user', 'password')
 ```
 
 ## open()
 Wrapper to createServer() which also connects to the WiFi channel.
 
 #### Syntax
-`FTP.open(user, pass, ssid, wifipwd, dbgFlag)`
+`FTP:open(user, pass, ssid, wifipwd, dbgFlag)`
 
 #### Parameters
 - `user`: Username for access to the server
@@ -67,14 +67,14 @@ Wrapper to createServer() which also connects to the WiFi channel.
 
 #### Example
 ```Lua
-require("ftpserver").open('user', 'password', 'myWifi', 'wifiPassword')
+require("ftpserver"):open('user', 'password', 'myWifi', 'wifiPassword')
 ```
 
 ## close()
 Close down server including any sockets and return all resources to Lua. Note that this include removing the FTP global variable and package references.
 
 #### Syntax
-`FTP.close()`
+`FTP:close()`
 
 #### Parameters
 None
@@ -84,5 +84,5 @@ None
 
 #### Example
 ```Lua
-FTP.close()
+FTP:close()
 ```
