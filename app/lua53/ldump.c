@@ -9,13 +9,13 @@
 
 #include "lprefix.h"
 
-
 #include <stddef.h>
+#include <string.h>
+
+#include <stdio.h> /*DEBUG*/
 
 #include "lua.h"
 #include "lapi.h"
-#include "lauxlib.h"
-#include "llex.h"
 #include "lgc.h"
 #include "lmem.h"
 #include "lobject.h"
@@ -23,21 +23,27 @@
 #include "lstring.h"
 #include "ltable.h"
 #include "lundump.h"
+#include "lvm.h"
 
 
 typedef struct {
   lua_State *L;
   lua_Writer writer;
   void *data;
+  unsigned int crc;
   int strip;
   int status;
-#ifdef LUA_USE_HOST
-  int useStrRefs;
-  Table *stringIndex;
-  int sTScnt;
-  int lTScnt;
-  int nFixed;
-#endif
+  int pass;
+  int size;
+  TString **ts;
+  unsigned short *tsNdx;
+  unsigned short *tsInvNdx;
+  int tsHashLen;
+  int tsCnt;
+  int maxTSsize;
+  int tsProbeCnt;
+  Table *funcTable;
+  int funcCnt;
 } DumpState;
 
 /*
@@ -45,226 +51,309 @@ typedef struct {
 ** 1.  Integers are in the range -2^31 .. 2^31-1  (sint32_t)
 ** 2.  Floats are the IEEE 4 or 8 byte format, with a 4 byte default.
 **
-** The file formats are also different to standard because of two add
+** The file formats are also different to standard because of two
 ** additional goals:
 ** 3.  The file must be serially loadable into a programmable flash
 **     memory through a file-write like API call.
 ** 4.  Compactness of dump files is a key design goal.
 */
 
-#define DumpVector(v,n,D)	DumpBlock(v,(n)*sizeof((v)[0]),D)
+/*
+** A simple hash table is use to collect unique TStrings that will be dumped
+** to the output writer.  RAM is at a premium rather than dump time so the
+** dump is processed in multiple passes with the first counting TStrings.
+** This allows the hash to be size once and avoid the complexities of dynamic
+** growth of hash tables.  We only need get and add functions.
+**
+** The order function creates the inverse Ndx -> TSstring lookup
+*/
+static int hashTSget (TString *s, DumpState *D) {
+  int i, i0 = lmod(s->hash,D->tsHashLen);
+  for (i = i0; D->ts[i] != NULL; i = lmod(i+1, D->tsHashLen)) {
+    TString *b = D->ts[i];
+    D->tsProbeCnt++;
+    if (s == b) break;
+    if (gettt(s) == LUA_TSHRSTR || gettt(b) == LUA_TSHRSTR) continue;
+    if (luaS_eqlngstr(s, b)) break;
+  }
+  return i;
+}
 
-#define DumpLiteral(s,D)	DumpBlock(s, sizeof(s) - sizeof(char), D)
+static void hashTSadd (TString *s, DumpState *D) {
+  if (gettt(s) == LUA_TLNGSTR)
+    luaS_hashlongstr(s);  /* Dumped TStrings must have a hash */
+  int i = hashTSget(s, D);
+  if (!D->ts[i]) {
+    if (D->maxTSsize < tsslen(s))
+      D->maxTSsize = tsslen(s);
+    D->ts[i] = s;
+    D->tsNdx[i] = D->tsCnt++;
+  }
+}
 
-
-static void DumpBlock (const void *b, size_t size, DumpState *D) {
-  if (D->status == 0 && size > 0) {
-    lua_unlock(D->L);
-    D->status = (*D->writer)(D->L, b, size, D->data);
-    lua_lock(D->L);
+static void hashTSorder (DumpState *D) {
+  for (int i = 0; i < D->tsHashLen; i++) {
+    if (D->ts[i])
+      D->tsInvNdx[D->tsNdx[i]] = i;
   }
 }
 
 
-#define DumpVar(x,D)		DumpVector(&x,1,D)
-
-
-static void DumpByte (lu_byte x, DumpState *D) {
-  DumpVar(x, D);
+/*
+** There are 3 processing passes of the Proto hierarchy.  The 1st computes the
+** size of the output file and the size of the tsHash table.  The 2nd writes
+** the ts references to the tsHash.  The 3rd writes out the dump stream.
+*/
+static void DumpBlock (const void *b, size_t size, DumpState *D) {
+  if (D->pass == 1) {
+    D->size += size;
+  } else if (D->pass == 3 && D->status == 0 && size > 0) {
+    D->crc = luaU_zlibcrc32(b, size, D->crc);
+    lua_unlock(D->L);
+    D->status = (*D->writer)(D->L, b, size, D->data);
+    lua_lock(D->L);
+//*DEBUG*/ static size_t n = 0; n+=size; printf("Block:%8zu %8zu 0x%08x\n",size,n,D->crc);
+  }
 }
 
+static inline void DumpByte (lu_byte x, DumpState *D) {
+  DumpBlock(&x, 1, D);
+}
+
+#define DumpLiteral(s,D) DumpBlock(s, strlen(s), D)
+
 /*
-** Dump (unsigned) int 0..MAXINT using multibyte encoding (MBE). DumpInt
-** is used for context dependent counts and sizes; no type information
-** is embedded.
+** (Unsigned) integers are typically small so are encoded using a multi-byte
+** encoding: that a single 0NNNNNNN or a multibyte (1NNNNNNN)* 0NNNNNNN.
+**
+** DumpCount() does a DumpBlock of an MBE encoded unsigned.
+**
+** DumpIntTT() is used for type encoded ints.  If negative then the type is
+** forced to LUAU_TNUMNINT and the number negated so a +ve int always encoded.
+** If the 1st byte is anything other than x000xxxx, then bytes are extended by
+** a leading 10000000.  That way the type can always be inserted the 1st byte.
 */
-static void DumpInt (lua_Integer x, DumpState *D) {
-  lu_byte buf[sizeof(lua_Integer) + 2];
-  lu_byte *b = buf + sizeof(buf) - 1;
+
+typedef lu_byte mbe_buf_t[2*sizeof(lua_Integer)];
+
+static lu_byte *MBEencode (lua_Integer x, lu_byte *buf) {
+  lu_byte *b = buf + sizeof(mbe_buf_t);
   lua_assert(x>=0);
-  *b-- = x & 0x7f;  x >>= 7;
-  while(x) { *b-- = 0x80 + (x & 0x7f); x >>= 7; }
-  b++;
+  *--b = x & 0x7f;  x >>= 7;
+  while(x) {
+    *--b = 0x80 + (x & 0x7f); x >>= 7;
+  }
   lua_assert (b >= buf);
-  DumpVector(b, (buf - b) + sizeof(buf), D);
+  return b;
 }
 
-
-static void DumpNumber (lua_Number x, DumpState *D) {
-  DumpByte(LUAU_TNUMFLT, D);
-  DumpVar(x, D);
+static void DumpCount (lua_Integer x, DumpState *D) {
+  mbe_buf_t buf;
+//*DEBUG*/ printf("Count:%u\n",x);
+  lu_byte *b = MBEencode(x, buf);
+  DumpBlock(b, sizeof(buf) - (b - buf), D);
 }
 
-
-/*
-** DumpIntTT is MBE and embeds a type encoding for string length and integers.
-** It also handles negative integers by forcing the type to LUAU_TNUMNINT.
-** 0TTTNNNN or 1TTTNNNN (1NNNNNNN)* 0NNNNNNN
-*/
-static void DumpIntTT (lu_byte tt, lua_Integer y, DumpState *D) {
-  int x = y < 0 ? -(y + 1) : y;
-  lu_byte buf[sizeof(lua_Integer) + 3];
-  lu_byte *b = buf + sizeof(buf) - 1;
-  *b-- = x & 0x7f;  x >>= 7;
-  while(x) { *b-- = 0x80 + (x & 0x7f); x >>= 7; }
-  b++;
-  if (*b & cast(lu_byte, LUAU_TMASK) )/* Need an extra byte for the type bits? */
+static void DumpIntTT (lu_byte tt, lua_Integer x, DumpState *D) {
+  mbe_buf_t buf;
+  lu_byte *b = MBEencode((x<0 ? (tt = LUAU_TNUMNINT, -x) : x) , buf);
+  if (*b & ((lu_byte) LUAU_TMASK))/* Need an extra byte for the type bits? */
     *--b = 0x80;
-  *b |= (y >= 0) ? tt: LUAU_TNUMNINT;
-  lua_assert (b >= buf);
-  DumpVector(b, (buf - b) + sizeof(buf), D);
+  *b |= tt;
+  DumpBlock(b, sizeof(buf) - (b - buf), D);
 }
-#define DumpInteger(i, D)  DumpIntTT(LUAU_TNUMPINT, i, D);
 
 
 /*
 ** Strings are stored in LFS uniquely, any string references use this index.
 ** The table at D->stringIndex is used to lookup this unique index.
 */
-static void DumpString (const TString *s, DumpState *D) {
-  if (s == NULL) {
-    DumpByte(LUAU_TSSTRING + 0, D);
-  } else {
-    lu_byte tt = (gettt(s) == LUA_TSHRSTR) ? LUAU_TSSTRING : LUAU_TLSTRING;
-    size_t l = tsslen(s);
-    const char *str = getstr(s);
-#ifdef LUA_USE_HOST
-    if (D->useStrRefs) {
-      const TValue *o = luaH_getstr(D->stringIndex, cast(TString *,s));
-      DumpIntTT(tt, ivalue(o), D);
-      return;
-    }
-#endif
-    DumpIntTT(tt, l + 1, D);   /* include trailing '\0' */
-    DumpVector(str, l, D);  /* no need to save '\0' */
-  }
-}
-
-
-static void DumpCode (const Proto *f, DumpState *D) {
-  DumpInt(f->sizecode, D);
-  DumpVector(f->code, f->sizecode, D);
-}
-
-
-static void DumpFunction(const Proto *f, TString *psource, DumpState *D);
-
-static void DumpConstants (const Proto *f, DumpState *D) {
-  int i;
-  int n = f->sizek;
-  DumpInt(n, D);
-  for (i = 0; i < n; i++) {
-    const TValue *o = &f->k[i];
-    switch (ttype(o)) {
-      case LUA_TNIL:
-        DumpByte(LUAU_TNIL, D);
-        break;
-      case LUA_TBOOLEAN:
-        DumpByte(LUAU_TBOOLEAN + bvalue(o), D);
-        break;
-      case LUA_TNUMFLT :
-        DumpNumber(fltvalue(o), D);
-        break;
-      case LUA_TNUMINT:
-        DumpInteger(ivalue(o), D);
-        break;
-      case LUA_TSHRSTR:
-      case LUA_TLNGSTR:
-        DumpString(tsvalue(o), D);
-        break;
-      default:
-        lua_assert(0);
+static void DumpString (TString *s, DumpState *D) {
+  if (D->pass == 1 && s != NULL) {
+    D->tsCnt++;
+  } else if (D->pass == 2&& s != NULL) {
+    hashTSadd(s, D);
+  } else if (D->pass == 3) {
+    if (s == NULL) {
+      DumpByte(LUAU_TSTRING + 0, D);
+//*DEBUG*/ printf("String:0:NULL\n");
+    } else {
+      int i = hashTSget(s, D);
+      lua_assert(s->hash == D->ts[i]->hash);
+      lua_assert(tsslen(s) <= D->maxTSsize);
+      i = D->tsNdx[i]+1;
+//*DEBUG*/ printf("String:%u:%s\n",i,getstr(s));
+      DumpIntTT(LUAU_TSTRING, i, D);  /* Slot [0] is reserved for NULL */
     }
   }
 }
 
 
-static void DumpProtos (const Proto *f, DumpState *D) {
-  int i;
-  int n = f->sizep;
-  DumpInt(n, D);
-  for (i = 0; i < n; i++)
-    DumpFunction(f->p[i], f->source, D);
-}
-
-
-static void DumpUpvalues (const Proto *f, DumpState *D) {
-  int i, n = f->sizeupvalues, nostrip = (D->strip == 0);
-  DumpByte(nostrip, D);
-  DumpInt(n, D);
-  for (i = 0; i < n; i++) {
-    if (nostrip)
-      DumpString(f->upvalues[i].name, D);
-    DumpByte(f->upvalues[i].instack, D);
-    DumpByte(f->upvalues[i].idx, D);
+static void DumpConstant (const TValue *o, DumpState *D) {
+  switch (ttype(o)) {
+    case LUA_TNIL:
+      DumpByte(LUAU_TNIL, D);
+      break;
+    case LUA_TBOOLEAN:
+      DumpByte(LUAU_TBOOLEAN + bvalue(o), D);
+      break;
+    case LUA_TNUMFLT : {
+      lua_Number x = fltvalue(o);
+      DumpByte(LUAU_TNUMFLT, D);
+      DumpBlock(&x, sizeof(x), D);
+      break;
+      }
+    case LUA_TNUMINT:
+      DumpIntTT(LUAU_TNUMPINT, ivalue(o), D);
+      break;
+    case LUA_TSHRSTR:
+    case LUA_TLNGSTR:
+      DumpString(tsvalue(o), D);
+      break;
+    default:
+      lua_assert(0);
   }
 }
 
 
-static void DumpDebug (const Proto *f, DumpState *D) {
-  int i, keepli = (D->strip <= 1), keeplv = (D->strip == 0);
-  int n = keepli ? f->sizelineinfo : 0;
-  DumpInt(n, D);
-  DumpVector(f->lineinfo, n, D);
-  n = keeplv ? f->sizelocvars : 0;
-  DumpInt(n, D);
-  for (i = 0; i < n; i++) {
-    DumpString(f->locvars[i].varname, D);
-    DumpInt(f->locvars[i].startpc, D);
-    DumpInt(f->locvars[i].endpc, D);
-  }
-}
+static void DumpFunction (const Proto *f, TString *psource, DumpState *D);
 
+#define OVER(n) DumpCount((n),D); for (int i = 0; i< (n); i++)
 
 static void DumpFunction (const Proto *f, TString *psource, DumpState *D) {
-  if (f->source == psource)
-    DumpString(NULL, D);   /* same source as its parent */
-  else
-    DumpString(f->source, D);
-  DumpInt(f->linedefined, D);
-  DumpInt(f->lastlinedefined, D);
+  /* This function MUST be aligned to lundump.c:LoadFunction() */
+//*DEBUG*/ static int cnt = 0; cnt++;
+  DumpString(f->source == psource ? NULL : f->source, D);
+  OVER(f->sizep)
+    DumpFunction(f->p[i], f->source, D);
+  DumpCount(f->linedefined, D);
+  DumpCount(f->lastlinedefined, D);
+//*DEBUG*/ printf("Function from %u to %u\n", f->linedefined, f->lastlinedefined);
   DumpByte(getnumparams(f), D);
   DumpByte(getis_vararg(f), D);
   DumpByte(getmaxstacksize(f), D);
-  DumpProtos(f, D);
-  DumpCode(f, D);
-  DumpConstants(f, D);
-  DumpUpvalues(f, D);
-  DumpDebug(f, D);
+  DumpCount(f->sizecode, D);
+  DumpBlock(f->code, f->sizecode*sizeof(f->code[0]), D);
+  OVER(f->sizek)
+    DumpConstant(f->k + i, D);
+  OVER(f->sizeupvalues) {
+    DumpString(D->strip == 0 ? f->upvalues[i].name : 0, D);
+    DumpByte(f->upvalues[i].instack, D);
+    DumpByte(f->upvalues[i].idx, D);
+  }
+  OVER(D->strip == 0 ? f->sizelocvars : 0) {
+    DumpString(f->locvars[i].varname, D);
+    DumpCount(f->locvars[i].startpc, D);
+    DumpCount(f->locvars[i].endpc, D);
+  }
+  DumpCount((D->strip <= 1 ? f->sizelineinfo : 0), D);
+  DumpBlock(f->lineinfo, (D->strip <= 1 ? f->sizelineinfo : 0), D);
 }
 
 
-static void DumpHeader (DumpState *D, int format) {
+static void DumpHeader (DumpState *D) {
+  const TValue num = {{.n = LUAC_NUM}, LUA_TNUMFLT};
   DumpLiteral(LUA_SIGNATURE, D);
   DumpByte(LUAC_VERSION, D);
-  DumpByte(format, D);
+  DumpByte(LUAC_FORMAT, D);
   DumpLiteral(LUAC_DATA, D);
   DumpByte(sizeof(int), D);
   DumpByte(sizeof(Instruction), D);
   DumpByte(sizeof(lua_Integer), D);
   DumpByte(sizeof(lua_Number), D);
 /* Note that we multi-byte encoded integers so need to check size_t or endian */
-  DumpNumber(LUAC_NUM, D);
+  DumpConstant(&num, D);
 }
 
+/*
+** Loop over top level functions (TLFs) in the Index table.  Entries in the
+** table are either [i]=func or name=func. In the first case the name is 
+** stripped from the Proto source field.  The first N TStrings in the TString 
+** vector are the names of the N TLFs, so these are defined before dumping each
+** in turn.
+*/
+static void DumpPass (int pass, DumpState *D) {
+  lua_State *L = D->L;
+  size_t l;
+  D->pass = pass;
+  setnilvalue(L->top-2);
+  if (pass == 2) {
+    while (luaH_next(L, D->funcTable, L->top-2)) {
+      if (ttisLclosure(L->top-1)) {
+        const char *s = luaU_getbasename(L, getproto(L->top-1)->source, &l);
+        hashTSadd((ttisstring(L->top-2) ? tsvalue(L->top-2) :
+                                          luaS_newlstr(L, s, l)), D);
+        D->funcCnt++;
+      }
+    }
+  }
+  setnilvalue(L->top-2);
+  while (luaH_next(L, D->funcTable, L->top-2)) {
+    if (ttisLclosure(L->top-1))
+      DumpFunction(getproto(L->top-1), NULL, D);
+  }
+}
+
+static void protectedDump (lua_State *L, void *ud) {
+  DumpState *D = (DumpState *) ud;
+  unsigned int crc;
+  L->top++; api_incr_top(L);  /* add key and value slots to stack */
+
+  DumpPass(1, D);
+  D->tsHashLen = 1 << luaO_ceillog2(((D->tsCnt)*5)/4);
+  D->ts = luaM_newvector(L, D->tsHashLen, TString *);
+  memset(D->ts, 0, sizeof(D->ts[0])*D->tsHashLen);
+  D->tsNdx = luaM_newvector(L, D->tsHashLen, unsigned short);
+  memset(D->tsNdx, 0, sizeof(D->tsNdx[0])*D->tsHashLen);
+  D->tsCnt = 0;
+  DumpPass(2, D);
+  D->tsInvNdx = luaM_newvector(L, D->tsCnt, unsigned short);
+  memset(D->tsInvNdx, 0, sizeof(D->tsInvNdx[0])*D->tsCnt);
+  hashTSorder(D);
+  D->pass = 3;
+  DumpHeader(D);
+  DumpByte(D->funcCnt, D);
+  DumpCount(D->maxTSsize, D);
+//*DEBUG*/ printf("*** String Dump ***\n");
+  OVER(D->tsCnt) {
+    int j = D->tsInvNdx[i];
+    TString *ts = D->ts[j];
+    const char *s = getstr(ts);
+    size_t l = tsslen(ts);
+    DumpCount(l + 1, D);   /* include trailing '\0' */
+    DumpBlock(s, l, D);  /* no need to save '\0' */
+//*DEBUG*/ printf("%5u:%4zu:%s\n",i+1,l, s ? getstr(D->ts[j]) : "NULL");
+  }
+//*DEBUG*/ printf("*** End String Dump ***\n");
+  DumpLiteral(LUA_PROTO_SIG, D);
+  DumpPass(3, D);
+  crc = ~D->crc;
+  DumpBlock(&crc, sizeof(crc), D);
+  L->top -= 2;
+}
 
 /*
-** Dump Lua function as precompiled chunk
+** Dump Lua function as precompiled chunk L->top-1 is array of name->function
 */
-int luaU_dump (lua_State *L, const Proto *f, lua_Writer w, void *data,
+int luaU_dump (lua_State *L, Table *pt, lua_Writer w, void *data,
                int strip) {
   DumpState D = {0};
   D.L = L;
   D.writer = w;
   D.data = data;
   D.strip = strip;
-  DumpHeader(&D, LUAC_FORMAT);
-  DumpByte(f->sizeupvalues, &D);
-  DumpFunction(f, NULL, &D);
-  return D.status;
+  D.funcTable = pt;
+  D.crc = ~0;
+  /* Protected of call of Dump Protos to tidy up allocs on error */
+  int status = luaD_pcall(L, protectedDump, &D, savestack(L, L->top), 0);
+  luaM_freearray(L, D.ts, D.tsHashLen);
+  luaM_freearray(L, D.tsNdx, D.tsHashLen);
+  luaM_freearray(L, D.tsInvNdx, D.tsCnt);
+  return status;  //<<<<<<<<<<<< or we throw on zero. D.status status
 }
 
-static int stripdebug (lua_State *L, Proto *f, int level) {
+
+static int strip1debug (lua_State *L, Proto *f, int level) {
   int i, len = 0;
   switch (level) {
     case 2:
@@ -288,161 +377,69 @@ int luaU_stripdebug (lua_State *L, Proto *f, int level, int recv){
   if (recv != 0 && f->sizep != 0) {
     for(i=0;i<f->sizep;i++) len += luaU_stripdebug(L, f->p[i], level, recv);
   }
-  len += stripdebug (L, f, level);
+  len += strip1debug (L, f, level);
   return len;
 }
 
-
-
-/*============================================================================**
-**
-** NodeMCU extensions for LFS support and dumping.  Note that to keep lua_lock
-** pairing for testing, this dump/unload functionality works within a locked
-** window and therefore has to use the core luaH, ..., APIs rather than the
-** public Lua and lauxlib APIs.
-**
-**============================================================================*/
-#ifdef LUA_USE_HOST
+/*
+ * CRC32 checksum
+ *
+ * Copyright (c) 1998-2003 by Joergen Ibsen / Jibz
+ * All Rights Reserved
+ *
+ * http://www.ibsensoftware.com/
+ *
+ * This software is provided 'as-is', without any express
+ * or implied warranty.  In no event will the authors be
+ * held liable for any damages arising from the use of
+ * this software.
+ *
+ * Permission is granted to anyone to use this software
+ * for any purpose, including commercial applications,
+ * and to alter it and redistribute it freely, subject to
+ * the following restrictions:
+ *
+ * 1. The origin of this software must not be
+ *    misrepresented; you must not claim that you
+ *    wrote the original software. If you use this
+ *    software in a product, an acknowledgment in
+ *    the product documentation would be appreciated
+ *    but is not required.
+ *
+ * 2. Altered source versions must be plainly marked
+ *    as such, and must not be misrepresented as
+ *    being the original software.
+ *
+ * 3. This notice may not be removed or altered from
+ *    any source distribution.
+ */
 
 /*
-** Add a TS found in the Proto Load to the table at the ToS. Note that this is
-** a unified table of {string = index} for both short and long TStrings.
-*/
-static void addTS (TString *ts, DumpState *D) {
-  lua_State *L = D->L;
-  if (!ts)
-    return;
-  if (ttisnil(luaH_getstr(D->stringIndex, ts))) {
-    TValue k, v, *slot;
-    gettt(ts)<=LUA_TSHRSTR ? D->sTScnt++ : D->lTScnt++;
-    setsvalue(L, &k, ts);
-    setivalue(&v, D->sTScnt + D->lTScnt);
-    slot = luaH_set(L, D->stringIndex, &k);
-    setobj2t(L, slot, &v);
-    luaC_barrierback(L, D->stringIndex, &v);
-  }
+ * CRC32 algorithm taken from the zlib source, which is
+ * Copyright (C) 1995-1998 Jean-loup Gailly and Mark Adler
+ */
+
+static const unsigned int crc32tab[16] = {
+   0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190,
+   0x6b6b51f4, 0x4db26158, 0x5005713c, 0xedb88320, 0xf00f9344,
+   0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278,
+   0xbdbdf21c
+};
+
+/* crc is previous value for incremental computation, 0xffffffff initially */
+unsigned int luaU_zlibcrc32(const void *data, size_t length, unsigned int crc) {
+   const unsigned char *buf = (const unsigned char *) data;
+
+//*DEBUG*/ printf("CRC32: 0x%08x ", crc);
+
+   for (int i = 0; i < length; ++i) {
+//*DEBUG*/ printf("%02x ", buf[i]);
+      crc ^= buf[i];
+      crc = crc32tab[crc & 0x0f] ^ (crc >> 4);
+      crc = crc32tab[crc & 0x0f] ^ (crc >> 4);
+   }
+
+   // return value suitable for passing in next time, for final value invert it
+//*DEBUG*/ printf("- 0x%08x\n", crc);
+   return crc;
 }
-
-
-/*
-** Add the fixed TS that are created by the luaX and LuaT initialisation
-** and fixed so not collectable. This are always loaded into LFS to save
-** RAM and can be implicitly referenced in any Proto.
-*/
-static void addFixedStrings (DumpState *D) {
-  int i;
-  const char *p;
-  for (i = 0; (p = luaX_getstr(i, 0))!=NULL; i++)
-    addTS(luaS_new(D->L, p), D);
-  addTS(G(D->L)->memerrmsg, D);
-  addTS(luaS_new(D->L, LUA_ENV), D);
-  for (i = 0; (p = luaT_getstr(i))!=NULL; i++)
-    addTS(luaS_new(D->L, p), D);
-  lua_assert(D->lTScnt == 0); /* all of these fixed strings should be short */
-  D->nFixed = D->sTScnt; /* book mark for later skipping */
-}
-
-
-/*
-** Dump all LFS strings. If there are 71 fixed and 17 LFS strings, say, in
-** the stringIndex, then these fixed and LFS  strings are numbered 1..71 and
-** 72..88 respectively; this numbering is swapped to 18..88 and 1..17.  The
-** fixed strings are fixed and can be omitted from the LFS image.
-*/
-static void DumpLFSstrings(DumpState *D) {
-  lua_State *L = D->L;
-  int n = D->sTScnt + D->lTScnt;
-  int i, maxlen = 0, nStrings = n - D->nFixed;
-  Table *revT = luaH_new(L);
-
-  sethvalue(L, L->top++, revT); /* Put on stack to prevent GC */
-  luaH_resize(L, revT, n, 0);
-  luaC_checkGC(L);
-  /* luaH_next scan of stringIndex table using two top of stack entries */
-  setnilvalue(L->top++);
-  api_incr_top(L);
-  while (luaH_next(L, D->stringIndex, L->top-2)) {
-   /*
-    * Update the value to swap fix and LFS order, then insert (v, k) into
-    * the reverse index table. Note that luaC_barrier checks not required
-    * for overwrites and non-collectable values.
-    */
-    int len = tsslen(tsvalue(L->top-2));
-    lua_Integer *i = &L->top[-1].value_.i;
-    *i += *i > D->nFixed ? -D->nFixed : nStrings;        /* recalc index and */
-    luaH_set(L, D->stringIndex, L->top-2)->value_.i = *i; /* update table value */
-    luaH_setint(L, revT, ivalue(L->top-1), L->top-2); /* Add str to reverse T */
-    if (len > maxlen) maxlen = len;  /* roll up maximum string size */
-  }
-  L->top -= 2; /* discard key and value stack slots */
-  DumpInt(maxlen, D);
-  DumpInt(D->sTScnt, D);
-  DumpInt(D->lTScnt, D);
-  DumpInt(nStrings, D);
-
-  for (i = 1; i <= nStrings; i++) { /* dump out non-fixed strings in order */
-    const TValue *o = luaH_getint(revT, i);
-    DumpString(tsvalue(o), D);
-  }
-  L->top--; /* pop revT stack entry */
-  luaC_checkGC(L);
-}
-
-
-/*
-** Recursive scan all of the Protos in the Proto hierarchy
-** to collect all referenced strings in 2 Lua Arrays at ToS.
-*/
-#define OVER(n) for (i = 0; i < (n); i++)
-static void scanProtoStrings(const Proto *f, DumpState *D) {
-  int i;
-  addTS(f->source, D);
-  OVER(f->sizek)        if (ttisstring(f->k + i))
-                          addTS(tsvalue(f->k + i), D);
-  OVER(f->sizeupvalues) addTS(f->upvalues[i].name, D);
-  OVER(f->sizelocvars)  addTS(f->locvars[i].varname, D);
-  OVER(f->sizep)        scanProtoStrings(f->p[i], D);
-}
-
-
-/*
-** An LFS image comprises a prologue segment of all of the strings used in
-** the image, followed by a set of Proto dumps.  Each of these is essentially
-** the same as standard lua_dump format, except that string constants don't
-** contain the string inline, but are instead an index into the prologue.
-** Separating out the strings in this way simplifies loading the image
-** content into an LFS region.
-**
-** A dummy container Proto, main, is used to hold all of the Protos to go
-** into the image.  The Proto main itself is not callable; it is used as the
-** image Proto index and only contains a Proto vector and a constant vector
-** where each constant in the string names the corresponding Proto.
-*/
-int luaU_DumpAllProtos(lua_State *L, const Proto *m, lua_Writer w,
-                       void *data, int strip) {
-  DumpState D = {0};
-  D.L = L;
-  D.writer = w;
-  D.data = data;
-  D.strip = strip;
-
-  lua_assert(L->stack_last - L->top > 5);  /* This dump uses 5 stack slots */
-  DumpHeader(&D, LUAC_LFS_IMAGE_FORMAT);
-  DumpInteger(G(L)->seed, &D);
-  D.stringIndex = luaH_new(L);
-  sethvalue(L, L->top++, D.stringIndex);        /* Put on stack to prevent GC */
-  /* Add fixed strings + strings used in the Protos, then swap fixed/added blocks */
-  addFixedStrings(&D);
-  scanProtoStrings(m, &D);
-  /* Dump out all non-fixed strings */
-  DumpLiteral(LUA_STRING_SIG, &D);
-  DumpLFSstrings(&D);
-  /* Switch to string reference mode and add the Protos themselves */
-  D.useStrRefs = 1;
-  DumpLiteral(LUA_PROTO_SIG, &D);
-  DumpProtos(m, &D);
-  DumpConstants(m, &D);  /* Dump Function name vector */
-  L->top--;
-  return D.status;
-}
-#endif

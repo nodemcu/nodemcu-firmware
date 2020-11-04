@@ -198,6 +198,8 @@ static void dojob (lua_State *L) {
       status = docall(L, 0);
     /* print any returned results or error message */
     if (status && !lua_isnil(L, -1)) {
+      if (!strncmp(lua_tostring(L, -1), "!LFS reload!", sizeof("!LFS reload!") - 1))
+        return;
       lua_pushliteral(L, "Lua error: ");
       lua_insert(L , -2);
     }

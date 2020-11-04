@@ -82,7 +82,7 @@ void luaX_init (lua_State *L) {
 }
 
 /* Access method to expose luaX_fixed strings */
-const char *luaX_getstr (unsigned int i, int *extra) {
+const char *luaX_getstr (unsigned int i, lu_byte *extra) {
   if (i == sizeof(luaX_tokens)/sizeof(*luaX_tokens))
     return NULL;
   if (extra)

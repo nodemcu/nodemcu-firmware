@@ -287,7 +287,7 @@ static int luaB_loadfile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   const char *mode = luaL_optstring(L, 2, NULL);
   int env = (!lua_isnone(L, 3) ? 3 : 0);  /* 'env' index or 0 if no 'env' */
-  int status = luaL_loadfilex(L, fname, mode);
+  int status = luaL_loadfilex(L, fname, mode, 0);
   return load_aux(L, status, env);
 }
 
@@ -460,6 +460,19 @@ static int luaB_unpack (lua_State *L) {
 }
 #endif
 
+#ifdef LUA_CROSS_COMPILER
+static int lfsreload (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_lfsreload(L);
+  return 1;
+}
+
+static int lfsindex (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodule(L);
+  return 1;
+}
+#endif
 
 /*
 ** ESP builds use specific linker directives to marshal all the ROTable entries
@@ -507,6 +520,8 @@ LROT_ENTRIES_IN_SECTION(base_func, rotable)
 #endif
   LROT_FUNCENTRY(xpcall,         luaB_xpcall)
 #ifdef LUA_CROSS_COMPILER
+  LROT_FUNCENTRY(lfsreload,      lfsreload)
+  LROT_FUNCENTRY(lfsindex,       lfsindex)
 LROT_END(base_func, NULL, 0)
 #else
 LROT_BREAK(base_func)

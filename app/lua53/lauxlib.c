@@ -768,8 +768,9 @@ static int skipcomment (LoadF *lf, int *cp) {
 
 
 LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
-                                             const char *mode) {
+                                             const char *mode, int multi) {
   LoadF lf;
+  (void)(multi);  ////  TODO
   int status, readstatus;
   int c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
@@ -1153,6 +1154,8 @@ static int errhandler_aux (lua_State *L) {
 ** to convert into an error message which it handles in a separate posted task.
 */
 static int errhandler (lua_State *L) {
+  if (!strncmp(lua_tostring(L, -1), "!LFS reload!", sizeof("!LFS reload!") - 1))
+    return 0;
   lua_getglobal(L, "debug");
   lua_getfield(L, -1, "traceback");
   if (lua_isfunction(L, -1)) {

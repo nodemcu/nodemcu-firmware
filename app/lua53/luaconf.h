@@ -41,6 +41,9 @@
 #else
 # define LUA_USE_HOST
 # define LUA_CROSS_COMPILER
+# if INTPTR_MAX > INT32_MAX
+#  define LUA_USE_HOST64
+# endif
 #endif
 
 #if !defined(LUA_USE_C89) && defined(_WIN32) && !defined(_WIN32_WCE)

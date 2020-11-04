@@ -421,8 +421,11 @@ static int db_debug (lua_State *L) {
         strcmp(buffer, "cont\n") == 0)
       return 0;
     if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
-        lua_pcall(L, 0, 0, 0))
+        lua_pcall(L, 0, 0, 0)) {
+      if (!strncmp(lua_tostring(L, -1),"!LFS ",5))
+        lua_error(L);
       lua_writestringerror("%s\n", lua_tostring(L, -1));
+    }
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }
