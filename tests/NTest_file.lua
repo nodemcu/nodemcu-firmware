@@ -9,12 +9,6 @@ local function cleanup()
     end
 end
 
-local function buildfn(fn, ...)
-  local params = {...}
-  local fnp = function() fn(unpack(params)) end
-  return fnp
-end
-
 N.test('exist', function()
   cleanup()
   nok(file.exists("non existing file"), "non existing file")
@@ -170,8 +164,6 @@ N.test('open non existing', function()
   testopen(nok, "testfile", "r+")
   testopen(ok, "testfile", "w+")
   testopen(ok, "testfile", "a+")
-
-  --fail(buildfn(file.open, "testfile"), "errormsg", "x")  -- shouldn't this fail?
 end)
 
 N.test('open existing', function()
@@ -190,8 +182,6 @@ N.test('open existing', function()
   testopen("r+", 0)
   testopen("w+", 0)
   testopen("a+", 11)
-
-  --fail(buildfn(file.open, "testfile"), "errormsg", "x")  -- shouldn't this fail?
 end)
 
 N.test('remove', function()

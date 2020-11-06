@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2020-11-01 | [Gregor Hartmann](https://github.com/HHHartmann) | [Gregor Hartmann](https://github.com/HHHartmann) | [NTest.lua](NTest.lua) |
 
-NTest is a test system for NodeMCU which is originally based on gambiarra. It is designed to run on chip but also runs on the host using luac.cross.
+NTest is a test system for NodeMCU which is originally based on gambiarra. It is designed to run on chip but the selftest also runs on the host using luac.cross.
 
 !!! attention
   You will have to use LFS to run this as it is too big to fit in memory.
