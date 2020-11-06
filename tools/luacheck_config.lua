@@ -1,3 +1,4 @@
+stds = stds or ...   -- set stds if this script is called by another config script
 local empty = { }
 local read_write = {read_only = false}
 
@@ -423,6 +424,7 @@ stds.nodemcu_libs = {
         restore = empty,
         setcpufreq = empty,
         setpartitiontable = empty,
+        setonerror = empty,
         sleep = empty,
         stripdebug = empty,
         writercr = empty,
@@ -942,9 +944,7 @@ stds.nodemcu_libs = {
     },
     pack = empty,
     unpack  = empty,
-    size = empty,
-    package = {fields = {seeall = read_write}},
-    _ENV = empty
+    package = {fields = {seeall = read_write}}
   }
 }
 

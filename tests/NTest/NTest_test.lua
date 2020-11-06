@@ -1,5 +1,5 @@
 local N = require('NTest')("selftest")
-
+local orig_node = node
 local metatest
 local async
 local expected = {}
@@ -87,8 +87,8 @@ local function load_tests()
 
   metatest('eq functions', function()
     ok(eq(function(x) return x end, function(x) return x end), 'equal')
-    nok(eq(function(z) return x end, function(z) return y end), 'wrong variable')
-    nok(eq(function(x) return x end, function(x) return x+2 end), 'wrong code')
+    nok(eq(function(z) return x + z end, function(z) return y + z end), 'wrong variable') -- luacheck: ignore
+    nok(eq(function(x) return x*2 end, function(x) return x+2 end), 'wrong code')
   end, {'equal', 'wrong variable', 'wrong code'}, {})
 
   metatest('eq different types', function()
@@ -125,7 +125,7 @@ local function load_tests()
   end, {'x == 1', 'called with 1', 'x == 42', 'called with 42'}, {})
 
   metatest('spy with nils', function()
-    local function nils(a, dummy, b) return a, nil, b, nil end
+    local function nils(a, _, b) return a, nil, b, nil end
     local f = spy(nils)
     local r1, r2, r3, r4 = f(1, nil, 2)
     ok(eq(f.called, {{1, nil, 2}}), 'nil in args')
@@ -145,7 +145,7 @@ local function load_tests()
   end, {'no errors yet', 'args ok', 'thrown ok'}, {})
 
   metatest('another spy with exception', function()
-    local f = spy(function() local a = unknownVariable + 1 end)
+    local f = spy(function() local a = unknownVariable + 1 end) -- luacheck: ignore
     f()
     ok(f.errors[1], 'exception thrown')
   end, {'exception thrown'}, {})
@@ -240,9 +240,9 @@ load_tests2 = function()
   -- Async tests
   --
   metatest('async test', function(next)
-    async(function() 
+    async(function()
       ok(true, 'bar')
-      async(function() 
+      async(function()
         ok(true, 'baz')
         next()
       end)
@@ -255,7 +255,7 @@ load_tests2 = function()
     next()
   end, {'bar'}, {}, {}, true)
 
-  metatest('async fail in main', function(next)
+  metatest('async fail in main', function(--[[ next ]])
     ok(false, "async fail")
     ok(true, 'unreachable code')
   end, {}, {'async fail'}, {}, true)
@@ -263,7 +263,7 @@ load_tests2 = function()
   --drain_post_queue()
 
   metatest('another async test after async queue drained', function(next)
-    async(function() 
+    async(function()
       ok(true, 'bar')
       next()
     end)
@@ -273,13 +273,13 @@ load_tests2 = function()
   --
   -- except tests async
   --
-  metatest('async except in main', function(next)
+  metatest('async except in main', function(--[[ next ]])
     error("async except")
     ok(true, 'unreachable code')
   end, {}, {}, {'NTest_test.lua:277: async except'}, true)
 
   metatest('async fail in callback', function(next)
-    async(function() 
+    async(function()
       ok(false, "async fail")
       next()
     end)
@@ -287,7 +287,7 @@ load_tests2 = function()
   end, {'foo'}, {'async fail'}, {}, true)
 
   metatest('async except in callback', function(next)
-    async(function() 
+    async(function()
       error("async Lua error")
       next()
     end)
@@ -299,7 +299,7 @@ load_tests2 = function()
   --
   local marker = 0
   metatest('set marker async', function(next)
-    async(function() 
+    async(function()
       marker = "marked"
       ok(true, 'async bar')
       next()
@@ -314,63 +314,64 @@ load_tests2 = function()
   --
   -- coroutine async tests
   --
-  metatest('coroutine pass', function(getCB, waitCb)
+  metatest('coroutine pass', function(--[[ getCB, waitCB ]])
     ok(true, "passing")
   end, {"passing"}, {}, {}, "co")
 
-  metatest('coroutine fail in main', function(getCB, waitCb)
+  metatest('coroutine fail in main', function(--[[ getCB, waitCB ]])
     ok(false, "coroutine fail")
     ok(true, 'unreachable code')
   end, {}, {'coroutine fail'}, {}, "co")
 
-  metatest('coroutine fail in main', function(getCB, waitCb)
+  metatest('coroutine fail in main', function(--[[ getCB, waitCB ]])
     nok(true, "coroutine fail")
     nok(false, 'unreachable code')
   end, {}, {'coroutine fail'}, {}, "co")
 
-  metatest('coroutine fail error', function(getCB, waitCb)
+  metatest('coroutine fail error', function(--[[ getCB, waitCB ]])
     fail(function() error("my error") end, "my error", "Failed with correct error")
     fail(function() error("my error") end, "other error", "Failed with other error")
     ok(true, 'unreachable code')
-  end, {'Failed with correct error'}, {'Failed with other error', 'expected errormessage "NTest_test.lua:333: my error" to contain "other error"'}, {}, "co")
+  end, {'Failed with correct error'}, {'Failed with other error',
+        'expected errormessage "NTest_test.lua:333: my error" to contain "other error"'}, {}, "co")
 
-  metatest('coroutine except in main', function(getCB, waitCb)
+  metatest('coroutine except in main', function(--[[ getCB, waitCB ]])
     error("coroutine except")
     ok(true, 'unreachable code')
-  end, {}, {}, {'NTest_test.lua:338: coroutine except'}, "co")
+  end, {}, {}, {'NTest_test.lua:339: coroutine except'}, "co")
 
   --local function coasync(f) table.insert(post_queue, 1, f) end
   local function coasync(f, p1, p2) node.task.post(node.task.MEDIUM_PRIORITY, function() f(p1,p2) end) end
 
-  metatest('coroutine with callback', function(getCB, waitCb)
+  metatest('coroutine with callback', function(getCB, waitCB)
     coasync(getCB("testCb"))
-    name = waitCb()
+    local name = waitCB()
     ok(eq(name, "testCb"), "cb")
   end, {"cb"}, {}, {}, "co")
 
-  metatest('coroutine with callback with values', function(getCB, waitCb)
+  metatest('coroutine with callback with values', function(getCB, waitCB)
     coasync(getCB("testCb"), "p1", 2)
-    name, p1, p2 = waitCb()
+    local name, p1, p2 = waitCB()
     ok(eq(name, "testCb"), "cb")
     ok(eq(p1, "p1"), "p1")
     ok(eq(p2, 2), "p2")
   end, {"cb", "p1", "p2"}, {}, {}, "co")
 
-  metatest('coroutine fail after callback', function(getCB, waitCb)
+  metatest('coroutine fail after callback', function(getCB, waitCB)
     coasync(getCB("testCb"))
-    name = waitCb()
+    local name = waitCB()
     ok(eq(name, "testCb"), "cb")
     ok(false, "fail")
     ok(true, 'unreachable code')
   end, {"cb"}, {"fail"}, {}, "co")
 
-  metatest('coroutine except after callback', function(getCB, waitCb)
+  metatest('coroutine except after callback', function(getCB, waitCB)
     coasync(getCB("testCb"))
-    name = waitCb()
+    local name = waitCB()
     ok(eq(name, "testCb"), "cb")
     error("error")
     ok(true, 'unreachable code')
-  end, {"cb"}, {}, {"NTest_test.lua:371: error"}, "co")
+  end, {"cb"}, {}, {"NTest_test.lua:372: error"}, "co")
 
   --- detect stray callbacks after the test has finished
   local strayCb
@@ -378,12 +379,12 @@ load_tests2 = function()
     coasync(strayCb)
   end
 
-  metatest('leave stray callback', function(getCB, waitCb)
+  metatest('leave stray callback', function(getCB--[[ , waitCB ]])
     strayCb = getCB("testa")
     coasync(rewrap)
   end, {}, {}, {}, "co")
 
-  metatest('test after stray cb', function(getCB, waitCb)
+  metatest('test after stray cb', function(--[[ getCB, waitCB ]])
   end, {}, {"Found stray Callback 'testa' from test 'leave stray callback'"}, {}, "co")
 
 
@@ -397,14 +398,12 @@ load_tests2 = function()
       failed = failed + 1
     end
     print("failed: "..failed, "passed: "..passed)
-    node = orig_node
+    node = orig_node -- luacheck: ignore 121 (setting read-only global variable)
   end, {}, {})
 
 end -- load_tests()
 
 
-local currentTest = {}
-local orig_node = node
 local cbWrap = function(cb) return cb end
 
 -- implement pseudo task handling for on host testing
@@ -427,6 +426,7 @@ if not node then
     end
   end
 
+  -- luacheck: push ignore 121 122 (setting read-only global variable)
   node = {}
   node.task = {LOW_PRIORITY = 1, MEDIUM_PRIORITY = 2, HIGH_PRIORITY = 3}
   node.task.post = function (p, f)
@@ -435,6 +435,8 @@ if not node then
 
   local errorfunc
   node.setonerror = function(fn) errorfunc = fn end
+  -- luacheck: pop
+
   cbWrap = function(cb)
       return function(...)
           local ok, p1,p2,p3,p4 = pcall(cb, ...)
@@ -460,26 +462,17 @@ local function stringify(t)
   return s:gsub('..$', '')
 end
 
--- Helper function to compare two tables
-local function comparetables(t1, t2)
-  if #t1 ~= (t2 and #t2 or 0) then return false end
-  for i=1,#t1 do
-    if t1[i] ~= t2[i] then return false end
-  end
-  return true
-end
-
 local pass
 -- Set meta test handler
 N.report(function(e, test, msg, errormsg)
-  local function consumemsg(msg, area)
+  local function consumemsg(msg, area) -- luacheck: ignore  
     if not expected[1][area][1] then
       print("--- FAIL "..expected[1].name..' ('..area..'ed): unexpected "'..
         msg..'"')
       pass = false
       return
     end
-    
+
     if msg ~= expected[1][area][1] then
       print("--- FAIL "..expected[1].name..' ('..area..'ed): expected "'..
         expected[1][area][1]..'" vs "'..
@@ -498,7 +491,6 @@ N.report(function(e, test, msg, errormsg)
   end
 
   if e == 'begin' then
-    currentTest.name = test
     pass = true
   elseif e == 'end' then
     consumeremainder("pass")
@@ -510,7 +502,6 @@ N.report(function(e, test, msg, errormsg)
     else
       failed = failed + 1
     end
-    currentTest = {}
     table.remove(expected, 1)
   elseif e == 'pass' then
     consumemsg(msg, "pass")
@@ -521,7 +512,7 @@ N.report(function(e, test, msg, errormsg)
   elseif e == 'except' then
     consumemsg(msg, "except")
     if errormsg then consumemsg(errormsg, "except") end
-  elseif e == 'start' or e == 'finish' then
+  elseif e == 'start' or e == 'finish' then -- luacheck: ignore
     -- ignore
   else
     print("Extra output: ", e, test, msg, errormsg)
@@ -533,7 +524,7 @@ async = function(f) table.insert(async_queue, cbWrap(f)) end
 local function async_next()
   local f = table.remove(async_queue, 1)
   if f then
-    f() 
+    f()
   end
 end
 
@@ -543,14 +534,14 @@ local function drain_async_queue()
   end
 end
 
-metatest = function(name, f, expectedPassed, expectedFailed, expectedExcept, async)
+metatest = function(name, f, expectedPassed, expectedFailed, expectedExcept, asyncMode)
   local ff = f
-  if async then
+  if asyncMode then
     ff = function(...)
       f(...)
       drain_async_queue()
     end
-    if (async == "co") then
+    if (asyncMode == "co") then
       N.testco(name,ff)
     else
       N.testasync(name, ff)

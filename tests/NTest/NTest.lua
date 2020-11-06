@@ -28,14 +28,14 @@ local function deepeq(a, b)
   local function notEqual(m)
     return { msg=m }
   end
-  
+
   -- Different types: false
   if type(a) ~= type(b) then return notEqual("type 1 is "..type(a)..", type 2 is "..type(b)) end
   -- Functions
   if type(a) == 'function' then
     if string.dump(a) == string.dump(b) then
       return true
-    else 
+    else
       return notEqual("functions differ")
     end
   end
@@ -63,23 +63,23 @@ local function args(...)
 end
 
 local function spy(f)
-  local s = {}
-  setmetatable(s, {__call = function(s, ...)
+  local mt = {}
+  setmetatable(mt, {__call = function(s, ...)
     s.called = s.called or {}
     local a = args(...)
     table.insert(s.called, {...})
     if f then
       local r
-      r = args(pcall(f, (unpack or table.unpack)(a, 1, a.n)))
+      r = args(pcall(f, unpack(a, 1, a.n)))
       if not r[1] then
         s.errors = s.errors or {}
         s.errors[#s.called] = r[2]
       else
-        return (unpack or table.unpack)(r, 2, r.n)
+        return unpack(r, 2, r.n)
       end
     end
   end})
-  return s
+  return mt
 end
 
 local function getstackframe()
@@ -88,6 +88,7 @@ local function getstackframe()
       return debug.getinfo(5, 'S').short_src:match("([^\\/]*)$")..":"..debug.getinfo(5, 'l').currentline
     end
 
+    local msg
     msg = debug.traceback()
     msg = msg:match("\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t([^\t]*): in")  -- Get 5th stack frame
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
@@ -140,7 +141,7 @@ end
 local function NTest(testrunname, failoldinterface)
 
   if failoldinterface then error("The interface has changed. Please see documentstion.") end
-  
+
   local pendingtests = {}
   local env = _G
   local outputhandler = TERMINAL_HANDLER
@@ -186,9 +187,9 @@ local function NTest(testrunname, failoldinterface)
         collectgarbage()
         if next then next() end
       end
-      
-      local function wrap(f, ...)
-        f(handler, name, ...)
+
+      local function wrap(method, ...)
+        method(handler, name, ...)
       end
 
       local function cbError(err)
@@ -282,7 +283,7 @@ local function NTest(testrunname, failoldinterface)
       co = coroutine.create(function(wr, wa)
         func(wr, wa)
       end)
-      
+
       local result, err = coroutine.resume(co, getCB, waitCb)
       if (not result) then
         currentCoName = nil

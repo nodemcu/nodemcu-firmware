@@ -4,7 +4,7 @@ N.testasync('SINGLE alarm', function(next)
   local t = tmr.create();
   local count = 0
   t:alarm(200, tmr.ALARM_SINGLE,
-    function(t)
+    function()
       count = count + 1
       ok(count <= 1, "only 1 invocation")
       next()
@@ -16,7 +16,7 @@ end)
 N.testasync('SEMI alarm', function(next)
   local t = tmr.create();
   local count = 0
-  t:alarm(200, tmr.ALARM_SEMI, 
+  t:alarm(200, tmr.ALARM_SEMI,
     function(tp)
       count = count + 1
       if count <= 1 then
@@ -32,7 +32,7 @@ end)
 N.testasync('AUTO alarm', function(next)
   local t = tmr.create();
   local count = 0
-  t:alarm(200, tmr.ALARM_AUTO, 
+  t:alarm(200, tmr.ALARM_AUTO,
     function(tp)
       count = count + 1
       if count == 2 then
@@ -47,9 +47,10 @@ end)
 N.testco('SINGLE alarm coroutine', function(getCB, waitCB)
   local t = tmr.create();
   t:alarm(200, tmr.ALARM_SINGLE, getCB("timer"))
-  
+
   local name, timer = waitCB()
   ok(eq("timer", name), "CB name matches")
+  ok(eq(t, timer), "CB tmr instance matches")
 
   ok(true, "coroutine end")
 end)
@@ -57,14 +58,16 @@ end)
 N.testco('SEMI alarm coroutine', function(getCB, waitCB)
   local t = tmr.create();
   t:alarm(200, tmr.ALARM_SEMI, getCB("timer"))
-  
+
   local name, timer = waitCB()
   ok(eq("timer", name), "CB name matches")
+  ok(eq(t, timer), "CB tmr instance matches")
 
   timer:start()
-  
+
   name, timer = waitCB()
   ok(eq("timer", name), "CB name matches again")
+  ok(eq(t, timer), "CB tmr instance matches again")
 
   ok(true, "coroutine end")
 end)
@@ -75,12 +78,14 @@ N.testco('AUTO alarm coroutine', function(getCB, waitCB)
 
   local name, timer = waitCB()
   ok(eq("timer", name), "CB name matches")
-  
+  ok(eq(t, timer), "CB tmr instance matches")
+
   name, timer = waitCB()
   ok(eq("timer", name), "CB name matches again")
+  ok(eq(t, timer), "CB tmr instance matches again")
 
   timer:stop()
-  
+
   ok(true, "coroutine end")
 end)
 
