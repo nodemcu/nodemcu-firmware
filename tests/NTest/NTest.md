@@ -193,6 +193,9 @@ tests.test('Some test', function()
 end)
 ```
 
+You can set any of the parameters to `nil` to leave the value unchanged. 
+
+
 ## Appendix
 
 This Library is for NodeMCU versions Lua 5.1 and Lua 5.3. 

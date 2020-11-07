@@ -30,12 +30,12 @@ local function load_tests()
   metatest('ok without a message', function()
     ok(1 == 1)
     ok(1 == 2)
-  end, {'NTest_test.lua:31'}, {'NTest_test.lua:32'})
+  end, {'NTest_NTest.lua:31'}, {'NTest_NTest.lua:32'})
 
   metatest('nok without a message', function()
     nok(1 == "")
     nok(1 == 1)
-  end, {'NTest_test.lua:36'}, {'NTest_test.lua:37'})
+  end, {'NTest_NTest.lua:36'}, {'NTest_NTest.lua:37'})
 
   --
   -- Equality tests
@@ -169,13 +169,13 @@ local function load_tests()
     fail(function() error("my error") end, "different error", "Failed with incorrect error")
     ok(true, 'unreachable code')
   end, {}, {'Failed with incorrect error',
-        'expected errormessage "NTest_test.lua:169: my error" to contain "different error"'})
+        'expected errormessage "NTest_NTest.lua:169: my error" to contain "different error"'})
 
   metatest('fail with incorrect errormessage default message', function()
     fail(function() error("my error") end, "different error")
     ok(true, 'unreachable code')
-  end, {}, {'NTest_test.lua:175',
-        'expected errormessage "NTest_test.lua:175: my error" to contain "different error"'})
+  end, {}, {'NTest_NTest.lua:175',
+        'expected errormessage "NTest_NTest.lua:175: my error" to contain "different error"'})
 
   metatest('fail with not failing code', function()
     fail(function() end, "my error", "did not fail")
@@ -195,7 +195,7 @@ local function load_tests()
   metatest('fail with not failing code default message', function()
     fail(function() end)
     ok(true, 'unreachable code')
-  end, {}, {"NTest_test.lua:196", 'Expected to fail with Error'})
+  end, {}, {"NTest_NTest.lua:196", 'Expected to fail with Error'})
 
   metatest('=== load more tests ===', function()
     load_tests2()
@@ -210,7 +210,7 @@ load_tests2 = function()
   metatest('error should panic', function()
     error("lua error")
     ok(true, 'unreachable code')
-  end, {}, {}, {'NTest_test.lua:211: lua error'})
+  end, {}, {}, {'NTest_NTest.lua:211: lua error'})
 
   --
   -- called function except
@@ -223,7 +223,7 @@ load_tests2 = function()
   metatest('subroutine error should panic', function()
     subfuncerror()
     ok(true, 'unreachable code')
-  end, {}, {}, {'NTest_test.lua:220: lua error'})
+  end, {}, {}, {'NTest_NTest.lua:220: lua error'})
 
   local function subfuncok()
     ok(false)
@@ -232,7 +232,7 @@ load_tests2 = function()
   metatest('subroutine ok should fail', function()
     subfuncok()
     ok(true, 'unreachable code')
-  end, {}, {'NTest_test.lua:229'})
+  end, {}, {'NTest_NTest.lua:229'})
 
   --drain_post_queue()
 
@@ -276,7 +276,7 @@ load_tests2 = function()
   metatest('async except in main', function(--[[ next ]])
     error("async except")
     ok(true, 'unreachable code')
-  end, {}, {}, {'NTest_test.lua:277: async except'}, true)
+  end, {}, {}, {'NTest_NTest.lua:277: async except'}, true)
 
   metatest('async fail in callback', function(next)
     async(function()
@@ -292,7 +292,7 @@ load_tests2 = function()
       next()
     end)
     ok(true, 'foo')
-  end, {'foo'}, {}, {'NTest_test.lua:291: async Lua error'}, true)
+  end, {'foo'}, {}, {'NTest_NTest.lua:291: async Lua error'}, true)
 
   --
   -- sync after async test
@@ -333,12 +333,12 @@ load_tests2 = function()
     fail(function() error("my error") end, "other error", "Failed with other error")
     ok(true, 'unreachable code')
   end, {'Failed with correct error'}, {'Failed with other error',
-        'expected errormessage "NTest_test.lua:333: my error" to contain "other error"'}, {}, "co")
+        'expected errormessage "NTest_NTest.lua:333: my error" to contain "other error"'}, {}, "co")
 
   metatest('coroutine except in main', function(--[[ getCB, waitCB ]])
     error("coroutine except")
     ok(true, 'unreachable code')
-  end, {}, {}, {'NTest_test.lua:339: coroutine except'}, "co")
+  end, {}, {}, {'NTest_NTest.lua:339: coroutine except'}, "co")
 
   --local function coasync(f) table.insert(post_queue, 1, f) end
   local function coasync(f, p1, p2) node.task.post(node.task.MEDIUM_PRIORITY, function() f(p1,p2) end) end
@@ -371,7 +371,7 @@ load_tests2 = function()
     ok(eq(name, "testCb"), "cb")
     error("error")
     ok(true, 'unreachable code')
-  end, {"cb"}, {}, {"NTest_test.lua:372: error"}, "co")
+  end, {"cb"}, {}, {"NTest_NTest.lua:372: error"}, "co")
 
   --- detect stray callbacks after the test has finished
   local strayCb

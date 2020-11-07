@@ -245,10 +245,8 @@ local function NTest(testrunname, failoldinterface)
   end
 
   local function report(f, envP)
-    if type(f) == 'function' then
-      outputhandler = f
-      env = envP or _G
-    end
+    outputhandler = f or outputhandler
+    env = envP or env
   end
 
   local currentCoName
