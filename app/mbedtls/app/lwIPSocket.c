@@ -34,6 +34,7 @@
 
 #include "ets_sys.h"
 #include "os_type.h"
+#include <ctype.h>
 
 #include "lwip/mem.h"
 #include "sys/socket.h"
@@ -41,6 +42,9 @@
 #ifdef MEMLEAK_DEBUG
 static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #endif
+
+void *pvPortZalloc (size_t sz, const char *, unsigned);
+void vPortFree (void *p, const char *, unsigned);
 
 /** The global array of available sockets */
 static lwIP_sock sockets[NUM_SOCKETS];

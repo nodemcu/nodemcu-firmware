@@ -181,6 +181,10 @@
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #endif // #if !defined LUA_NUMBER_INTEGRAL
 
+#ifdef LUA_NUMBER_64BITS
+#error Lua 5.1 does not support 64 bit inetegers.
+#endif
+
 /*
 @@ LUA_API is a mark for all core API functions.
 @@ LUALIB_API is a mark for all standard library functions.

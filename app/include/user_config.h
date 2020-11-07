@@ -42,21 +42,34 @@
 //#define DISABLE_STARTUP_BANNER
 
 
-// Three separate build variants are now supported. The main difference is in the
-// processing of numeric data types.  If LUA_NUMBER_INTEGRAL is defined, then
+// When using Lua 5.1, two different builds are now supported.
+// The main difference is in the // processing of numeric data types.
+// If LUA_NUMBER_INTEGRAL is defined, then
 // all numeric calculations are done in integer, with divide being an integer
-// operations, and decimal fraction constants are illegal.  Otherwise all
-// numeric operations use floating point, though they are exact for integer
-// expressions < 2^53.
-
-// The main advantage of INTEGRAL builds is that the basic internal storage unit,
-// the TValue, is 8 bytes long.  We have now reduced the size of FP TValues to
-// 12 bytes rather than the previous 16 as this gives a material RAM saving with
-// no performance loss.  However, you can define LUA_DWORD_ALIGNED_TVALUES and
-// this will force 16 byte TValues on FP builds.
+// operation, and decimal fraction constants are illegal.
+// Otherwise all floating point operations use doubles. All integer values
+// can be represented exactly in floating point.
 
 //#define LUA_NUMBER_INTEGRAL
-//#define LUA_DWORD_ALIGNED_TVALUES
+
+// When using Lua 5.3, two different builds are now supported. 
+// The main difference is in the processing of numeric data types.
+// If LUA_NUMBER_64BITS is defined, then doubles are used to hold floating
+// point numbers. Integers under 2^53 are representable exactly in doubles.
+// Integers are held in 64-bit variables. 
+// Otherwise all floating point operations use floats. Only integers under 2^24
+// can be represented exactly in floating point. Integers are represented in 32 bit variables.
+// Note that Lua 5.3 also supports Integers natively, but you have to be careful 
+// not to promote an integer to a floating point variable if you are using a float build
+// as you can lose precision.
+
+//#define LUA_NUMBER_64BITS
+
+// The main advantage of INTEGRAL builds and non 64BITS builds is that the basic internal
+// storage unit, the TValue, is 8 bytes long.  For 64BITS builds, we have now reduced
+// the size of FP TValues to 12 bytes rather than the previous 16 as this gives a
+// material RAM saving with no performance loss.
+//
 
 
 // The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and

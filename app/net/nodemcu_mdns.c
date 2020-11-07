@@ -1001,7 +1001,7 @@ mdns_set_servicename(const char *name) {
 	char tmpBuf[128];
 	os_sprintf(tmpBuf, "_%s._tcp.local", name);
 	if (service_name_with_suffix) {
-	  os_free(service_name_with_suffix);
+	  os_free((void *) service_name_with_suffix);
 	}
 	service_name_with_suffix = strdup(tmpBuf);
 }

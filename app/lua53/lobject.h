@@ -134,12 +134,17 @@ typedef union Value {
 
 #define TValuefields	Value value_; int tt_
 
+#ifdef LUA_USE_ESP
+#  pragma pack(4)
+#endif
 
 typedef struct lua_TValue {
   TValuefields;
 } TValue;
 
-
+#ifdef LUA_USE_ESP
+#  pragma pack()
+#endif
 
 /* macro defining a nil value */
 #define NILCONSTANT	{NULL}, LUA_TNIL

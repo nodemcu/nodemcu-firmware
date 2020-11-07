@@ -16,6 +16,9 @@
 #define   espconn_manual_recv_disabled(espconn)  (((espconn)->pcommon.espconn_opt & ESPCONN_MANUALRECV) != 0)
 #define   espconn_manual_recv_enabled(espconn)  (((espconn)->pcommon.espconn_opt & ESPCONN_MANUALRECV) == 0)
 
+extern int ets_task();
+extern int ets_post();
+
 /******************************************************************************
  * FunctionName : espconn_kill_oldest_pcb
  * Description  : A oldest incoming connection has been killed.
