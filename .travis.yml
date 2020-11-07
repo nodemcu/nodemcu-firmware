@@ -35,7 +35,9 @@ script:
 - find lua_modules lua_examples tests/NTest* -iname "*.lua" -print0 | xargs -0 echo
 - find lua_modules lua_examples tests/NTest* -iname "*.lua" -print0 | xargs -0 $LUACC -p
 - cd tests/NTest
-- ../../$LUACC -e ../NTest/NTest_NTest.lua
+- bash ../../$LUACC -e ../NTest/NTest_NTest.lua
+- bash "../../$LUACC -e ../NTest/NTest_NTest.lua"
+- ../../{$LUACC} -e ../NTest/NTest_NTest.lua
 - cd "$TRAVIS_BUILD_DIR"
 - if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-linux.sh; fi
 - if [ "$OS" = "windows" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-windows.sh; fi
