@@ -948,4 +948,4 @@ stds.nodemcu_libs = {
   }
 }
 
-std = "lua51+nodemcu_libs"
+std = "lua51+lua53+nodemcu_libs"

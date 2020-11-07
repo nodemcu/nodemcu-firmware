@@ -5,8 +5,8 @@
 
 NTest is a test system for NodeMCU which is originally based on gambiarra. It is designed to run on chip but the selftest also runs on the host using luac.cross.
 
-!!! attention
-  You will have to use LFS to run this as it is too big to fit in memory.
+!!! warning
+	This module is too big to load by standard `require` function or compile on ESP8266 using `node.compile()`. The only option to load and use it is to use [LFS](../lfs.md).
 
 ## Example
 
