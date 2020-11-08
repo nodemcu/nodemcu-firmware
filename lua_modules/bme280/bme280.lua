@@ -130,8 +130,8 @@ function bme280_startreadout(self, callback, delay, alt)
   delay = delay or BME280_SAMPLING_DELAY
 
   if self._isbme then write_reg(self.id, self.addr, BME280_REGISTER_CONTROL_HUM, self._config[2]) end
-  write_reg(self.id, self.addr, BME280_REGISTER_CONTROL, math_floor(self._config[3]:byte(1)/4)+ 1)
-    -- math_floor(self._config[3]:byte(1)/4)+ 1
+  write_reg(self.id, self.addr, BME280_REGISTER_CONTROL, 4*math_floor(self._config[3]:byte(1)/4)+ 1)
+    -- 4*math_floor(self._config[3]:byte(1)/4)+ 1
     --   an awful way to avoid bit operations but calculate (config[3] & 0xFC) | BME280_FORCED_MODE
     -- Lua 5.3 integer division // would be more suitable
 
