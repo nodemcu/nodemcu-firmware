@@ -68,5 +68,8 @@ fi
 
 echo "Static analysys of"
 find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
-
 (find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 luacheck --config tools/luacheck_config.lua) || exit
+
+echo "Static analysys of"
+find tests -iname "*.lua" -print0 | xargs -0 echo
+(find tests -iname "*.lua" -print0 | xargs -0 luacheck --config tools/luacheck_NTest_config.lua) || exit
