@@ -257,9 +257,9 @@ inline static uint64_t rtc_timer_update(bool do_calibration){
 
 void rtc_callback(void *arg){
 	rtc_timer_update(true);
-	if(soft_watchdog > 0){
+	if(soft_watchdog >= 0){
 		soft_watchdog--;
-		if(soft_watchdog == 0)
+		if(soft_watchdog < 0)
 			system_restart();
 	}
 }
@@ -273,9 +273,8 @@ static int tmr_time( lua_State* L ){
 
 // Lua: tmr.softwd( value )
 static int tmr_softwd( lua_State* L ){
-	int t = luaL_checkinteger(L, 1);
-	luaL_argcheck(L, t>0 , 2, "invalid time");
-	soft_watchdog = t;
+	soft_watchdog = luaL_checkinteger(L, 1);
+  // NO check is required as negative Values mean that the timer is disabled.
 	return 0;
 }
 
