@@ -202,8 +202,8 @@ local function NTest(testrunname, failoldinterface)
 
       env.eq = deepeq
       env.spy = spy
-      env.ok = function (cond, msg1, msg2) wrap(assertok, false, cond, msg1, msg2) end
-      env.nok = function(cond, msg1, msg2) wrap(assertok, true,  cond, msg1, msg2) end
+      env.ok = function (cond, msg) wrap(assertok, false, cond, msg) end
+      env.nok = function(cond, msg) wrap(assertok, true,  cond, msg) end
       env.fail = function (func, expected, msg) wrap(fail, func, expected, msg) end
 
       handler('begin', name)
