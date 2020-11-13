@@ -89,3 +89,10 @@ N.testco('AUTO alarm coroutine', function(getCB, waitCB)
   ok(true, "coroutine end")
 end)
 
+N.test('softwd set positive and negative values', function()
+  tmr.softwd(22)
+  tmr.softwd(0)
+  tmr.softwd(-1)  -- disable it again
+  tmr.softwd(-22) -- disable it again
+end)
+
