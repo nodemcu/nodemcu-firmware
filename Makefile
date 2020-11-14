@@ -141,6 +141,7 @@ else
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
+      GITHUB_ESPRESSIF_SDK = yes
       export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
     endif
   endif
@@ -316,6 +317,7 @@ $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
 	mkdir -p $(TOP_DIR)/cache/esptool/
 	$(WGET) $(GITHUB_ESPTOOL)/archive/v$(ESPTOOL_VER).tar.gz -O $@ || { rm -f "$@"; exit 1; }
 
+ifdef GITHUB_ESPRESSIF_SDK
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
@@ -343,6 +345,13 @@ $(TOP_DIR)/cache/$(SDK_FILE_VER).zip:
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	$(WGET) $(GITHUB_SDK)/archive/$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	if test "$(SDK_FILE_SHA1)" != "NA"; then echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c - || { rm -f "$@"; exit 1; }; fi
+else
+$(TOP_DIR)/sdk/.extracted-$(SDK_VER):
+	echo "SDK provided"
+	test -d $(dir $@)/esp_iot_sdk_v$(SDK_VER) || { echo "esp_iot_sdk_v$(SDK_VER) not found"; exit 1; };
+$(TOP_DIR)/sdk/.pruned-$(SDK_VER):
+	echo "SDK pruned"
+endif
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
