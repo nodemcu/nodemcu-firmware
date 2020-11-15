@@ -7,7 +7,7 @@ The firmware was initially developed as is a companion project to the popular ES
 → [Getting Started](getting-started.md)
 
 ## Programming Model
-The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](https://github.com/nodemcu/nodemcu-firmware/tree/master/lua_examples) folder in the repository on GitHub.
+The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](https://github.com/nodemcu/nodemcu-firmware/tree/release/lua_examples) folder in the repository on GitHub.
 
 ```lua
 -- a simple HTTP server
@@ -32,12 +32,9 @@ wifi.sta.config(station_cfg)
 
 ```lua
 -- register event callbacks for WiFi events
-wifi.sta.eventMonReg(wifi.STA_CONNECTING, function(previous_state)
-	if(previous_state==wifi.STA_GOTIP) then
-	    print("Station lost connection with access point. Attempting to reconnect...")
-	else
-	    print("STATION_CONNECTING")
-	end
+wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T)
+  print("\n\tSTA - CONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
+  T.BSSID.."\n\tChannel: "..T.channel)
 end)
 ```
 
@@ -56,9 +53,9 @@ In September 2018 support for a [Lua Flash Store (LFS)](lfs.md) was introduced. 
 
 ## Releases
 
-This project uses two main branches, `master` and `dev`. `dev` is actively worked on and it's also where PRs should be created against. `master` thus can be considered "stable" even though there are no automated regression tests. The goal is to merge back to `master` roughly every 2 months. Depending on the current "heat" (issues, PRs) we accept changes to `dev` for 5-6 weeks and then hold back for 2-3 weeks before the next snap is completed.
+This project uses two main branches, `release` and `dev`. `dev` is actively worked on and it's also where PRs should be created against. `release` thus can be considered "stable" even though there are no automated regression tests. The goal is to merge back to `release` roughly every 2 months. Depending on the current "heat" (issues, PRs) we accept changes to `dev` for 5-6 weeks and then hold back for 2-3 weeks before the next snap is completed.
 
-A new tag is created every time `dev` is merged back to `master`. They are listed in the [releases section on GitHub](https://github.com/nodemcu/nodemcu-firmware/releases). Tag names follow the `<SDK-version>-master_yyyymmdd` pattern.
+A new tag is created every time `dev` is merged back to `release` branch. They are listed in the [releases section on GitHub](https://github.com/nodemcu/nodemcu-firmware/releases). Tag names follow the `<SDK-version>-release_yyyymmdd` pattern.
 
 ## Up-To-Date Documentation
 At the moment the only up-to-date documentation maintained by the current NodeMCU team is in English. It is part of the source code repository (`/docs` subfolder) and kept in sync with the code.

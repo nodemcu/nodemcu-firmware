@@ -28,7 +28,7 @@ If you decide to build with either the Docker image or the native environment th
 ```
 git clone --recurse-submodules -b <branch> https://github.com/nodemcu/nodemcu-firmware.git
 ```
-Omitting the optional `-b <branch>` will clone master.
+Omitting the optional `-b <branch>` will clone release.
 
 ## Build Options
 
@@ -104,7 +104,7 @@ either by uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
 ```
 
 OR by overriding this with the `make` command as it's [done during the CI
-build](https://github.com/nodemcu/nodemcu-firmware/blob/master/.travis.yml#L30):
+build](https://github.com/nodemcu/nodemcu-firmware/blob/release/.travis.yml#L30):
 
 ```
 make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....

@@ -358,7 +358,7 @@ srv:on("receive", function(sck, c)
   end
 end)
 -- throttling could be implemented using socket:hold()
--- example: https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/pcm/play_network.lua#L83
+-- example: https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_examples/pcm/play_network.lua#L83
 ```
 
 #### See also
