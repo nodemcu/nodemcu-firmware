@@ -266,6 +266,33 @@ N.test('sub', function()
     ok(buffer1 == buffer2, "out of bounds")
 end)
 
+N.test('map', function()
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    buffer1:fill(65,66,67,68)
+
+    buffer1:map(function(a,b,c,d) return b,a,c,d end)
+    ok(eq("BACDBACDBACDBACD", buffer1:dump()), "swizzle")
+
+    local buffer2 = pixbuf.newBuffer(4, 1)
+    buffer2:map(function(_,_,c,_) return c end, buffer1)
+    ok(eq("CCCC", buffer2:dump()), "projection")
+
+    local buffer3 = pixbuf.newBuffer(4, 3)
+    buffer3:map(function(b,a,_,d) return a,b,d end, buffer1)
+    ok(eq("ABDABDABDABD", buffer3:dump()), "projection 2")
+
+    buffer1:fill(70,71,72,73)
+    buffer1:map(function(c,a,b,d) return a,b,c,d end, buffer2, nil, nil, buffer3)
+    ok(eq("ABCDABCDABCDABCD", buffer1:dump()), "zip")
+
+    buffer1 = pixbuf.newBuffer(2, 4)
+    buffer1:fill(70,71,72,73)
+    buffer2:set(1,"ABCD")
+    buffer3:set(1,"EFGHIJKLM")
+    buffer1:map(function(c,a,b,d) return a,b,c,d end, buffer2, 1, 2, buffer3, 2)
+    ok(eq("HIAJKLBM", buffer1:dump()), "partial zip")
+end)
+
 --[[
 pixbuf.buffer:__concat()
 --]]

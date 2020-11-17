@@ -226,6 +226,52 @@ static int pixbuf_get_lua(lua_State *L) {
   return channels;
 }
 
+/* :map(f, buf1, ilo, ihi, [buf2, ilo2]) */
+static int pixbuf_map_lua(lua_State *L) {
+  pixbuf *outbuf = pixbuf_from_lua_arg(L, 1);
+  /* f at index 2 */
+
+  pixbuf *buffer1 = pixbuf_opt_from_lua_arg(L, 3);
+  if (!buffer1)
+    buffer1 = outbuf;
+
+  const int ilo = posrelat(luaL_optinteger(L, 4, 1), buffer1->npix) - 1;
+  const int ihi = posrelat(luaL_optinteger(L, 5, buffer1->npix), buffer1->npix) - 1;
+
+  luaL_argcheck(L, ihi > ilo, 3, "Buffer limits out of order");
+
+  size_t npix = ihi - ilo + 1;
+
+  luaL_argcheck(L, npix == outbuf->npix, 1, "Output buffer wrong size");
+
+  pixbuf *buffer2 = pixbuf_opt_from_lua_arg(L, 6);
+  const int ilo2 = buffer2 ? posrelat(luaL_optinteger(L, 7, 1), buffer2->npix) - 1 : 0;
+
+  if (buffer2) {
+    luaL_argcheck(L, ilo2 + npix <= buffer2->npix, 6, "Second buffer too short");
+  }
+
+  for (size_t p = 0; p < npix; p++) {
+    lua_pushvalue(L, 2);
+    for (size_t c = 0; c < buffer1->nchan; c++) {
+      lua_pushinteger(L, buffer1->values[(ilo + p) * buffer1->nchan + c]);
+    }
+    if (buffer2) {
+      for (size_t c = 0; c < buffer2->nchan; c++) {
+        lua_pushinteger(L, buffer2->values[(ilo2 + p) * buffer2->nchan + c]);
+      }
+    }
+    lua_call(L, buffer1->nchan + (buffer2 ? buffer2->nchan : 0), outbuf->nchan);
+    for (size_t c = 0; c < outbuf->nchan; c++) {
+      outbuf->values[(p + 1) * outbuf->nchan - c - 1] = luaL_checkinteger(L, -1);
+      lua_pop(L, 1);
+    }
+  }
+
+  lua_settop(L, 1);
+  return 1;
+}
+
 struct mix_source {
   int factor;
   const uint8_t *values;
@@ -647,6 +693,7 @@ LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
   LROT_FUNCENTRY( fill, pixbuf_fill_lua )
   LROT_FUNCENTRY( get, pixbuf_get_lua )
   LROT_FUNCENTRY( replace, pixbuf_replace_lua )
+  LROT_FUNCENTRY( map, pixbuf_map_lua )
   LROT_FUNCENTRY( mix, pixbuf_mix_lua )
   LROT_FUNCENTRY( mix4I5, pixbuf_mix4I5_lua )
   LROT_FUNCENTRY( power, pixbuf_power_lua )

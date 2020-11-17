@@ -292,3 +292,34 @@ The concatenated buffer.
 ```
 ws2812.write(buffer1 .. buffer2)
 ```
+## pixbuf.buffer:map()
+Map a function across each pixel of one, or zip a function along two,
+pixbuf(s), storing into the buffer on which it is called.
+
+#### Syntax
+`buffer0:map(f, [buffer1], [ilo], [ihi], [buffer2, [ilo2]])`
+
+#### Parameters
+ - `f` This is the mapping function; it is applied for each pixel to each channel of `buffer1` and
+   all channels from `buffer2`, if given.  It must return a value for each channel of the output
+   buffer.
+ - `buffer1` The first source buffer.  Defaults to `buffer0`.
+ - `ilo` This is the start of the mapped range. Negative values can be used.  The default is 1.
+ - `ihi` this is the end of the mapped range. Negative values can be used. The default is -1.
+ - `buffer2` is a second buffer, for zip operations
+ - `ilo2` This is the start of the mapped range within `buffer2`.  Negative values can be used.
+   The default is 1.
+
+`buffer0` must have `ihi - ilo + 1` pixels (which is true of the defaults, when
+`buffer1` is `buffer0` and `ilo` is 1 and `ihi` is -1).
+
+#### Returns
+`buffer0`
+
+#### Example
+```
+buffer:map(function(r,g,b) return g,r,b end) -- Change channel order
+buffer:map(function(r,g,b) return g,r,b end, nil, 2, 5) -- Change channel order for a subset of pixels
+outbuf:map(function(r,g,b) return b end, inbuf, 10, 20) -- Extract one channel for a subset of pixels
+outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3) -- Per-pixel concatenation, w/ offsets
+```
