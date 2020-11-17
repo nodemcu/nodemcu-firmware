@@ -1,20 +1,9 @@
 #ifndef APP_MODULES_PIXBUF_H_
 #define APP_MODULES_PIXBUF_H_
 
-enum pixbuf_type {
-  PIXBUF_TYPE_RGB = 0 /* 3-color: Red, Green, Blue order */,
-  PIXBUF_TYPE_GRB     /* 3-color: Green, Red, Blue order */,
-  PIXBUF_TYPE_RGBW    /* 4-color: RGB + White */,
-  PIXBUF_TYPE_GRBW    /* 4-color: GRB + White */,
-  PIXBUF_TYPE_WWA     /* 3-color: warm White, cold White, Amber */,
-  PIXBUF_TYPE_I5BGR   /* 3-color (Blue, Green, Red) after 5-bit Intensity */,
-};
-
-static const enum pixbuf_type PIXBUF_NTYPES = PIXBUF_TYPE_I5BGR + 1;
-
 typedef struct pixbuf {
   const size_t npix;
-  const uint8_t type;
+  const size_t nchan;
 
   /* Flexible Array Member; true size is npix * pixbuf_channels_for(type) */
   uint8_t values[];

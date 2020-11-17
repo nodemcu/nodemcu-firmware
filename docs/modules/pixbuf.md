@@ -12,17 +12,11 @@ supported by, e.g., ws2812.
 Allocate a new memory buffer to store LED values.
 
 #### Syntax
-`pixbuf.newBuffer(numberOfLeds, type)`
+`pixbuf.newBuffer(numberOfLeds, numberOfChannels)`
 
 #### Parameters
- - `numberOfLeds` length of the LED strip
- - `type` the type of the LED srip.  Must be one of
-
-    - `pixbuf.TYPE_RGB` for Red-Green-Blue arrays
-    - `pixbuf.TYPE_GRB` for Green-Red-Blue arrays
-    - `pixbuf.TYPE_RGBW` or `pixbuf.TYPE_GRBW` for the above but also with a White channel
-    - `pixbuf.TYPE_WWA` for warm-White cool-White Amber arrays
-    - `pixbuf.TYPE_I5BGR` for 5-bit Intensity-mediated Blue-Green-Red arrays (e.g., APA102)
+ - `numberOfLeds` length of the LED strip (in pixels)
+ - `numberOfChannels` the channel count (bytes per pixel)
 
 #### Returns
 `pixbuf.buffer` object
@@ -41,24 +35,10 @@ Return the value at the given position, in native strip color order
 
 #### Example
 ```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_RGBW)
+buffer = pixbuf.newBuffer(32, 4)
 print(buffer:get(1))
 0	0	0	0
 ```
-
-## pixbuf.buffer:getRGB()
-Return the value at the given position, in RGB order.  See
-[`pixbuf.buffer:fillRGB()`](#pixbufbufferfillrgb).  Will fail for WWA
-or other non-RGB-esque pixbufs.
-
-#### Syntax
-`buffer:getRGB(index)`
-
-#### Parameters
- - `index` position in the buffer (1 for first LED)
-
-#### Returns
-`r, g, b, [4th]`
 
 ## pixbuf.buffer:set()
 Set the value at the given position, in native strip color order
@@ -71,7 +51,7 @@ Set the value at the given position, in native strip color order
  - `color` payload of the color
 
 Payload could be:
-- `number, number, ...`, passing as many colors as required by the array type 
+- `number, number, ...`, passing as many colors as required by the array type
 - `table` should contain one value per color required by the array type
 - `string` with a natural multiple of the colors required by the array type
 
@@ -82,59 +62,18 @@ The buffer
 
 #### Example
 ```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_GRB)
+buffer = pixbuf.newBuffer(32, 3)
 buffer:set(1, 255, 0, 0) -- set the first LED green for a GRB strip
 ```
 
 ```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_RGBW)
+buffer = pixbuf.newBuffer(32, 4)
 buffer:set(1, {255, 0, 0, 255}) -- set the first LED white and red for a RGBW strip
 ```
 
 ```lua
 -- set the first LED green for a RGB strip and exploit the return value
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_RGB):set(1, string.char(0, 255, 0))
-```
-
-## pixbuf.buffer:setRGB()
-Set the value at the given position, in RGB order.  Like
-[`pixbuf.buffer:fillRGB()`](#pixbufbufferfillrgb), this takes three or four
-color values, depending on the strip type.  For RGBW and GRBW strips, the
-fourth color is the white channel, and for I5BGR strips, the fourth color is the
-intensity value.  Use [`pixbuf.buffer:set()`](#pixbufbufferset) for raw access
-or for WWA strips.
- 
-#### Syntax
-`buffer:setRGB(index, color)`
-
-#### Parameters
- - `index` position in the buffer (1 for the first LED)
- - `color` payload of the color
-
-Payload could be:
-- `number, number, ...`, passing as many colors as required by the array type 
-- `table` should contain one value per color required by the array type
-- `string` with a natural multiple of the colors required by the array type
-
-`string` inputs may be used to set multiple consecutive pixels!
-
-#### Returns
-The buffer
-
-#### Example
-```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_GRB)
-buffer:setRGB(1, 255, 0, 0) -- set the first LED red
-```
-
-```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_GRBW)
-buffer:setRGB(1, {255, 0, 0, 255}) -- set the first LED white and red
-```
-
-```lua
-buffer = pixbuf.newBuffer(32, pixbuf.TYPE_GRB)
-buffer:setRGB(1, string.char(0, 255, 0)) -- set the first LED green
+buffer = pixbuf.newBuffer(32, 3):set(1, string.char(0, 255, 0))
 ```
 
 ## pixbuf.buffer:size()
@@ -149,18 +88,27 @@ none
 #### Returns
 `int`
 
+## pixbuf.buffer:channels()
+Return the buffer's channel count
+
+#### Syntax
+`buffer:channels()`
+
+#### Parameters
+none
+
+#### Returns
+`int`
+
 ## pixbuf.buffer:fill()
 Fill the buffer with the given color.
-The number of given bytes must match the number of bytesPerLed of the buffer,
-and they must be in the correct order as per the strip's type.  This is the
-more general fill interface (and handles WWA strips) but for convnience and
-increased portability, see [`pixbuf.buffer:fillRGB()`](#pixbufbufferfillrgb).
+The number of given bytes must match the channel count of the buffer.
 
 #### Syntax
 `buffer:fill(color)`
 
 #### Parameters
- - `color` bytes of the color, you should pass as many arguments as `bytesPerLed`
+ - `color` bytes for each channel
 
 #### Returns
 The buffer
@@ -170,31 +118,8 @@ The buffer
 buffer:fill(0, 0, 0) -- fill the buffer with black for a RGB strip
 ```
 
-## pixbuf.buffer:fillRGB()
-
-Fill the buffer with the given color, given as R, G, B, and then a fourth value
-if required.  For RGBW or GRBW strips, the fourth value is the white channel;
-for IGRB strips, the fourth value is the LED intensity value.
-
-This is the more convenient fill interface for RGB-esque strips, but for
-flexibility or WWA strips, see [`pixbuf.buffer:fill()`](#pixbufbufferfill).
-
-#### Syntax
-`buffer:fillRGB(color)`
-
-#### Parameters
- - `color` bytes of the color, you should pass as many arguments as `bytesPerLed`
-
-#### Returns
-The buffer
-
-#### Example
-```lua
-buffer:fillRGB(0, 0, 0) -- fill the buffer with black for a RGB strip
-```
-
 ## pixbuf.buffer:dump()
-Returns the contents of the buffer (the pixel values) as a string. This can then be saved to a file or sent over a network.
+Returns the contents of the buffer (the pixel values) as a string. This can then be saved to a file or sent over a network and may be fed back to [`pixbuf.buffer:set()`](#pixbufbufferset).
 
 #### Syntax
 `buffer:dump()`
@@ -255,6 +180,11 @@ buffer:mix(256 - crossmix, buffer1, crossmix, buffer2)
 buffer:mix(192, buffer)
 ```
 
+## pixbuf.buffer:mix4I5()
+Like [`pixbuf.buffer:mix()`](#pixbufbuffermix) but treats the first channel as
+a scaling, 5-bit intensity value.  The buffers must all have four channels.
+This is mostly useful for APA102 LEDs.
+
 ## pixbuf.buffer:power()
 Computes the total energy requirement for the buffer. This is merely the total sum of all the pixel values (which assumes that each color in each
 pixel consumes the same amount of power). A real WS2812 (or WS2811) has three constant current drivers of 20mA -- one for each of R, G and B. The
@@ -279,6 +209,10 @@ if p > led_sum then
 end
 ```
 
+## pixbuf.buffer:powerI()
+Like [`pixbuf.buffer:power()`](#pixbufbufferpower) but treats the first channel as
+a scaling intensity value.
+
 ## pixbuf.buffer:fade()
 Fade in or out. Defaults to out. Multiply or divide each byte of each led with/by the given value. Useful for a fading effect.
 
@@ -297,6 +231,11 @@ Fade in or out. Defaults to out. Multiply or divide each byte of each led with/b
 buffer:fade(2)
 buffer:fade(2, pixbuf.FADE_IN)
 ```
+
+## pixbuf.buffer:fadeI()
+Like [`pixbuf.buffer:fade()`](#pixbufbufferfade) but treats the first channel as
+a scaling intensity value.  This is mostly useful for APA102 LEDs.
+
 ## pixbuf.buffer:shift()
 Shift the content of (a piece of) the buffer in positive or negative direction. This allows simple animation effects. A slice of the buffer can be specified by using the
 standard start and end offset Lua notation. Negative values count backwards from the end of the buffer.
@@ -353,5 +292,3 @@ The concatenated buffer.
 ```
 ws2812.write(buffer1 .. buffer2)
 ```
-
-

@@ -93,7 +93,7 @@ static int apa102_write(lua_State* L) {
    }
   case LUA_TUSERDATA: {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 3);
-    luaL_argcheck(L, buffer->type == PIXBUF_TYPE_I5BGR, 3, "Pixbuf not IBGR");
+    luaL_argcheck(L, buffer->nchan == 4, 3, "Pixbuf not 4-channel");
     buf = (const char *)buffer->values;
     nbr_frames = buffer->npix;
     break;

@@ -17,6 +17,10 @@ pixbuf *pixbuf_from_lua_arg(lua_State *L, int arg) {
   return luaL_checkudata(L, arg, PIXBUF_METATABLE);
 }
 
+pixbuf *pixbuf_opt_from_lua_arg(lua_State *L, int arg) {
+  return luaL_testudata(L, arg, PIXBUF_METATABLE);
+}
+
 static ssize_t posrelat(ssize_t pos, size_t len) {
   /* relative string position: negative means back from end */
   if (pos < 0)
@@ -24,92 +28,13 @@ static ssize_t posrelat(ssize_t pos, size_t len) {
   return MIN(MAX(pos, 1), len);
 }
 
-static size_t pixbuf_channels_for(enum pixbuf_type type) {
-  switch(type) {
-    case PIXBUF_TYPE_RGB: return 3;
-    case PIXBUF_TYPE_GRB: return 3;
-    case PIXBUF_TYPE_WWA: return 3;
-    case PIXBUF_TYPE_RGBW: return 4;
-    case PIXBUF_TYPE_GRBW: return 4;
-    case PIXBUF_TYPE_I5BGR: return 4;
-  }
-  return 0;
-}
-
 const size_t pixbuf_channels(pixbuf *p) {
-  return pixbuf_channels_for(p->type);
+  return p->nchan;
 }
 
 const size_t pixbuf_size(pixbuf *p) {
-  return p->npix * pixbuf_channels(p);
+  return p->npix * p->nchan;
 }
-
-static void pixbuf_rgb_to_raw(enum pixbuf_type ty, size_t n, uint8_t *p)
-{
-  for (size_t i = 0; i < n; i++, p += pixbuf_channels_for(ty)) {
-    switch(ty) {
-    case PIXBUF_TYPE_RGB:
-    case PIXBUF_TYPE_RGBW:
-      break;
-    case PIXBUF_TYPE_GRB:
-    case PIXBUF_TYPE_GRBW:
-      {
-        uint8_t tmp = p[0];
-        p[0] = p[1];
-        p[1] = tmp;
-      }
-      break;
-    case PIXBUF_TYPE_I5BGR:
-      {
-        // RGBI -> IBGR is a pair of swaps: RI and GB
-        uint8_t tmp = p[0];
-        p[0] = p[3]; // [0] = i
-        p[3] = tmp;  // [3] = r
-        tmp = p[1];
-        p[1] = p[2]; // [1] = b
-        p[2] = tmp;  // [2] = g
-      }
-      break;       
-    case PIXBUF_TYPE_WWA:
-      lua_assert(0);
-    }
-  }
-}
-
-/*
- * Convert a single pixel to RGB format.  Intended for use on a temporary copy
- * uint8_t [channels], rather than a pixel within a pixbuf.
- */
-static void pixbuf_raw_to_rgb(enum pixbuf_type ty, uint8_t *p)
-{
-  switch(ty) {
-  case PIXBUF_TYPE_RGB:
-  case PIXBUF_TYPE_RGBW:
-    break;
-  case PIXBUF_TYPE_GRB:
-  case PIXBUF_TYPE_GRBW:
-    {
-      uint8_t tmp = p[0];
-      p[0] = p[1];
-      p[1] = tmp;
-    }
-    break;
-  case PIXBUF_TYPE_I5BGR:
-    {
-      // IBGR -> RGBI is a pair of swaps: RI and GB
-      uint8_t tmp = p[0];
-      p[0] = p[3]; // [0] = r
-      p[3] = tmp;  // [3] = i
-      tmp = p[1];
-      p[1] = p[2]; // [1] = g
-      p[2] = tmp;  // [2] = b
-    }
-    break;       
-  case PIXBUF_TYPE_WWA:
-    lua_assert(0);
-  }
-}
-
 
 /*
  * Construct a pixbuf newuserdata using C arguments.
@@ -117,9 +42,17 @@ static void pixbuf_raw_to_rgb(enum pixbuf_type ty, uint8_t *p)
  * Allocates, so may throw!  Leaves new buffer at the top of the Lua stack
  * and returns a C pointer.
  */
-static pixbuf *pixbuf_new(lua_State *L, size_t leds, uint8_t type) {
+static pixbuf *pixbuf_new(lua_State *L, size_t leds, size_t chans) {
   // Allocate memory
-  size_t size = sizeof(pixbuf) + pixbuf_channels_for(type)*leds;
+
+  // A crude hack of an overflow check, but unlikely to be reached in practice
+  if ((leds > 8192) || (chans > 8)) {
+    luaL_error(L, "pixbuf size limits exeeded");
+    return NULL; // UNREACHED
+  }
+
+  size_t size = sizeof(pixbuf) + leds * chans;
+
   pixbuf *buffer = (pixbuf*)lua_newuserdata(L, size);
 
   // Associate its metatable
@@ -128,23 +61,22 @@ static pixbuf *pixbuf_new(lua_State *L, size_t leds, uint8_t type) {
 
   // Save led strip size
   *(size_t *)&buffer->npix = leds;
-  *(uint8_t *)&buffer->type = type;
+  *(size_t *)&buffer->nchan = chans;
 
-  memset(buffer->values, 0, pixbuf_channels_for(type) * leds);
+  memset(buffer->values, 0, leds * chans);
 
   return buffer;
 }
 
 // Handle a buffer where we can store led values
 int pixbuf_new_lua(lua_State *L) {
-  const int leds = luaL_checkint(L, 1);
-  const int type = luaL_checkint(L, 2);
+  const int leds  = luaL_checkint(L, 1);
+  const int chans = luaL_checkint(L, 2);
 
   luaL_argcheck(L, leds > 0, 1, "should be a positive integer");
-  luaL_argcheck(L, type >= PIXBUF_TYPE_RGB && type < PIXBUF_NTYPES,
-                    2, "must be a valid pixbuf type");
+  luaL_argcheck(L, chans > 0, 2, "should be a positive integer");
 
-  pixbuf_new(L, leds, type);
+  pixbuf_new(L, leds, chans);
   return 1;
 }
 
@@ -152,10 +84,15 @@ static int pixbuf_concat_lua(lua_State *L) {
   pixbuf *lhs = pixbuf_from_lua_arg(L, 1);
   pixbuf *rhs = pixbuf_from_lua_arg(L, 2);
 
-  luaL_argcheck(L, lhs->type == rhs->type, 1,
-                "can only concatenate buffers with same type");
+  luaL_argcheck(L, lhs->nchan == rhs->nchan, 1,
+                "can only concatenate buffers with same channel count");
 
-  pixbuf *buffer = pixbuf_new(L, lhs->npix + rhs->npix, lhs->type);
+  size_t osize = lhs->npix + rhs->npix;
+  if (lhs->npix > osize) {
+    return luaL_error(L, "size sum overflow");
+  }
+
+  pixbuf *buffer = pixbuf_new(L, osize, lhs->nchan);
 
   memcpy(buffer->values, lhs->values, pixbuf_size(lhs));
   memcpy(buffer->values + pixbuf_size(lhs), rhs->values, pixbuf_size(rhs));
@@ -165,7 +102,7 @@ static int pixbuf_concat_lua(lua_State *L) {
 
 static int pixbuf_channels_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-  lua_pushinteger(L, pixbuf_channels(buffer));
+  lua_pushinteger(L, buffer->nchan);
   return 1;
 }
 
@@ -183,7 +120,7 @@ static int pixbuf_eq_lua(lua_State *L) {
 
   if (lhs->npix != rhs->npix) {
     res = false;
-  } else if (lhs->type != rhs->type) {
+  } else if (lhs->nchan != rhs->nchan) {
     res = false;
   } else {
     res = true;
@@ -199,21 +136,13 @@ static int pixbuf_eq_lua(lua_State *L) {
   return 1;
 }
 
-/* Fade an Ixxx-type strip by just manipulating the I bytes */
-static void pixbuf_fade_ixxx(pixbuf *buffer, int fade, unsigned direction) {
-  uint8_t *p = &buffer->values[0];
+static int pixbuf_fade_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+  const int fade = luaL_checkinteger(L, 2);
+  unsigned direction = luaL_optinteger( L, 3, PIXBUF_FADE_OUT );
 
-  for (size_t i = 0; i < buffer->npix; i++, p+=4) {
-    if (direction == PIXBUF_FADE_OUT) {
-      *p /= fade;
-    } else {
-      int val = *p * fade;
-      *p++ = MIN(255, val);
-    }
-  }
-}
+  luaL_argcheck(L, fade > 0, 2, "fade value should be a strictly positive int");
 
-static void pixbuf_fade_all(pixbuf *buffer, int fade, unsigned direction) {
   uint8_t *p = &buffer->values[0];
   for (size_t i = 0; i < pixbuf_size(buffer); i++)
   {
@@ -228,122 +157,73 @@ static void pixbuf_fade_all(pixbuf *buffer, int fade, unsigned direction) {
       *p++ = MIN(255, val);
     }
   }
+
+  return 0;
 }
 
-void pixbuf_fade(pixbuf *buffer, int fade, unsigned direction) {
-  switch(buffer->type) {
-  case PIXBUF_TYPE_I5BGR:
-    pixbuf_fade_ixxx(buffer, fade, direction);
-    break;
-  default:
-    pixbuf_fade_all(buffer, fade, direction);
-    break;
-  }
-}
-
-static int pixbuf_fade_lua(lua_State *L) {
+/* Fade an Ixxx-type strip by just manipulating the I bytes */
+static int pixbuf_fadeI_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   const int fade = luaL_checkinteger(L, 2);
   unsigned direction = luaL_optinteger( L, 3, PIXBUF_FADE_OUT );
 
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strictly positive int");
 
-  pixbuf_fade(buffer, fade, direction);
+  uint8_t *p = &buffer->values[0];
+  for (size_t i = 0; i < buffer->npix; i++, p+=buffer->nchan) {
+    if (direction == PIXBUF_FADE_OUT) {
+      *p /= fade;
+    } else {
+      int val = *p * fade;
+      *p++ = MIN(255, val);
+    }
+  }
 
   return 0;
 }
 
-static void pixbuf_fill_tail(pixbuf *buffer) {
-  /* Fill the rest of the pixels from the first */
-  for (size_t i = 1; i < buffer->npix; i++) {
-    memcpy(&buffer->values[i * pixbuf_channels(buffer)],
-           buffer->values, pixbuf_channels(buffer));
-  }
-}
-
-static int pixbuf_fill_core(lua_State *L, bool native) {
+static int pixbuf_fill_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
 
   if (buffer->npix == 0) {
     goto out;
   }
 
-  if (lua_gettop(L) != (1 + pixbuf_channels(buffer))) {
+  if (lua_gettop(L) != (1 + buffer->nchan)) {
     return luaL_argerror(L, 1, "need as many values as colors per pixel");
   }
 
-  if (!native) {
-    switch(buffer->type) {
-    case PIXBUF_TYPE_WWA:
-      return luaL_argerror(L, 1, "Can't fill strip with RGB");
-    }
-  }
-
   /* Fill the first pixel from the Lua stack */
-  for (size_t i = 0; i < pixbuf_channels(buffer); i++) {
+  for (size_t i = 0; i < buffer->nchan; i++) {
     buffer->values[i] = luaL_checkinteger(L, 2+i);
   }
-  if (!native) {
-    pixbuf_rgb_to_raw(buffer->type, 1, &buffer->values[0]);
-  }
 
-  switch(buffer->type) {
-    case PIXBUF_TYPE_I5BGR:
-      /* Clamp to five bits, like it says on the tin */
-      buffer->values[0] = buffer->values[0] > 31 ? 31 : buffer->values[0];
-      break;
+  /* Fill the rest of the pixels from the first */
+  for (size_t i = 1; i < buffer->npix; i++) {
+    memcpy(&buffer->values[i * buffer->nchan], buffer->values, buffer->nchan);
   }
-
-  pixbuf_fill_tail(buffer);
 
 out:
   lua_settop(L, 1);
   return 1;
 }
 
-static int pixbuf_fill_lua(lua_State *L) {
-  return pixbuf_fill_core(L, true);
-}
-
-static int pixbuf_fillRGB_lua(lua_State *L) {
-  return pixbuf_fill_core(L, false);
-}
-
-static int pixbuf_get_core(lua_State *L, bool native) {
+static int pixbuf_get_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   const int led = luaL_checkinteger(L, 2) - 1;
-  size_t channels = pixbuf_channels(buffer);
+  size_t channels = buffer->nchan;
 
   luaL_argcheck(L, led >= 0 && led < buffer->npix, 2, "index out of range");
 
-  if (!native) {
-    switch(buffer->type) {
-    case PIXBUF_TYPE_WWA:
-      return luaL_argerror(L, 1, "Can't convert WWA to RGB");
-    }
-  }
-
   uint8_t tmp[channels];
   memcpy(tmp, &buffer->values[channels*led], channels);
-
-  if (!native) {
-    pixbuf_raw_to_rgb(buffer->type, tmp);
-  }
 
   for (size_t i = 0; i < channels; i++)
   {
     lua_pushinteger(L, tmp[i]);
   }
 
-  return pixbuf_channels(buffer);
-}
-
-static int pixbuf_get_lua(lua_State *L) {
-  return pixbuf_get_core(L, true);
-}
-
-static int pixbuf_getRGB_lua(lua_State *L) {
-  return pixbuf_get_core(L, false);
+  return channels;
 }
 
 struct mix_source {
@@ -424,7 +304,7 @@ static void pixbuf_mix_i3(pixbuf *out, size_t ibits, size_t n_src,
 // buffer:mix(factor1, buffer1, ..)
 // factor is 256 for 100%
 // uses saturating arithmetic (one buffer at a time)
-static int pixbuf_mix_lua(lua_State *L) {
+static int pixbuf_mix_core(lua_State *L, size_t ibits) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   pixbuf *src_buffer;
 
@@ -442,30 +322,32 @@ static int pixbuf_mix_lua(lua_State *L) {
     src_buffer = pixbuf_from_lua_arg(L, pos + 1);
 
     luaL_argcheck(L, src_buffer->npix == buffer->npix &&
-                     src_buffer->type == buffer->type,
-                     pos + 1, "buffer not same shape or type");
+                     src_buffer->nchan == buffer->nchan,
+                     pos + 1, "buffer not same size or shape");
 
     sources[src].factor = factor;
     sources[src].values = src_buffer->values;
   }
 
-  switch(buffer->type) {
-  case PIXBUF_TYPE_I5BGR:
+  if (ibits != 0) {
     luaL_argcheck(L, src_buffer->nchan == 4, 2, "Requires 4 channel pixbuf");
-    pixbuf_mix_i3(buffer, 5, n_sources, sources);
-    break;
-  case PIXBUF_TYPE_RGB:
-  case PIXBUF_TYPE_GRB:
-  case PIXBUF_TYPE_RGBW:
-  case PIXBUF_TYPE_GRBW:
-  case PIXBUF_TYPE_WWA:
+    pixbuf_mix_i3(buffer, ibits, n_sources, sources);
+  } else {
     pixbuf_mix_raw(buffer, n_sources, sources);
-    break;
   }
 
   lua_settop(L, 1);
   return 1;
 }
+
+static int pixbuf_mix_lua(lua_State *L) {
+  return pixbuf_mix_core(L, 0);
+}
+
+static int pixbuf_mix4I5_lua(lua_State *L) {
+  return pixbuf_mix_core(L, 5);
+}
+
 
 // Returns the total of all channels
 static int pixbuf_power_lua(lua_State *L) {
@@ -474,24 +356,26 @@ static int pixbuf_power_lua(lua_State *L) {
   int total = 0;
   size_t p = 0;
   for (size_t i = 0; i < buffer->npix; i++) {
-    switch(buffer->type) {
-    case PIXBUF_TYPE_RGB:
-    case PIXBUF_TYPE_GRB:
-    case PIXBUF_TYPE_WWA:
-    case PIXBUF_TYPE_GRBW:
-    case PIXBUF_TYPE_RGBW:
-      for (size_t j = 0; j < pixbuf_channels_for(buffer->type); j++, p++) {
-        total += buffer->values[p];
-      }
-      break;
-    case PIXBUF_TYPE_I5BGR: {
-      int inten = buffer->values[p++];
-      for (size_t j = 0; j < pixbuf_channels_for(buffer->type) - 1; j++, p++) {
-        total += inten * buffer->values[p];
-      }
-      break;
+    for (size_t j = 0; j < buffer->nchan; j++, p++) {
+      total += buffer->values[p];
     }
-   }
+  }
+
+  lua_pushinteger(L, total);
+  return 1;
+}
+
+// Returns the total of all channels, intensity-style
+static int pixbuf_powerI_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+
+  int total = 0;
+  size_t p = 0;
+  for (size_t i = 0; i < buffer->npix; i++) {
+    int inten = buffer->values[p++];
+    for (size_t j = 0; j < buffer->nchan - 1; j++, p++) {
+      total += inten * buffer->values[p];
+    }
   }
 
   lua_pushinteger(L, total);
@@ -501,7 +385,7 @@ static int pixbuf_power_lua(lua_State *L) {
 static int pixbuf_replace_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   ptrdiff_t start = posrelat(luaL_optinteger(L, 3, 1), buffer->npix);
-  size_t channels = pixbuf_channels(buffer);
+  size_t channels = buffer->nchan;
 
   uint8_t *src;
   size_t srcLen;
@@ -512,7 +396,7 @@ static int pixbuf_replace_lua(lua_State *L) {
     srcLen = length / channels;
   } else {
     pixbuf *rhs = pixbuf_from_lua_arg(L, 2);
-    luaL_argcheck(L, rhs->type == buffer->type, 2, "buffers have different colors");
+    luaL_argcheck(L, rhs->nchan == buffer->nchan, 2, "buffers have different channels");
     src = rhs->values;
     srcLen = rhs->npix;
   }
@@ -524,20 +408,13 @@ static int pixbuf_replace_lua(lua_State *L) {
   return 0;
 }
 
-static int pixbuf_set_core(lua_State *L, bool native) {
+static int pixbuf_set_lua(lua_State *L) {
 
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   const int led = luaL_checkinteger(L, 2) - 1;
-  const size_t channels = pixbuf_channels(buffer);
+  const size_t channels = buffer->nchan;
 
   luaL_argcheck(L, led >= 0 && led < buffer->npix, 2, "index out of range");
-
-  if (!native) {
-    switch(buffer->type) {
-      case PIXBUF_TYPE_WWA:
-        return luaL_argerror(L, 1, "Can't setRGB on WWA pixbuf");
-    }
-  }
 
   int type = lua_type(L, 3);
   if(type == LUA_TTABLE)
@@ -547,9 +424,6 @@ static int pixbuf_set_core(lua_State *L, bool native) {
       lua_rawgeti(L, 3, i+1);
       buffer->values[channels*led+i] = lua_tointeger(L, -1);
       lua_pop(L, 1);
-    }
-    if (!native) {
-      pixbuf_rgb_to_raw(buffer->type, 1, &buffer->values[channels*led]);
     }
   }
   else if(type == LUA_TSTRING)
@@ -566,10 +440,6 @@ static int pixbuf_set_core(lua_State *L, bool native) {
     }
 
     memcpy(&buffer->values[channels*led], buf, len);
-
-    if (!native) {
-      pixbuf_rgb_to_raw(buffer->type, len/channels, &buffer->values[channels*led]);
-    }
   }
   else
   {
@@ -580,22 +450,10 @@ static int pixbuf_set_core(lua_State *L, bool native) {
     {
       buffer->values[channels*led+i] = luaL_checkinteger(L, 3+i);
     }
-
-    if (!native) {
-      pixbuf_rgb_to_raw(buffer->type, 1, &buffer->values[channels*led]);
-    }
   }
 
   lua_settop(L, 1);
   return 1;
-}
-
-static int pixbuf_set_lua(lua_State *L) {
-  return pixbuf_set_core(L, true);
-}
-
-static int pixbuf_setRGB_lua(lua_State *L) {
-  return pixbuf_set_core(L, false);
 }
 
 static void pixbuf_shift_circular(pixbuf *buffer, struct pixbuf_shift_params *sp) {
@@ -655,7 +513,7 @@ int pixbuf_shift_lua(lua_State *L) {
   struct pixbuf_shift_params sp;
 
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-  const int shift_shift = luaL_checkinteger(L, 2) * pixbuf_channels(buffer);
+  const int shift_shift = luaL_checkinteger(L, 2) * buffer->nchan;
   const unsigned shift_type = luaL_optinteger(L, 3, PIXBUF_SHIFT_LOGICAL);
   const int pos_start = posrelat(luaL_optinteger(L, 4, 1), buffer->npix);
   const int pos_end = posrelat(luaL_optinteger(L, 5, -1), buffer->npix);
@@ -685,8 +543,8 @@ int pixbuf_shift_lua(lua_State *L) {
     return luaL_argerror(L, 5, "end position must be >= start");
   }
 
-  sp.offset = (pos_start - 1) * pixbuf_channels(buffer);
-  sp.window = (pos_end - pos_start + 1) * pixbuf_channels(buffer);
+  sp.offset = (pos_start - 1) * buffer->nchan;
+  sp.window = (pos_end - pos_start + 1) * buffer->nchan;
 
   if (sp.shift > pixbuf_size(buffer)) {
     return luaL_argerror(L, 2, "shifting more elements than buffer size");
@@ -735,13 +593,14 @@ static int pixbuf_sub_lua(lua_State *L) {
   ssize_t start = posrelat(luaL_checkinteger(L, 2), l);
   ssize_t end = posrelat(luaL_optinteger(L, 3, -1), l);
   if (start <= end) {
-    pixbuf *result = pixbuf_new(L, end - start + 1, lhs->type);
-    memcpy(result->values, lhs->values + pixbuf_channels(lhs) * (start - 1),
-           pixbuf_channels(lhs) * (end - start + 1));
+    pixbuf *result = pixbuf_new(L, end - start + 1, lhs->nchan);
+    memcpy(result->values, lhs->values + lhs->nchan * (start - 1),
+           lhs->nchan * (end - start + 1));
+    return 1;
   } else {
-    pixbuf_new(L, 0, lhs->type);
+    pixbuf_new(L, 0, lhs->nchan);
+    return 1;
   }
-  return 1;
 }
 
 static int pixbuf_tostring_lua(lua_State *L) {
@@ -757,7 +616,7 @@ static int pixbuf_tostring_lua(lua_State *L) {
       luaL_addchar(&result, ',');
     }
     luaL_addchar(&result, '(');
-    for (size_t j = 0; j < pixbuf_channels(buffer); j++, p++) {
+    for (size_t j = 0; j < buffer->nchan; j++, p++) {
       if (j > 0) {
         luaL_addchar(&result, ',');
       }
@@ -784,15 +643,15 @@ LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
   LROT_FUNCENTRY( channels, pixbuf_channels_lua )
   LROT_FUNCENTRY( dump, pixbuf_dump_lua )
   LROT_FUNCENTRY( fade, pixbuf_fade_lua )
+  LROT_FUNCENTRY( fadeI, pixbuf_fadeI_lua )
   LROT_FUNCENTRY( fill, pixbuf_fill_lua )
-  LROT_FUNCENTRY( fillRGB, pixbuf_fillRGB_lua )
   LROT_FUNCENTRY( get, pixbuf_get_lua )
-  LROT_FUNCENTRY( getRGB, pixbuf_getRGB_lua )
   LROT_FUNCENTRY( replace, pixbuf_replace_lua )
   LROT_FUNCENTRY( mix, pixbuf_mix_lua )
+  LROT_FUNCENTRY( mix4I5, pixbuf_mix4I5_lua )
   LROT_FUNCENTRY( power, pixbuf_power_lua )
+  LROT_FUNCENTRY( powerI, pixbuf_powerI_lua )
   LROT_FUNCENTRY( set, pixbuf_set_lua )
-  LROT_FUNCENTRY( setRGB, pixbuf_setRGB_lua )
   LROT_FUNCENTRY( shift, pixbuf_shift_lua )
   LROT_FUNCENTRY( size, pixbuf_size_lua )
   LROT_FUNCENTRY( sub, pixbuf_sub_lua )
@@ -804,13 +663,6 @@ LROT_BEGIN(pixbuf, NULL, 0)
 
   LROT_NUMENTRY( SHIFT_CIRCULAR, PIXBUF_SHIFT_CIRCULAR )
   LROT_NUMENTRY( SHIFT_LOGICAL, PIXBUF_SHIFT_LOGICAL )
-
-  LROT_NUMENTRY( TYPE_GRB, PIXBUF_TYPE_GRB )
-  LROT_NUMENTRY( TYPE_GRBW, PIXBUF_TYPE_GRBW )
-  LROT_NUMENTRY( TYPE_I5BGR, PIXBUF_TYPE_I5BGR )
-  LROT_NUMENTRY( TYPE_RGB, PIXBUF_TYPE_RGB )
-  LROT_NUMENTRY( TYPE_RGBW, PIXBUF_TYPE_RGBW )
-  LROT_NUMENTRY( TYPE_WWA, PIXBUF_TYPE_WWA )
 
   LROT_FUNCENTRY( newBuffer, pixbuf_new_lua )
 LROT_END(pixbuf, NULL, 0)

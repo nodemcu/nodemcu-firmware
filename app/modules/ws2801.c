@@ -120,7 +120,7 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
       break;
     case LUA_TUSERDATA: {
       pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-      luaL_argcheck(L, buffer->type == PIXBUF_TYPE_RGB, 1, "Pixbuf not RGB");
+      luaL_argcheck(L, buffer->nchan == 3, 1, "Pixbuf not 3-channel");
       values = buffer->values;
       length = pixbuf_size(buffer);
       break;

@@ -162,30 +162,9 @@ static int ws2812_write(lua_State* L) {
   return 0;
 }
 
-static int ws2812_new_lua(lua_State* L) {
-  platform_print_deprecation_note("ws2812.newBuffer and friends", "in the next version; see pixbuf");
-
-  int channels = luaL_checkinteger(L, 2);
-  lua_settop(L, 1);
-  switch(channels) {
-  case 3:
-    // Most (but apparently not all?) WS2812s are GRB, so that's the default
-    lua_pushinteger(L, PIXBUF_TYPE_GRB);
-    break;
-  case 4:
-    // SK6812s are RGBW, so use that as the default.
-    lua_pushinteger(L, PIXBUF_TYPE_RGBW);
-    break;
-  default:
-    return luaL_argerror(L, 2, "Color channel count should be 3 or 4");
-  }
-
-  return pixbuf_new_lua(L);
-}
-
 LROT_BEGIN(ws2812, NULL, 0)
   LROT_FUNCENTRY( init, ws2812_init )
-  LROT_FUNCENTRY( newBuffer, ws2812_new_lua ) // backwards compatibility
+  LROT_FUNCENTRY( newBuffer, pixbuf_new_lua ) // backwards compatibility
   LROT_FUNCENTRY( write, ws2812_write )
   LROT_NUMENTRY( FADE_IN, PIXBUF_FADE_IN )    // BC
   LROT_NUMENTRY( FADE_OUT, PIXBUF_FADE_OUT )  // BC
