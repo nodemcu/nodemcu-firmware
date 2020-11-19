@@ -1,10 +1,12 @@
 local FILE_READ_CHUNK = 1024
 
 local _file = file
-local file_exists, file_open, file_getcontents = _file.exists, _file.open, _file.getcontents
+local file_exists, file_open, file_getcontents, file_rename, file_stat, file_putcontents, file_close =
+  _file.exists, _file.open, _file.getcontents, _file.rename, _file.stat, _file.putcontents, _file.close
 local node_LFS_resource = node.LFS.resource or function() end -- luacheck: ignore
 
 local file_lfs = {}
+local current_file_lfs
 
 local function file_lfs_create (filename)
   local content = node_LFS_resource(filename)
@@ -30,28 +32,33 @@ local function file_lfs_create (filename)
   end
 
   local seek = function (_, whence, offset)
+    local len = #content + 1 -- position starts at 1
     if whence == "set" then
       pos = offset + 1 -- 0 offset means position 1
-      pos = pos < 0 and 1 or pos
     elseif whence == "cur" then
       pos = pos + offset
     elseif whence == "end" then
-      pos = #content + offset
+      pos = len + offset
     elseif whence then -- not nil not one of above
       return -- on error return nil
     end
-    return pos
+    local pos_ok = true
+    if pos < 1 then pos = 1; pos_ok = false end
+    if pos > len then pos = len; pos_ok = false end
+    return pos_ok and pos - 1 or nil
   end
 
   local obj = {}
   obj.read = read
   obj.readline = function(self) return read(self, "\n") end
   obj.seek = seek
+  obj.close = function() current_file_lfs = nil end
 
   setmetatable(obj, {
     __index = function (_, k)
-      return function (...)
-        return _file[k](...)
+      return function () --...)
+        error (("LFS file unsupported function '%s'") % tostring(k))
+        --return _file[k](...)
       end
     end
   })
@@ -67,11 +74,23 @@ file_lfs.open = function (filename, mode)
   mode = mode or "r"
   if file_exists(filename) then
     return file_open(filename, mode)
-  elseif node_LFS_resource(filename) and mode:find("r") then
-    return file_lfs_create (filename)
+  elseif node_LFS_resource(filename) then
+    if mode ~=  "r" and mode:find("^[rwa]%+?$") then
+      -- file does not exist in SPIFFS but exists in LFS -> copy to SPIFFS
+      file_putcontents(filename, node_LFS_resource(filename))
+      return file_open(filename, mode)
+    else -- "r" or anything else
+      current_file_lfs = file_lfs_create (filename)
+      return current_file_lfs
+    end
   else
     return file_open(filename, mode)
   end
+end
+
+file_lfs.close = function (...)
+  current_file_lfs = nil
+  return file_close(...)
 end
 
 file_lfs.getcontents = function(filename)
@@ -84,6 +103,27 @@ file_lfs.getcontents = function(filename)
   end
 end
 
+file_lfs.rename = function(oldname, newname)
+  if node_LFS_resource(oldname) ~= nil and not file_exists(oldname) then
+    -- error "LFS file cannot be renamed"
+    return false
+  else
+    return file_rename(oldname, newname)
+  end
+end
+
+file_lfs.stat = function(filename)
+  if node_LFS_resource(filename) ~= nil and not file_exists(filename) then
+    return {
+      name = filename,
+      size = #node_LFS_resource(filename),
+      time = {day = 1, hour = 0, min = 0, year = 1970, sec = 0, mon = 1},
+      is_hidden = false, is_rdonly = false, is_dir = false, is_arch = false, is_sys = false,
+    }
+  else
+    return file_stat(filename)
+  end
+end
 
 setmetatable(file_lfs, {
   __index = function (_, k)
@@ -91,6 +131,8 @@ setmetatable(file_lfs, {
         local t = ...
         if type(t) == "table" then
           return t[k](...)
+        elseif not t and current_file_lfs then
+          return current_file_lfs[k](...)
         else
           return _file[k](...)
         end

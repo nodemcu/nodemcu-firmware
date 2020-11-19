@@ -85,7 +85,7 @@ Checks whether the LFS or SPIFFS file exists.
 - `filename` file to check
 
 #### Returns
-true of the file exists (even if 0 bytes in size), and false if it does not exist
+`true` if the file exists (even if 0 bytes in size), and `false` if it does not exist
 
 
 ## file.read(), file.obj:read()
@@ -104,7 +104,7 @@ Read content from the open file. It has the same parameters and return values as
 	- if passed a string containing the single character `char`, then read until `char` appears next in the file, `FILE_READ_CHUNK` bytes have been read, or EOF is reached.
 
 #### Returns
-File content as a string, or nil when EOF
+File content as a string, or `nil` when EOF
 
 
 ## file.readline(), file.obj:readline()
