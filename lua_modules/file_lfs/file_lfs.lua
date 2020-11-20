@@ -118,7 +118,7 @@ file_lfs.stat = function(filename)
       name = filename,
       size = #node_LFS_resource(filename),
       time = {day = 1, hour = 0, min = 0, year = 1970, sec = 0, mon = 1},
-      is_hidden = false, is_rdonly = false, is_dir = false, is_arch = false, is_sys = false,
+      is_hidden = false, is_rdonly = true, is_dir = false, is_arch = false, is_sys = false,
     }
   else
     return file_stat(filename)

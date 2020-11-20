@@ -14,7 +14,7 @@ Both basic and object model can be used to access LFS file (see [file](../../doc
 
 Files to be stored in LFS needs to be preprocessed, i.e. a Lua file with its contents needs to be generated. This file called `resource.lua` is then included in the LFS image. A Lua script [`make_resource.lua`](../../lua_modules/file_lfs/make_resource.lua) can be used to generate `resource.lua` script.
 
-A structure of the `resource.lua` file is simple
+A structure of the `resource.lua` file is simple. It returns a string, i.e. file content, depending on filename parameter passed to it.
 ```Lua
 local arg = ...
 if arg == "index.html" then return "<!DOCTYPE html><html><body>Hi, there!</body></html>" end
@@ -27,7 +27,7 @@ Lua script to be run on PC to generate `resource.lua` file.
 
 ### Syntax
 ```bash
- ./make_resource.lua [-o outputfile] file1 [file2] 
+ ./make_resource.lua [-o outputfile] file1 [file2]
  ```
 
 ### Example
@@ -64,12 +64,9 @@ LFS file is opened only when "r" access is requested.
 #### Parameters
 - `filename` file to be opened
 - `mode`:
-    - "r": read mode (the default)
-    - "w": write mode
-    - "a": append mode
-    - "r+": update mode, all previous data is preserved
-    - "w+": update mode, all previous data is erased
-    - "a+": append update mode, previous data is preserved, writing is only allowed at the end of file
+    - "r": read mode (the default). If file of the same name is present in SPIFFS then SPIFFS file is opened instead of LFS file.
+    - "w": write mode - as LFS file is read-only a SPIFFS file of the same name is created and opened for writing.
+    - "r+", "w+", "a", "a+": as LFS file is read-only and all these modes allow file updates the LFS file is copied to SPIFFS and then it is opened with correspondig open mode.
 
 #### Returns
 LFS file object (Lua table) or SPIFFS file object if file opened ok. `nil` if file not opened, or not exists (read modes).

@@ -22,6 +22,8 @@ elseif node.LFS.resource("favicon.ico") then
   testfile = "favicon.ico"
 elseif node.LFS.resource("test.txt") then
   testfile = "test.txt"
+else
+  error "No 'index.html' nor 'favicon.ico' nor 'text.txt' file stored in LFS resource module. Can't run LFS file tests."
 end
 
 N.test('exist file LFS', function()
@@ -58,9 +60,13 @@ N.test('open existing file LFS', function()
 
   testopen("r", 0)
   testopen("w", 0)
+  file.remove(testfile)
   testopen("a", 11)
+  file.remove(testfile)
   testopen("r+", 0)
+  file.remove(testfile)
   testopen("w+", 0)
+  file.remove(testfile)
   testopen("a+", 11)
   file.remove(testfile)
 end)
@@ -92,33 +98,6 @@ N.test('seek file LFS', function()
   ok(eq(testcontent:sub(#testcontent-50,#testcontent-41), content),"end -50")
 end)
 
-
-N.test('remove file LFS', function()
-  file.remove(testfile)
-  file.putcontents(testfile, "testfile")
-
-  ok(file.remove(testfile) == nil, "existing file")
-  ok(file.remove(testfile) == nil, "non existing file")
-end)
-
 N.test('rename file LFS', function()
-  file.remove(testfile)
-  file.remove("testfile")
-
-  file.putcontents("testfile", "testfile")
-
-  ok(file.rename("testfile", testfile), "rename existing")
-  nok(file.exists("testfile"), "old file removed")
-  ok(file.exists(testfile), "new file exists")
-
-  nok(file.rename("testfile", testfile), "rename non existing")
-
-  file.putcontents("testfile", testfile)
-
-  nok(file.rename("testfile", testfile), "rename to existing")
-  ok(file.exists("testfile"), "from file exists")
-  ok(file.exists(testfile), "to file exists")
-
-  file.remove(testfile)
-  file.remove("testfile")
+  nok(file.rename(testfile, "testfile"), "cannot rename LFS file")
 end)
