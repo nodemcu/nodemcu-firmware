@@ -30,8 +30,6 @@
 #define DHTLIB_DHT_WAKEUP       1
 #define DHTLIB_DHT_UNI_WAKEUP   18
 
-#define DHT_DEBUG
-
 // max timeout is 100 usec.
 // For a 16 Mhz proc 100 usec is 1600 clock cycles
 // loops using DHTLIB_TIMEOUT use at least 4 clock cycli
