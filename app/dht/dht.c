@@ -26,6 +26,7 @@
 //
 // Released to the public domain
 //
+// #define NODE_DEBUG
 
 #include "user_interface.h"
 #include "platform.h"
@@ -90,13 +91,14 @@ int dht_read_universal(uint8_t pin)
         return rv; // propagate error value
     }
 
-#if defined(DHT_DEBUG_BYTES)
+#if defined(NODE_DEBUG)
     int i;
     for (i = 0; i < 5; i++)
     {
-        DHT_DEBUG("%02X\n", dht_bytes[i]);
+        NODE_DBG("%x\t", dht_bytes[i]);
     }
-#endif // defined(DHT_DEBUG_BYTES)
+    NODE_DBG("\n");
+#endif // defined(NODE_DEBUG)
 
     // Assume it is DHT11
     // If it is DHT11, both temp and humidity's decimal
@@ -104,7 +106,7 @@ int dht_read_universal(uint8_t pin)
     {
         // It may DHT11
         // CONVERT AND STORE
-        DHT_DEBUG("DHT11 method\n");
+        NODE_DBG("DHT11 method\n");
         dht_humidity    = getValue(Humidity8);
         dht_temperature = getValue(Temperature8);
 
@@ -124,7 +126,7 @@ int dht_read_universal(uint8_t pin)
 
     // Assume it is not DHT11
     // CONVERT AND STORE
-    DHT_DEBUG("DHTxx method\n");
+    NODE_DBG("DHTxx method\n");
     dht_humidity = getValue(Humidity);
     dht_temperature = getValue(Temperature);
 
@@ -236,7 +238,7 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
     // volatile uint8_t *PIR = portInputRegister(port);
 
     // EMPTY BUFFER
-    memset(dht_bytes, sizeof(uint8_t)*5, 0);
+    memset(dht_bytes, 0, sizeof(uint8_t)*5);
 
     // REQUEST SAMPLE
     // pinMode(pin, OUTPUT);
@@ -327,11 +329,13 @@ static double getValue(dht_Signal s)
             high = dht_bytes[2];
             break;
     }
+    NODE_DBG("getValue: %x\thigh: %x\tlow: %x\tresult: %d\n", s, high, low, ((high << 8) | low));
     return ((high << 8) | low) * 0.1;
 }
 
 static bool verifyChecksum(){
     uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
+    NODE_DBG("verifyChecksum: %x\t%x\t%x\t%x\t%x == %x\n", dht_bytes[0], dht_bytes[1], dht_bytes[2], dht_bytes[3], dht_bytes[4], sum);
     return (dht_bytes[4] == sum);
 }
 
