@@ -12,7 +12,7 @@ You will typically do steps 1 and 2 only once, but then repeat step 3 as you dev
 !!! caution
 	For each of the tasks you have a number of choices with regards to tooling and depending on the OS you are on. The colored boxes represent an opinionated path to start your journey - the quickest way to success so to speak. Feel free to follow the links above to get more detailed information.
 
-### Task / OS selector
+### Task and OS selector
 
 <table id="gs">
   <tr>
@@ -151,7 +151,7 @@ For everything else the cloud builder GUI is self-explanatory. Hence, no need fo
 1. Select an LFS size, 64KB is likely going to be large enough
 1. Select other options and build
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 _Note that this service is not maintained by the NodeMCU team. It's run by a NodeMCU team member as an individual, though._
 
@@ -168,7 +168,7 @@ _Note that this service is not maintained by the NodeMCU team. It's run by a Nod
 1. [Download](https://github.com/marcelstoer/nodemcu-pyflasher) then start PyFlasher
 1. Select serial port, browse for firmware binary and set the flash options.
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 _Note that this tool is not an official NodeMCU offering. It's maintained by a NodeMCU team member as an individual, though._
 
@@ -188,13 +188,13 @@ The [default baud rate](https://github.com/espressif/esptool#baud-rate) is 11520
 
 More details available on esptool.py GitHub repo.
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 ## ESPlorer
 
 TBD [https://github.com/4refr0nt/ESPlorer](https://github.com/4refr0nt/ESPlorer)
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 ## NodeMCU-Tool
 
@@ -216,7 +216,7 @@ Quick start:
 
 Note that you may need to use the `sudo` prefix to install the tool at step 2, and also possibly add the `–unsafe-perm` flag after the install command.
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 ## Docker
 
@@ -234,7 +234,7 @@ Detailed instructions available in the image's README. As for available config o
 1. In `app/include/user_config.h` edit the line `#define LUA_FLASH_STORE 0x0` and adjust the size to that needed.  Note that this must be a multiple of 4Kb.
 2. Build as you would otherwise build with this image (i.e. see its README)
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 _Note that this Docker image is not an official NodeMCU offering. It's maintained by a NodeMCU team member as an individual, though._
 
@@ -264,7 +264,7 @@ Windows users can compile a local copy of the `luac.cross` executable for use on
 
 As for [Linux](#linux)
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 ## Compile Lua into LFS image
 
@@ -320,7 +320,7 @@ You will need to adjust the `img` and `lua` paths according to their location, a
 
 You might also want to add a simple one-line script file to your `~/bin` directory to wrap this command up.
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
 
 ## Upload LFS image
 
@@ -341,7 +341,7 @@ Do a protected call of this `_init` code: `pcall(node.LFS._init())` and check th
 
 Below is a brief overview of building and running the simplest LFS-based system possible.
 
-To use LFS, start with a version of the NodeMCU firmware with LFS enabled. See [the matrix](#task--os-selector) section "Build LFS
+To use LFS, start with a version of the NodeMCU firmware with LFS enabled. See [the matrix](#task-and-os-selector) section "Build LFS
 enabled firmware" for how to do that. Load it on the ESP8266 in the usual way (whatever that is for your set up).
 
 Then build an LFS file system. This can be done in several ways, as discussed above; one of the easiest is to use `luac.cross -o lfs.img -f *lua` on the host machine.  Make sure to include a file named `hello_world.lua` with the following one line content: `print("Hello ESP8266 world!")`
@@ -387,4 +387,4 @@ Then you should set up the ESP8266 boot process to check for the existence of an
 
 Once LFS is known to work, then modules such as [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua) can usefully be added, together of course with effective error checking.
 
-[↑ back to matrix](#task--os-selector)
+[↑ back to matrix](#task-and-os-selector)
