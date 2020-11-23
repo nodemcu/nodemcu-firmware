@@ -10,6 +10,7 @@ Constants for various functions.
 
 ## dht.read()
 Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperature combo sensor.
+Return correct readout except for DHT12 and negative temperatures by DHT11.
 
 #### Syntax
 `dht.read(pin)`
@@ -74,8 +75,32 @@ Read DHT11 humidity temperature combo sensor.
 #### See also
 [dht.read()](#dhtread)
 
+## dht.read12()
+Read DHT12 humidity temperature combo sensor.
+
+#### Syntax
+`dht.read12(pin)`
+
+#### Parameters
+`pin` pin number of DHT12 sensor (can't be 0), type is number
+
+#### Returns
+- `status` as defined in Constants
+- `temp` temperature (see note below)
+- `humi` humidity (see note below)
+- `temp_dec` temperature decimal
+- `humi_dec` humidity decimal
+
+!!! note
+
+    If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
+
+#### See also
+[dht.read()](#dhtread)
+
+
 ## dht.readxx()
-Read all kinds of DHT sensors, except DHT11.
+Read all kinds of DHT sensors, except DHT11 and DHT12. Differs from `dht.read()` only by waiting only sufficient 1 ms for sensor wake-up while `dht.read()` waits universal 18 ms.
 
 ####Syntax
 `dht.readxx(pin)`

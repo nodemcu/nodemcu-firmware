@@ -46,19 +46,18 @@
 #define DIRECT_WRITE_LOW(pin)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), 0))
 #define DIRECT_WRITE_HIGH(pin)   (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), 1))
 
+typedef enum {
+    DHT11 = 0,
+    DHT12,
+    DHT22,
+    DHT_NON11
+} dht_type;
+
 // return values:
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-int dht_read_universal(uint8_t pin);
-int dht_read11(uint8_t pin);
-int dht_read(uint8_t pin);
-
-int dht_read21(uint8_t pin);
-int dht_read22(uint8_t pin);
-int dht_read33(uint8_t pin);
-int dht_read44(uint8_t pin);
-
+int dht_read(uint8_t pin, dht_type type);
 double dht_getHumidity(void);
 double dht_getTemperature(void);
 

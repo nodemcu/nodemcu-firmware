@@ -41,7 +41,7 @@
 #define HIGH    1
 #endif /* ifndef HIGH */
 
-#define COMBINE_HIGH_AND_LOW_BYTE(byte_high, byte_low)  (((byte_high) << 8) | (byte_low))
+#define COMBINE_HIGH_AND_LOW_BYTE(byte_high, byte_low)  ((uint16_t)((byte_high) << 8) | (byte_low))
 
 static double dht_humidity;
 static double dht_temperature;
@@ -73,10 +73,15 @@ double dht_getTemperature(void)
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-int dht_read_universal(uint8_t pin)
+int dht_read(uint8_t pin, dht_type type)
 {
     // READ VALUES
-    int rv = dht_readSensor(pin, DHTLIB_DHT_UNI_WAKEUP);
+    int rv = dht_readSensor(pin, 
+      type == DHT22 ? DHTLIB_DHT_WAKEUP : 
+      type == DHT11 ? DHTLIB_DHT11_WAKEUP :
+      DHTLIB_DHT_UNI_WAKEUP
+    );
+    
     if (rv != DHTLIB_OK)
     {
         dht_humidity    = DHTLIB_INVALID_VALUE;  // invalid value, or is NaN prefered?
@@ -84,16 +89,10 @@ int dht_read_universal(uint8_t pin)
         return rv; // propagate error value
     }
 
-#if defined(NODE_DEBUG)
-    int i;
-    for (i = 0; i < 5; i++)
-    {
-        NODE_DBG("%x\t", dht_bytes[i]);
-    }
-    NODE_DBG("\n");
-#endif // defined(NODE_DEBUG)
+    NODE_DBG("DHT registers: %x\t%x\t%x\t%x\t%x == %x\n", dht_bytes[0], dht_bytes[1], dht_bytes[2], dht_bytes[3], dht_bytes[4], (uint8_t)(dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3]));
 
-    // Assume it is DHT11
+    // Assume it is special case of DHT11,
+    // i.e. positive temperature and dht_bytes[3] == 0 ((dht_bytes[3] & 0x0f) * 0.1 to be added to temperature readout)
     // If it is DHT11, both temp and humidity's decimal
     if ((dht_bytes[1] == 0) && (dht_bytes[3] == 0))
     {
@@ -118,14 +117,41 @@ int dht_read_universal(uint8_t pin)
         }
     }
 
-    // Assume it is not DHT11
+    // Assume it is not DHT11 special case
     // CONVERT AND STORE
     NODE_DBG("DHTxx method\n");
-    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) * 0.1;
-    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
-    if (dht_bytes[2] & 0x80)  // negative dht_temperature
-    {
-        dht_temperature = -dht_temperature;
+
+    switch (type) {
+      case DHT11:
+      case DHT12:
+        dht_humidity += dht_bytes[1] * 0.1;
+        break;
+      default:
+        dht_humidity = COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) * 0.1;
+        break;
+    }
+
+    switch (type) {
+      case DHT11:
+        if (dht_bytes[3] & 0x80) {
+          dht_temperature = -1 - dht_temperature;
+        }
+        dht_temperature += (dht_bytes[3] & 0x0f) * 0.1;
+        break;
+      case DHT12:
+        dht_temperature += (dht_bytes[3] & 0x0f) * 0.1;
+        if (dht_bytes[2] & 0x80)  // negative dht_temperature
+        {
+            dht_temperature *= -1;
+        }
+        break;
+      default: // DHT22, DHT_NON11
+        dht_temperature = COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
+        if (dht_bytes[2] & 0x80)  // negative dht_temperature
+        {
+            dht_temperature *= -1;
+        }
+        break;
     }
 
     // TEST CHECKSUM
@@ -136,90 +162,6 @@ int dht_read_universal(uint8_t pin)
     }
     return DHTLIB_OK;
 }
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read11(uint8_t pin)
-{
-    // READ VALUES
-    int rv = dht_readSensor(pin, DHTLIB_DHT11_WAKEUP);
-    if (rv != DHTLIB_OK)
-    {
-        dht_humidity    = DHTLIB_INVALID_VALUE; // invalid value, or is NaN prefered?
-        dht_temperature = DHTLIB_INVALID_VALUE; // invalid value
-        return rv;
-    }
-
-    // CONVERT AND STORE
-    dht_humidity    = dht_bytes[0];  // dht_bytes[1] == 0;
-    dht_temperature = dht_bytes[2];  // dht_bytes[3] == 0;
-
-    // TEST CHECKSUM
-    // dht_bytes[1] && dht_bytes[3] both 0
-    uint8_t sum = dht_bytes[0] + dht_bytes[2];
-    if (dht_bytes[4] != sum) return DHTLIB_ERROR_CHECKSUM;
-
-    return DHTLIB_OK;
-}
-
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read(uint8_t pin)
-{
-    // READ VALUES
-    int rv = dht_readSensor(pin, DHTLIB_DHT_WAKEUP);
-    if (rv != DHTLIB_OK)
-    {
-        dht_humidity    = DHTLIB_INVALID_VALUE;  // invalid value, or is NaN prefered?
-        dht_temperature = DHTLIB_INVALID_VALUE;  // invalid value
-        return rv; // propagate error value
-    }
-
-    // CONVERT AND STORE
-    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) * 0.1;
-    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
-    if (dht_bytes[2] & 0x80)  // negative dht_temperature
-    {
-        dht_temperature = -dht_temperature;
-    }
-
-    // TEST CHECKSUM
-    uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
-    if (dht_bytes[4] != sum)
-    {
-        return DHTLIB_ERROR_CHECKSUM;
-    }
-    return DHTLIB_OK;
-}
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read21(uint8_t pin)  __attribute__((alias("dht_read")));
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read22(uint8_t pin)  __attribute__((alias("dht_read")));
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read33(uint8_t pin)  __attribute__((alias("dht_read")));
-
-// return values:
-// DHTLIB_OK
-// DHTLIB_ERROR_CHECKSUM
-// DHTLIB_ERROR_TIMEOUT
-int dht_read44(uint8_t pin)  __attribute__((alias("dht_read")));
 
 /////////////////////////////////////////////////////
 //
