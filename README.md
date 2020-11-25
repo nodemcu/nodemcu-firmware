@@ -16,7 +16,7 @@ The firmware was initially developed as is a companion project to the popular ES
 - Easy to program wireless node and/or access point
 - Based on Lua 5.1.4 or Lua 5.3 but without `debug`, `io`, `os` and (most of the) `math` modules
 - Asynchronous event-driven programming model
-- more than **70 built-in modules** and **almost 20 Lua modules**
+- more than **70 built-in C modules** and **close to 20 Lua modules**
 - Firmware available with or without floating point support (integer-only uses less memory)
 - Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
