@@ -78,7 +78,7 @@ As a Windows or Mac user you could also resort to [GitHub Desktop](https://deskt
 You need to sync your fork with the NodeMCU upstream repository from time to time, latest before you rebase (see flow above).
 
 1. `git fetch upstream`
-1. `git checkout dev` but you may do this for `master` as well
+1. `git checkout dev` but you may do this for `release` as well
 1. `git merge upstream/dev`
 
 ### Commit messages
@@ -114,8 +114,8 @@ Don't forget to [reference affected issues](https://help.github.com/articles/clo
 - Add notes to the description of the milestone in the course of the ~2 months it lives.
 - Be careful and reluctant to merge PRs once we're past the 6-weeks mark of a milestone. Ideally, we don't merge anything in the last 2 weeks.
 - Cutting a release
-    - Create a PR for the `master` branch for collaborators to approve.
+    - Create a PR for the `release` branch for collaborators to approve.
     - Once approved merge it. :exclamation::boom::exclamation: Make sure you do NOT "squash and merge" but make a regular merge commit!
-    - Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-master_<yyyyMMdd> -m ""`, `git push --tags`
+    - Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-release_<yyyyMMdd> -m ""`, `git push --tags`
      - Create a new [release](https://github.com/nodemcu/nodemcu-firmware/releases) based on the tag you just pushed. The version name is the same as the tag name.
      - Write release notes. Mention breaking changes explicitly. Since every PR that went into this release is linked to from the milestone it should be fairly easy to include important changes in the release notes.

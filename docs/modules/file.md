@@ -56,7 +56,7 @@ Determines whether the specified file exists.
 - `filename` file to check
 
 #### Returns
-true of the file exists (even if 0 bytes in size), and false if it does not exist
+true if the file exists (even if 0 bytes in size), and false if it does not exist
 
 #### Example
 
