@@ -239,3 +239,4 @@ jobs:
         PATH="/C/Program\ Files/Git/usr/bin:${PATH}"
         ./tools/travis/run-luacheck-${{ matrix.os }}.sh
       shell: bash
+
