@@ -94,24 +94,17 @@ int dht_read(uint8_t pin, dht_type type)
     // Assume it is special case of DHT11,
     // i.e. positive temperature and dht_bytes[3] == 0 ((dht_bytes[3] & 0x0f) * 0.1 to be added to temperature readout)
     // If it is DHT11, both temp and humidity's decimal
+    dht_humidity    = dht_bytes[0];
+    dht_temperature = dht_bytes[2];
     if ((dht_bytes[1] == 0) && (dht_bytes[3] == 0))
     {
         // It may DHT11
         // CONVERT AND STORE
         NODE_DBG("DHT11 method\n");
-        dht_humidity    = dht_bytes[0];  // dht_bytes[1] == 0;
-        dht_temperature = dht_bytes[2];  // dht_bytes[3] == 0;
 
         // TEST CHECKSUM
         uint8_t sum = dht_bytes[0] + dht_bytes[2];
-        if (dht_bytes[4] != sum)
-        {
-            // It may not DHT11
-            dht_humidity    = DHTLIB_INVALID_VALUE; // invalid value, or is NaN prefered?
-            dht_temperature = DHTLIB_INVALID_VALUE; // invalid value
-            // Do nothing
-        }
-        else
+        if (dht_bytes[4] == sum)
         {
             return DHTLIB_OK;
         }
