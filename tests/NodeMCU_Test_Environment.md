@@ -29,6 +29,7 @@ At address 0x20. An 16-bit tristate GPIO expander, this chip is used to
 test I2C, GPIO, and ADC functionality. This chip's interconnections are
 as follows:
 
+MPC23017 | Purpose
 ---------|--------------------------------------------------------------
 /RESET   |DUT0 reset. This resets the chip whenever the host computer resets DUT 0 over its serial link (using DTR/RTS).
 B 0      |4K7 resistor to DUT 0 ADC.
@@ -58,8 +59,8 @@ Notes:
 ESP8266 Device 0 Connections
 ----------------------------
 
-----------|----------------------------------------------------------
 ESP       |
+----------|----------------------------------------------------------
 GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
 GPIO 1    |Primary UART transmit; reserved for host communication
 GPIO 2    |[reserved for 1-Wire] [+ reserved for 23017 INT[AB] connections]
@@ -83,8 +84,8 @@ ADC 0     |Resistor divider with I/O expander
 ESP8266 Device 1 Connections
 ----------------------------
 
-----------|----------------------------------------------------------
 ESP       |
+----------|----------------------------------------------------------
 GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
 GPIO 1    |Primary UART transmit; reserved for host communication
 GPIO 2    |[Reserved for WS2812]
