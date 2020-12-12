@@ -29,20 +29,14 @@ At address 0x20. An 16-bit tristate GPIO expander, this chip is used to
 test I2C, GPIO, and ADC functionality. This chip's interconnections are
 as follows:
 
-  --------- --------------------------------------------------------------
-  /RESET    DUT0 reset. This resets the chip whenever the host computer
-            resets DUT 0 over its serial link (using DTR/RTS).
-
-  B 0       4K7 resistor to DUT 0 ADC.
-
-  B 1       2K2 resistor to DUT 0 ADC.
-
-  B 5       DUT1 GPIO16/WAKE via 4K7 resitor
-
-  B 6       DUT0 GPIO13 via 4K7 resistor and DUT1 GPIO15 via 4K7 resistor
-
-  B 7       DUT0 GPIO15 via 4K7 resistor and DUT1 GPIO13 via 4K7 resistor
-  --------- --------------------------------------------------------------
+---------|--------------------------------------------------------------
+/RESET   |DUT0 reset. This resets the chip whenever the host computer resets DUT 0 over its serial link (using DTR/RTS).
+B 0      |4K7 resistor to DUT 0 ADC.
+B 1      |2K2 resistor to DUT 0 ADC.
+B 5      |DUT1 GPIO16/WAKE via 4K7 resitor
+B 6      |DUT0 GPIO13 via 4K7 resistor and DUT1 GPIO15 via 4K7 resistor
+B 7      |DUT0 GPIO15 via 4K7 resistor and DUT1 GPIO13 via 4K7 resistor
+---------|--------------------------------------------------------------
 
 Notes:
 
@@ -64,92 +58,51 @@ Notes:
 ESP8266 Device 0 Connections
 ----------------------------
 
-  ---------- ----------------------------------------------------------
-  ESP        
-
-  GPIO 0     Used to enter programming mode; otherwise unused in test
-             environment.
-
-  GPIO 1     Primary UART transmit; reserved for host communication
-
-  GPIO 2     [reserved for 1-Wire] [+ reserved for 23017 INT[AB]
-             connections]
-
-  GPIO 3     Primary UART recieve; reserved for host communication
-
-  GPIO 4     I2C SDA
-
-  GPIO 5     I2C SCL
-
-  GPIO 6     [Reserved for on-chip flash]
-
-  GPIO 7     [Reserved for on-chip flash]
-
-  GPIO 8     [Reserved for on-chip flash]
-
-  GPIO 9     [Reserved for on-chip flash]
-
-  GPIO 10    [Reserved for on-chip flash]
-
-  GPIO 11    [Reserved for on-chip flash]
-
-  GPIO 12    
-
-  GPIO 13    Secondary UART RX; DUT 1 GPIO 15, I/O expander B 6
-
-  GPIO 14    
-
-  GPIO 15    Secondary UART TX; DUT 1 GPIO 13, I/O expander B 7
-
-  GPIO 16    
-
-  ADC 0      Resistor divider with I/O expander
-  ---------- ----------------------------------------------------------
+----------|----------------------------------------------------------
+ESP       |
+GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
+GPIO 1    |Primary UART transmit; reserved for host communication
+GPIO 2    |[reserved for 1-Wire] [+ reserved for 23017 INT[AB] connections]
+GPIO 3    |Primary UART recieve; reserved for host communication
+GPIO 4    |I2C SDA
+GPIO 5    |I2C SCL
+GPIO 6    |[Reserved for on-chip flash]
+GPIO 7    |[Reserved for on-chip flash]
+GPIO 8    |[Reserved for on-chip flash]
+GPIO 9    |[Reserved for on-chip flash]
+GPIO 10   |[Reserved for on-chip flash]
+GPIO 11   |[Reserved for on-chip flash]
+GPIO 12   |
+GPIO 13   |Secondary UART RX; DUT 1 GPIO 15, I/O expander B 6
+GPIO 14   |
+GPIO 15   |Secondary UART TX; DUT 1 GPIO 13, I/O expander B 7
+GPIO 16   |
+ADC 0     |Resistor divider with I/O expander
+----------|----------------------------------------------------------
 
 ESP8266 Device 1 Connections
 ----------------------------
 
-  ---------- ----------------------------------------------------------
-  ESP        
-
-  GPIO 0     Used to enter programming mode; otherwise unused in test
-             environment.
-
-  GPIO 1     Primary UART transmit; reserved for host communication
-
-  GPIO 2     [Reserved for WS2812]
-
-  GPIO 3     Primary UART recieve; reserved for host communication
-
-  GPIO 4     
-
-  GPIO 5     
-
-  GPIO 6     [Reserved for on-chip flash]
-
-  GPIO 7     [Reserved for on-chip flash]
-
-  GPIO 8     [Reserved for on-chip flash]
-
-  GPIO 9     [Reserved for on-chip flash]
-
-  GPIO 10    [Reserved for on-chip flash]
-
-  GPIO 11    [Reserved for on-chip flash]
-
-  GPIO 12    HSPI MISO
-
-  GPIO 13    Secondary UART RX; DUT 0 GPIO 15, I/O exp B 7 via 4K7 Also
-             used as HSPI MOSI for SPI tests
-
-  GPIO 14    HSPI CLK
-
-  GPIO 15    Secondary UART TX; DUT 0 GPIO 13, I/O exp B 6 via 4K7 Also
-             used as HSPI /CS for SPI tests
-
-  GPIO 16    I/O expander B 5 via 4K7 resistor, for deep-sleep tests
-
-  ADC 0      
-  ---------- ----------------------------------------------------------
+----------|----------------------------------------------------------
+ESP       |
+GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
+GPIO 1    |Primary UART transmit; reserved for host communication
+GPIO 2    |[Reserved for WS2812]
+GPIO 3    |Primary UART recieve; reserved for host communication
+GPIO 4    |
+GPIO 5    |
+GPIO 6    |[Reserved for on-chip flash]
+GPIO 7    |[Reserved for on-chip flash]
+GPIO 8    |[Reserved for on-chip flash]
+GPIO 9    |[Reserved for on-chip flash]
+GPIO 10   |[Reserved for on-chip flash]
+GPIO 11   |[Reserved for on-chip flash]
+GPIO 12   |HSPI MISO
+GPIO 13   |Secondary UART RX; DUT 0 GPIO 15, I/O exp B 7 via 4K7 Also used as HSPI MOSI for SPI tests
+GPIO 14   |HSPI CLK
+GPIO 15   |Secondary UART TX; DUT 0 GPIO 13, I/O exp B 6 via 4K7 Also used as HSPI /CS for SPI tests
+GPIO 16   |I/O expander B 5 via 4K7 resistor, for deep-sleep tests
+ADC 0     |
+----------|----------------------------------------------------------
 
 
