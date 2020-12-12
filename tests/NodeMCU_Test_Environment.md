@@ -37,7 +37,6 @@ B 1      |2K2 resistor to DUT 0 ADC.
 B 5      |DUT1 GPIO16/WAKE via 4K7 resitor
 B 6      |DUT0 GPIO13 via 4K7 resistor and DUT1 GPIO15 via 4K7 resistor
 B 7      |DUT0 GPIO15 via 4K7 resistor and DUT1 GPIO13 via 4K7 resistor
----------|--------------------------------------------------------------
 
 Notes:
 
@@ -59,7 +58,7 @@ Notes:
 ESP8266 Device 0 Connections
 ----------------------------
 
-ESP       |
+ESP       | Usage
 ----------|----------------------------------------------------------
 GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
 GPIO 1    |Primary UART transmit; reserved for host communication
@@ -84,7 +83,7 @@ ADC 0     |Resistor divider with I/O expander
 ESP8266 Device 1 Connections
 ----------------------------
 
-ESP       |
+ESP       | Usage
 ----------|----------------------------------------------------------
 GPIO 0    |Used to enter programming mode; otherwise unused in test environment.
 GPIO 1    |Primary UART transmit; reserved for host communication
