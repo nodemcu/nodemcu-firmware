@@ -78,7 +78,6 @@ GPIO 14   |
 GPIO 15   |Secondary UART TX; DUT 1 GPIO 13, I/O expander B 7
 GPIO 16   |
 ADC 0     |Resistor divider with I/O expander
-----------|----------------------------------------------------------
 
 ESP8266 Device 1 Connections
 ----------------------------
@@ -103,6 +102,5 @@ GPIO 14   |HSPI CLK
 GPIO 15   |Secondary UART TX; DUT 0 GPIO 13, I/O exp B 6 via 4K7 Also used as HSPI /CS for SPI tests
 GPIO 16   |I/O expander B 5 via 4K7 resistor, for deep-sleep tests
 ADC 0     |
-----------|----------------------------------------------------------
 
 
