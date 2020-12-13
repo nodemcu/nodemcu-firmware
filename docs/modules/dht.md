@@ -9,8 +9,8 @@ Constants for various functions.
 `dht.OK`, `dht.ERROR_CHECKSUM`, `dht.ERROR_TIMEOUT` represent the potential values for the DHT read status
 
 ## dht.read()
-Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperature combo sensor.
-Return correct readout except for DHT12 and negative temperatures by DHT11.
+Reads all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperature combo sensor.
+Returns correct readout except for DHT12 and negative temperatures by DHT11. Use [`dht.read12()`](#dhtread12) and  [`dht.read11()`](#dhtread11) instead. It is to use model specific read function anyway.
 
 #### Syntax
 `dht.read(pin)`
