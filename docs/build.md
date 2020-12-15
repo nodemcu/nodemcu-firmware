@@ -50,7 +50,7 @@ Edit `app/include/user_modules.h` and comment-out the `#define` statement for mo
 To enable TLS support edit `app/include/user_config.h` and uncomment the following flag:
 
 ```c
-//#define CLIENT_SSL_ENABLE
+//#define LUA_USE_MODULES_TLS
 ```
 
 The complete configuration is stored in `app/include/user_mbedtls.h`. This is the file to edit if you build your own firmware and want to change mbed TLS behavior. See the [`tls` documentation](modules/tls.md) for details.
