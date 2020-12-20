@@ -494,12 +494,14 @@ stds.nodemcu_libs = {
     },
     pixbuf = {
       fields = {
-        newBuffer = empty,
         FADE_IN = empty,
         FADE_OUT = empty,
         SHIFT_CIRCULAR = empty,
         SHIFT_LOGICAL = empty,
-      },
+        init = empty,
+        newBuffer = empty,
+        write = empty
+      }
     },
     pwm = {
       fields = {
