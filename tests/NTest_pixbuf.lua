@@ -1,10 +1,7 @@
 local N = ...
 N = (N or require "NTest")("pixbuf")
 
-local buffer, buffer1, buffer2, buffer3
-
 local function initBuffer(buf, ...)
-  --local i,v
   for i,v in ipairs({...}) do
     buf:set(i, v, v*2, v*3, v*4)
   end
@@ -56,7 +53,7 @@ N.test('replace correctly', function()
 end)
 
 N.test('replace correctly issue #2921', function()
-    buffer = pixbuf.newBuffer(5, 3)
+    local buffer = pixbuf.newBuffer(5, 3)
     buffer:replace(string.char(3,255,165,33,0,244,12,87,255), -7)
     ok(eq(buffer:dump(), string.char(3,255,165,33,0,244,12,87,255,0,0,0,0,0,0)), "RGBW")
 end)
@@ -189,8 +186,8 @@ N.test('shift LOGICAL', function()
 end)
 
 N.test('shift LOGICAL issue #2946', function()
-    buffer1 = pixbuf.newBuffer(4, 4)
-    buffer2 = pixbuf.newBuffer(4, 4)
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    local buffer2 = pixbuf.newBuffer(4, 4)
 
     initBuffer(buffer1,7,8,9,12)
     initBuffer(buffer2,0,0,0,0)
@@ -276,11 +273,11 @@ N.test('map', function()
     buffer1:map(function(a,b,c,d) return b,a,c,d end)
     ok(eq("BACDBACDBACDBACD", buffer1:dump()), "swizzle")
 
-    buffer2 = pixbuf.newBuffer(4, 1)
+    local buffer2 = pixbuf.newBuffer(4, 1)
     buffer2:map(function(b,a,c,d) return c end, buffer1) -- luacheck: ignore
     ok(eq("CCCC", buffer2:dump()), "projection")
 
-    buffer3 = pixbuf.newBuffer(4, 3)
+    local buffer3 = pixbuf.newBuffer(4, 3)
     buffer3:map(function(b,a,c,d) return a,b,d end, buffer1) -- luacheck: ignore
     ok(eq("ABDABDABDABD", buffer3:dump()), "projection 2")
 
