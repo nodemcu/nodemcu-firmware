@@ -226,4 +226,15 @@ GPIO 15   |Secondary UART TX; DUT 0 GPIO 13, I/O exp B 6 via 4K7 Also used as HS
 GPIO 16   |I/O expander B 5 via 4K7 resistor, for deep-sleep tests
 ADC 0     |
 
+# Probing the Test Environment from Tests
 
+The `NTestEnv` module provides convenient functions for preflight checks
+and limited adaptation of test programs.
+
+## Test Configuration File
+
+Our tests expect a `testenv.conf` in SPIFFS to provide parameters to
+some tests.  This file is a JSON map with the following keys:
+
+- "DUT".  Its value is either 0 or 1 indicating which DUT is running the
+  given test.
