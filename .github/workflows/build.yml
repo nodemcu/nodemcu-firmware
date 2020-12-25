@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ release ]
   pull_request:
-    branches: [ dev ]
+    branches: [ dev, release ]
 
 jobs:
 
@@ -20,7 +20,7 @@ jobs:
             numbers: 'integral'  
           - lua_ver: 53
             numbers: '64bit'  
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
 
     env:
       LUA: ${{ matrix.lua_ver }}
@@ -96,7 +96,7 @@ jobs:
             numbers: '64bit'  
             filter: 'cat'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
 
     steps:
     - name: Checkout repo
@@ -159,7 +159,7 @@ jobs:
           - lua_ver: 53
             numbers: '64bit'  
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
 
     steps:
     - name: Checkout repo
@@ -216,7 +216,7 @@ jobs:
       matrix:
         include:
           - os: 'linux'
-            vm: 'ubuntu-latest'
+            vm: 'ubuntu-16.04'
           - os: 'windows'
             vm: 'windows-latest'
     runs-on: ${{ matrix.vm }} 
