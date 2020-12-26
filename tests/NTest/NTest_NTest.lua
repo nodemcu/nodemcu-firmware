@@ -434,7 +434,7 @@ end
 
 local pass
 -- Set meta test handler
-N.report(function(e, test, msg, errormsg)
+N.outputhandler = function(e, test, msg, errormsg)
   local function consumemsg(msg, area) -- luacheck: ignore
     if not expected[1][area][1] then
       print("--- FAIL "..expected[1].name..' ('..area..'ed): unexpected "'..
@@ -487,7 +487,7 @@ N.report(function(e, test, msg, errormsg)
   else
     print("Extra output: ", e, test, msg, errormsg)
   end
-end)
+end
 
 local async_queue = {}
 async = function(f) table.insert(async_queue, cbWrap(f)) end
