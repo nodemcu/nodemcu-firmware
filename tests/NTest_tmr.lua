@@ -1,4 +1,5 @@
-local N = require('NTest')("tmr")
+local N = ...
+N = (N or require "NTest")("tmr")
 
 N.testasync('SINGLE alarm', function(next)
   local t = tmr.create();
