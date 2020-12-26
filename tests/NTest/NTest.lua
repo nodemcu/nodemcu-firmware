@@ -177,9 +177,7 @@ local nmt = {
 }
 nmt.__index = nmt
 
-return function(testrunname, failoldinterface)
-
-  if failoldinterface then error("The interface has changed. Please see documentstion.") end
+return function(testrunname)
 
   local pendingtests = {}
   local started
