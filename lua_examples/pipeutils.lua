@@ -6,7 +6,7 @@
 -- **even if the stream is a multiple of the chunk size** due to internal
 -- buffering.  Flushing results in smaller chunk(s) being output, of course.
 local function chunker(o, csize, prio)
-  assert (type(o) == "function" and type(csize) == "number" and 0 <= csize)
+  assert (type(o) == "function" and type(csize) == "number" and 1 <= csize)
   local p = pipe.create(function(p)
               -- wait until it looks very likely that read is going to succeed
               -- and we won't have to unread.  This may hold slightly more than
@@ -26,21 +26,23 @@ local function chunker(o, csize, prio)
   }
 end
 
--- Stream and decode lines of base64, calling `o(data)` with decoded chunks or
--- calling `e(badinput, errorstr)` on error; the error callback must ensure
--- that this conduit is never written to again.
+-- Stream and decode lines of complete base64 blocks, calling `o(data)` with
+-- decoded chunks or calling `e(badinput, errorstr)` on error; the error
+-- callback must ensure that this conduit is never written to again.
 local function debase64(o, e, prio)
   assert (type(o) == "function" and type(e) == "function")
   local p = pipe.create(function(p)
-              local eds = p:read("\n")
-              while #eds > 0 do
-                local ed
-                ed, eds = eds:match("^%s*(%S*)%s*(.*)$")
-                if #ed == 0 then break end
-                local ok, d = pcall(encoder.fromBase64, ed)
-                if ok then o(d) else e(ed, d); p = nil; return false end
+              local eds = p:read("\n+")
+              if eds:sub(-1) == "\n" then -- guard against incomplete line
+                while #eds > 0 do -- while there are complete lines...
+                  local ed
+                  ed, eds = eds:match("^%s*(%S*)%s*(.*)$")
+                  if #ed == 0 then break end
+                  local ok, d = pcall(encoder.fromBase64, ed)
+                  if ok then o(d) else e(ed, d); return false end
+                end
               end
-              p:unread(eds)
+              p:unread(eds) -- everything unconsumed gets put back
               return false
             end, prio or node.task.LOW_PRIORITY)
   return { write = function(d) p:write(d) end }
