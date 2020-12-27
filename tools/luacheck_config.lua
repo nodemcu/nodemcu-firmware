@@ -609,7 +609,8 @@ stds.nodemcu_libs = {
         PROG = empty,
         STOP = empty,
         UP = empty,
-        sendcommand = empty
+        sendcommand = empty,
+        listen = empty
       }
     },
     spi = {
