@@ -435,12 +435,19 @@ static int pipe_reader(lua_State *L) {
   return 1;
 }
 
+// return number of records
+static int pipe_nrec (lua_State *L) {
+  lua_pushinteger(L, lua_objlen(L, 1) - 1);
+  return 1;
+}
+
 LROT_BEGIN(pipe_funcs, NULL, 0)
   LROT_FUNCENTRY( __len, pipe__len )
   LROT_FUNCENTRY( __tostring, pipe__tostring )
   LROT_FUNCENTRY( read, pipe_read )
   LROT_FUNCENTRY( reader, pipe_reader )
   LROT_FUNCENTRY( unread, pipe_unread )
+  LROT_FUNCENTRY( nrec, pipe_nrec )
 LROT_END(pipe_funcs, NULL, 0)
 
 /* Using a index func is needed because the write method is at pipe[1] */

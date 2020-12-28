@@ -11,7 +11,7 @@ local function chunker(o, csize, prio)
               -- wait until it looks very likely that read is going to succeed
               -- and we won't have to unread.  This may hold slightly more than
               -- a chunk in the underlying pipe object.
-              if 256 * (#p - 2) <= csize then return nil end
+              if 256 * (p:nrec() - 1) <= csize then return nil end
 
               local d = p:read(csize)
               if #d < csize
@@ -32,18 +32,18 @@ end
 local function debase64(o, e, prio)
   assert (type(o) == "function" and type(e) == "function")
   local p = pipe.create(function(p)
-              local eds = p:read("\n+")
-              if eds:sub(-1) == "\n" then -- guard against incomplete line
-                while #eds > 0 do -- while there are complete lines...
-                  local ed
-                  ed, eds = eds:match("^%s*(%S*)%s*(.*)$")
-                  if #ed == 0 then break end
-                  local ok, d = pcall(encoder.fromBase64, ed)
-                  if ok then o(d) else e(ed, d); return false end
+              local s = p:read("\n+")
+              if s:sub(-1) == "\n" then -- guard against incomplete line
+                s = s:match("^%s*(%S*)%s*$")
+                if #s ~= 0 then -- guard against empty line
+                  local ok, d = pcall(encoder.fromBase64, s)
+                  if ok then o(d) else e(s, d); return false end
                 end
+                return true
+              else
+                p:unread(s)
+                return false
               end
-              p:unread(eds) -- everything unconsumed gets put back
-              return false
             end, prio or node.task.LOW_PRIORITY)
   return { write = function(d) p:write(d) end }
 end
