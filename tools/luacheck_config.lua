@@ -487,6 +487,11 @@ stds.nodemcu_libs = {
         new = empty
       }
     },
+    pipe = {
+      fields = {
+        create = empty
+      }
+    },
     pwm = {
       fields = {
         close = empty,
