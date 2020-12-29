@@ -184,7 +184,7 @@ jobs:
         cd tests
         cp NTest/NTest.lua .
         ../luac.cross -e NTest_lua.lua | tee log
-        grep  -v " ==>  " log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
       shell: bash
 
 
@@ -219,7 +219,7 @@ jobs:
         cd tests
         cp NTest/NTest.lua .
         ../luac.cross.exe -e NTest_lua.lua | tee log
-        grep -v " ==>  " log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
       shell: bash
 
 
