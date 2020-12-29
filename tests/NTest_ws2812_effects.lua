@@ -1,7 +1,7 @@
 local N = ...
 N = (N or require "NTest")("ws2812_effects")
 
-local buffer, buffer1, buffer2
+local buffer
 
 
 N.test('set_speed', function()

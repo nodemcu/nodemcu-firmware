@@ -3,16 +3,15 @@ N = (N or require "NTest")("ws2812 buffers")
 
 local buffer, buffer1, buffer2
 
-local function initBuffer(buffer, ...)
-  local i,v
+local function initBuffer(buf, ...)
   for i,v in ipairs({...}) do
-    buffer:set(i, v, v*2, v*3, v*4)
+    buf:set(i, v, v*2, v*3, v*4)
   end
-  return buffer
+  return buf
 end
 
-local function equalsBuffer(buffer1, buffer2)
-  return eq(buffer1:dump(), buffer2:dump())
+local function equalsBuffer(buf1, buf2)
+  return eq(buf1:dump(), buf2:dump())
 end
 
 
@@ -63,7 +62,7 @@ N.test('replace correctly', function()
 end)
 
 N.test('replace correctly issue #2921', function()
-  local buffer = ws2812.newBuffer(5, 3)
+  buffer = ws2812.newBuffer(5, 3)
   buffer:replace(string.char(3,255,165,33,0,244,12,87,255), -7)
   ok(eq(buffer:dump(), string.char(3,255,165,33,0,244,12,87,255,0,0,0,0,0,0)), "RGBW")
 end)
@@ -103,7 +102,7 @@ N.test('fade correctly', function()
 end)
 
 N.test('mix correctly issue #1736', function()
-  buffer1 = ws2812.newBuffer(1, 3) 
+  buffer1 = ws2812.newBuffer(1, 3)
   buffer2 = ws2812.newBuffer(1, 3)
   buffer1:fill(10,22,54)
   buffer2:fill(10,27,55)
@@ -112,8 +111,8 @@ N.test('mix correctly issue #1736', function()
 end)
 
 N.test('mix saturation correctly ', function()
-  buffer1 = ws2812.newBuffer(1, 3) 
-  buffer2 = ws2812.newBuffer(1, 3) 
+  buffer1 = ws2812.newBuffer(1, 3)
+  buffer2 = ws2812.newBuffer(1, 3)
 
   buffer1:fill(10,22,54)
   buffer2:fill(10,27,55)
@@ -146,12 +145,12 @@ N.test('shift LOGICAL', function()
   initBuffer(buffer2,0,0,7,8)
   buffer1:shift(2)
   ok(equalsBuffer(buffer1, buffer2), "shift right")
-  
+
   initBuffer(buffer1,7,8,9,12)
   initBuffer(buffer2,9,12,0,0)
   buffer1:shift(-2)
   ok(equalsBuffer(buffer1, buffer2), "shift left")
-  
+
   initBuffer(buffer1,7,8,9,12)
   initBuffer(buffer2,7,0,8,12)
   buffer1:shift(1, nil, 2,3)
@@ -178,7 +177,7 @@ end)
 N.test('shift LOGICAL issue #2946', function()
   buffer1 = ws2812.newBuffer(4, 4)
   buffer2 = ws2812.newBuffer(4, 4)
-  
+
   initBuffer(buffer1,7,8,9,12)
   initBuffer(buffer2,0,0,0,0)
   buffer1:shift(4)
@@ -201,12 +200,12 @@ N.test('shift CIRCULAR', function()
   initBuffer(buffer2,9,12,7,8)
   buffer1:shift(2, ws2812.SHIFT_CIRCULAR)
   ok(equalsBuffer(buffer1, buffer2), "shift right")
-  
+
   initBuffer(buffer1,7,8,9,12)
   initBuffer(buffer2,9,12,7,8)
   buffer1:shift(-2, ws2812.SHIFT_CIRCULAR)
   ok(equalsBuffer(buffer1, buffer2), "shift left")
-  
+
   initBuffer(buffer1,7,8,9,12)
   initBuffer(buffer2,7,9,8,12)
   buffer1:shift(1, ws2812.SHIFT_CIRCULAR, 2,3)
