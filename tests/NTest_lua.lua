@@ -1,4 +1,4 @@
-N = require "NTest" ("Lua detail tests")
+local N = require "NTest" ("Lua detail tests")
 
 N.test('typeerror', function()
   fail(function() math.abs("") end, "number expected, got string", "string")
