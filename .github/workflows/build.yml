@@ -182,7 +182,7 @@ jobs:
     - name: NTest hosttests
       run: |
         cd tests
-        cp NTest/Ntest.lua .
+        cp NTest/NTest.lua .
         ../luac.cross -e NTest_lua.lua | tee log
         grep "failed. 0" log
       shell: bash
@@ -217,7 +217,7 @@ jobs:
     - name: NTest hosttests
       run: |
         cd tests
-        cp NTest/Ntest.lua .
+        cp NTest/NTest.lua .
         ../luac.cross.exe -e NTest_lua.lua | tee log
         grep "failed. 0" log
       shell: bash
