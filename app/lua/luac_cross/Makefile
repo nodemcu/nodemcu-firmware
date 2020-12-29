@@ -60,7 +60,7 @@ LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c 
            ltm.c       lundump.c   lvm.c       lzio.c      lnodemcu.c
 UZSRC   := uzlib_deflate.c crc32.c
 SJSONSRC:= jsonsl.c
-MODSRC  := struct.c bit.c color_utils.c sjson.c
+MODSRC  := struct.c bit.c color_utils.c sjson.c pipe.c
 #bloom.c crypto.c encoder.c (file.c)
 
 #
