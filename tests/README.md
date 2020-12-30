@@ -57,6 +57,11 @@ making it speak a slight variant of the [Test Anything
 Protocol](https://testanything.org/).  This structured output is scanned for
 by the script on the host.
 
+You'll need `expect` and TCL and some TCL libraries available; on Debian, that
+amounts to
+
+    apt install tcl tcllib tclx8.4 expect
+
 This program should be invoked from beside this file with something like
 
     TCLLIBPATH=./expectnmcu ./tap-driver.expect -serial /dev/ttyUSB3 -lfs ./lfs.img NTest_file.lua
