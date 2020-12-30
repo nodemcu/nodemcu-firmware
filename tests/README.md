@@ -47,6 +47,34 @@ the easiest route to success is to
 * at the interpreter prompt, say `dofile("NTest_foo.lua")` (or
   `node.LFS.get("NTest_foo")()`) to run the `foo` test program.
 
+## Experimental Host Orchestration
+
+Enthusiastic testers are encouraged to try using our very new, very
+experimental host test runner, [tap-driver.expect](./tap-driver.expect).  To
+use this program, in addition to the above, the LFS environment should contain
+[NTestTapOut](./tests/utils/NTestTapOut.lua), an output adapter for `NTest`,
+making it speak a slight variant of the [Test Anything
+Protocol](https://testanything.org/).  This structured output is scanned for
+by the script on the host.
+
+This program should be invoked from beside this file with something like
+
+    TCLLIBPATH=./expectnmcu ./tap-driver.expect -serial /dev/ttyUSB3 -lfs ./lfs.img NTest_file.lua
+
+This will...
+
+* transfer and install the specified LFS module (and reboot the device to load LFS)
+
+* transfer the test program
+
+* run the test program with the `NTestTapOut` shim
+
+* summarize the results
+
+Additional files may be transferred by specifing them before the test to run
+(e.g., `./tap-driver.expect a.lua b.lua NTest_foo.lua`).  Transfers will be
+significantly faster if [pipeutils](../lua_examples/pipeutils.lua) is available
+to `require` on the DUT, but a fallback strategy exists if not.
 
 # NodeMCU Testing Environment
 
