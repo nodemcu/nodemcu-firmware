@@ -1,5 +1,54 @@
-NodeMCU Testing Environment
-===========================
+# Introduction
+
+Welcome to the NodeMCU self-test suite.  Here you will find our growing effort
+to ensure that our software behaves as we think it should and that we do not
+regress against earlier versions.
+
+Our tests are written using [NTest](./NTest/NTest.md), a lightweight yet
+featureful framework for specifying unit tests.
+
+# Building and Running Test Software on NodeMCU Devices
+
+Naturally, to test NodeMCU on its intended hardware, you will need one or more
+NodeMCU-capable boards.  At present, the test environment is specified using
+two ESP8266 Devices Under Test (DUTs), but we envision expanding this to mixed
+ESP8266/ESP32 environments as well.
+
+Test programs live beside this file.  While many test programs run on the
+NodeMCU DUTs, but there is reason to want to orchestrate DUTs and the
+environment using the host.  Files matching the glob `NTest_*.lua` are intended
+for on-DUT execution.
+
+## Manual Test Invocation
+
+At the moment, the testing regime and host-based orchestration is still in
+development, and so things are a little more manual than perhaps desired.  The
+`NTest`-based test programs all assume that they can `require "NTest"`, and so
+the easiest route to success is to
+
+* build an LFS image containing
+
+  * [package.loader support for LFS](../lua_examples/lfs/_init.lua)
+
+  * [NTest itself](./NTest/NTest.lua)
+
+  * Any additional Lua support modules required (e.g., [mcp23017
+  support](../lua_modules/mcp23017/mcp23017.lua) )
+
+* build a firmware with the appropriate C modules
+
+* program the board with your firmware and LFS images
+
+* ensure that `package.loader` is patched appropriately on startup
+
+* transfer the `NTest_foo` program you wish to run to the device SPIFFS
+  (or have included it in the LFS).
+
+* at the interpreter prompt, say `dofile("NTest_foo.lua")` (or
+  `node.LFS.get("NTest_foo")()`) to run the `foo` test program.
+
+
+# NodeMCU Testing Environment
 
 Herein we define the environment our testing framework expects to see
 when it runs. It is composed of two ESP8266 devices, each capable of
@@ -14,8 +63,7 @@ devices, as found on almost all ESP8266 boards with USB to UART
 adapters, but the host does not necessarily need to use USB to connect,
 so long as TXD, RXD, DTR, and RTS are wired across.
 
-Peripherals
------------
+## Peripherals
 
 ### I2C Bus
 
