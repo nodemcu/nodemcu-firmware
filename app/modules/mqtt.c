@@ -76,11 +76,25 @@ typedef struct lmqtt_userdata
   int cb_suback_ref;
   int cb_unsuback_ref;
   int cb_puback_ref;
+
+  /* Configuration options */
+  struct {
+    int client_id_ref;
+    int username_ref;
+    int password_ref;
+    int will_topic_ref;
+    int will_message_ref;
+    int keepalive;
+    uint16_t max_message_length;
+    struct {
+      unsigned will_qos : 2;
+      bool will_retain : 1;
+      bool clean_session : 1;
+      bool secure : 1;
+    } flags;
+  } conf;
+
   mqtt_state_t  mqtt_state;
-  mqtt_connect_info_t connect_info;
-#ifdef CLIENT_SSL_ENABLE
-  uint8_t secure;
-#endif
   bool connected;     // indicate socket connected, not mqtt prot connected.
   bool keepalive_sent;
   bool sending;  // data sent to network stack, awaiting local acknowledge
@@ -163,7 +177,7 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
 static void mqtt_socket_do_disconnect(struct lmqtt_userdata *mud)
 {
 #ifdef CLIENT_SSL_ENABLE
-  if (mud->secure) {
+  if (mud->conf.flags.secure) {
     espconn_secure_disconnect(&mud->pesp_conn);
   } else
 #endif
@@ -252,7 +266,7 @@ static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
     pending_msg->sent = 1;
     NODE_DBG("Sent: %d\n", pending_msg->msg.length);
 #ifdef CLIENT_SSL_ENABLE
-    if( mud->secure )
+    if( mud->conf.flags.secure )
     {
       espconn_status = espconn_secure_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
     }
@@ -392,7 +406,7 @@ READPACKET:
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
       os_timer_disarm(&mud->mqttTimer);
-      os_timer_arm(&mud->mqttTimer, mud->connect_info.keepalive * 1000, 0);
+      os_timer_arm(&mud->mqttTimer, mud->conf.keepalive * 1000, 0);
 
       if(mqtt_get_type(in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
@@ -430,7 +444,7 @@ READPACKET:
            message_length,
            in_buffer_length);
 
-      if (message_length > mud->connect_info.max_message_length) {
+      if (message_length > mud->conf.max_message_length) {
         // The pending message length is larger than we was configured to allow
         if(msg_qos > 0 && msg_id == 0) {
           NODE_DBG("MQTT: msg too long, but not enough data to get msg_id: total=%u, deliver=%u\r\n", message_length, in_buffer_length);
@@ -656,7 +670,7 @@ static void mqtt_socket_sent(void *arg)
   }
 
   /* Ready for timeout */
-  os_timer_arm(&mud->mqttTimer, mud->connect_info.keepalive * 1000, 0);
+  os_timer_arm(&mud->mqttTimer, mud->conf.keepalive * 1000, 0);
 
   NODE_DBG("sent1, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
 
@@ -708,12 +722,34 @@ static void mqtt_socket_connected(void *arg)
   mqtt_message_buffer_t msgb;
   mqtt_msg_init(&msgb, temp_buffer, MQTT_BUF_SIZE);
 
-  mqtt_message_t* temp_msg = mqtt_msg_connect(&msgb, &mud->connect_info);
+  /* Build the mqtt_connect_info on the stack and assemble the message */
+  lua_State *L = lua_getstate();
+  int ltop = lua_gettop(L);
+  struct mqtt_connect_info mci;
+  mci.clean_session = mud->conf.flags.clean_session;
+  mci.will_retain   = mud->conf.flags.will_retain;
+  mci.will_qos      = mud->conf.flags.will_qos;
+  mci.keepalive     = mud->conf.keepalive;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->conf.client_id_ref);
+  mci.client_id    = lua_tostring(L, -1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->conf.username_ref);
+  mci.username     = lua_tostring(L, -1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->conf.password_ref);
+  mci.password     = lua_tostring(L, -1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->conf.will_topic_ref);
+  mci.will_topic   = lua_tostring(L, -1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->conf.will_message_ref);
+  mci.will_message = lua_tostring(L, -1);
+
+  mqtt_message_t* temp_msg = mqtt_msg_connect(&msgb, &mci);
   NODE_DBG("Send MQTT connection infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
+
+  lua_settop(L, ltop); /* Done with strings, restore the stack */
 
   // not queue this message. should send right now. or should enqueue this before head.
 #ifdef CLIENT_SSL_ENABLE
-  if(mud->secure)
+  if(mud->conf.flags.secure)
   {
     espconn_secure_send(pesp_conn, temp_msg->data, temp_msg->length);
   }
@@ -787,18 +823,7 @@ static int mqtt_socket_client( lua_State* L )
   NODE_DBG("enter mqtt_socket_client.\n");
 
   lmqtt_userdata *mud;
-  char tempid[20] = {0};
-  sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
-  NODE_DBG(tempid);
-  NODE_DBG("\n");
-
-  const char *clientId = tempid, *username = NULL, *password = NULL;
-  size_t idl = strlen(tempid);
-  size_t unl = 0, pwl = 0;
-  int keepalive = 0;
   int stack = 1;
-  int clean_session = 1;
-  int max_message_length = 0;
   int top = lua_gettop(L);
 
   // create a object
@@ -816,6 +841,12 @@ static int mqtt_socket_client( lua_State* L )
   mud->cb_unsuback_ref = LUA_NOREF;
   mud->cb_puback_ref = LUA_NOREF;
 
+  mud->conf.client_id_ref = LUA_NOREF;
+  mud->conf.username_ref = LUA_NOREF;
+  mud->conf.password_ref = LUA_NOREF;
+  mud->conf.will_topic_ref = LUA_NOREF;
+  mud->conf.will_message_ref = LUA_NOREF;
+
   mud->connState = MQTT_INIT;
 
   // set its metatable
@@ -824,90 +855,50 @@ static int mqtt_socket_client( lua_State* L )
 
   if( lua_isstring(L,stack) )   // deal with the clientid string
   {
-    clientId = luaL_checklstring( L, stack, &idl );
+    lua_pushvalue(L, stack);
     stack++;
+  } else {
+    char tempid[20] = {0};
+    sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
+    lua_pushstring(L, tempid);
   }
+  mud->conf.client_id_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   if(lua_isnumber( L, stack ))
   {
-    keepalive = luaL_checkinteger( L, stack);
+    mud->conf.keepalive = luaL_checkinteger( L, stack);
     stack++;
   }
-
-  if(keepalive == 0){
-    keepalive = MQTT_DEFAULT_KEEPALIVE;
+  if(mud->conf.keepalive == 0) {
+    mud->conf.keepalive = MQTT_DEFAULT_KEEPALIVE;
   }
 
   if(lua_isstring( L, stack )){
-    username = luaL_checklstring( L, stack, &unl );
+    lua_pushvalue(L, stack);
+    mud->conf.username_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
   }
-  if(username == NULL)
-    unl = 0;
-  NODE_DBG("length username: %d\r\n", unl);
 
   if(lua_isstring( L, stack )){
-    password = luaL_checklstring( L, stack, &pwl );
+    lua_pushvalue(L, stack);
+    mud->conf.password_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
-  }
-  if(password == NULL)
-    pwl = 0;
-  NODE_DBG("length password: %d\r\n", pwl);
-
-  if(lua_isnumber( L, stack ))
-  {
-    clean_session = luaL_checkinteger( L, stack);
-    stack++;
-  }
-
-  if(clean_session > 1){
-    clean_session = 1;
   }
 
   if(lua_isnumber( L, stack ))
   {
-      max_message_length = luaL_checkinteger( L, stack);
+    mud->conf.flags.clean_session = !!luaL_checkinteger(L, stack);
+    stack++;
+  }
+
+  if(lua_isnumber( L, stack ))
+  {
+      mud->conf.max_message_length = luaL_checkinteger( L, stack);
       stack++;
   }
-
-  if(max_message_length == 0) {
-    max_message_length = DEFAULT_MAX_MESSAGE_LENGTH;
+  if(mud->conf.max_message_length == 0) {
+    mud->conf.max_message_length = DEFAULT_MAX_MESSAGE_LENGTH;
   }
-
-  // TODO: check the zalloc result.
-  mud->connect_info.client_id = (uint8_t *)calloc(1,idl+1);
-  mud->connect_info.username = (uint8_t *)calloc(1,unl + 1);
-  mud->connect_info.password = (uint8_t *)calloc(1,pwl + 1);
-  if(!mud->connect_info.client_id || !mud->connect_info.username || !mud->connect_info.password){
-    if(mud->connect_info.client_id) {
-      free(mud->connect_info.client_id);
-      mud->connect_info.client_id = NULL;
-    }
-    if(mud->connect_info.username) {
-      free(mud->connect_info.username);
-      mud->connect_info.username = NULL;
-    }
-    if(mud->connect_info.password) {
-      free(mud->connect_info.password);
-      mud->connect_info.password = NULL;
-    }
-    return luaL_error(L, "not enough memory");
-  }
-
-  memcpy(mud->connect_info.client_id, clientId, idl);
-  mud->connect_info.client_id[idl] = 0;
-  memcpy(mud->connect_info.username, username, unl);
-  mud->connect_info.username[unl] = 0;
-  memcpy(mud->connect_info.password, password, pwl);
-  mud->connect_info.password[pwl] = 0;
-
-  NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
-
-  mud->connect_info.clean_session = clean_session;
-  mud->connect_info.will_qos = 0;
-  mud->connect_info.will_retain = 0;
-  mud->connect_info.keepalive = keepalive;
-  mud->connect_info.max_message_length = max_message_length;
 
   mud->mqtt_state.pending_msg_q = NULL;
   mud->mqtt_state.recv_buffer = NULL;
@@ -939,39 +930,12 @@ static int mqtt_delete( lua_State* L )
     msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
   }
 
-  // ---- alloc-ed in mqtt_socket_lwt()
-  if(mud->connect_info.will_topic){
-        free(mud->connect_info.will_topic);
-        mud->connect_info.will_topic = NULL;
-  }
-
-  if(mud->connect_info.will_message){
-    free(mud->connect_info.will_message);
-    mud->connect_info.will_message = NULL;
-  }
-  // ----
-
   //--------- alloc-ed in mqtt_socket_received()
   if(mud->mqtt_state.recv_buffer) {
     free(mud->mqtt_state.recv_buffer);
     mud->mqtt_state.recv_buffer = NULL;
   }
   // ----
-
-  //--------- alloc-ed in mqtt_socket_client()
-  if(mud->connect_info.client_id){
-    free(mud->connect_info.client_id);
-    mud->connect_info.client_id = NULL;
-  }
-  if(mud->connect_info.username){
-    free(mud->connect_info.username);
-    mud->connect_info.username = NULL;
-  }
-  if(mud->connect_info.password){
-    free(mud->connect_info.password);
-    mud->connect_info.password = NULL;
-  }
-  // -------
 
   // free (unref) callback ref
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
@@ -991,6 +955,17 @@ static int mqtt_delete( lua_State* L )
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
   mud->cb_puback_ref = LUA_NOREF;
 
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->conf.client_id_ref);
+  mud->conf.client_id_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->conf.username_ref);
+  mud->conf.username_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->conf.password_ref);
+  mud->conf.password_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->conf.will_topic_ref);
+  mud->conf.will_topic_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->conf.will_message_ref);
+  mud->conf.will_message_ref = LUA_NOREF;
+
   int selfref = mud->self_ref;
   mud->self_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
@@ -1007,7 +982,7 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
 
   mud->connState = MQTT_INIT;
 #ifdef CLIENT_SSL_ENABLE
-  if(mud->secure)
+  if(mud->conf.flags.secure)
   {
     espconn_status = espconn_secure_connect(&mud->pesp_conn);
   }
@@ -1055,7 +1030,6 @@ static int mqtt_socket_connect( lua_State* L )
   ip_addr_t ipaddr;
   const char *domain;
   int stack = 1;
-  unsigned secure = 0;
   int top = lua_gettop(L);
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
@@ -1088,18 +1062,15 @@ static int mqtt_socket_connect( lua_State* L )
   {
     if (lua_isnumber(L, stack)) {
       platform_print_deprecation_note("mqtt.connect secure parameter as integer","in the future");
-      secure = !!lua_tointeger(L, stack);
+      mud->conf.flags.secure = !!lua_tointeger(L, stack);
     } else {
-      secure = lua_toboolean(L, stack);
+      mud->conf.flags.secure = lua_toboolean(L, stack);
     }
     stack++;
-  } else {
-    secure = 0; // default to 0
   }
-#ifdef CLIENT_SSL_ENABLE
-  mud->secure = secure; // save
-#else
-  if ( secure )
+
+#ifndef CLIENT_SSL_ENABLE
+  if ( mud->conf.flags.secure )
   {
     return luaL_error(L, "ssl not available");
   }
@@ -1525,76 +1496,33 @@ static int mqtt_socket_publish( lua_State* L )
   return 1;
 }
 
-// Lua: mqtt:lwt( topic, message, qos, retain, function(client) )
+// Lua: mqtt:lwt( topic, message, [qos, [retain]])
 static int mqtt_socket_lwt( lua_State* L )
 {
   NODE_DBG("enter mqtt_socket_lwt.\n");
-  uint8_t stack = 1;
-  size_t topicSize, msgSize;
-  NODE_DBG("mqtt_socket_lwt.\n");
-  lmqtt_userdata *mud = NULL;
-  const char *lwtTopic, *lwtMsg;
-  uint8_t lwtQoS, lwtRetain;
 
-  mud = (lmqtt_userdata *)luaL_checkudata( L, stack, "mqtt.socket" );
+  lmqtt_userdata *mud = luaL_checkudata( L, 1, "mqtt.socket" );
+  luaL_argcheck( L, lua_isstring(L, 2), 2, "need lwt topic");
+  luaL_argcheck( L, lua_isstring(L, 3), 3, "need lwt message");
 
-  stack++;
-  lwtTopic = luaL_checklstring( L, stack, &topicSize );
-  if (lwtTopic == NULL)
-  {
-    return luaL_error( L, "need lwt topic");
-  }
+  lua_pushvalue(L, 2);
+  luaL_reref(L, LUA_REGISTRYINDEX, &mud->conf.will_topic_ref);
 
-  stack++;
-  lwtMsg = luaL_checklstring( L, stack, &msgSize );
-  if (lwtMsg == NULL)
-  {
-    return luaL_error( L, "need lwt message");
-  }
-  stack++;
-  if(mud->connect_info.will_topic){    // free the previous one if there is any
-    free(mud->connect_info.will_topic);
-    mud->connect_info.will_topic = NULL;
-  }
-  if(mud->connect_info.will_message){
-    free(mud->connect_info.will_message);
-    mud->connect_info.will_message = NULL;
-  }
+  lua_pushvalue(L, 3);
+  luaL_reref(L, LUA_REGISTRYINDEX, &mud->conf.will_message_ref);
 
-  mud->connect_info.will_topic = (uint8_t*) calloc(1, topicSize + 1 );
-  mud->connect_info.will_message = (uint8_t*) calloc(1, msgSize + 1 );
-  if(!mud->connect_info.will_topic || !mud->connect_info.will_message){
-    if(mud->connect_info.will_topic){
-      free(mud->connect_info.will_topic);
-      mud->connect_info.will_topic = NULL;
-    }
-    if(mud->connect_info.will_message){
-      free(mud->connect_info.will_message);
-      mud->connect_info.will_message = NULL;
-    }
-    return luaL_error( L, "not enough memory");
-  }
-  memcpy(mud->connect_info.will_topic, lwtTopic, topicSize);
-  mud->connect_info.will_topic[topicSize] = 0;
-  memcpy(mud->connect_info.will_message, lwtMsg, msgSize);
-  mud->connect_info.will_message[msgSize] = 0;
-
+  int stack = 4;
   if ( lua_isnumber(L, stack) )
   {
-    mud->connect_info.will_qos = lua_tointeger(L, stack);
+    mud->conf.flags.will_qos = lua_tointeger(L, stack) & 0x3;
     stack++;
   }
   if ( lua_isnumber(L, stack) )
   {
-    mud->connect_info.will_retain = lua_tointeger(L, stack);
+    mud->conf.flags.will_retain = !!lua_tointeger(L, stack);
     stack++;
   }
 
-  NODE_DBG("mqtt_socket_lwt: topic: %s, message: %s, qos: %d, retain: %d\n",
-      mud->connect_info.will_topic,
-      mud->connect_info.will_message,
-      mud->connect_info.will_qos,
-      mud->connect_info.will_retain);
   NODE_DBG("leave mqtt_socket_lwt.\n");
   return 0;
 }
