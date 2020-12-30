@@ -1185,41 +1185,50 @@ static int mqtt_socket_on( lua_State* L )
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
 
-  const char *method = luaL_checklstring( L, 2, &sl );
-  if (method == NULL)
-    return luaL_error( L, "wrong arg type" );
-
   luaL_checktype(L, 3, LUA_TFUNCTION);
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
-  if( sl == 7 && strcmp(method, "connect") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-    mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 8 && strcmp(method, "connfail") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-    mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 7 && strcmp(method, "offline") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-    mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 7 && strcmp(method, "message") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
-    mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 8 && strcmp(method, "overflow") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_overflow_ref);
-    mud->cb_overflow_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 6 && strcmp(method, "puback") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-    mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 6 && strcmp(method, "suback") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-    mud->cb_suback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 8 && strcmp(method, "unsuback") == 0){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
-    mud->cb_unsuback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else{
-    lua_pop(L, 1);
-    return luaL_error( L, "method not supported" );
+  static const char * const cbnames[] = {
+    "connect", "connfail", "offline",
+    "message", "overflow",
+    "puback", "suback", "unsuback",
+    NULL
+  };
+  switch (luaL_checkoption(L, 2, NULL, cbnames)) {
+    case 0:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+      mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 1:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+      mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 2:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+      mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 3:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+      mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 4:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_overflow_ref);
+      mud->cb_overflow_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 5:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+      mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 6:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+      mud->cb_suback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
+    case 7:
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
+      mud->cb_unsuback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      break;
   }
+
   NODE_DBG("leave mqtt_socket_on.\n");
   return 0;
 }
