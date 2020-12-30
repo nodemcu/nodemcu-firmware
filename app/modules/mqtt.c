@@ -926,11 +926,6 @@ static int mqtt_delete( lua_State* L )
   NODE_DBG("enter mqtt_delete.\n");
 
   lmqtt_userdata *mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
-  luaL_argcheck(L, mud, 1, "mqtt.socket expected");
-  if(mud==NULL){
-    NODE_DBG("userdata is nil.\n");
-    return 0;
-  }
 
   os_timer_disarm(&mud->mqttTimer);
   mud->connected = false;
@@ -1064,7 +1059,6 @@ static int mqtt_socket_connect( lua_State* L )
   int top = lua_gettop(L);
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
-  luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
 
   struct espconn *pesp_conn = &mud->pesp_conn;
@@ -1181,7 +1175,6 @@ static int mqtt_socket_close( lua_State* L )
   lmqtt_userdata *mud = NULL;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
-  luaL_argcheck(L, mud, 1, "mqtt.socket expected");
 
   sint8 espconn_status = 0;
   if (mud->connected) {
@@ -1220,11 +1213,6 @@ static int mqtt_socket_on( lua_State* L )
   size_t sl;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
-  luaL_argcheck(L, mud, 1, "mqtt.socket expected");
-  if(mud==NULL){
-    NODE_DBG("userdata is nil.\n");
-    return 0;
-  }
 
   const char *method = luaL_checklstring( L, 2, &sl );
   if (method == NULL)
@@ -1276,14 +1264,7 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
   lmqtt_userdata *mud;
 
   mud = (lmqtt_userdata *) luaL_checkudata( L, stack, "mqtt.socket" );
-  luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
   stack++;
-
-  if(mud==NULL){
-    NODE_DBG("userdata is nil.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
 
   if(!mud->connected){
     luaL_error( L, "not connected" );
@@ -1385,14 +1366,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
   lmqtt_userdata *mud;
 
   mud = (lmqtt_userdata *) luaL_checkudata( L, stack, "mqtt.socket" );
-  luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
   stack++;
-
-  if(mud==NULL){
-    NODE_DBG("userdata is nil.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
 
   if(!mud->connected){
     luaL_error( L, "not connected" );
@@ -1496,13 +1470,7 @@ static int mqtt_socket_publish( lua_State* L )
   uint16_t msg_id = 0;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
-  luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
-  if(mud==NULL){
-    NODE_DBG("userdata is nil.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
 
   if(!mud->connected){
     return luaL_error( L, "not connected" );
@@ -1569,10 +1537,6 @@ static int mqtt_socket_lwt( lua_State* L )
   uint8_t lwtQoS, lwtRetain;
 
   mud = (lmqtt_userdata *)luaL_checkudata( L, stack, "mqtt.socket" );
-  luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
-
-  if(mud == NULL)
-    return 0;
 
   stack++;
   lwtTopic = luaL_checklstring( L, stack, &topicSize );
