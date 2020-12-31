@@ -188,7 +188,7 @@ static void mqtt_socket_do_disconnect(struct lmqtt_userdata *mud)
 
 static void mqtt_socket_reconnected(void *arg, sint8_t err)
 {
-  NODE_DBG("enter mqtt_socket_reconnected.\n");
+  NODE_DBG("enter mqtt_socket_reconnected (err=%d)\n", err);
   lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
@@ -240,6 +240,8 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, uint16_t len
 
 static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
 {
+  NODE_DBG("enter mqtt_connack_fail\n");
+
   if(mud->cb_connect_fail_ref == LUA_NOREF || mud->self_ref == LUA_NOREF)
   {
     return;
@@ -251,6 +253,8 @@ static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
   lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
   lua_pushinteger(L, reason_code);
   lua_call(L, 2, 0);
+
+  NODE_DBG("leave mqtt_connack_fail\n");
 }
 
 static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
@@ -977,13 +981,14 @@ static int mqtt_delete( lua_State* L )
 static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
 {
 
-  NODE_DBG("enter socket_connect.\n");
+  NODE_DBG("enter mqtt_socket_do_connect.\n");
   sint8 espconn_status;
 
   mud->connState = MQTT_INIT;
 #ifdef CLIENT_SSL_ENABLE
   if(mud->conf.flags.secure)
   {
+    NODE_DBG("mqtt_socket_do_connect using espconn_secure\n");
     espconn_status = espconn_secure_connect(&mud->pesp_conn);
   }
   else
@@ -992,7 +997,7 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
     espconn_status = espconn_connect(&mud->pesp_conn);
   }
 
-  NODE_DBG("leave socket_connect\n");
+  NODE_DBG("leave mqtt_socket_do_connect espconn_status=%d\n", espconn_status);
 
   return espconn_status;
 }
