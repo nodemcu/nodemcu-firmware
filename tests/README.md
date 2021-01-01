@@ -72,14 +72,42 @@ This will...
 
 * transfer the test program
 
-* run the test program with the `NTestTapOut` shim
+* run the test program with `NTest` shimmed to use the `NTestTapOut` output
+  handler
 
 * summarize the results
 
-Additional files may be transferred by specifing them before the test to run
-(e.g., `./tap-driver.expect a.lua b.lua NTest_foo.lua`).  Transfers will be
-significantly faster if [pipeutils](../lua_examples/pipeutils.lua) is available
-to `require` on the DUT, but a fallback strategy exists if not.
+* return 0 if and only if all tests have passed
+
+This tool is quite flexible and takes a number of other options and flags
+controlling aspects of its behavior:
+
+* Additional files, Lua or otherwise, may be transferred by specifing them
+  before the test to run (e.g., `./tap-driver.expect a.lua b.lua
+  NTest_foo.lua`); dually, a `-noxfer` flag will suppress transferring even the
+  last file.  All transferred files are moved byte-for-byte to the DUT's
+  SPIFFS with names, but not directory components, preserved.
+
+* The `-lfs LFS.img` option need not be specified and, if not given, any
+  existing `LFS` image will remain on the device for use by the test.
+
+* A `-nontestshim` flag will skip attempting to shim the given test program
+  with `NTestTapOut`; the test program is expected to provide its own TAP
+  output.  The `-tpfx` argument can be used to override the leading `TAP: `
+  sigil used by the `NTestTapOut` output handler.
+
+* A `-runfunc` option indicates that the last argument is not a file to
+  transfer but rather a function to be run.  It will be invoked at the REPL
+  with a single argument, the shimmed `NTest` constructor, unless `-nontestshim`
+  is given, in which case the argument will be `nil`.
+
+* A `-notests` option suppresses running tests (making the tool merely another
+  option for loading files to the device).
+
+Transfers will be significantly faster if
+[pipeutils](../lua_examples/pipeutils.lua) is available to `require` on the
+DUT, but a fallback strategy exists if not.  We suggest either including
+`pipeutils` in LFS images, in SPIFFS, or as the first file to be transferred.
 
 # NodeMCU Testing Environment
 
