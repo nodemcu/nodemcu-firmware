@@ -22,7 +22,7 @@ end
 -- implement pseudo task handling for on host testing
 local drain_post_queue = function() end
 
-if not node then
+if not node then  -- assume we run on host, not on MCU
   local post_queue = {{},{},{}}
 
   drain_post_queue = function()
@@ -46,24 +46,8 @@ if not node then
     table.insert(post_queue[p], f)
   end
 
-  local errorfunc
-  node.setonerror = function(fn) errorfunc = fn end
+  node.setonerror = function(fn) node.Host_Error_Func = fn end  -- luacheck: ignore 142
   -- luacheck: pop
-
-  cbWrap = function(cb)
-      return function(...)
-          local ok, p1,p2,p3,p4 = pcall(cb, ...)
-          if not ok then
-            if errorfunc then
-              errorfunc(p1)
-            else
-              print(p1, "::::::::::::: reboot :::::::::::::")
-            end
-          else
-            return p1,p2,p3,p4
-          end
-        end
-    end
 end
 
 

@@ -406,6 +406,23 @@ end -- load_tests()
 
 local cbWrap = function(cb) return cb end
 
+if not node.LFS then  -- assume we run on host, not on MCU. node is already defined by NTest if running on host
+  cbWrap = function(cb)
+      return function(...)
+          local ok, p1,p2,p3,p4 = pcall(cb, ...)
+          if not ok then
+            if node.Host_Error_Func then  -- luacheck: ignore 143
+              node.Host_Error_Func(p1)  -- luacheck: ignore 143
+            else
+              print(p1, "::::::::::::: reboot :::::::::::::")
+            end
+          else
+            return p1,p2,p3,p4
+          end
+        end
+    end
+end
+
 -- Helper function to print arrays
 local function stringify(t)
   local s = ''
