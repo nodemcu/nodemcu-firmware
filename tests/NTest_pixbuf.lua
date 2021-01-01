@@ -247,11 +247,11 @@ end)
 
 N.test('sub', function()
     local buffer1 = pixbuf.newBuffer(4, 4)
-    local buffer2 = pixbuf.newBuffer(4, 4)
     initBuffer(buffer1,7,8,9,12)
     buffer1 = buffer1:sub(4,3)
     ok(eq(buffer1:size(), 0), "sub empty")
 
+    local buffer2 = pixbuf.newBuffer(2, 4)
     buffer1 = pixbuf.newBuffer(4, 4)
     initBuffer(buffer1,7,8,9,12)
     initBuffer(buffer2,9,12)
