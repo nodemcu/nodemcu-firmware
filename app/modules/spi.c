@@ -301,25 +301,42 @@ static int spi_transaction( lua_State *L )
   return 0;
 }
 
+// Lua: old_div = spi.set_clock_div( id, new_div )
+static int spi_set_clock_div( lua_State *L )
+{
+  int id = luaL_checkinteger( L, 1 );
+
+  MOD_CHECK_ID( spi, id );
+
+  u32 clk_div = luaL_checkinteger( L, 2 );
+
+  u32 old_div = spi_set_clkdiv(id, clk_div);
+
+  lua_pushinteger( L, old_div );
+
+  return 1;
+}
+
 
 // Module function map
-static const LUA_REG_TYPE spi_map[] = {
-  { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
-  { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
-  { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
-  { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
-  { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
-  { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
-  { LSTRKEY( "MASTER" ),      LNUMVAL( PLATFORM_SPI_MASTER ) },
-  { LSTRKEY( "SLAVE" ),       LNUMVAL( PLATFORM_SPI_SLAVE) },
-  { LSTRKEY( "CPHA_LOW" ),    LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
-  { LSTRKEY( "CPHA_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
-  { LSTRKEY( "CPOL_LOW" ),    LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
-  { LSTRKEY( "CPOL_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
-  { LSTRKEY( "DATABITS_8" ),  LNUMVAL( 8 ) },
-  { LSTRKEY( "HALFDUPLEX" ),  LNUMVAL( SPI_HALFDUPLEX ) },
-  { LSTRKEY( "FULLDUPLEX" ),  LNUMVAL( SPI_FULLDUPLEX ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(spi, NULL, 0)
+  LROT_FUNCENTRY( setup, spi_setup )
+  LROT_FUNCENTRY( send, spi_send_recv )
+  LROT_FUNCENTRY( recv, spi_recv )
+  LROT_FUNCENTRY( set_mosi, spi_set_mosi )
+  LROT_FUNCENTRY( get_miso, spi_get_miso )
+  LROT_FUNCENTRY( transaction, spi_transaction )
+  LROT_FUNCENTRY( set_clock_div, spi_set_clock_div )
+  LROT_NUMENTRY( MASTER, PLATFORM_SPI_MASTER )
+  LROT_NUMENTRY( SLAVE, PLATFORM_SPI_SLAVE )
+  LROT_NUMENTRY( CPHA_LOW, PLATFORM_SPI_CPHA_LOW )
+  LROT_NUMENTRY( CPHA_HIGH, PLATFORM_SPI_CPHA_HIGH )
+  LROT_NUMENTRY( CPOL_LOW, PLATFORM_SPI_CPOL_LOW )
+  LROT_NUMENTRY( CPOL_HIGH, PLATFORM_SPI_CPOL_HIGH )
+  LROT_NUMENTRY( DATABITS_8, 8 )
+  LROT_NUMENTRY( HALFDUPLEX, SPI_HALFDUPLEX )
+  LROT_NUMENTRY( FULLDUPLEX, SPI_FULLDUPLEX )
+LROT_END(spi, NULL, 0)
 
-NODEMCU_MODULE(SPI, "spi", spi_map, NULL);
+
+NODEMCU_MODULE(SPI, "spi", spi, NULL);

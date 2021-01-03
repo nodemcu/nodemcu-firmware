@@ -1,7 +1,6 @@
-
-
-#include <c_stdlib.h>
-#include <c_string.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include "vfs_int.h"
 
@@ -12,39 +11,39 @@
 
 static FRESULT last_result = FR_OK;
 
-static const char* const volstr[_VOLUMES] = {_VOLUME_STRS};
+static const char* const volstr[FF_VOLUMES] = {FF_VOLUME_STRS};
 
-static int is_current_drive = FALSE;
+static int is_current_drive = false;
 
 
 // forward declarations
-static sint32_t myfatfs_close( const struct vfs_file *fd );
-static sint32_t myfatfs_read( const struct vfs_file *fd, void *ptr, size_t len );
-static sint32_t myfatfs_write( const struct vfs_file *fd, const void *ptr, size_t len );
-static sint32_t myfatfs_lseek( const struct vfs_file *fd, sint32_t off, int whence );
-static sint32_t myfatfs_eof( const struct vfs_file *fd );
-static sint32_t myfatfs_tell( const struct vfs_file *fd );
-static sint32_t myfatfs_flush( const struct vfs_file *fd );
+static int32_t myfatfs_close( const struct vfs_file *fd );
+static int32_t myfatfs_read( const struct vfs_file *fd, void *ptr, size_t len );
+static int32_t myfatfs_write( const struct vfs_file *fd, const void *ptr, size_t len );
+static int32_t myfatfs_lseek( const struct vfs_file *fd, int32_t off, int whence );
+static int32_t myfatfs_eof( const struct vfs_file *fd );
+static int32_t myfatfs_tell( const struct vfs_file *fd );
+static int32_t myfatfs_flush( const struct vfs_file *fd );
 static uint32_t myfatfs_fsize( const struct vfs_file *fd );
-static sint32_t myfatfs_ferrno( const struct vfs_file *fd );
+static int32_t myfatfs_ferrno( const struct vfs_file *fd );
 
-static sint32_t  myfatfs_closedir( const struct vfs_dir *dd );
-static sint32_t  myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf );
+static int32_t  myfatfs_closedir( const struct vfs_dir *dd );
+static int32_t  myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf );
 
 static vfs_vol  *myfatfs_mount( const char *name, int num );
 static vfs_file *myfatfs_open( const char *name, const char *mode );
 static vfs_dir  *myfatfs_opendir( const char *name );
-static sint32_t  myfatfs_stat( const char *name, struct vfs_stat *buf );
-static sint32_t  myfatfs_remove( const char *name );
-static sint32_t  myfatfs_rename( const char *oldname, const char *newname );
-static sint32_t  myfatfs_mkdir( const char *name );
-static sint32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used );
-static sint32_t  myfatfs_chdrive( const char *name );
-static sint32_t  myfatfs_chdir( const char *name );
-static sint32_t  myfatfs_errno( void );
+static int32_t  myfatfs_stat( const char *name, struct vfs_stat *buf );
+static int32_t  myfatfs_remove( const char *name );
+static int32_t  myfatfs_rename( const char *oldname, const char *newname );
+static int32_t  myfatfs_mkdir( const char *name );
+static int32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used );
+static int32_t  myfatfs_chdrive( const char *name );
+static int32_t  myfatfs_chdir( const char *name );
+static int32_t  myfatfs_errno( void );
 static void      myfatfs_clearerr( void );
 
-static sint32_t myfatfs_umount( const struct vfs_vol *vol );
+static int32_t myfatfs_umount( const struct vfs_vol *vol );
 
 
 // ---------------------------------------------------------------------------
@@ -114,12 +113,12 @@ struct myvfs_dir {
 //
 void *ff_memalloc( UINT size )
 {
-  return c_malloc( size );
+  return malloc( size );
 }
 
 void ff_memfree( void *mblock )
 {
-  c_free( mblock );
+  free( mblock );
 }
 
 // TODO
@@ -141,7 +140,7 @@ DWORD get_fattime( void )
             tm.hour << 11 | tm.min << 5 | tm.sec;
   } else {
     // default time stamp derived from ffconf.h
-    stamp = ((DWORD)(_NORTC_YEAR - 1980) << 25 | (DWORD)_NORTC_MON << 21 | (DWORD)_NORTC_MDAY << 16);
+    stamp = ((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16);
   }
 
   return stamp;
@@ -155,14 +154,14 @@ DWORD get_fattime( void )
   const struct myvfs_vol *myvol = (const struct myvfs_vol *)descr; \
   FATFS *fs = (FATFS *)&(myvol->fs);
 
-static sint32_t myfatfs_umount( const struct vfs_vol *vol )
+static int32_t myfatfs_umount( const struct vfs_vol *vol )
 {
   GET_FATFS_FS(vol);
 
   last_result = f_mount( NULL, myvol->ldrname, 0 );
 
-  c_free( myvol->ldrname );
-  c_free( (void *)vol );
+  free( myvol->ldrname );
+  free( (void *)vol );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
@@ -175,19 +174,19 @@ static sint32_t myfatfs_umount( const struct vfs_vol *vol )
   const struct myvfs_file *myfd = (const struct myvfs_file *)descr; \
   FIL *fp = (FIL *)&(myfd->fp);
 
-static sint32_t myfatfs_close( const struct vfs_file *fd )
+static int32_t myfatfs_close( const struct vfs_file *fd )
 {
   GET_FIL_FP(fd)
 
   last_result = f_close( fp );
 
   // free descriptor memory
-  c_free( (void *)fd );
+  free( (void *)fd );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_read( const struct vfs_file *fd, void *ptr, size_t len )
+static int32_t myfatfs_read( const struct vfs_file *fd, void *ptr, size_t len )
 {
   GET_FIL_FP(fd);
   UINT act_read;
@@ -197,7 +196,7 @@ static sint32_t myfatfs_read( const struct vfs_file *fd, void *ptr, size_t len )
   return last_result == FR_OK ? act_read : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_write( const struct vfs_file *fd, const void *ptr, size_t len )
+static int32_t myfatfs_write( const struct vfs_file *fd, const void *ptr, size_t len )
 {
   GET_FIL_FP(fd);
   UINT act_written;
@@ -207,7 +206,7 @@ static sint32_t myfatfs_write( const struct vfs_file *fd, const void *ptr, size_
   return last_result == FR_OK ? act_written : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_lseek( const struct vfs_file *fd, sint32_t off, int whence )
+static int32_t myfatfs_lseek( const struct vfs_file *fd, int32_t off, int whence )
 {
   GET_FIL_FP(fd);
   FSIZE_t new_pos;
@@ -233,7 +232,7 @@ static sint32_t myfatfs_lseek( const struct vfs_file *fd, sint32_t off, int when
   return last_result == FR_OK ? new_pos : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_eof( const struct vfs_file *fd )
+static int32_t myfatfs_eof( const struct vfs_file *fd )
 {
   GET_FIL_FP(fd);
 
@@ -242,7 +241,7 @@ static sint32_t myfatfs_eof( const struct vfs_file *fd )
   return f_eof( fp );
 }
 
-static sint32_t myfatfs_tell( const struct vfs_file *fd )
+static int32_t myfatfs_tell( const struct vfs_file *fd )
 {
   GET_FIL_FP(fd);
 
@@ -251,7 +250,7 @@ static sint32_t myfatfs_tell( const struct vfs_file *fd )
   return f_tell( fp );
 }
 
-static sint32_t myfatfs_flush( const struct vfs_file *fd )
+static int32_t myfatfs_flush( const struct vfs_file *fd )
 {
   GET_FIL_FP(fd);
 
@@ -269,7 +268,7 @@ static uint32_t myfatfs_fsize( const struct vfs_file *fd )
   return f_size( fp );
 }
 
-static sint32_t myfatfs_ferrno( const struct vfs_file *fd )
+static int32_t myfatfs_ferrno( const struct vfs_file *fd )
 {
   return -last_result;
 }
@@ -282,24 +281,24 @@ static sint32_t myfatfs_ferrno( const struct vfs_file *fd )
   const struct myvfs_dir *mydd = (const struct myvfs_dir *)descr; \
   DIR *dp = (DIR *)&(mydd->dp);
 
-static sint32_t myfatfs_closedir( const struct vfs_dir *dd )
+static int32_t myfatfs_closedir( const struct vfs_dir *dd )
 {
   GET_DIR_DP(dd);
 
   last_result = f_closedir( dp );
 
   // free descriptor memory
-  c_free( (void *)dd );
+  free( (void *)dd );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
 static void myfatfs_fill_stat( const FILINFO *fno, struct vfs_stat *buf )
 {
-  c_memset( buf, 0, sizeof( struct vfs_stat ) );
+  memset( buf, 0, sizeof( struct vfs_stat ) );
 
   // fill in supported stat entries
-  c_strncpy( buf->name, fno->fname, FS_OBJ_NAME_LEN+1 );
+  strncpy( buf->name, fno->fname, FS_OBJ_NAME_LEN+1 );
   buf->name[FS_OBJ_NAME_LEN] = '\0';
   buf->size = fno->fsize;
   buf->is_dir = fno->fattrib & AM_DIR ? 1 : 0;
@@ -318,7 +317,7 @@ static void myfatfs_fill_stat( const FILINFO *fno, struct vfs_stat *buf )
   buf->tm_valid = 1;
 }
 
-static sint32_t myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf )
+static int32_t myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf )
 {
   GET_DIR_DP(dd);
   FILINFO fno;
@@ -342,19 +341,19 @@ static sint32_t myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf 
 static vfs_vol *myfatfs_mount( const char *name, int num )
 {
   struct myvfs_vol *vol;
-  const size_t len = c_strlen( name );
+  const size_t len = strlen( name );
 
   // num argument specifies the physical driver = SS/CS pin number for this sd card
   if (num >= 0) {
     for (int i = 0; i < NUM_LOGICAL_DRIVES; i++) {
-      if (0 == c_strncmp( name, volstr[i], c_strlen( volstr[i] ) )) {
+      if (0 == strncmp( name, volstr[i], strlen( volstr[i] ) )) {
         VolToPart[i].pd = num;
       }
     }
   }
 
-  if (vol = c_malloc( sizeof( struct myvfs_vol ) )) {
-    if (vol->ldrname = c_strdup( name )) {
+  if (vol = malloc( sizeof( struct myvfs_vol ) )) {
+    if (vol->ldrname = strdup( name )) {
       if (FR_OK == (last_result = f_mount( &(vol->fs), name, 1 ))) {
 	vol->vfs_vol.fs_type = VFS_FS_FATFS;
 	vol->vfs_vol.fns     = &myfatfs_vol_fns;
@@ -364,29 +363,29 @@ static vfs_vol *myfatfs_mount( const char *name, int num )
   }
 
   if (vol) {
-    if (vol->ldrname) c_free( vol->ldrname );
-    c_free( vol );
+    if (vol->ldrname) free( vol->ldrname );
+    free( vol );
   }
   return NULL;
 }
 
 static BYTE myfatfs_mode2flag( const char *mode )
 {
-  if (c_strlen( mode ) == 1) {
-    if(c_strcmp( mode, "w" ) == 0)
+  if (strlen( mode ) == 1) {
+    if(strcmp( mode, "w" ) == 0)
       return FA_WRITE | FA_CREATE_ALWAYS;
-    else if (c_strcmp( mode, "r" ) == 0)
+    else if (strcmp( mode, "r" ) == 0)
       return FA_READ | FA_OPEN_EXISTING;
-    else if (c_strcmp( mode, "a" ) == 0)
+    else if (strcmp( mode, "a" ) == 0)
       return FA_WRITE | FA_OPEN_ALWAYS;
     else
       return FA_READ | FA_OPEN_EXISTING;
-  } else if (c_strlen( mode ) == 2) {
-    if (c_strcmp( mode, "r+" ) == 0)
+  } else if (strlen( mode ) == 2) {
+    if (strcmp( mode, "r+" ) == 0)
       return FA_READ | FA_WRITE | FA_OPEN_EXISTING;
-    else if (c_strcmp( mode, "w+" ) == 0)
+    else if (strcmp( mode, "w+" ) == 0)
       return FA_READ | FA_WRITE | FA_CREATE_ALWAYS;
-    else if (c_strcmp( mode, "a+" ) ==0 )
+    else if (strcmp( mode, "a+" ) ==0 )
       return FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
     else
       return FA_READ | FA_OPEN_EXISTING;
@@ -400,7 +399,7 @@ static vfs_file *myfatfs_open( const char *name, const char *mode )
   struct myvfs_file *fd;
   const BYTE flags = myfatfs_mode2flag( mode );
 
-  if (fd = c_malloc( sizeof( struct myvfs_file ) )) {
+  if (fd = malloc( sizeof( struct myvfs_file ) )) {
     if (FR_OK == (last_result = f_open( &(fd->fp), name, flags ))) {
       // skip to end of file for append mode
       if (flags & FA_OPEN_ALWAYS)
@@ -410,7 +409,7 @@ static vfs_file *myfatfs_open( const char *name, const char *mode )
       fd->vfs_file.fns     = &myfatfs_file_fns;
       return (vfs_file *)fd;
     } else {
-      c_free( fd );
+      free( fd );
     }
   }
 
@@ -421,20 +420,20 @@ static vfs_dir *myfatfs_opendir( const char *name )
 {
   struct myvfs_dir *dd;
 
-  if (dd = c_malloc( sizeof( struct myvfs_dir ) )) {
+  if (dd = malloc( sizeof( struct myvfs_dir ) )) {
     if (FR_OK == (last_result = f_opendir( &(dd->dp), name ))) {
       dd->vfs_dir.fs_type = VFS_FS_FATFS;
       dd->vfs_dir.fns     = &myfatfs_dir_fns;
       return (vfs_dir *)dd;
     } else {
-      c_free( dd );
+      free( dd );
     }
   }
 
   return NULL;
 }
 
-static sint32_t myfatfs_stat( const char *name, struct vfs_stat *buf )
+static int32_t myfatfs_stat( const char *name, struct vfs_stat *buf )
 {
   FILINFO fno;
 
@@ -447,56 +446,56 @@ static sint32_t myfatfs_stat( const char *name, struct vfs_stat *buf )
   }
 }
 
-static sint32_t myfatfs_remove( const char *name )
+static int32_t myfatfs_remove( const char *name )
 {
   last_result = f_unlink( name );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_rename( const char *oldname, const char *newname )
+static int32_t myfatfs_rename( const char *oldname, const char *newname )
 {
   last_result = f_rename( oldname, newname );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_mkdir( const char *name )
+static int32_t myfatfs_mkdir( const char *name )
 {
   last_result = f_mkdir( name );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used )
+static int32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used )
 {
   DWORD free_clusters;
   FATFS *fatfs;
 
   if ((last_result = f_getfree( "", &free_clusters, &fatfs )) == FR_OK) {
     // provide information in kByte since uint32_t would clip to 4 GByte
-    *total = (fatfs->n_fatent * fatfs->csize) / (1024 / _MAX_SS);
-    *used  = *total - (free_clusters * fatfs->csize) / (1024 / _MAX_SS);
+    *total = (fatfs->n_fatent * fatfs->csize) / (1024 / FF_MAX_SS);
+    *used  = *total - (free_clusters * fatfs->csize) / (1024 / FF_MAX_SS);
   }
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_chdrive( const char *name )
+static int32_t myfatfs_chdrive( const char *name )
 {
   last_result = f_chdrive( name );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_chdir( const char *name )
+static int32_t myfatfs_chdir( const char *name )
 {
   last_result = f_chdir( name );
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static sint32_t myfatfs_errno( void )
+static int32_t myfatfs_errno( void )
 {
   return -last_result;
 }
@@ -516,11 +515,11 @@ vfs_fs_fns *myfatfs_realm( const char *inname, char **outname, int set_current_d
     char *oname;
 
     // logical drive is specified, check if it's one of ours
-    for (int i = 0; i < _VOLUMES; i++) {
-      size_t volstr_len = c_strlen( volstr[i] );
-      if (0 == c_strncmp( &(inname[1]), volstr[i], volstr_len )) {
-        oname = c_strdup( inname );
-        c_strcpy( oname, volstr[i] );
+    for (int i = 0; i < FF_VOLUMES; i++) {
+      size_t volstr_len = strlen( volstr[i] );
+      if (0 == strncmp( &(inname[1]), volstr[i], volstr_len )) {
+        oname = strdup( inname );
+        strcpy( oname, volstr[i] );
         oname[volstr_len] = ':';
         *outname = oname;
 
@@ -531,11 +530,11 @@ vfs_fs_fns *myfatfs_realm( const char *inname, char **outname, int set_current_d
   } else {
     // no logical drive in patchspec, are we current drive?
     if (is_current_drive) {
-      *outname = c_strdup( inname );
+      *outname = strdup( inname );
       return &myfatfs_fs_fns;
     }
   }
 
-  if (set_current_drive) is_current_drive = FALSE;
+  if (set_current_drive) is_current_drive = false;
   return NULL;
 }

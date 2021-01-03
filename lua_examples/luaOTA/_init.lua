@@ -1,10 +1,10 @@
 --SAFETRIM
 -- function _init(self, args)
   local self, args = ...
-  
-  -- The config is read from config.json but can be overridden by explicitly 
+
+  -- The config is read from config.json but can be overridden by explicitly
   -- setting the following args.  Setting to "nil" deletes the config arg.
-  -- 
+  --
   --    ssid, spwd                Credentials for the WiFi
   --    server, port, secret      Provisioning server:port and signature secret
   --    leave                     If true then the Wifi is left connected
@@ -45,5 +45,5 @@
 
   package.loaded[self.modname] = nil
   self.modname=nil
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, self:_doTick()) 
+  self.timer:alarm( 500, tmr.ALARM_AUTO, self:_doTick())
 -- end

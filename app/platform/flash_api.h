@@ -79,18 +79,14 @@ typedef struct
     uint32_t segment_size;
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
-SPIFlashInfo flash_rom_getinfo(void);
+SPIFlashInfo *flash_rom_getinfo(void);
 uint8_t flash_rom_get_size_type(void);
 uint32_t flash_rom_get_size_byte(void);
 uint32_t flash_detect_size_byte(void);
-bool flash_rom_set_size_type(uint8_t);
-bool flash_rom_set_size_byte(uint32_t);
 uint16_t flash_rom_get_sec_num(void);
 uint8_t flash_rom_get_mode(void);
 uint32_t flash_rom_get_speed(void);
 uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
 uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index);
-// uint8_t flash_rom_get_checksum(void);
-// uint8_t flash_rom_calc_checksum(void);
 
 #endif // __FLASH_API_H__

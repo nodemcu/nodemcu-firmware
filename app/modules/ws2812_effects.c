@@ -2,13 +2,13 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "osapi.h"
-#include "swTimer/swTimer.h"
+#include "pm/swtimer.h"
 
 #include "ws2812.h"
 #include "color_utils.h"
@@ -17,8 +17,6 @@
 
 #define DEFAULT_MODE 0
 #define DEFAULT_COLOR 0xFF0000
-
-#define UINT32_MAX 4294967295U
 
 #define SPEED_MIN 0
 #define SPEED_MAX 255
@@ -40,6 +38,10 @@
 #define min3(a,b, c) min((a), min((b), (c)))
 #define max3(a,b, c) max((a), max((b), (c)))
 
+#define IDX_R 1
+#define IDX_G 0
+#define IDX_B 2
+#define IDX_W 3
 
 
 typedef struct {
@@ -56,6 +58,7 @@ typedef struct {
   uint8_t effect_type;
   uint8_t color[4];
   int effect_int_param1;
+  ws2812_buffer_shift_prepare* prepare;
 } ws2812_effects;
 
 
@@ -93,9 +96,6 @@ static int ws2812_write(ws2812_buffer* buffer) {
   size_t length1, length2;
   const char *buffer1, *buffer2;
 
-  buffer1 = 0;
-  length1 = 0;
-
   buffer1 = buffer->values;
   length1 = buffer->colorsPerLed*buffer->size;
 
@@ -117,11 +117,11 @@ static int ws2812_set_pixel(int pixel, uint32_t color) {
   uint8_t w = buffer->colorsPerLed  == 4 ? ((color & 0xFF000000) >> 24) : 0;
 
   int offset = pixel * buffer->colorsPerLed;
-  buffer->values[offset] = g;
-  buffer->values[offset+1] = r;
-  buffer->values[offset+2] = b;
+  buffer->values[offset+IDX_R] = r;
+  buffer->values[offset+IDX_G] = g;
+  buffer->values[offset+IDX_B] = b;
   if (buffer->colorsPerLed == 4) {
-    buffer->values[offset+3] = w;
+    buffer->values[offset+IDX_W] = w;
   }
 
   return 0;
@@ -156,16 +156,22 @@ static uint8_t get_random_wheel_index(uint8_t pos)
 * initialized ws2812_effects with the buffer to use
 */
 static int ws2812_effects_init(lua_State *L) {
+
+  platform_print_deprecation_note("ws2812_effects",
+    "soon; please see https://github.com/nodemcu/nodemcu-firmware/issues/3122");
+
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   luaL_argcheck(L, buffer != NULL, 1, "no valid buffer provided");
   // get rid of old state
   if (state != NULL) {
+    if (state->prepare) {
+      luaM_free(L, state->prepare);
+    }
     luaL_unref(L, LUA_REGISTRYINDEX, state->buffer_ref);
-    os_free((void *) state);
+    free((void *) state);
   }
   // Allocate memory and set all to zero
-  size_t size = sizeof(ws2812_effects) + buffer->colorsPerLed*sizeof(uint8_t);
-  state = (ws2812_effects *) os_zalloc(size);
+  state = (ws2812_effects *) calloc(1,sizeof(ws2812_effects));
   // initialize
   state->speed = SPEED_DEFAULT;
   state->mode_delay = DELAY_DEFAULT;
@@ -200,22 +206,22 @@ static int ws2812_effects_set_color(lua_State* L) {
 
 static int ws2812_effects_get_speed(lua_State* L) {
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  lua_pushnumber(L, state->speed);
+  lua_pushinteger(L, state->speed);
   return 1;
 }
 
 static int ws2812_effects_set_speed(lua_State* L) {
-  uint8_t speed = luaL_checkinteger(L, 1);
+  int speed = luaL_checkinteger(L, 1);
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  luaL_argcheck(L, speed >= 0 && speed <= 255, 1, "should be a 0-255");
-  state->speed = speed;
+  luaL_argcheck(L, speed >= SPEED_MIN && speed <= SPEED_MAX, 1, "should be 0-255");
+  state->speed = (uint8_t)speed;
   state->mode_delay = 10;
   return 0;
 }
 
 static int ws2812_effects_get_delay(lua_State* L) {
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  lua_pushnumber(L, state->mode_delay);
+  lua_pushinteger(L, state->mode_delay);
   return 1;
 }
 
@@ -232,37 +238,35 @@ static int ws2812_effects_set_delay(lua_State* L) {
 
 
 static int ws2812_effects_set_brightness(lua_State* L) {
-  uint8_t brightness = luaL_checkint(L, 1);
+  int brightness = luaL_checkint(L, 1);
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  luaL_argcheck(L, brightness >= 0 && brightness < 256, 1, "should be a 0-255");
-  state->brightness = brightness;
+  luaL_argcheck(L, brightness >= BRIGHTNESS_MIN && brightness <= BRIGHTNESS_MAX, 1, "should be 0-255");
+  state->brightness = (uint8_t) brightness;
   return 0;
 }
 
 
 
-static int ws2812_effects_fill_buffer(uint32_t color) {
+static void ws2812_effects_fill_buffer(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
 
   ws2812_buffer * buffer = state->buffer;
 
-  uint8_t g = ((color & 0x00FF0000) >> 16);
-  uint8_t r = ((color & 0x0000FF00) >> 8);
-  uint8_t b = (color & 0x000000FF);
-  uint8_t w = buffer->colorsPerLed  == 4 ? ((color & 0xFF000000) >> 24) : 0;
+  uint8_t bright_g = g * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_r = r * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_b = b * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_w = w * state->brightness / BRIGHTNESS_MAX;
 
   // Fill buffer
   int i;
   uint8_t * p = &buffer->values[0];
   for(i = 0; i < buffer->size; i++) {
-    *p++ = g * state->brightness / 255;
-    *p++ = r * state->brightness / 255;
-    *p++ = b * state->brightness / 255;
+    *p++ = bright_g;
+    *p++ = bright_r;
+    *p++ = bright_b;
     if (buffer->colorsPerLed == 4) {
-      *p++ = w * state->brightness / 255;
+      *p++ = bright_w;
     }
   }
-
-  return 0;
 }
 
 
@@ -281,9 +285,7 @@ static int ws2812_effects_fill_color() {
   uint8_t b = state->color[2];
   uint8_t w = state->color[3];
 
-  uint32_t color = (w << 24) | (g << 16) | (r << 8) | b;
-
-  ws2812_effects_fill_buffer(color);
+  ws2812_effects_fill_buffer(r, g, b, w);
 
   return 0;
 }
@@ -304,10 +306,10 @@ static int ws2812_effects_mode_blink() {
     // on
     ws2812_effects_fill_color();
   }
-  else {
+  else { 
     // off
     ws2812_buffer * buffer = state->buffer;
-    c_memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
+    memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
   }
   return 0;
 }
@@ -385,9 +387,9 @@ static int ws2812_effects_gradient(const char *gradient_spec, size_t length1) {
       // convert to RGB
       uint32_t grb = hsv2grb(h, s, v);
 
-      *p++ = ((grb & 0x00FF0000) >> 16) * state->brightness / 255;
-      *p++ = ((grb & 0x0000FF00) >> 8)  * state->brightness / 255;
-      *p++ = (grb & 0x000000FF) * state->brightness / 255;
+      *p++ = ((grb & 0x00FF0000) >> 16) * state->brightness / BRIGHTNESS_MAX;
+      *p++ = ((grb & 0x0000FF00) >> 8)  * state->brightness / BRIGHTNESS_MAX;
+      *p++ = (grb & 0x000000FF) * state->brightness / BRIGHTNESS_MAX;
 
       for (j = 3; j < buffer->colorsPerLed; j++) {
         *p++ = 0;
@@ -444,9 +446,9 @@ static int ws2812_effects_gradient_rgb(const char *buffer1, size_t length1) {
     int steps = numPixels - 1;
 
     for(i = 0; i < numPixels; i++) {
-      *p++ = (g1 + ((g2-g1) * i / steps)) * state->brightness / 255;
-      *p++ = (r1 + ((r2-r1) * i / steps)) * state->brightness / 255;
-      *p++ = (b1 + ((b2-b1) * i / steps)) * state->brightness / 255;
+      *p++ = (g1 + ((g2-g1) * i / steps)) * state->brightness / BRIGHTNESS_MAX;
+      *p++ = (r1 + ((r2-r1) * i / steps)) * state->brightness / BRIGHTNESS_MAX;
+      *p++ = (b1 + ((b2-b1) * i / steps)) * state->brightness / BRIGHTNESS_MAX;
       for (j = 3; j < buffer->colorsPerLed; j++)
       {
         *p++ = 0;
@@ -467,9 +469,9 @@ static int ws2812_effects_mode_random_color() {
   ws2812_buffer * buffer = state->buffer;
 
   uint32_t color = color_wheel(state->mode_color_index);
-  uint8_t r = ((color & 0x00FF0000) >> 16) * state->brightness / 255;
-  uint8_t g = ((color & 0x0000FF00) >>  8) * state->brightness / 255;
-  uint8_t b = ((color & 0x000000FF) >>  0) * state->brightness / 255;
+  uint8_t r = ((color & 0x00FF0000) >> 16) * state->brightness / BRIGHTNESS_MAX;
+  uint8_t g = ((color & 0x0000FF00) >>  8) * state->brightness / BRIGHTNESS_MAX;
+  uint8_t b = ((color & 0x000000FF) >>  0) * state->brightness / BRIGHTNESS_MAX;
 
   // Fill buffer
   int i,j;
@@ -502,9 +504,9 @@ static int ws2812_effects_mode_rainbow() {
   int i,j;
   uint8_t * p = &buffer->values[0];
   for(i = 0; i < buffer->size; i++) {
-    *p++ = g * state->brightness / 255;
-    *p++ = r * state->brightness / 255;
-    *p++ = b * state->brightness / 255;
+    *p++ = g * state->brightness / BRIGHTNESS_MAX;
+    *p++ = r * state->brightness / BRIGHTNESS_MAX;
+    *p++ = b * state->brightness / BRIGHTNESS_MAX;
     for (j = 3; j < buffer->colorsPerLed; j++)
     {
       *p++ = 0;
@@ -528,9 +530,9 @@ static int ws2812_effects_mode_rainbow_cycle(int repeat_count) {
   for(i = 0; i < buffer->size; i++) {
     uint16_t wheel_index = (i * 360 / buffer->size * repeat_count) % 360;
     uint32_t color = color_wheel(wheel_index);
-    uint8_t r = ((color & 0x00FF0000) >> 16) * state->brightness / 255;
-    uint8_t g = ((color & 0x0000FF00) >>  8) * state->brightness / 255;
-    uint8_t b = ((color & 0x000000FF) >>  0) * state->brightness / 255;
+    uint8_t r = ((color & 0x00FF0000) >> 16) * state->brightness / BRIGHTNESS_MAX;
+    uint8_t g = ((color & 0x0000FF00) >>  8) * state->brightness / BRIGHTNESS_MAX;
+    uint8_t b = ((color & 0x000000FF) >>  0) * state->brightness / BRIGHTNESS_MAX;
     *p++ = g;
     *p++ = r;
     *p++ = b;
@@ -567,9 +569,9 @@ static int ws2812_effects_mode_flicker_int(uint8_t max_flicker) {
     if(g1<0) g1=0;
     if(r1<0) r1=0;
     if(b1<0) b1=0;
-    *p++ = g1 * state->brightness / 255;
-    *p++ = r1 * state->brightness / 255;
-    *p++ = b1 * state->brightness / 255;
+    *p++ = g1 * state->brightness / BRIGHTNESS_MAX;
+    *p++ = r1 * state->brightness / BRIGHTNESS_MAX;
+    *p++ = b1 * state->brightness / BRIGHTNESS_MAX;
     for (j = 3; j < buffer->colorsPerLed; j++) {
       *p++ = 0;
     }
@@ -584,13 +586,13 @@ static int ws2812_effects_mode_flicker_int(uint8_t max_flicker) {
 static int ws2812_effects_mode_halloween() {
   ws2812_buffer * buffer = state->buffer;
 
-  int g1 = 50 * state->brightness / 255;
-  int r1 = 255 * state->brightness / 255;
-  int b1 = 0 * state->brightness / 255;
+  int g1 = 50 * state->brightness / BRIGHTNESS_MAX;
+  int r1 = 255 * state->brightness / BRIGHTNESS_MAX;
+  int b1 = 0 * state->brightness / BRIGHTNESS_MAX;
 
-  int g2 = 0 * state->brightness / 255;
-  int r2 = 255 * state->brightness / 255;
-  int b2 = 130 * state->brightness / 255;
+  int g2 = 0 * state->brightness / BRIGHTNESS_MAX;
+  int r2 = 255 * state->brightness / BRIGHTNESS_MAX;
+  int b2 = 130 * state->brightness / BRIGHTNESS_MAX;
 
 
   // Fill buffer
@@ -614,13 +616,13 @@ static int ws2812_effects_mode_halloween() {
 static int ws2812_effects_mode_circus_combustus() {
   ws2812_buffer * buffer = state->buffer;
 
-  int g1 = 0 * state->brightness / 255;
-  int r1 = 255 * state->brightness / 255;
-  int b1 = 0 * state->brightness / 255;
+  int g1 = 0 * state->brightness / BRIGHTNESS_MAX;
+  int r1 = 255 * state->brightness / BRIGHTNESS_MAX;
+  int b1 = 0 * state->brightness / BRIGHTNESS_MAX;
 
-  int g2 = 255 * state->brightness / 255;
-  int r2 = 255 * state->brightness / 255;
-  int b2 = 255 * state->brightness / 255;
+  int g2 = 255 * state->brightness / BRIGHTNESS_MAX;
+  int r2 = 255 * state->brightness / BRIGHTNESS_MAX;
+  int b2 = 255 * state->brightness / BRIGHTNESS_MAX;
 
   // Fill buffer
   int i,j;
@@ -661,9 +663,7 @@ static int ws2812_effects_mode_larson_scanner() {
   ws2812_buffer * buffer = state->buffer;
   int led_index = 0;
 
-  for(int i=0; i < buffer->size * buffer->colorsPerLed; i++) {
-    buffer->values[i] = buffer->values[i] >> 1;
-  }
+  ws2812_buffer_fade(buffer, 2, FADE_OUT);
 
   uint16_t pos = 0;
 
@@ -696,9 +696,9 @@ static int ws2812_effects_mode_color_wipe() {
   }
   else
   {
-    uint8_t px_r = state->color[1] * state->brightness / 255;
-    uint8_t px_g = state->color[0] * state->brightness / 255;
-    uint8_t px_b = state->color[2] * state->brightness / 255;
+    uint8_t px_r = state->color[1] * state->brightness / BRIGHTNESS_MAX;
+    uint8_t px_g = state->color[0] * state->brightness / BRIGHTNESS_MAX;
+    uint8_t px_b = state->color[2] * state->brightness / BRIGHTNESS_MAX;
     buffer->values[led_index] = px_g;
     buffer->values[led_index + 1] = px_r;
     buffer->values[led_index + 2] = px_b;
@@ -771,9 +771,8 @@ static uint32_t ws2812_effects_mode_delay()
 /**
 * run loop for the effects.
 */
-static void ws2812_effects_loop(void *p)
+static void ws2812_effects_loop(void* p)
 {
-
   if (state->effect_type == WS2812_EFFECT_BLINK)
   {
     ws2812_effects_mode_blink();
@@ -785,7 +784,7 @@ static void ws2812_effects_loop(void *p)
   else if (state->effect_type == WS2812_EFFECT_RAINBOW_CYCLE)
   {
     // the rainbow cycle effect can be achieved by shifting the buffer
-    ws2812_buffer_shift(state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+    ws2812_buffer_shift_prepared(state->prepare);
   }
   else if (state->effect_type == WS2812_EFFECT_FLICKER)
   {
@@ -817,11 +816,11 @@ static void ws2812_effects_loop(void *p)
   }
   else if (state->effect_type == WS2812_EFFECT_HALLOWEEN)
   {
-    ws2812_buffer_shift(state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+    ws2812_buffer_shift_prepared(state->prepare);
   }
   else if (state->effect_type == WS2812_EFFECT_CIRCUS_COMBUSTUS)
   {
-    ws2812_buffer_shift(state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+    ws2812_buffer_shift_prepared(state->prepare);
   }
   else if (state->effect_type == WS2812_EFFECT_LARSON_SCANNER)
   {
@@ -829,7 +828,7 @@ static void ws2812_effects_loop(void *p)
   }
   else if (state->effect_type == WS2812_EFFECT_CYCLE)
   {
-    ws2812_buffer_shift(state->buffer, state->effect_int_param1, SHIFT_CIRCULAR, 1, -1);
+    ws2812_buffer_shift_prepared(state->prepare);
   }
   else if (state->effect_type == WS2812_EFFECT_COLOR_WIPE)
   {
@@ -849,12 +848,21 @@ static void ws2812_effects_loop(void *p)
   ws2812_write(state->buffer);
   // set the timer
   if (state->running == 1 && state->mode_delay >= 10)
+  if (state->running == 1 && state->mode_delay >= 10)
   {
     os_timer_disarm(&(state->os_t));
     os_timer_arm(&(state->os_t), state->mode_delay, FALSE);
   }
 }
 
+void prepare_shift(lua_State* L, ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end){
+  // deinit old effect
+  if (state->prepare) {
+    luaM_free(L, state->prepare);
+  }
+
+  state->prepare = ws2812_buffer_get_shift_prepare(L, buffer, shiftValue, shift_type, pos_start, pos_end);
+}
 
 /**
 * Set the active effect mode
@@ -889,105 +897,102 @@ static int ws2812_effects_set_mode(lua_State* L) {
 
   switch (state->effect_type) {
     case WS2812_EFFECT_STATIC:
-    // fill with currently set color
-    ws2812_effects_fill_color();
-    state->mode_delay = 250;
-    break;
+      // fill with currently set color
+      ws2812_effects_fill_color();
+      state->mode_delay = 250;
+      break;
     case WS2812_EFFECT_BLINK:
-    ws2812_effects_mode_blink();
-    break;
+      ws2812_effects_mode_blink();
+      break;
     case WS2812_EFFECT_GRADIENT:
-    if(arg_type == LUA_TSTRING)
-    {
-      size_t length1;
-      const char *buffer1 = lua_tolstring(L, 2, &length1);
-
-      if ((length1 / state->buffer->colorsPerLed < 2) || (length1 % state->buffer->colorsPerLed != 0))
+      if(arg_type == LUA_TSTRING)
       {
-        luaL_argerror(L, 2, "must be at least two colors and same size as buffer colors");
+        size_t length1;
+        const char *buffer1 = lua_tolstring(L, 2, &length1);
+
+        if ((length1 / state->buffer->colorsPerLed < 2) || (length1 % state->buffer->colorsPerLed != 0))
+        {
+          luaL_argerror(L, 2, "must be at least two colors and same size as buffer colors");
+        }
+
+        ws2812_effects_gradient(buffer1, length1);
+        ws2812_write(state->buffer);
+      }
+      else
+      {
+        luaL_argerror(L, 2, "string expected");
       }
 
-      ws2812_effects_gradient(buffer1, length1);
-      ws2812_write(state->buffer);
-    }
-    else
-    {
-      luaL_argerror(L, 2, "string expected");
-    }
-
-    break;
+      break;
     case WS2812_EFFECT_GRADIENT_RGB:
-    if(arg_type == LUA_TSTRING)
-    {
-      size_t length1;
-      const char *buffer1 = lua_tolstring(L, 2, &length1);
-
-      if ((length1 / state->buffer->colorsPerLed < 2) || (length1 % state->buffer->colorsPerLed != 0))
+      if(arg_type == LUA_TSTRING)
       {
-        luaL_argerror(L, 2, "must be at least two colors and same size as buffer colors");
+        size_t length1;
+        const char *buffer1 = lua_tolstring(L, 2, &length1);
+
+        if ((length1 / state->buffer->colorsPerLed < 2) || (length1 % state->buffer->colorsPerLed != 0))
+        {
+          luaL_argerror(L, 2, "must be at least two colors and same size as buffer colors");
+        }
+
+        ws2812_effects_gradient_rgb(buffer1, length1);
+        ws2812_write(state->buffer);
+      }
+      else
+      {
+        luaL_argerror(L, 2, "string expected");
       }
 
-      ws2812_effects_gradient_rgb(buffer1, length1);
-      ws2812_write(state->buffer);
-    }
-    else
-    {
-      luaL_argerror(L, 2, "string expected");
-    }
-
-    break;
+      break;
     case WS2812_EFFECT_RANDOM_COLOR:
-    ws2812_effects_mode_random_color();
-    break;
+      ws2812_effects_mode_random_color();
+      break;
     case WS2812_EFFECT_RAINBOW:
-    ws2812_effects_mode_rainbow();
-    break;
+      ws2812_effects_mode_rainbow();
+      break;
     case WS2812_EFFECT_RAINBOW_CYCLE:
-    ws2812_effects_mode_rainbow_cycle(effect_param != EFFECT_PARAM_INVALID ? effect_param : 1);
-    break;
-    // flicker
+      ws2812_effects_mode_rainbow_cycle(effect_param != EFFECT_PARAM_INVALID ? effect_param : 1);
+      prepare_shift(L, state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+      break;
     case WS2812_EFFECT_FLICKER:
-    state->effect_int_param1 = effect_param;
-    break;
+      state->effect_int_param1 = effect_param;
+      break;
     case WS2812_EFFECT_FIRE_FLICKER:
     case WS2812_EFFECT_FIRE_FLICKER_SOFT:
     case WS2812_EFFECT_FIRE_FLICKER_INTENSE:
-    {
       state->color[0] = 255-40;
       state->color[1] = 255;
       state->color[2] = 40;
       state->color[3] = 0;
-    }
-    break;
+      break;
     case WS2812_EFFECT_HALLOWEEN:
-    ws2812_effects_mode_halloween();
-    break;
+      ws2812_effects_mode_halloween();
+      prepare_shift(L, state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+      break;
     case WS2812_EFFECT_CIRCUS_COMBUSTUS:
-    ws2812_effects_mode_circus_combustus();
-    break;
+      ws2812_effects_mode_circus_combustus();
+      prepare_shift(L, state->buffer, 1, SHIFT_CIRCULAR, 1, -1);
+      break;
     case WS2812_EFFECT_LARSON_SCANNER:
-    ws2812_effects_mode_larson_scanner();
-    break;
+      ws2812_effects_mode_larson_scanner();
+      break;
     case WS2812_EFFECT_CYCLE:
-    if (effect_param != EFFECT_PARAM_INVALID) {
-      state->effect_int_param1 = effect_param;
-    }
-    break;
+      if (effect_param != EFFECT_PARAM_INVALID) {
+        state->effect_int_param1 = effect_param;
+      }
+      prepare_shift(L, state->buffer, state->effect_int_param1, SHIFT_CIRCULAR, 1, -1);
+      break;
     case WS2812_EFFECT_COLOR_WIPE:
-    {
-      uint32_t black = 0;
-      ws2812_effects_fill_buffer(black);
+      // fill buffer with black. r,g,b,w = 0
+      ws2812_effects_fill_buffer(0, 0, 0, 0);
       ws2812_effects_mode_color_wipe();
       break;
-    }
     case WS2812_EFFECT_RANDOM_DOT:
-    {
       // check if more than 1 dot shall be set
       state->effect_int_param1 = effect_param;
-      uint32_t black = 0;
-      ws2812_effects_fill_buffer(black);
+      // fill buffer with black. r,g,b,w = 0
+      ws2812_effects_fill_buffer(0, 0, 0, 0);
       break;
-    }
   }
 
 }
@@ -1038,23 +1043,20 @@ static int ws2812_effects_tostring(lua_State* L) {
   return 1;
 }
 
-static const LUA_REG_TYPE ws2812_effects_map[] =
-{
-  { LSTRKEY( "init" ),              LFUNCVAL( ws2812_effects_init )},
-  { LSTRKEY( "set_brightness" ),    LFUNCVAL( ws2812_effects_set_brightness )},
-  { LSTRKEY( "set_color" ),         LFUNCVAL( ws2812_effects_set_color )},
-  { LSTRKEY( "set_speed" ),         LFUNCVAL( ws2812_effects_set_speed )},
-  { LSTRKEY( "set_delay" ),         LFUNCVAL( ws2812_effects_set_delay )},
-  { LSTRKEY( "set_mode" ),          LFUNCVAL( ws2812_effects_set_mode )},
-  { LSTRKEY( "start" ),             LFUNCVAL( ws2812_effects_start )},
-  { LSTRKEY( "stop" ),              LFUNCVAL( ws2812_effects_stop )},
-  { LSTRKEY( "get_delay" ),         LFUNCVAL( ws2812_effects_get_delay )},
-  { LSTRKEY( "get_speed" ),         LFUNCVAL( ws2812_effects_get_speed )},
+LROT_BEGIN(ws2812_effects_map, NULL, 0)
+  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
+  LROT_FUNCENTRY( init, ws2812_effects_init )
+  LROT_FUNCENTRY( set_brightness, ws2812_effects_set_brightness )
+  LROT_FUNCENTRY( set_color, ws2812_effects_set_color )
+  LROT_FUNCENTRY( set_speed, ws2812_effects_set_speed )
+  LROT_FUNCENTRY( set_delay, ws2812_effects_set_delay )
+  LROT_FUNCENTRY( set_mode, ws2812_effects_set_mode )
+  LROT_FUNCENTRY( start, ws2812_effects_start )
+  LROT_FUNCENTRY( stop, ws2812_effects_stop )
+  LROT_FUNCENTRY( get_delay, ws2812_effects_get_delay )
+  LROT_FUNCENTRY( get_speed, ws2812_effects_get_speed )
+LROT_END(ws2812_effects_map, NULL, 0)
 
-  { LSTRKEY( "__index" ), LROVAL( ws2812_effects_map )},
-  { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_effects_tostring )},
-  { LNILKEY, LNILVAL}
-};
 
 
 NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects_map, NULL);

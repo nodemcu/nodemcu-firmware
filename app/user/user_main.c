@@ -10,230 +10,311 @@
 *******************************************************************************/
 #include "lua.h"
 #include "platform.h"
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "c_stdio.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "vfs.h"
 #include "flash_api.h"
 #include "user_interface.h"
-#include "user_exceptions.h"
 #include "user_modules.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
+#include "driver/input.h"
 #include "task/task.h"
 #include "mem.h"
 #include "espconn.h"
+#include "sections.h"
+#include "../modules/wifi_common.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
-
-static task_handle_t input_sig;
-static uint8 input_sig_flag = 0;
+extern int lua_main (void);
 
 /* Contents of esp_init_data_default.bin */
-extern const uint32_t init_data[];
-extern const uint32_t init_data_end[];
+extern const uint32_t init_data[], init_data_end[];
+#define INIT_DATA_SIZE ((init_data_end - init_data)*sizeof(uint32_t))
 __asm__(
-  /* Place in .text for same reason as user_start_trampoline */
-  ".section \".rodata.dram\"\n"
   ".align 4\n"
-  "init_data:\n"
-  ".incbin \"" ESP_INIT_DATA_DEFAULT "\"\n"
+  "init_data: .incbin \"" ESP_INIT_DATA_DEFAULT "\"\n"
   "init_data_end:\n"
-  ".previous\n"
 );
+extern const char _irom0_text_start[], _irom0_text_end[], _flash_used_end[];
 
-/* Note: the trampoline *must* be explicitly put into the .text segment, since
- * by the time it is invoked the irom has not yet been mapped. This naturally
- * also goes for anything the trampoline itself calls.
+#define IROM0_SIZE (_irom0_text_end - _irom0_text_start)
+
+#define PRE_INIT_TEXT_ATTR        __attribute__((section(".p3.pre_init")))
+#define IROM_PTABLE_ATTR          __attribute__((section(".irom0.ptable")))
+#define USED_ATTR                 __attribute__((used))
+
+#define PARTITION(n)  (SYSTEM_PARTITION_CUSTOMER_BEGIN + n)
+
+#define SIZE_256K       0x00040000
+#define SIZE_1024K      0x00100000
+#define PT_CHUNK        0x00002000
+#define PT_ALIGN(n) ((n + (PT_CHUNK-1)) & (~((PT_CHUNK-1))))
+#define FLASH_BASE_ADDR ((char *) 0x40200000)
+
+#define NODEMCU_PARTITION_EAGLEROM  PLATFORM_PARTITION(NODEMCU_EAGLEROM_PARTITION)
+#define NODEMCU_PARTITION_IROM0TEXT PLATFORM_PARTITION(NODEMCU_IROM0TEXT_PARTITION)
+#define NODEMCU_PARTITION_LFS       PLATFORM_PARTITION(NODEMCU_LFS0_PARTITION)
+#define NODEMCU_PARTITION_SPIFFS    PLATFORM_PARTITION(NODEMCU_SPIFFS0_PARTITION)
+
+#define RF_CAL_SIZE            0x1000
+#define PHY_DATA_SIZE          0x1000
+#define SYSTEM_PARAMETER_SIZE  0x3000
+
+#define MAX_PARTITIONS 20
+#define WORDSIZE       sizeof(uint32_t)
+#define PTABLE_SIZE    7   /** THIS MUST BE MATCHED TO NO OF PT ENTRIES BELOW **/
+
+struct defaultpt {
+  platform_rcr_t hdr;
+  partition_item_t pt[PTABLE_SIZE+1]; // the +! is for the endmarker
+  };
+#define PT_LEN (NUM_PARTITIONS*sizeof(partition_item_t))
+/*
+ * See app/platform/platform.h for how the platform reboot config records are used
+ * and these records are allocated.  The first record is a default partition table
+ * and this is statically declared in compilation below.
  */
-void TEXT_SECTION_ATTR user_start_trampoline (void)
-{
-   __real__xtos_set_exception_handler (
-     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
+static const struct defaultpt rompt IROM_PTABLE_ATTR USED_ATTR  = {
+  .hdr = {.len = sizeof(struct defaultpt)/WORDSIZE - 1,
+          .id  = PLATFORM_RCR_PT},
+  .pt  = {
+    { NODEMCU_PARTITION_EAGLEROM,         0x00000,     0x0B000},
+    { SYSTEM_PARTITION_RF_CAL,            0x0D000,     RF_CAL_SIZE},
+    { SYSTEM_PARTITION_PHY_DATA,          0x0F000,     PHY_DATA_SIZE},
+    { NODEMCU_PARTITION_IROM0TEXT,        0x10000,     0x0000},
+    { NODEMCU_PARTITION_LFS,              0x0,         LUA_FLASH_STORE},
+    { NODEMCU_PARTITION_SPIFFS,           0x0,         SPIFFS_MAX_FILESYSTEM_SIZE},
+    { SYSTEM_PARTITION_SYSTEM_PARAMETER,  0x0,         SYSTEM_PARAMETER_SIZE},
+    {0,(uint32_t) &_irom0_text_end,0}
+  }
+};
+//TODO: map the TLS server and client certs into NODEMCU_TLSCERT_PARTITION
 
+static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flash_size);
+static void phy_data_setup (partition_item_t *pt, uint32_t n);
+extern void _ResetHandler(void);
+
+/*
+ * The non-OS SDK prolog has been fundamentally revised in V3.  See SDK EN document
+ * Partition Table.md for further discussion. This version of user_main.c is a
+ * complete rework aligned to V3, with the redundant pre-V3 features removed.
+ *
+ * SDK V3 significantly reduces the RAM footprint required by the SDK and introduces
+ * the use of a partition table (PT) to control flash allocation. The NodeMCU uses
+ * this PT for overall allocation of its flash resources. The non_OS SDK calls the
+ * user_pre_init() entry to do all of this startup configuration.  Note that this
+ * runs with Icache enabled -- that is the IROM0 partition is already mapped to the
+ * address space at 0x40210000 and so that most SDK services are available, such
+ * as system_get_flash_size_map() which returns the valid flash size (including the
+ * 8Mb and 16Mb variants).
+ *
+ * The first 4K page of IROM0 (flash offset 0x10000) is used to maintain a set of
+ * Resource Communication Records (RCR) for inter-boot configuration using a NAND
+ * write-once algo (see app/platform/platform.h).  One of the current records is the
+ * SDK3.0 PT. This build statically compiles in an initial version at the start of
+ * the PT, with a {0, _irom0_text_end,0} marker as the last record and some fields
+ * also that need to be recomputed at runtime. This version is either replaced
+ * by first boot processing after provisioning, or by a node.setpartitiontable()
+ * API call. These replacement PTs are complete and can be passed directly for use
+ * by the non-OS SDK.
+ *
+ * Note that we have released a host PC-base python tool, nodemcu-partition.py, to
+ * configure the PT, etc during provisioning.
+ */
+void user_pre_init(void) {
+    STARTUP_COUNT; 
 #ifdef LUA_USE_MODULES_RTCTIME
   // Note: Keep this as close to call_user_start() as possible, since it
   // is where the cpu clock actually gets bumped to 80MHz.
-  rtctime_early_startup ();
+    rtctime_early_startup ();
 #endif
+    int startup_option = platform_rcr_get_startup_option();
 
-  /* Re-implementation of default init data deployment. The SDK does not
-   * appear to be laying down its own version of init data anymore, so
-   * we have to do it again. To see whether we need to, we read out
-   * the flash size and do a test for esp_init_data based on that size.
-   * If it's missing, we need to initialize it *right now* before the SDK
-   * starts up and gets stuck at "rf_cal[0] !=0x05,is 0xFF".
-   * If the size byte is wrong, then we'll end up fixing up the init data
-   * again on the next boot, after we've corrected the size byte.
-   * Only remaining issue is lack of spare code bytes in iram, so this
-   * is deliberately quite terse and not as readable as one might like.
-   */
-  SPIFlashInfo sfi;
-
-  // enable operations on >4MB flash chip
-  extern SpiFlashChip * flashchip;
-  uint32 orig_chip_size = flashchip->chip_size;
-  flashchip->chip_size = FLASH_SIZE_16MBYTE;
-
-  SPIRead (0, (uint32_t *)(&sfi), sizeof (sfi)); // Cache read not enabled yet, safe to use
-  // handle all size entries
-  switch (sfi.size) {
-  case 0: sfi.size = 1; break; // SIZE_4MBIT
-  case 1: sfi.size = 0; break; // SIZE_2MBIT
-  case 5: sfi.size = 3; break; // SIZE_16MBIT_8M_8M
-  case 6: // fall-through
-  case 7: sfi.size = 4; break; // SIZE_32MBIT_8M_8M, SIZE_32MBIT_16M_16M
-  case 8: sfi.size = 5; break; // SIZE_64MBIT
-  case 9: sfi.size = 6; break; // SIZE_128MBIT
-  default: break;
-  }
-  uint32_t flash_end_addr = (256 * 1024) << sfi.size;
-  uint32_t init_data_hdr = 0xffffffff;
-  uint32_t init_data_addr = flash_end_addr - 4 * SPI_FLASH_SEC_SIZE;
-  SPIRead (init_data_addr, &init_data_hdr, sizeof (init_data_hdr));
-  if (init_data_hdr == 0xffffffff)
-  {
-    SPIEraseSector (init_data_addr);
-    SPIWrite (init_data_addr, init_data, 4 * (init_data_end - init_data));
-  }
-
-  // revert temporary setting
-  flashchip->chip_size = orig_chip_size;
-
-  call_user_start ();
-}
-
-// +================== New task interface ==================+
-static void start_lua(task_param_t param, uint8 priority) {
-  char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
-  NODE_DBG("Task task_lua started.\n");
-  lua_main( 2, lua_argv );
-  // Only enable UART interrupts once we've successfully started up,
-  // otherwise the task queue might fill up with input events and prevent
-  // the start_lua task from being posted.
-  ETS_UART_INTR_ENABLE();
-}
-
-static void handle_input(task_param_t flag, uint8 priority) {
-  (void)priority;
-  if (flag & 0x8000) {
-    input_sig_flag = flag & 0x4000 ? 1 : 0;
-  }
-  lua_handle_input (flag & 0x01);
-}
-
-bool user_process_input(bool force) {
-    return task_post_low(input_sig, force);
-}
-
-void nodemcu_init(void)
-{
-    NODE_ERR("\n");
-    // Initialize platform first for lua modules.
-    if( platform_init() != PLATFORM_OK )
-    {
-        // This should never happen
-        NODE_DBG("Can not init platform for modules.\n");
-        return;
+    if (startup_option & STARTUP_OPTION_CPU_FREQ_MAX) {
+      REG_SET_BIT(0x3ff00014, BIT(0));
+      ets_update_cpu_frequency(SYS_CPU_160MHZ);
     }
+    int no_banner = startup_option & STARTUP_OPTION_NO_BANNER;
 
-    if( flash_detect_size_byte() != flash_rom_get_size_byte() ) {
-        NODE_ERR("Self adjust flash size.\n");
-        // Fit hardware real flash size.
-        flash_rom_set_size_byte(flash_detect_size_byte());
+    partition_item_t *rcr_pt = NULL, *pt;
+    enum flash_size_map fs_size_code = system_get_flash_size_map();
+// Flash size lookup is SIZE_256K*2^N where N is as follows (see SDK/user_interface.h)
+                                     /*   0   1   2   3   4   5   6   7   8   9  */
+                                     /*  ½M  ¼M  1M  2M  4M  2M  4M  4M  8M 16M  */
+    static char flash_size_scaler[] = "\001\000\002\003\004\003\004\004\005\006";
+    uint32_t flash_size = SIZE_256K << flash_size_scaler[fs_size_code];
 
-        system_restart ();
-        // Don't post the start_lua task, we're about to reboot...
+    uint32_t i = platform_rcr_read(PLATFORM_RCR_PT, (void **) &rcr_pt);
+    uint32_t n = i / sizeof(partition_item_t);
+
+    if (flash_size < SIZE_1024K) {
+        os_printf("Flash size (%u) too small to support NodeMCU\n", flash_size);
         return;
-    }
-
-#if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
-    espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
-#endif
-
-#ifdef BUILD_SPIFFS
-    if (!vfs_mount("/FLASH", 0)) {
-        // Failed to mount -- try reformat
-	dbg_printf("Formatting file system. Please wait...\n");
-        if (!vfs_format()) {
-            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+    } else {
+        if (!no_banner) {
+            os_printf("system SPI FI size:%u, Flash size: %u\n", fs_size_code, flash_size );
         }
-        // Note that fs_format leaves the file system mounted
-    }
-    // test_spiffs();
-#endif
-    // endpoint_setup();
-
-    if (!task_post_low(task_get_id(start_lua),'s'))
-      NODE_ERR("Failed to post the start_lua task!\n");
-}
-
-#ifdef LUA_USE_MODULES_WIFI
-#include "../modules/wifi_common.h"
-
-void user_rf_pre_init(void)
-{
-//set WiFi hostname before RF initialization (adds ~479 us to boot time)
-  wifi_change_default_host_name();
-}
-#endif
-
-/******************************************************************************
- * FunctionName : user_rf_cal_sector_set
- * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
- *                We add this function to force users to set rf cal sector, since
- *                we don't know which sector is free in user's application.
- *                sector map for last several sectors : ABCCC
- *                A : rf cal
- *                B : rf init data
- *                C : sdk parameters
- * Parameters   : none
- * Returns      : rf cal sector
-*******************************************************************************/
-uint32
-user_rf_cal_sector_set(void)
-{
-    enum flash_size_map size_map = system_get_flash_size_map();
-    uint32 rf_cal_sec = 0;
-
-    switch (size_map) {
-        case FLASH_SIZE_4M_MAP_256_256:
-            rf_cal_sec = 128 - 5;
-            break;
-
-        case FLASH_SIZE_8M_MAP_512_512:
-            rf_cal_sec = 256 - 5;
-            break;
-
-        case FLASH_SIZE_16M_MAP_512_512:
-        case FLASH_SIZE_16M_MAP_1024_1024:
-            rf_cal_sec = 512 - 5;
-            break;
-
-        case FLASH_SIZE_32M_MAP_512_512:
-        case FLASH_SIZE_32M_MAP_1024_1024:
-        case FLASH_SIZE_32M_MAP_2048_2048:
-            rf_cal_sec = 1024 - 5;
-            break;
-
-        case FLASH_SIZE_64M_MAP_1024_1024:
-            rf_cal_sec = 2048 - 5;
-            break;
-
-        case FLASH_SIZE_128M_MAP_1024_1024:
-            rf_cal_sec = 4096 - 5;
-            break;
-
-        default:
-            rf_cal_sec = 0;
-            break;
     }
 
-    return rf_cal_sec;
+    pt = os_malloc_iram(i);  // We will work on and register a copy of the PT in iRAM
+    // Return if anything is amiss; The SDK will halt if the PT hasn't been registered
+    if ( !rcr_pt || !pt || n * sizeof(partition_item_t) != i) {
+        return;
+    }
+    os_memcpy(pt, rcr_pt, i);
+
+    if (pt[n-1].type == 0) {
+        // If the last PT entry is a {0,XX,0} end marker, then we need first time setup
+        n = first_time_setup(pt, n-1, flash_size); // return n because setup might shrink the PT
+    }
+
+    if (platform_rcr_read(PLATFORM_RCR_PHY_DATA, NULL)!=0) {
+        phy_data_setup(pt, n);
+    }
+
+    // Now register the partition and return
+    if( fs_size_code > 1 && system_partition_table_regist(pt, n, fs_size_code)) {
+        if (no_banner) {
+            system_set_os_print(0);
+        }
+        STARTUP_COUNT;
+        return;
+    }
+    os_printf("Invalid system partition table\n");
+    while (1) {};
+}
+
+/*
+ * If the PLATFORM_RCR_PT record doesn't exist then the PHY_DATA partition might
+ * not have been initialised.  This must be set to the proper default init data
+ * otherwise the SDK will halt on the "rf_cal[0] !=0x05,is 0xFF" error.
+ */
+static void phy_data_setup (partition_item_t *pt, uint32_t n) {
+    uint8_t  header[sizeof(uint32_t)] = {0};
+    int i;
+
+    for (i = 0; i < n; i++) {
+        if (pt[i].type == SYSTEM_PARTITION_PHY_DATA) {
+            uint32_t addr = pt[i].addr;
+            platform_s_flash_read(header, addr, sizeof(header));
+            if (header[0] != 0x05) {
+                uint32_t sector = pt[i].addr/INTERNAL_FLASH_SECTOR_SIZE;
+                if (platform_flash_erase_sector(sector) == PLATFORM_OK) {
+                    os_printf("Writing Init Data to 0x%08x\n",addr);
+                    platform_s_flash_write(init_data, addr, INIT_DATA_SIZE);
+                }
+            }
+            // flag setup complete so we don't retry this every boot
+            platform_rcr_write(PLATFORM_RCR_PHY_DATA, &addr, 0);
+            return;
+        }
+    }
+    // If the PHY_DATA doesn't exist or the write fails then the
+    // SDK will raise the rf_cal error anyway, so just return.
+}
+
+/*
+ * First time setup does the one-off PT calculations and checks.  If these are OK,
+ * then writes back a new RCR for the updated PT and triggers a reboot. It returns
+ * on failure.
+ */
+static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flash_size) {
+    int i, j, last = 0, newn = n;
+    /*
+    * Scan down the PT adjusting and 0 entries to sensible defaults.  Also delete any
+    * zero-sized partitions (as the SDK barfs on these).
+    */
+    for (i = 0, j = 0; i < n; i ++) {
+        partition_item_t *p = pt + i;
+        switch (p->type) {
+
+          case NODEMCU_PARTITION_IROM0TEXT:
+            // If the IROM0 partition size is 0 then compute from the IROM0_SIZE. Note
+            // that the size in the end-marker is used by the nodemcu-partition.py
+            // script and not here.
+            if (p->size == 0) {
+                p->size = PT_ALIGN(IROM0_SIZE);
+            }
+            break;
+
+          case NODEMCU_PARTITION_LFS:
+            // Properly align the LFS partition size and make it consecutive to
+            // the previous partition.
+            p->size = PT_ALIGN(p->size);
+            if (p->addr == 0)
+                p->addr = last;
+            break;
+
+         /*
+          * Set up the SPIFFS partition based on some sensible defaults:
+          *    size == 0 mean no SPIFFS partition.
+          *    size == ~0 means use all of the available flash for SPIFFS (resp the addr if set).
+          *    if size > 0 then float the default boundary to 1M if the SPIFFS will fit.
+          */
+          case NODEMCU_PARTITION_SPIFFS:
+            if (p->size == ~0x0) {         /* Maximum SPIFFS partition */               
+                if (p->addr == 0)
+                    p->addr = last;
+                p->size = flash_size - SYSTEM_PARAMETER_SIZE - last;
+            } else if (p->size > 0x0) {    /* Explicit SPIFFS size */
+                if (p->addr < last)   // SPIFFS can't overlap the previous region; 
+                    p->addr = 0; 
+                if (p->addr == 0)
+                    p->addr = (p->size <= flash_size - SYSTEM_PARAMETER_SIZE - 0x100000) ? 
+                              0x100000 : last;
+            }
+            /* else p->size == 0              No SPIFFS partition */
+            break;
+
+          case SYSTEM_PARTITION_SYSTEM_PARAMETER:
+            p->addr = flash_size - SYSTEM_PARAMETER_SIZE;
+            p->size = SYSTEM_PARAMETER_SIZE;
+        }
+
+        if (p->size == 0) {
+            // Delete 0-sized partitions as the SDK barfs on these
+            newn--;
+        } else {
+           /*
+            * Do consistency tests on the partition.  The address and size must 
+            * be flash sector aligned.  Partitions can't overlap, and the last
+            * patition must fit within the flash size.
+            */
+            if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
+                p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
+                p->addr < last ||
+                p->addr + p->size > flash_size) {
+                os_printf("Partition %u invalid alignment\n", i);
+                while(1) {/*system_soft_wdt_feed ();*/}
+            }
+            if (j < i)   // shift the partition down if we have any deleted slots
+                pt[j] = *p;
+            j++;
+            last = p->addr + p->size;
+        }
+    }
+
+    platform_rcr_write(PLATFORM_RCR_PT, pt, newn*sizeof(partition_item_t));
+    ets_delay_us(5000);
+    _ResetHandler(); // Trigger reset; the new PT will be loaded on reboot
+}
+
+uint32 ICACHE_RAM_ATTR user_iram_memory_is_enabled(void) {
+    return FALSE;  // NodeMCU runs like a dog if iRAM is enabled
+}
+
+void nodemcu_init(void) {
+  STARTUP_COUNT; 
+   NODE_DBG("Task task_lua starting.\n");
+   // Call the Lua bootstrap startup directly.  This uses the task interface
+   // internally to carry out the main lua libraries initialisation.
+   if(lua_main())
+     lua_main();  // If it returns true then LFS restart is needed
 }
 
 /******************************************************************************
@@ -242,20 +323,37 @@ user_rf_cal_sector_set(void)
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
-void user_init(void)
-{
+void user_init(void) {
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
-
+    if( platform_init() != PLATFORM_OK ) {
+        // This should never happen
+        NODE_DBG("Can not init platform for modules.\n");
+        return;
+    }
     UartBautRate br = BIT_RATE_DEFAULT;
-
-    input_sig = task_get_id(handle_input);
-    uart_init (br, br, input_sig, &input_sig_flag);
-
+    uart_init (br, br);
+#ifdef LUA_USE_MODULES_WIFI
+    wifi_change_default_host_name();
+#endif
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif
-
     system_init_done_cb(nodemcu_init);
 }
+#if 0
+/*
+ * The SDK now establishes exception handlers for EXCCAUSE errors: ILLEGAL,
+ * INSTR_ERROR, LOAD_STORE_ERROR, PRIVILEGED, UNALIGNED, LOAD_PROHIBITED,
+ * STORE_PROHIBITED.  These handlers are established in SDK/app_main.c.
+ * LOAD_STORE_ERROR is handled by SDK/user_exceptions.o:load_non_32_wide_handler()
+ * which is a fork of our version. The remaining are handled by a static function
+ * at SDK:app+main.c:offset 0x0348.  This wrappoer is only needed for debugging.
+ */
+void __real__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn);
+void __wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn) {
+    os_printf("Exception handler %x  %x\n", cause, fn);
+    __real__xtos_set_exception_handler (cause, fn);
+}
+#endif

@@ -3,13 +3,11 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+#include <stdint.h>
 #include "cpu_esp8266.h"
-
-#include "c_types.h"
+#include "user_interface.h"
 #include "driver/pwm.h"
 #include "driver/uart.h"
-#include "task/task.h"
-
 // Error / status codes
 enum
 {
@@ -17,6 +15,9 @@ enum
   PLATFORM_OK,
   PLATFORM_UNDERFLOW = -1
 };
+
+typedef uint32_t platform_task_handle_t;
+typedef uint32_t platform_task_param_t;
 
 // Platform initialization
 int platform_init(void);
@@ -52,7 +53,7 @@ int platform_gpio_register_intr_hook(uint32_t gpio_bits, platform_hook_function 
 #define platform_gpio_unregister_intr_hook(hook) \
   platform_gpio_register_intr_hook(0, hook);
 void platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type );
-void platform_gpio_init( task_handle_t gpio_task );
+void platform_gpio_init( platform_task_handle_t gpio_task );
 // *****************************************************************************
 // Timer subsection
 
@@ -235,7 +236,8 @@ void platform_sigma_delta_set_target( uint8_t target );
 enum
 {
   PLATFORM_I2C_SPEED_SLOW = 100000,
-  PLATFORM_I2C_SPEED_FAST = 400000
+  PLATFORM_I2C_SPEED_FAST = 400000,
+  PLATFORM_I2C_SPEED_FASTPLUS = 1000000
 };
 
 // I2C direction
@@ -251,6 +253,7 @@ static inline int platform_i2c_exists( unsigned id ) { return id < NUM_I2C; }
 static inline int platform_i2c_exists( unsigned id ) { return 0; }
 #endif
 uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed );
+bool platform_i2c_configured( unsigned id );
 void platform_i2c_send_start( unsigned id );
 void platform_i2c_send_stop( unsigned id );
 int platform_i2c_send_address( unsigned id, uint16_t address, int direction );
@@ -279,20 +282,15 @@ int platform_flash_erase_sector( uint32_t sector_id );
 
 /**
  * Translated a mapped address to a physical flash address, based on the
- * current flash cache mapping.
+ * current flash cache mapping, and v.v.
  * @param mapped_addr Address to translate (>= INTERNAL_FLASH_MAPPED_ADDRESS)
  * @return the corresponding physical flash address, or -1 if flash cache is
  *  not currently active.
  * @see Cache_Read_Enable.
  */
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
-
-// *****************************************************************************
-// Allocator support
-
-void* platform_get_first_free_ram( unsigned id );
-void* platform_get_last_free_ram( unsigned id );
-
+uint32_t platform_flash_phys2mapped (uint32_t phys_addr);
+uint32_t platform_flash_get_partition (uint32_t part_id, uint32_t *addr);
 
 // *****************************************************************************
 // Other glue
@@ -319,5 +317,102 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame);
 #define MOD_CHECK_RES_ID( mod, id, resmod, resid )\
   if( !platform_ ## mod ## _check_ ## resmod ## _id( id, resid ) )\
     return luaL_error( L, #resmod" %d not valid with " #mod " %d", ( unsigned )resid, ( unsigned )id )
+
+// *****************************************************************************
+// Reboot config page
+/*
+ * The 4K flash page in the linker section .irom0.ptable (offset 0x10000) is used
+ * for configuration changes that persist across reboots. This 4k page contains a
+ * sequence of records that are written using flash NAND writing rules.  See the
+ * header app/spiffs/spiffs_nucleus.h for a discussion of how SPIFFS uses these. A
+ * similar technique is used here.
+ *
+ * Each record is word aligned and the first two bytes of the record are its size
+ * and record type. Type 0xFF means unused and type 0x00 means deleted.  New
+ * records can be added by overwriting the first unused slot.  Records can be
+ * replaced by adding the new version, then setting the type of the previous version
+ * to deleted.  This all works and can be implemented with platform_s_flash_write()
+ * upto the 4K limit.
+ *
+ * If a new record cannot fit into the page then the deleted records are GCed by
+ * copying the active records into a RAM scratch pad, erasing the page and writing
+ * them back.  Yes, this is powerfail unsafe for a few mSec, but this is no worse
+ * than writing to SPIFFS and won't even occur in normal production use.
+ */
+#define IROM_PTABLE_ATTR          __attribute__((section(".irom0.ptable")))
+#define PLATFORM_PARTITION(n)  (SYSTEM_PARTITION_CUSTOMER_BEGIN + n)
+#define PLATFORM_RCR_DELETED   0x0
+#define PLATFORM_RCR_PT        0x1
+#define PLATFORM_RCR_PHY_DATA  0x2
+#define PLATFORM_RCR_REFLASH   0x3
+#define PLATFORM_RCR_FLASHLFS  0x4
+#define PLATFORM_RCR_INITSTR   0x5
+#define PLATFORM_RCR_STARTUP_OPTION   0x6
+#define PLATFORM_RCR_FREE      0xFF
+typedef union {
+    uint32_t hdr;
+    struct { uint8_t len,id; };
+} platform_rcr_t;
+
+#define STARTUP_OPTION_NO_BANNER        (1 << 0)
+#define STARTUP_OPTION_CPU_FREQ_MAX     (1 << 1)
+#define STARTUP_OPTION_DELAY_MOUNT      (1 << 2)
+
+uint32_t platform_rcr_read (uint8_t rec_id, void **rec);
+uint32_t platform_rcr_get_startup_option();
+uint32_t platform_rcr_delete (uint8_t rec_id);
+uint32_t platform_rcr_write (uint8_t rec_id, const void *rec, uint8_t size);
+
+#define PLATFORM_TASK_PRIORITY_LOW     0
+#define PLATFORM_TASK_PRIORITY_MEDIUM  1
+#define PLATFORM_TASK_PRIORITY_HIGH    2
+
+/*
+* Signals are a 32-bit number of the form header:14; count:16, priority:2.  The header
+* is just a fixed fingerprint and the count is allocated serially by the task get_id()
+* function.
+*/
+#define platform_post_low(handle,param) \
+  platform_post(PLATFORM_TASK_PRIORITY_LOW,    handle, param)
+#define platform_post_medium(handle,param) \
+  platform_post(PLATFORM_TASK_PRIORITY_MEDIUM, handle, param)
+#define platform_post_high(handle,param)  \
+  platform_post(PLATFORM_TASK_PRIORITY_HIGH,   handle, param)
+
+typedef void (*platform_task_callback_t)(platform_task_param_t param, uint8 prio);
+platform_task_handle_t platform_task_get_id(platform_task_callback_t t);
+
+static inline bool platform_post(uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
+  return system_os_post(prio, handle | prio, par);
+}
+#define platform_freeheap() system_get_free_heap_size()
+
+// Get current value of CCOUNt register
+#define CCOUNT_REG ({ int32_t r; asm volatile("rsr %0, ccount" : "=r"(r)); r;})
+
+typedef struct {
+  const char *name;
+  int line;
+  int32_t ccount;
+} platform_count_entry_t;
+
+typedef struct {
+  int used;
+  platform_count_entry_t entries[32];
+} platform_startup_counts_t;
+
+extern platform_startup_counts_t platform_startup_counts;
+
+#define PLATFORM_STARTUP_COUNT_ENTRIES (sizeof(platform_startup_counts.entries) \
+                                        / sizeof(platform_startup_counts.entries[0]))
+
+#ifdef PLATFORM_STARTUP_COUNT
+#define STARTUP_ENTRY(lineno) do { if (platform_startup_counts.used < PLATFORM_STARTUP_COUNT_ENTRIES) {\
+        platform_count_entry_t *p = &platform_startup_counts.entries[platform_startup_counts.used++]; \
+        p->name = __func__; p->ccount = CCOUNT_REG; p->line = lineno; }  } while(0)
+#else
+#define STARTUP_ENTRY(line)
+#endif
+#define STARTUP_COUNT   STARTUP_ENTRY(__LINE__)
 
 #endif

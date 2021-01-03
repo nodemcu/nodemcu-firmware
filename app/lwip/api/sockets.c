@@ -75,7 +75,7 @@ struct lwip_sock {
       tested by select */
   u16_t sendevent;
   /** error happened for this socket, set by event_callback(), tested by select */
-  u16_t errevent; 
+  u16_t errevent;
   /** last error that occurred on this socket */
   int err;
   /** counter of how many threads are waiting for this socket using select */
@@ -572,7 +572,7 @@ lwip_recvfrom(int s, void *mem, size_t len, int flags,
       buf = sock->lastdata;
     } else {
       /* If this is non-blocking call, then check first */
-      if (((flags & MSG_DONTWAIT) || netconn_is_nonblocking(sock->conn)) && 
+      if (((flags & MSG_DONTWAIT) || netconn_is_nonblocking(sock->conn)) &&
           (sock->rcvevent <= 0)) {
         if (off > 0) {
           /* update receive window */
@@ -644,9 +644,9 @@ lwip_recvfrom(int s, void *mem, size_t len, int flags,
     if (netconn_type(sock->conn) == NETCONN_TCP) {
       LWIP_ASSERT("invalid copylen, len would underflow", len >= copylen);
       len -= copylen;
-      if ( (len <= 0) || 
-           (p->flags & PBUF_FLAG_PUSH) || 
-           (sock->rcvevent <= 0) || 
+      if ( (len <= 0) ||
+           (p->flags & PBUF_FLAG_PUSH) ||
+           (sock->rcvevent <= 0) ||
            ((flags & MSG_PEEK)!=0)) {
         done = 1;
       }
@@ -868,7 +868,7 @@ lwip_sendto(int s, const void *data, size_t size, int flags,
 #endif /* LWIP_UDP */
       }
       UNLOCK_TCPIP_CORE();
-      
+
       pbuf_free(p);
     } else {
       err = ERR_MEM;
@@ -1452,11 +1452,11 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 
   /* Do length and type checks for the various options first, to keep it readable. */
   switch (level) {
-   
+
 /* Level: SOL_SOCKET */
   case SOL_SOCKET:
     switch (optname) {
-       
+
     case SO_ACCEPTCONN:
     case SO_BROADCAST:
     /* UNIMPL case SO_DEBUG: */
@@ -1505,7 +1505,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
       err = ENOPROTOOPT;
     }  /* switch (optname) */
     break;
-                     
+
 /* Level: IPPROTO_IP */
   case IPPROTO_IP:
     switch (optname) {
@@ -1545,7 +1545,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
       err = ENOPROTOOPT;
     }  /* switch (optname) */
     break;
-         
+
 #if LWIP_TCP
 /* Level: IPPROTO_TCP */
   case IPPROTO_TCP:
@@ -1553,7 +1553,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
       err = EINVAL;
       break;
     }
-    
+
     /* If this is no TCP socket, ignore any options. */
     if (sock->conn->type != NETCONN_TCP)
       return 0;
@@ -1567,7 +1567,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
     case TCP_KEEPCNT:
 #endif /* LWIP_TCP_KEEPALIVE */
       break;
-       
+
     default:
       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_getsockopt(%d, IPPROTO_TCP, UNIMPL: optname=0x%x, ..)\n",
                                   s, optname));
@@ -1582,7 +1582,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
       err = EINVAL;
       break;
     }
-    
+
     /* If this is no UDP lite socket, ignore any options. */
     if (sock->conn->type != NETCONN_UDPLITE) {
       return 0;
@@ -1592,7 +1592,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
     case UDPLITE_SEND_CSCOV:
     case UDPLITE_RECV_CSCOV:
       break;
-       
+
     default:
       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_getsockopt(%d, IPPROTO_UDPLITE, UNIMPL: optname=0x%x, ..)\n",
                                   s, optname));
@@ -1607,7 +1607,7 @@ lwip_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
       err = ENOPROTOOPT;
   }  /* switch */
 
-   
+
   if (err != ERR_OK) {
     sock_set_errno(sock, err);
     return -1;
@@ -1702,7 +1702,7 @@ lwip_getsockopt_internal(void *arg)
       /* only overwrite ERR_OK or tempoary errors */
       if ((sock->err == 0) || (sock->err == EINPROGRESS)) {
         sock_set_errno(sock, err_to_errno(sock->conn->last_err));
-      } 
+      }
       *(int *)optval = sock->err;
       sock->err = 0;
       LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_getsockopt(%d, SOL_SOCKET, SO_ERROR) = %d\n",

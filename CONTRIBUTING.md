@@ -26,6 +26,13 @@ Use the platform and tools you feel most comfortable with. There are no constrai
 - [Full-fledged Linux environment](http://www.esp8266.com/wiki/doku.php?id=toolchain#how_to_setup_a_vm_to_host_your_toolchain), either physical or virtual.
 - [Docker image](https://hub.docker.com/r/marcelstoer/nodemcu-build/) which allows running the build inside the container as if you were running a build script on your local machine.
 
+## Writing Lua Code
+A great resource about writing Lua for NodeMCU can be found in [Lua Developer FAQ](https://nodemcu.readthedocs.io/en/latest/lua-developer-faq/) - make sure to read it! When you're writing your Lua code and it's not working as it should you can test it with `luacheck` tool that can help you find various types of bugs. To install it you have to install [luarocks](https://luarocks.org/) and use command `sudo luarocks install luacheck` to install the tool. Now you're ready to go! By using this command (assuming you're in `nodemcu-firmware` directory):
+
+`luacheck --config tools/luacheck_config.lua <your file to check>`
+
+you can look for bugs and problems within the code!
+
 ## Writing Documentation
 The NodeMCU documentation is maintained within the same repository as the code. The primary reason is to keep the two in sync more easily. It's thus trivial for the NodeMCU team to verify that a PR includes the necessary documentation. Furthermore, the documentation is merged automatically with the code if it moves from branch X to Y.
 
@@ -63,13 +70,15 @@ Avoid intermediate merge commits. [Rebase](https://www.atlassian.com/git/tutoria
 1. `git push`
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/) (PR) on GitHub.
 
-This is just one way of doing things. If you're proficient in Git matters you're free to choose your own. If you want to read more then the [GitHub chapter in the Git book](http://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project#The-GitHub-Flow) is a way to start. [GitHub's own documentation](https://help.github.com/categories/collaborating/) contains a wealth of information as well.
+This is just one way of doing things. If you're proficient in Git matters you're free to choose your own. If you want to read more then the [GitHub chapter in the Git book](http://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project#The-GitHub-Flow) is a way to start. [GitHub's own documentation](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/) contains a wealth of information as well.
+
+As a Windows or Mac user you could also resort to [GitHub Desktop](https://desktop.github.com/). It's a mature GUI application that supports most of the tasks outlined above.
 
 ### Keeping your fork in sync
 You need to sync your fork with the NodeMCU upstream repository from time to time, latest before you rebase (see flow above).
 
 1. `git fetch upstream`
-1. `git checkout dev` but you may do this for `master` as well
+1. `git checkout dev` but you may do this for `release` as well
 1. `git merge upstream/dev`
 
 ### Commit messages
@@ -105,8 +114,8 @@ Don't forget to [reference affected issues](https://help.github.com/articles/clo
 - Add notes to the description of the milestone in the course of the ~2 months it lives.
 - Be careful and reluctant to merge PRs once we're past the 6-weeks mark of a milestone. Ideally, we don't merge anything in the last 2 weeks.
 - Cutting a release
-    - Create a PR for the `master` branch for collaborators to approve.
+    - Create a PR for the `release` branch for collaborators to approve.
     - Once approved merge it. :exclamation::boom::exclamation: Make sure you do NOT "squash and merge" but make a regular merge commit!
-    - Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-master_<yyyyMMdd> -m ""`, `git push --tags`
+    - Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-release_<yyyyMMdd> -m ""`, `git push --tags`
      - Create a new [release](https://github.com/nodemcu/nodemcu-firmware/releases) based on the tag you just pushed. The version name is the same as the tag name.
      - Write release notes. Mention breaking changes explicitly. Since every PR that went into this release is linked to from the milestone it should be fairly easy to include important changes in the release notes.

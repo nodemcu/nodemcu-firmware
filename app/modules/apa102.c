@@ -1,8 +1,6 @@
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "lualib.h"
+#include <stdlib.h>
+#include <string.h>
 #include "lauxlib.h"
-#include "lrotable.h"
 #include "module.h"
 #include "platform.h"
 #include "user_interface.h"
@@ -101,15 +99,9 @@ static int apa102_write(lua_State* L) {
 }
 
 
-const LUA_REG_TYPE apa102_map[] =
-{
-  { LSTRKEY( "write" ), LFUNCVAL( apa102_write )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(apa102, NULL, 0)
+  LROT_FUNCENTRY( write, apa102_write )
+LROT_END(apa102, NULL, 0)
 
-LUALIB_API int luaopen_apa102(lua_State *L) {
-  LREGISTER(L, "apa102", apa102_map);
-  return 0;
-}
 
-NODEMCU_MODULE(APA102, "apa102", apa102_map, luaopen_apa102);
+NODEMCU_MODULE(APA102, "apa102", apa102, NULL);

@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="tools">
+      <UniqueIdentifier>{cc72cbf7-30a4-4c62-9413-509516a67c12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tools\spiffsimg">
+      <UniqueIdentifier>{2796bdda-1fd8-4088-8d4e-41fdd71d5170}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app">
+      <UniqueIdentifier>{ba2fdaa9-bc69-4fb5-b789-9d2b46d7fd31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\spiffs">
+      <UniqueIdentifier>{d6547699-189a-45e8-82d8-4af0a0b4cfd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\include">
+      <UniqueIdentifier>{131db3e8-d55b-4d0a-810b-ae33c5e41bb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\platform">
+      <UniqueIdentifier>{184f25b5-aca7-476f-981f-16d7a8294ca7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\tools\spiffsimg\main.c">
+      <Filter>tools\spiffsimg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\spiffs\spiffs_cache.c">
+      <Filter>app\spiffs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\spiffs\spiffs_check.c">
+      <Filter>app\spiffs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\spiffs\spiffs_gc.c">
+      <Filter>app\spiffs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\spiffs\spiffs_hydrogen.c">
+      <Filter>app\spiffs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\spiffs\spiffs_nucleus.c">
+      <Filter>app\spiffs</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tools\spiffsimg\spiffs_typedefs.h">
+      <Filter>tools\spiffsimg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\spiffs\spiffs.h">
+      <Filter>app\spiffs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\spiffs\spiffs_nucleus.h">
+      <Filter>app\spiffs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\spiffs\spiffs_config.h">
+      <Filter>app\spiffs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\spiffs\nodemcu_spiffs.h">
+      <Filter>app\spiffs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\include\user_config.h">
+      <Filter>app\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\platform\cpu_esp8266.h">
+      <Filter>app\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="getopt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

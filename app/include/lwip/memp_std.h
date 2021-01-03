@@ -15,7 +15,7 @@
 #define LWIP_MALLOC_MEMPOOL(num, size) LWIP_MEMPOOL(POOL_##size, num, (size + sizeof(struct memp_malloc_helper)), "MALLOC_"#size, attr)
 #define LWIP_MALLOC_MEMPOOL_START
 #define LWIP_MALLOC_MEMPOOL_END
-#endif /* LWIP_MALLOC_MEMPOOL */ 
+#endif /* LWIP_MALLOC_MEMPOOL */
 
 #ifndef LWIP_PBUF_MEMPOOL
 /* This treats "pbuf pools" just like any other pool.
@@ -52,14 +52,14 @@ LWIP_MEMPOOL(FRAG_PBUF,      MEMP_NUM_FRAG_PBUF,       sizeof(struct pbuf_custom
 #endif /* IP_FRAG && !IP_FRAG_USES_STATIC_BUF && !LWIP_NETIF_TX_SINGLE_PBUF */
 
 #if LWIP_NETCONN
-LWIP_MEMPOOL(NETBUF,         MEMP_NUM_NETBUF,          sizeof(struct netbuf),         "NETBUF")
-LWIP_MEMPOOL(NETCONN,        MEMP_NUM_NETCONN,         sizeof(struct netconn),        "NETCONN")
+LWIP_MEMPOOL(NETBUF,         MEMP_NUM_NETBUF,          sizeof(struct netbuf),         "NETBUF", DMEM_ATTR)
+LWIP_MEMPOOL(NETCONN,        MEMP_NUM_NETCONN,         sizeof(struct netconn),        "NETCONN", DMEM_ATTR)
 #endif /* LWIP_NETCONN */
 
 #if NO_SYS==0
-LWIP_MEMPOOL(TCPIP_MSG_API,  MEMP_NUM_TCPIP_MSG_API,   sizeof(struct tcpip_msg),      "TCPIP_MSG_API")
+LWIP_MEMPOOL(TCPIP_MSG_API,  MEMP_NUM_TCPIP_MSG_API,   sizeof(struct tcpip_msg),      "TCPIP_MSG_API", DMEM_ATTR)
 #if !LWIP_TCPIP_CORE_LOCKING_INPUT
-LWIP_MEMPOOL(TCPIP_MSG_INPKT,MEMP_NUM_TCPIP_MSG_INPKT, sizeof(struct tcpip_msg),      "TCPIP_MSG_INPKT")
+LWIP_MEMPOOL(TCPIP_MSG_INPKT,MEMP_NUM_TCPIP_MSG_INPKT, sizeof(struct tcpip_msg),      "TCPIP_MSG_INPKT", DMEM_ATTR)
 #endif /* !LWIP_TCPIP_CORE_LOCKING_INPUT */
 #endif /* NO_SYS==0 */
 
@@ -82,13 +82,13 @@ LWIP_MEMPOOL(SNMP_VARBIND,   MEMP_NUM_SNMP_VARBIND,    sizeof(struct snmp_varbin
 LWIP_MEMPOOL(SNMP_VALUE,     MEMP_NUM_SNMP_VALUE,      SNMP_MAX_VALUE_SIZE,              "SNMP_VALUE")
 #endif /* LWIP_SNMP */
 #if LWIP_DNS && LWIP_SOCKET
-LWIP_MEMPOOL(NETDB,          MEMP_NUM_NETDB,           NETDB_ELEM_SIZE,               "NETDB")
+LWIP_MEMPOOL(NETDB,          MEMP_NUM_NETDB,           NETDB_ELEM_SIZE,               "NETDB", DMEM_ATTR)
 #endif /* LWIP_DNS && LWIP_SOCKET */
 #if LWIP_DNS && DNS_LOCAL_HOSTLIST && DNS_LOCAL_HOSTLIST_IS_DYNAMIC
-LWIP_MEMPOOL(LOCALHOSTLIST,  MEMP_NUM_LOCALHOSTLIST,   LOCALHOSTLIST_ELEM_SIZE,       "LOCALHOSTLIST")
+LWIP_MEMPOOL(LOCALHOSTLIST,  MEMP_NUM_LOCALHOSTLIST,   LOCALHOSTLIST_ELEM_SIZE,       "LOCALHOSTLIST", DMEM_ATTR)
 #endif /* LWIP_DNS && DNS_LOCAL_HOSTLIST && DNS_LOCAL_HOSTLIST_IS_DYNAMIC */
 #if PPP_SUPPORT && PPPOE_SUPPORT
-LWIP_MEMPOOL(PPPOE_IF,      MEMP_NUM_PPPOE_INTERFACES, sizeof(struct pppoe_softc),    "PPPOE_IF")
+LWIP_MEMPOOL(PPPOE_IF,      MEMP_NUM_PPPOE_INTERFACES, sizeof(struct pppoe_softc),    "PPPOE_IF", DMEM_ATTR)
 #endif /* PPP_SUPPORT && PPPOE_SUPPORT */
 
 /*

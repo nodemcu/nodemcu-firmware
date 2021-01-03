@@ -1,10 +1,14 @@
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
+
+#include "user_config.h"
 
 #undef MBEDTLS_HAVE_ASM
 #undef MBEDTLS_HAVE_SSE2
 
-#define MBEDTLS_HAVE_TIME
-#define MBEDTLS_HAVE_TIME_DATE
+// These are disabled until we have a real, working RTC-based gettimeofday
+#undef MBEDTLS_HAVE_TIME
+#undef MBEDTLS_HAVE_TIME_DATE
 
 #define MBEDTLS_PLATFORM_MEMORY
 #undef MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
@@ -70,34 +74,36 @@
 #undef MBEDTLS_ENABLE_WEAK_CIPHERSUITES
 #define MBEDTLS_REMOVE_ARC4_CIPHERSUITES
 
-#define MBEDTLS_ECP_DP_SECP192R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP224R1_ENABLED
+#undef  MBEDTLS_ECP_DP_SECP192R1_ENABLED
+#undef  MBEDTLS_ECP_DP_SECP224R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
-#define MBEDTLS_ECP_DP_SECP224K1_ENABLED
+#undef  MBEDTLS_ECP_DP_SECP521R1_ENABLED
+
+#undef  MBEDTLS_ECP_DP_SECP192K1_ENABLED
+#undef  MBEDTLS_ECP_DP_SECP224K1_ENABLED
 #define MBEDTLS_ECP_DP_SECP256K1_ENABLED
+
 #define MBEDTLS_ECP_DP_BP256R1_ENABLED
 #define MBEDTLS_ECP_DP_BP384R1_ENABLED
-#define MBEDTLS_ECP_DP_BP512R1_ENABLED
-#define MBEDTLS_ECP_DP_CURVE25519_ENABLED
+#undef  MBEDTLS_ECP_DP_BP512R1_ENABLED
+#undef MBEDTLS_ECP_DP_CURVE25519_ENABLED	/* Not exported on the wire yet :( */
 
 #define MBEDTLS_ECP_NIST_OPTIM
 
-#undef MBEDTLS_ECDSA_DETERMINISTIC
+#define MBEDTLS_ECDSA_DETERMINISTIC
 
 #undef MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
 #undef MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED
 #undef MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED
 #undef MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED
 
-#define MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
+#undef MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
-#undef MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 #undef MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED
-#define MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
+#undef MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
 
 #undef MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
 
@@ -105,7 +111,7 @@
 
 #undef MBEDTLS_ERROR_STRERROR_DUMMY
 
-#define MBEDTLS_GENPRIME
+#undef MBEDTLS_GENPRIME
 
 #undef MBEDTLS_FS_IO
 
@@ -135,8 +141,8 @@
 
 #undef MBEDTLS_SSL_HW_RECORD_ACCEL
 
-#define MBEDTLS_SSL_CBC_RECORD_SPLITTING
-#define MBEDTLS_SSL_RENEGOTIATION
+#undef MBEDTLS_SSL_CBC_RECORD_SPLITTING
+#undef MBEDTLS_SSL_RENEGOTIATION
 
 #undef MBEDTLS_SSL_SRV_SUPPORT_SSLV2_CLIENT_HELLO
 #undef MBEDTLS_SSL_SRV_RESPECT_CLIENT_PREFERENCE
@@ -144,8 +150,8 @@
 #define MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
 
 #undef MBEDTLS_SSL_PROTO_SSL3
-#define MBEDTLS_SSL_PROTO_TLS1
-#define MBEDTLS_SSL_PROTO_TLS1_1
+#undef MBEDTLS_SSL_PROTO_TLS1
+#undef MBEDTLS_SSL_PROTO_TLS1_1
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #undef MBEDTLS_SSL_PROTO_DTLS
 
@@ -175,23 +181,29 @@
 
 #undef MBEDTLS_AESNI_C
 #define MBEDTLS_AES_C
-#define MBEDTLS_ARC4_C
+#undef MBEDTLS_ARC4_C
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
 #define MBEDTLS_BASE64_C
 #define MBEDTLS_BIGNUM_C
-#define MBEDTLS_BLOWFISH_C
+#undef MBEDTLS_BLOWFISH_C
 #define MBEDTLS_CAMELLIA_C
 #define MBEDTLS_CCM_C
 #undef MBEDTLS_CERTS_C
 #define MBEDTLS_CIPHER_C
 #define MBEDTLS_CMAC_C
 #define MBEDTLS_CTR_DRBG_C
-#undef MBEDTLS_DEBUG_C
-#define MBEDTLS_DES_C
+
+#ifdef DEVELOP_VERSION
+# define MBEDTLS_DEBUG_C
+#else
+# undef MBEDTLS_DEBUG_C
+#endif
+
+#undef MBEDTLS_DES_C
 #define MBEDTLS_DHM_C
 #define MBEDTLS_ECDH_C
-#undef MBEDTLS_ECDSA_C
+#define MBEDTLS_ECDSA_C
 #undef MBEDTLS_ECJPAKE_C
 #define MBEDTLS_ECP_C
 #define MBEDTLS_ENTROPY_C
@@ -202,7 +214,7 @@
 #define MBEDTLS_MD_C
 #undef MBEDTLS_MD2_C
 #undef MBEDTLS_MD4_C
-#define MBEDTLS_MD5_C
+#undef MBEDTLS_MD5_C
 #undef MBEDTLS_MEMORY_BUFFER_ALLOC_C
 #define MBEDTLS_NET_C
 #define MBEDTLS_OID_C
@@ -237,7 +249,7 @@
 #define MBEDTLS_X509_CREATE_C
 #define MBEDTLS_X509_CRT_WRITE_C
 #define MBEDTLS_X509_CSR_WRITE_C
-#define MBEDTLS_XTEA_C
+#undef MBEDTLS_XTEA_C
 
 #define MBEDTLS_MPI_WINDOW_SIZE            1 /**< Maximum windows size used. */
 #define MBEDTLS_MPI_MAX_SIZE             512 /**< Maximum number of bytes for usable MPIs. */
@@ -253,7 +265,7 @@
 //#define MBEDTLS_HMAC_DRBG_MAX_REQUEST        1024 /**< Maximum number of requested bytes per call */
 //#define MBEDTLS_HMAC_DRBG_MAX_SEED_INPUT      384 /**< Maximum size of (re)seed buffer */
 
-//#define MBEDTLS_ECP_MAX_BITS             521 /**< Maximum bit size of groups */
+#define MBEDTLS_ECP_MAX_BITS             384 /**< Maximum bit size of groups */
 #define MBEDTLS_ECP_WINDOW_SIZE            2 /**< Maximum window size used */
 #define MBEDTLS_ECP_FIXED_POINT_OPTIM      0 /**< Enable fixed-point speed-up */
 
@@ -263,8 +275,10 @@
 //#define MBEDTLS_MEMORY_ALIGN_MULTIPLE      4 /**< Align on multiples of this value */
 
 //#define MBEDTLS_PLATFORM_STD_MEM_HDR   <stdlib.h> /**< Header to include if MBEDTLS_PLATFORM_NO_STD_FUNCTIONS is defined. Don't define if no header is needed. */
-#define MBEDTLS_PLATFORM_STD_CALLOC        pvPortCalloc /**< Default allocator to use, can be undefined */
-#define MBEDTLS_PLATFORM_STD_FREE            vPortFree /**< Default free to use, can be undefined */
+extern void *mbedtls_calloc_wrap(size_t n, size_t sz);
+#define MBEDTLS_PLATFORM_STD_CALLOC        mbedtls_calloc_wrap /**< Default allocator to use, can be undefined */
+extern void mbedtls_free_wrap(void *p);
+#define MBEDTLS_PLATFORM_STD_FREE            mbedtls_free_wrap /**< Default free to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
@@ -281,14 +295,20 @@
 //#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_PRINTF_MACRO        ets_printf /**< Default printf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    ets_snprintf /**< Default snprintf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_VSNPRINTF_MACRO    ets_vsnprintf /**< Default vsnprintf macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_PRINTF_MACRO        ets_printf /**< Default printf macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    ets_snprintf /**< Default snprintf macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_VSNPRINTF_MACRO    ets_vsnprintf /**< Default vsnprintf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT       86400 /**< 1 day  */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_MAX_ENTRIES      50 /**< Maximum entries in cache */
-#define MBEDTLS_SSL_MAX_CONTENT_LEN             4096 /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
+
+// the current mbedtls integration doesn't allow to set the buffer size dynamically:
+//   MBEDTLS_SSL_MAX_FRAGMENT_LENGTH feature and dynamic sizing are mutually exclusive
+//   due to non-constant initializer element in app/mbedtls/library/ssl_tls.c:150
+// the buffer size is hardcoded here and value is taken from SSL_BUFFER_SIZE (user_config.h)
+#define MBEDTLS_SSL_MAX_CONTENT_LEN             SSL_BUFFER_SIZE /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
+
 //#define MBEDTLS_SSL_DEFAULT_TICKET_LIFETIME     86400 /**< Lifetime of session tickets (if enabled) */
 //#define MBEDTLS_PSK_MAX_LEN               32 /**< Max size of TLS pre-shared keys, in bytes (default 256 bits) */
 //#define MBEDTLS_SSL_COOKIE_TIMEOUT        60 /**< Default expiration delay of DTLS cookies, in seconds if HAVE_TIME, or in number of cookies issued */

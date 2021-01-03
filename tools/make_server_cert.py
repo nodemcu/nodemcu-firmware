@@ -11,7 +11,7 @@ class Cert(object):
         self.len = len(buff)
         self.buff = buff
         pass
-    
+
     def __str__(self):
         out_str = ['\0']*32
         for i in range(len(self.name)):
@@ -26,11 +26,11 @@ class Cert(object):
 def main():
     parser = argparse.ArgumentParser(description='Convert PEM file(s) into C source file.')
 
-    parser.add_argument('--section', 
+    parser.add_argument('--section',
                    default='.servercert.flash',
 		    help='specify the section for the data (default is .servercert.flash)')
 
-    parser.add_argument('--name', 
+    parser.add_argument('--name',
                    default='tls_server_cert_area',
 		    help='specify the variable name for the data (default is tls_server_cert_area)')
 

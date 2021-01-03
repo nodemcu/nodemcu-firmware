@@ -1,11 +1,7 @@
-#ifndef _OVERRIDE_C_TYPES_H_
-#define _OVERRIDE_C_TYPES_H_
 
-#include_next "c_types.h"
+#ifndef _SDKOVERRIDES_C_TYPES_H_
+#define _SDKOVERRIDES_C_TYPES_H_
 
-typedef long long int64_t;
-typedef int8_t  sint8_t;
-typedef int16_t sint16_t;
-typedef int64_t sint64_t;
+#error "Please do not use c_types.h, use <stdint.h> instead"
 
 #endif

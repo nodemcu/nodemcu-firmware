@@ -1,16 +1,16 @@
-tmr.stop(0)--SAFETRIM 
+--if (self.timer) then self.timer:stop() end--SAFETRIM
 -- function _doTick(self)
 
   -- Upvals
   local self                = ...
-  local wifi,net            = wifi,net 
+  local wifi,net            = wifi,net
   local sta                 = wifi.sta
   local config,log,startApp = self.config,self.log,self.startApp
   local tick_count          = 0
-  
+
   local function socket_close(socket) --upval: self, startApp
     if rawget(self,"socket") then
-      self.socket=nil                        -- remove circular reference in upval 
+      self.socket=nil                        -- remove circular reference in upval
       pcall(socket.close,socket)
       return startApp("Unexpected socket close")
     end
@@ -24,15 +24,15 @@ tmr.stop(0)--SAFETRIM
       print "No provisioning changes required"
       self.socket = nil
       self.post(function()  --upval: socket
-                  if socket then pcall(socket.close, socket) end 
+                  if socket then pcall(socket.close, socket) end
                 end)
       return startApp("OK! No further updates needed")
     end
     -- Else a valid request has been received from the provision service free up
-    -- some resources that are no longer needed and set backstop timer for general 
+    -- some resources that are no longer needed and set backstop timer for general
     -- timeout.  This also dereferences the previous doTick cb so it can now be GCed.
     collectgarbage()
-    tmr.alarm(0, 30000, tmr.ALARM_SINGLE, self.startApp)
+    self.timer:alarm(30000, tmr.ALARM_SINGLE, self.startApp)
     return self:_provision(socket,rec)
   end
 
@@ -44,7 +44,7 @@ tmr.stop(0)--SAFETRIM
     return self.socket_send(socket, self.config)
   end
 
-  local conn 
+  local conn
   return function() -- the proper doTick() timer callback
     tick_count = tick_count + 1
     log("entering tick", tick_count, sta.getconfig(false), sta.getip())
@@ -67,7 +67,7 @@ tmr.stop(0)--SAFETRIM
       return self.startApp("OK: Timeout on waiting for wifi station setup")
 
     elseif (tick_count == 26) then        -- wait up to 2.5 secs for TCP response
-      tmr.unregister(0)
+      self.timer:unregister()
       pcall(conn.close, conn)
       self.socket=nil
       return startApp("OK: Timeout on waiting for provision service response")

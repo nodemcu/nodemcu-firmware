@@ -1,5 +1,23 @@
+-- luacheck: new globals z T r disp lcg_rnd millis
+z = 127   -- start value
+T = 1000
+r = 0
+disp = nil
+
+local loop_idx = 0
+
+function lcg_rnd()
+    z = bit.band(65 * z + 17, 255)
+    return z
+end
+
+function millis()
+    local usec = tmr.now()
+    return usec/1000
+end
+
 -- setup SPI and connect display
-function init_spi_display()
+local function init_spi_display()
     -- Hardware SPI CLK  = GPIO14
     -- Hardware SPI MOSI = GPIO13
     -- Hardware SPI MISO = GPIO12 (not used)
@@ -8,22 +26,20 @@ function init_spi_display()
     local cs  = 8 -- GPIO15, pull-down 10k to GND
     local dc  = 4 -- GPIO2
     local res = 0 -- GPIO16
+    local bus = 1
 
-    spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+    spi.setup(bus, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
     -- we won't be using the HSPI /CS line, so disable it again
     gpio.mode(8, gpio.INPUT, gpio.PULLUP)
 
     -- initialize the matching driver for your display
     -- see app/include/ucg_config.h
-    --disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
-    disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
+    --disp = ucg.ili9341_18x240x320_hw_spi(bus, cs, dc, res)
+    disp = ucg.st7735_18x128x160_hw_spi(bus, cs, dc, res)
 end
 
-
-
-
 -- switch statement http://lua-users.org/wiki/SwitchStatement
-function switch(c)
+local function switch(c)
     local swtbl = {
         casevar = c,
         caseof = function (self, code)
@@ -45,20 +61,7 @@ function switch(c)
     return swtbl
 end
 
-
-z = 127   -- start value
-function lcg_rnd()
-    z = bit.band(65 * z + 17, 255)
-    return z
-end
-
-
-function millis()
-    local usec = tmr.now()
-    return usec/1000
-end
-
-function set_clip_range()
+local function set_clip_range()
     local x, y, w, h
     w = bit.band(lcg_rnd(), 31)
     h = bit.band(lcg_rnd(), 31)
@@ -66,11 +69,11 @@ function set_clip_range()
     h = h + 25
     x = bit.rshift(lcg_rnd() * (disp:getWidth() - w), 8)
     y = bit.rshift(lcg_rnd() * (disp:getHeight() - h), 8)
-  
+
     disp:setClipRange(x, y, w, h)
 end
 
-function loop()
+local function loop()
 
     if (loop_idx == 0) then
         switch(bit.band(r, 3)) : caseof {
@@ -111,18 +114,12 @@ function loop()
     print("Heap: " .. node.heap())
 end
 
+do
+  init_spi_display()
 
-T = 1000
+  disp:begin(ucg.FONT_MODE_TRANSPARENT)
+  disp:setFont(ucg.font_ncenR14_hr)
+  disp:clearScreen()
 
-r = 0
-loop_idx = 0
-
-init_spi_display()
-
-disp:begin(ucg.FONT_MODE_TRANSPARENT)
-disp:setFont(ucg.font_ncenR14_hr)
-disp:clearScreen()
-
-
-tmr.register(0, 3000, tmr.ALARM_AUTO, function() loop() end)
-tmr.start(0)
+  tmr.create():alarm(3000, tmr.ALARM_AUTO, function() loop() end)
+end

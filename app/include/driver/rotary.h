@@ -4,7 +4,7 @@
 #ifndef __ROTARY_H__
 #define __ROTARY_H__
 
-#include "c_types.h"
+#include <stdint.h>
 
 #define ROTARY_CHANNEL_COUNT	3
 

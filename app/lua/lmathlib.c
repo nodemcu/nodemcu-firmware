@@ -7,15 +7,13 @@
 
 #define lmathlib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
-#include C_HEADER_MATH
+#include <stdlib.h>
+#include <math.h>
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
 
 #undef PI
 #define PI (3.14159265358979323846)
@@ -309,92 +307,57 @@ static int math_randomseed (lua_State *L) {
   return 0;
 }
 
-
-
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE math_map[] = {
+LROT_BEGIN(math, NULL, 0)
 #ifdef LUA_NUMBER_INTEGRAL
-  {LSTRKEY("abs"),   LFUNCVAL(math_abs)},
-  {LSTRKEY("ceil"),  LFUNCVAL(math_identity)},
-  {LSTRKEY("floor"), LFUNCVAL(math_identity)},
-  {LSTRKEY("max"),   LFUNCVAL(math_max)},
-  {LSTRKEY("min"),   LFUNCVAL(math_min)},
-  {LSTRKEY("pow"),   LFUNCVAL(math_pow)},
-  {LSTRKEY("random"),     LFUNCVAL(math_random)},
-  {LSTRKEY("randomseed"), LFUNCVAL(math_randomseed)},
-  {LSTRKEY("sqrt"),  LFUNCVAL(math_sqrt)},
-#if LUA_OPTIMIZE_MEMORY > 0
-  {LSTRKEY("huge"),  LNUMVAL(LONG_MAX)},
-#endif
+  LROT_FUNCENTRY( abs, math_abs )
+  LROT_FUNCENTRY( ceil, math_identity )
+  LROT_FUNCENTRY( floor, math_identity )
+  LROT_FUNCENTRY( max, math_max )
+  LROT_FUNCENTRY( min, math_min )
+  LROT_FUNCENTRY( pow, math_pow )
+  LROT_FUNCENTRY( random, math_random )
+  LROT_FUNCENTRY( randomseed, math_randomseed )
+  LROT_FUNCENTRY( sqrt, math_sqrt )
+  LROT_NUMENTRY( huge, INT_MAX )
 #else
-  {LSTRKEY("abs"),   LFUNCVAL(math_abs)},
-  // {LSTRKEY("acos"),  LFUNCVAL(math_acos)},
-  // {LSTRKEY("asin"),  LFUNCVAL(math_asin)},
-  // {LSTRKEY("atan2"), LFUNCVAL(math_atan2)},
-  // {LSTRKEY("atan"),  LFUNCVAL(math_atan)},
-  {LSTRKEY("ceil"),  LFUNCVAL(math_ceil)},
-  // {LSTRKEY("cosh"),  LFUNCVAL(math_cosh)},
-  // {LSTRKEY("cos"),   LFUNCVAL(math_cos)},
-  // {LSTRKEY("deg"),   LFUNCVAL(math_deg)},
-  // {LSTRKEY("exp"),   LFUNCVAL(math_exp)},
-  {LSTRKEY("floor"), LFUNCVAL(math_floor)},
-  // {LSTRKEY("fmod"),  LFUNCVAL(math_fmod)},
-#if LUA_OPTIMIZE_MEMORY > 0 && defined(LUA_COMPAT_MOD)
-  // {LSTRKEY("mod"),   LFUNCVAL(math_fmod)}, 
-#endif
-  // {LSTRKEY("frexp"), LFUNCVAL(math_frexp)},
-  // {LSTRKEY("ldexp"), LFUNCVAL(math_ldexp)},
-  // {LSTRKEY("log10"), LFUNCVAL(math_log10)},
-  // {LSTRKEY("log"),   LFUNCVAL(math_log)},
-  {LSTRKEY("max"),   LFUNCVAL(math_max)},
-  {LSTRKEY("min"),   LFUNCVAL(math_min)},
-  // {LSTRKEY("modf"),   LFUNCVAL(math_modf)},
-  {LSTRKEY("pow"),   LFUNCVAL(math_pow)},
-  // {LSTRKEY("rad"),   LFUNCVAL(math_rad)},
-  {LSTRKEY("random"),     LFUNCVAL(math_random)},
-  {LSTRKEY("randomseed"), LFUNCVAL(math_randomseed)},
-  // {LSTRKEY("sinh"),   LFUNCVAL(math_sinh)},
-  // {LSTRKEY("sin"),   LFUNCVAL(math_sin)},
-  {LSTRKEY("sqrt"),  LFUNCVAL(math_sqrt)},
-  // {LSTRKEY("tanh"),   LFUNCVAL(math_tanh)},
-  // {LSTRKEY("tan"),   LFUNCVAL(math_tan)},
-#if LUA_OPTIMIZE_MEMORY > 0
-  {LSTRKEY("pi"),    LNUMVAL(PI)},
-  {LSTRKEY("huge"),  LNUMVAL(HUGE_VAL)},
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
+  LROT_FUNCENTRY( abs, math_abs )
+// LROT_FUNCENTRY( acos, math_acos )
+// LROT_FUNCENTRY( asin, math_asin )
+// LROT_FUNCENTRY( atan2, math_atan2 )
+// LROT_FUNCENTRY( atan, math_atan )
+  LROT_FUNCENTRY( ceil, math_ceil )
+// LROT_FUNCENTRY( cosh, math_cosh )
+// LROT_FUNCENTRY( cos, math_cos )
+// LROT_FUNCENTRY( deg, math_deg )
+// LROT_FUNCENTRY( exp, math_exp )
+  LROT_FUNCENTRY( floor, math_floor )
+// LROT_FUNCENTRY( fmod, math_fmod )
+// LROT_FUNCENTRY( mod, math_fmod )
+// LROT_FUNCENTRY( frexp, math_frexp )
+// LROT_FUNCENTRY( ldexp, math_ldexp )
+// LROT_FUNCENTRY( log10, math_log10 )
+// LROT_FUNCENTRY( log, math_log )
+  LROT_FUNCENTRY( max, math_max )
+  LROT_FUNCENTRY( min, math_min )
+// LROT_FUNCENTRY( modf, math_modf )
+  LROT_FUNCENTRY( pow, math_pow )
+// LROT_FUNCENTRY( rad, math_rad )
+  LROT_FUNCENTRY( random, math_random )
+  LROT_FUNCENTRY( randomseed, math_randomseed )
+// LROT_FUNCENTRY( sinh, math_sinh )
+// LROT_FUNCENTRY( sin, math_sin )
+  LROT_FUNCENTRY( sqrt, math_sqrt )
+// LROT_FUNCENTRY( tanh, math_tanh )
+// LROT_FUNCENTRY( tan, math_tan )
+  LROT_NUMENTRY( pi, PI )
+  LROT_NUMENTRY( huge, HUGE_VAL )
 #endif // #ifdef LUA_NUMBER_INTEGRAL
-  {LNILKEY, LNILVAL}
-};
+LROT_END(math, NULL, 0)
 
 
 /*
 ** Open math library
 */
-
-#if defined LUA_NUMBER_INTEGRAL
-# include "c_limits.h"		/* for LONG_MAX */
-#endif
-
 LUALIB_API int luaopen_math (lua_State *L) {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else
-  luaL_register(L, LUA_MATHLIBNAME, math_map);
-# if defined LUA_NUMBER_INTEGRAL
-  lua_pushnumber(L, LONG_MAX);
-  lua_setfield(L, -2, "huge");
-# else
-  lua_pushnumber(L, PI);
-  lua_setfield(L, -2, "pi");
-  lua_pushnumber(L, HUGE_VAL);
-  lua_setfield(L, -2, "huge");
-#  if defined(LUA_COMPAT_MOD)
-  lua_getfield(L, -1, "fmod");
-  lua_setfield(L, -2, "mod");
-#  endif
-# endif
-  return 1;
-#endif
 }

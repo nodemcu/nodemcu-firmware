@@ -6,7 +6,8 @@
 
 #include "module.h"
 #include "lauxlib.h"
-#include "c_types.h"
+#include <string.h>
+#include <stdint.h>
 #include "../crypto/sha2.h"
 
 #if defined(LUA_USE_MODULES_BLOOM) && !defined(SHA2_ENABLE)
@@ -169,24 +170,25 @@ static int bloom_create(lua_State *L) {
   return 1;
 }
 
-static const LUA_REG_TYPE bloom_filter_map[] = {
-  { LSTRKEY( "add" ),                   LFUNCVAL( bloom_filter_add ) },
-  { LSTRKEY( "check" ),                 LFUNCVAL( bloom_filter_check ) },
-  { LSTRKEY( "reset" ),                 LFUNCVAL( bloom_filter_reset ) },
-  { LSTRKEY( "info" ),                  LFUNCVAL( bloom_filter_info ) },
-  { LSTRKEY( "__index" ),               LROVAL( bloom_filter_map ) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(bloom_filter, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, bloom_filter )
+  LROT_FUNCENTRY( add, bloom_filter_add )
+  LROT_FUNCENTRY( check, bloom_filter_check )
+  LROT_FUNCENTRY( reset, bloom_filter_reset )
+  LROT_FUNCENTRY( info, bloom_filter_info )
+LROT_END(bloom_filter, NULL, LROT_MASK_INDEX)
+
 
 // Module function map
-static const LUA_REG_TYPE bloom_map[] = {
-  { LSTRKEY( "create" ),   LFUNCVAL( bloom_create ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(bloom, NULL, 0)
+  LROT_FUNCENTRY( create, bloom_create )
+LROT_END(bloom, NULL, 0)
+
 
 LUALIB_API int bloom_open(lua_State *L) {
-  luaL_rometatable(L, "bloom.filter", (void *)bloom_filter_map);  
+  luaL_rometatable(L, "bloom.filter", LROT_TABLEREF(bloom_filter));
   return 1;
 }
 
-NODEMCU_MODULE(BLOOM, "bloom", bloom_map, bloom_open);
+NODEMCU_MODULE(BLOOM, "bloom", bloom, bloom_open);

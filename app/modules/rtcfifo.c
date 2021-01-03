@@ -6,6 +6,7 @@
 #include "rtc/rtctime.h"
 #define RTCTIME_SLEEP_ALIGNED rtctime_deep_sleep_until_aligned_us
 #include "rtc/rtcfifo.h"
+#include <string.h>
 
 // rtcfifo.prepare ([{sensor_count=n, interval_us=m, storage_begin=x, storage_end=y}])
 static int rtcfifo_prepare (lua_State *L)
@@ -19,22 +20,22 @@ static int rtcfifo_prepare (lua_State *L)
 #ifdef LUA_USE_MODULES_RTCTIME
     lua_getfield (L, 1, "interval_us");
     if (lua_isnumber (L, -1))
-      interval_us = lua_tonumber (L, -1);
+      interval_us = lua_tointeger (L, -1);
     lua_pop (L, 1);
 #endif
 
     lua_getfield (L, 1, "sensor_count");
     if (lua_isnumber (L, -1))
-      sensor_count = lua_tonumber (L, -1);
+      sensor_count = lua_tointeger (L, -1);
     lua_pop (L, 1);
 
     lua_getfield (L, 1, "storage_begin");
     if (lua_isnumber (L, -1))
-      first = lua_tonumber (L, -1);
+      first = lua_tointeger (L, -1);
     lua_pop (L, 1);
     lua_getfield (L, 1, "storage_end");
     if (lua_isnumber (L, -1))
-      last = lua_tonumber (L, -1);
+      last = lua_tointeger (L, -1);
     lua_pop (L, 1);
   }
   else if (!lua_isnone (L, 1))
@@ -52,7 +53,7 @@ static int rtcfifo_prepare (lua_State *L)
 // ready = rtcfifo.ready ()
 static int rtcfifo_ready (lua_State *L)
 {
-  lua_pushnumber (L, rtc_fifo_check_magic ());
+  lua_pushinteger (L, rtc_fifo_check_magic ());
   return 1;
 }
 
@@ -69,9 +70,9 @@ static int rtcfifo_put (lua_State *L)
   check_fifo_magic (L);
 
   sample_t s;
-  s.timestamp = luaL_checknumber (L, 1);
-  s.value = luaL_checknumber (L, 2);
-  s.decimals = luaL_checknumber (L, 3);
+  s.timestamp = luaL_checkinteger (L, 1);
+  s.value = luaL_checkinteger (L, 2);
+  s.decimals = luaL_checkinteger (L, 3);
   size_t len;
   const char *str = luaL_checklstring (L, 4, &len);
   union {
@@ -88,9 +89,9 @@ static int rtcfifo_put (lua_State *L)
 
 static int extract_sample (lua_State *L, const sample_t *s)
 {
-  lua_pushnumber (L, s->timestamp);
-  lua_pushnumber (L, s->value);
-  lua_pushnumber (L, s->decimals);
+  lua_pushinteger (L, s->timestamp);
+  lua_pushinteger (L, s->value);
+  lua_pushinteger (L, s->decimals);
   union {
     uint32_t u;
     char s[4];
@@ -124,7 +125,7 @@ static int rtcfifo_peek (lua_State *L)
   sample_t s;
   uint32_t offs = 0;
   if (lua_isnumber (L, 1))
-    offs = lua_tonumber (L, 1);
+    offs = lua_tointeger (L, 1);
   if (!rtc_fifo_peek_sample (&s, offs))
     return 0;
   else
@@ -137,7 +138,7 @@ static int rtcfifo_drop (lua_State *L)
 {
   check_fifo_magic (L);
 
-  rtc_fifo_drop_samples (luaL_checknumber (L, 1));
+  rtc_fifo_drop_samples (luaL_checkinteger (L, 1));
   return 0;
 }
 
@@ -147,7 +148,7 @@ static int rtcfifo_count (lua_State *L)
 {
   check_fifo_magic (L);
 
-  lua_pushnumber (L, rtc_fifo_get_count ());
+  lua_pushinteger (L, rtc_fifo_get_count ());
   return 1;
 }
 
@@ -158,25 +159,25 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 {
   check_fifo_magic (L);
 
-  uint32_t min_us = luaL_checknumber (L, 1);
+  uint32_t min_us = luaL_checkinteger (L, 1);
   rtc_fifo_deep_sleep_until_sample (min_us); // no return
   return 0;
 }
 #endif
 
 // Module function map
-static const LUA_REG_TYPE rtcfifo_map[] = {
-  { LSTRKEY("prepare"),             LFUNCVAL(rtcfifo_prepare) },
-  { LSTRKEY("ready"),               LFUNCVAL(rtcfifo_ready) },
-  { LSTRKEY("put"),                 LFUNCVAL(rtcfifo_put) },
-  { LSTRKEY("pop"),                 LFUNCVAL(rtcfifo_pop) },
-  { LSTRKEY("peek"),                LFUNCVAL(rtcfifo_peek) },
-  { LSTRKEY("drop"),                LFUNCVAL(rtcfifo_drop) },
-  { LSTRKEY("count"),               LFUNCVAL(rtcfifo_count) },
+LROT_BEGIN(rtcfifo, NULL, 0)
+  LROT_FUNCENTRY( prepare, rtcfifo_prepare )
+  LROT_FUNCENTRY( ready, rtcfifo_ready )
+  LROT_FUNCENTRY( put, rtcfifo_put )
+  LROT_FUNCENTRY( pop, rtcfifo_pop )
+  LROT_FUNCENTRY( peek, rtcfifo_peek )
+  LROT_FUNCENTRY( drop, rtcfifo_drop )
+  LROT_FUNCENTRY( count, rtcfifo_count )
 #ifdef LUA_USE_MODULES_RTCTIME
-  { LSTRKEY("dsleep_until_sample"), LFUNCVAL(rtcfifo_dsleep_until_sample) },
+  LROT_FUNCENTRY( dsleep_until_sample, rtcfifo_dsleep_until_sample )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END(rtcfifo, NULL, 0)
 
-NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo_map, NULL);
+
+NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo, NULL);

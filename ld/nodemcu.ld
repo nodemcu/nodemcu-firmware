@@ -5,6 +5,7 @@ MEMORY
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
   dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                         org = 0x40100000, len = 0x8000
+  iram0_0_seg :                         org = 0x4010E000, len = 0x2000
   irom0_0_seg :                         org = 0x40210000, len = 0xE0000
 }
 
@@ -14,12 +15,13 @@ PHDRS
   dram0_0_phdr PT_LOAD;
   dram0_0_bss_phdr PT_LOAD;
   iram1_0_phdr PT_LOAD;
+  iram0_0_phdr PT_LOAD;
   irom0_0_phdr PT_LOAD;
 }
 
 
 /*  Default entry point:  */
-ENTRY(user_start_trampoline)
+ENTRY(call_user_start)
 EXTERN(_DebugExceptionVector)
 EXTERN(_DoubleExceptionVector)
 EXTERN(_KernelExceptionVector)
@@ -102,30 +104,29 @@ SECTIONS
     *(.entry.text)
     *(.init.literal)
     *(.init)
-    
-    /* SDK libraries that used in bootup process, interruption handling
-     * and other ways where flash cache (iROM) is unavailable: */
-    *libmain.a:*(.literal .literal.* .text .text.*)
-    *libnet80211.a:*(.literal .text)
-    *libphy.a:*(.literal .text)
-    *libpp.a:*(.literal .text)
-    *libgcc.a:*(.literal .text)
-    
-    /* Following SDK libraries have .text sections, but not included in iRAM: */
-    /* *libat.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
-    /* *libdriver.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libespnow.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libmesh.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *liblwip_536.a:*(.literal .text) - source-based library used instead */
-    /* *libpwm.a:*(.literal .text) - our own implementation used instead */
-    /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
-    /* *libwps.a:*(.literal .text) - tested that safe to keep in iROM */
-
-    *(.iram.text .iram0.text)
+   /*
+    * SDK libraries that used in bootup process, interruption handling
+    * and other ways where flash cache (iROM) is unavailable:
+    */
+    *libmain.a:*(         .literal .literal.* .text .text.*)
+    *libphy.a:*(          .literal .literal.* .text .text.*)
+    *libpp.a:*(           .literal .literal.* .text .text.*)
+    *libgcc.a:_ashrdi3.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_divsf3.o(  .literal .literal.* .text .text.*)
+    *libgcc.a:_fixsfsi.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_modsi3.o(  .literal .literal.* .text .text.*)
+    *libnet80211.a:*(     .literal            .text        )
+   /*
+    * The following SDK libraries have .literal and .text sections, but are
+    * either not used in NodeMCU or are safe to execute out of in iROM: 
+    *   libat.a libcrypto.a libdriver.a libnet80211.a libespnow.a
+    *   liblwip_536.a ibpwm.a libwpa.a ibwps.a
+    */
+    *(.iram.text .iram0.text .iram0.text.*)
+    *(.iram0.data.*)
 
     *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-    
+
     *(.fini.literal)
     *(.fini)
     *(.gnu.version)
@@ -222,23 +223,35 @@ SECTIONS
     _lit4_end = ABSOLUTE(.);
   } >iram1_0_seg :iram1_0_phdr
 
+  .pre_init_ram : ALIGN(0x1000)
+  {
+    _iram0_start = ABSOLUTE(.);
+    *(*.pre_init)
+    _iram0_end = ABSOLUTE(.);
+  } >iram0_0_seg :iram0_0_phdr
+
   .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
+    KEEP(*(.irom0.ptable))
+    . = ALIGN(0x1000);
     *(.servercert.flash)
     *(.clientcert.flash)
+    . = ALIGN(0x1000);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal .text .literal.* .text.*)
     *(.rodata*)
     *(.sdk.version)
 
     /* Link-time arrays containing the defs for the included modules */
-    . = ALIGN(4);
-    lua_libs = ABSOLUTE(.);
+    . = ALIGN(8);
+    lua_libs_base = ABSOLUTE(.);
     /* Allow either empty define or defined-to-1 to include the module */
     KEEP(*(.lua_libs))
+    *liblua.a:linit.o(.lua_libs)
+    *(.lua_libs)
     LONG(0) LONG(0) /* Null-terminate the array */
-    lua_rotable = ABSOLUTE(.);
+    lua_rotable_base = ABSOLUTE(.);
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 
@@ -246,10 +259,12 @@ SECTIONS
     */libc.a:*.o(.text* .literal*)
     /* end libc functions */
 
+    /* Reserved areas, flash page aligned and last */
+    . = ALIGN(4096);
+
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr =0xffffffff
-
 }
 
 /* get ROM code address */

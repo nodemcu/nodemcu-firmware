@@ -23,7 +23,7 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES += -DGDBSTUB_REDIRECT_CONSOLE_OUTPUT
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -37,8 +37,6 @@ endif
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES += -I $(PDIR)include
-INCLUDES += -I ./
 INCLUDES += -I ../../include/ets
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

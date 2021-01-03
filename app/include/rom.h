@@ -3,7 +3,7 @@
 #ifndef _ROM_H_
 #define _ROM_H_
 
-#include "c_types.h"
+#include <stdint.h>
 #include "ets_sys.h"
 
 // SHA1 is assumed to match the netbsd sha1.h headers

@@ -1,8 +1,9 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
+#include "osapi.h"
 
 /**
  * Code is based on https://github.com/CHERTS/esp8266-devkit/blob/master/Espressif/examples/EspLightNode/user/ws2801.c
@@ -65,7 +66,7 @@ static void enable_pin_mux(int pin) {
 
 /* Lua: ws2801.init(pin_clk, pin_data)
  * Sets up the GPIO pins
- * 
+ *
  * ws2801.init(0, 2) uses GPIO0 as clock and GPIO2 as data.
  * This is the default behavior.
  */
@@ -122,11 +123,10 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
     return 0;
 }
 
-static const LUA_REG_TYPE ws2801_map[] =
-{
-    { LSTRKEY( "write" ), LFUNCVAL( ws2801_writergb )},
-    { LSTRKEY( "init" ), LFUNCVAL( ws2801_init_lua )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(ws2801, NULL, 0)
+  LROT_FUNCENTRY( write, ws2801_writergb )
+  LROT_FUNCENTRY( init, ws2801_init_lua )
+LROT_END(ws2801, NULL, 0)
 
-NODEMCU_MODULE(WS2801, "ws2801", ws2801_map, NULL);
+
+NODEMCU_MODULE(WS2801, "ws2801", ws2801, NULL);

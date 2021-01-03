@@ -2,9 +2,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "osapi.h"
 
@@ -159,9 +159,9 @@ static int cu_hsv2grb(lua_State *L) {
   uint32_t tmp_color = hsv2grb(hue, sat, val);
 
   // return
-  lua_pushnumber(L, (tmp_color & 0x00FF0000) >> 16);
-  lua_pushnumber(L, (tmp_color & 0x0000FF00) >> 8);
-  lua_pushnumber(L, (tmp_color & 0x000000FF));
+  lua_pushunsigned(L, (tmp_color & 0x00FF0000) >> 16);
+  lua_pushunsigned(L, (tmp_color & 0x0000FF00) >> 8);
+  lua_pushunsigned(L, (tmp_color & 0x000000FF));
 
   return 3;
 }
@@ -181,10 +181,10 @@ static int cu_hsv2grbw(lua_State *L) {
   uint32_t tmp_color = hsv2grbw(hue, sat, val);
 
   // return g, r, b, w
-  lua_pushnumber(L, (tmp_color & 0xFF000000) >> 24);
-  lua_pushnumber(L, (tmp_color & 0x00FF0000) >> 16);
-  lua_pushnumber(L, (tmp_color & 0x0000FF00) >> 8);
-  lua_pushnumber(L, (tmp_color & 0x000000FF));
+  lua_pushunsigned(L, (tmp_color & 0xFF000000) >> 24);
+  lua_pushunsigned(L, (tmp_color & 0x00FF0000) >> 16);
+  lua_pushunsigned(L, (tmp_color & 0x0000FF00) >> 8);
+  lua_pushunsigned(L, (tmp_color & 0x000000FF));
 
   return 4;
 }
@@ -203,9 +203,9 @@ static int cu_color_wheel(lua_State *L) {
   uint8_t b = (color & 0x000000FF) >>  0;
 
   // return
-  lua_pushnumber(L, g);
-  lua_pushnumber(L, r);
-  lua_pushnumber(L, b);
+  lua_pushunsigned(L, g);
+  lua_pushunsigned(L, r);
+  lua_pushunsigned(L, b);
 
   return 3;
 }
@@ -217,7 +217,7 @@ static int cu_grb2hsv(lua_State *L) {
   const int r = luaL_checkint(L, 2);
   const int b = luaL_checkint(L, 3);
 
-  luaL_argcheck(L, g == r && g == b, 1, "greyscale value cannot be converted to hsv");
+  luaL_argcheck(L, g != r || g != b, 1, "greyscale value cannot be converted to hsv");
 
   uint32_t hsv = grb2hsv(g, r, b);
 
@@ -226,21 +226,20 @@ static int cu_grb2hsv(lua_State *L) {
   uint8_t v = (hsv & 0x000000FF) >>  0;
 
   // return
-  lua_pushnumber(L, h);
-  lua_pushnumber(L, s);
-  lua_pushnumber(L, v);
+  lua_pushunsigned(L, h);
+  lua_pushunsigned(L, s);
+  lua_pushunsigned(L, v);
 
   return 3;
 }
 
 
-static const LUA_REG_TYPE color_utils_map[] =
-{
-  { LSTRKEY( "hsv2grb" ),       LFUNCVAL( cu_hsv2grb )},
-  { LSTRKEY( "hsv2grbw" ),      LFUNCVAL( cu_hsv2grbw )},
-  { LSTRKEY( "colorWheel" ),    LFUNCVAL( cu_color_wheel )},
-  { LSTRKEY( "grb2hsv" ),       LFUNCVAL( cu_grb2hsv )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(color_utils, NULL, 0)
+  LROT_FUNCENTRY( hsv2grb, cu_hsv2grb )
+  LROT_FUNCENTRY( hsv2grbw, cu_hsv2grbw )
+  LROT_FUNCENTRY( colorWheel, cu_color_wheel )
+  LROT_FUNCENTRY( grb2hsv, cu_grb2hsv )
+LROT_END(color_utils, NULL, 0)
 
-NODEMCU_MODULE(COLOR_UTILS, "color_utils", color_utils_map, NULL);
+
+NODEMCU_MODULE(COLOR_UTILS, "color_utils", color_utils, NULL);

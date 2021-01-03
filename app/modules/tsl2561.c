@@ -51,7 +51,7 @@ static int ICACHE_FLASH_ATTR tsl2561_init(lua_State* L) {
 			tsl2561SetPackage(package);
 		}
 	}
-	lua_pushnumber(L, error);
+	lua_pushinteger(L, error);
 	return 1;
 }
 /* Sets the integration time and gain settings of the device
@@ -71,7 +71,7 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_settiming(lua_State* L) {
 		return luaL_error(L, "Invalid argument: gain");
 	}
 
-	lua_pushnumber(L, tsl2561SetTiming(integration, gain));
+	lua_pushinteger(L, tsl2561SetTiming(integration, gain));
 	return 1;
 }
 /* Reads sensor values from device and return calculated lux
@@ -80,11 +80,11 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_settiming(lua_State* L) {
 static int ICACHE_FLASH_ATTR tsl2561_lua_calclux(lua_State* L) {
 	uint8_t error = tsl2561GetLuminosity(&ch0, &ch1);
 	if (error) {
-		lua_pushnumber(L, 0);
-		lua_pushnumber(L, error);
+		lua_pushinteger(L, 0);
+		lua_pushinteger(L, error);
 	} else {
-		lua_pushnumber(L, tsl2561CalculateLux(ch0, ch1));
-		lua_pushnumber(L, error);
+		lua_pushinteger(L, tsl2561CalculateLux(ch0, ch1));
+		lua_pushinteger(L, error);
 	}
 	return 2;
 }
@@ -93,35 +93,35 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_calclux(lua_State* L) {
  */
 static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 	uint8_t error = tsl2561GetLuminosity(&ch0, &ch1);
-	lua_pushnumber(L, ch0);
-	lua_pushnumber(L, ch1);
-	lua_pushnumber(L, error);
+	lua_pushinteger(L, ch0);
+	lua_pushinteger(L, ch1);
+	lua_pushinteger(L, error);
 
 	return 3;
 }
 
 // Module function map
-static const LUA_REG_TYPE tsl2561_map[] = {
-	{	LSTRKEY( "settiming" ),             LFUNCVAL( tsl2561_lua_settiming)},
-	{	LSTRKEY( "getlux" ),                LFUNCVAL( tsl2561_lua_calclux )},
-	{	LSTRKEY( "getrawchannels" ),        LFUNCVAL( tsl2561_lua_getchannels )},
-	{	LSTRKEY( "init" ),                  LFUNCVAL( tsl2561_init )},
-	{	LSTRKEY( "TSL2561_OK" ),            LNUMVAL( TSL2561_ERROR_OK )},
-	{	LSTRKEY( "TSL2561_ERROR_I2CINIT" ), LNUMVAL( TSL2561_ERROR_I2CINIT )},
-	{	LSTRKEY( "TSL2561_ERROR_I2CBUSY" ), LNUMVAL( TSL2561_ERROR_I2CBUSY )},
-	{	LSTRKEY( "TSL2561_ERROR_NOINIT" ),  LNUMVAL( TSL2561_ERROR_NOINIT )},
-	{	LSTRKEY( "TSL2561_ERROR_LAST" ),    LNUMVAL( TSL2561_ERROR_LAST )},
-	{	LSTRKEY( "INTEGRATIONTIME_13MS" ),  LNUMVAL( TSL2561_INTEGRATIONTIME_13MS )},
-	{	LSTRKEY( "INTEGRATIONTIME_101MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_101MS )},
-	{	LSTRKEY( "INTEGRATIONTIME_402MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_402MS )},
-	{	LSTRKEY( "GAIN_1X" ),               LNUMVAL( TSL2561_GAIN_1X )},
-	{	LSTRKEY( "GAIN_16X" ),              LNUMVAL( TSL2561_GAIN_16X )},
-	{	LSTRKEY( "PACKAGE_CS" ),            LNUMVAL( TSL2561_PACKAGE_CS )},
-	{	LSTRKEY( "PACKAGE_T_FN_CL" ),       LNUMVAL( TSL2561_PACKAGE_T_FN_CL )},
-	{	LSTRKEY( "ADDRESS_GND" ),           LNUMVAL( TSL2561_ADDRESS_GND )},
-	{	LSTRKEY( "ADDRESS_FLOAT" ),         LNUMVAL( TSL2561_ADDRESS_FLOAT )},
-	{	LSTRKEY( "ADDRESS_VDD" ),           LNUMVAL( TSL2561_ADDRESS_VDD )},
-	{	LNILKEY, LNILVAL}
-};
+LROT_BEGIN(tsl2561, NULL, 0)
+  LROT_FUNCENTRY( settiming, tsl2561_lua_settiming )
+  LROT_FUNCENTRY( getlux, tsl2561_lua_calclux )
+  LROT_FUNCENTRY( getrawchannels, tsl2561_lua_getchannels )
+  LROT_FUNCENTRY( init, tsl2561_init )
+  LROT_NUMENTRY( TSL2561_OK, TSL2561_ERROR_OK )
+  LROT_NUMENTRY( TSL2561_ERROR_I2CINIT, TSL2561_ERROR_I2CINIT )
+  LROT_NUMENTRY( TSL2561_ERROR_I2CBUSY, TSL2561_ERROR_I2CBUSY )
+  LROT_NUMENTRY( TSL2561_ERROR_NOINIT, TSL2561_ERROR_NOINIT )
+  LROT_NUMENTRY( TSL2561_ERROR_LAST, TSL2561_ERROR_LAST )
+  LROT_NUMENTRY( INTEGRATIONTIME_13MS, TSL2561_INTEGRATIONTIME_13MS )
+  LROT_NUMENTRY( INTEGRATIONTIME_101MS, TSL2561_INTEGRATIONTIME_101MS )
+  LROT_NUMENTRY( INTEGRATIONTIME_402MS, TSL2561_INTEGRATIONTIME_402MS )
+  LROT_NUMENTRY( GAIN_1X, TSL2561_GAIN_1X )
+  LROT_NUMENTRY( GAIN_16X, TSL2561_GAIN_16X )
+  LROT_NUMENTRY( PACKAGE_CS, TSL2561_PACKAGE_CS )
+  LROT_NUMENTRY( PACKAGE_T_FN_CL, TSL2561_PACKAGE_T_FN_CL )
+  LROT_NUMENTRY( ADDRESS_GND, TSL2561_ADDRESS_GND )
+  LROT_NUMENTRY( ADDRESS_FLOAT, TSL2561_ADDRESS_FLOAT )
+  LROT_NUMENTRY( ADDRESS_VDD, TSL2561_ADDRESS_VDD )
+LROT_END(tsl2561, NULL, 0)
 
-NODEMCU_MODULE(TSL2561, "tsl2561", tsl2561_map, NULL);
+
+NODEMCU_MODULE(TSL2561, "tsl2561", tsl2561, NULL);

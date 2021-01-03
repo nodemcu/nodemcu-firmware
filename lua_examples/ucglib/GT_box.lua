@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -9,11 +10,11 @@ function M.run()
 
     local x, y, w, h
     local m
-  
+
     disp:setColor(0, 0, 40, 80)
     disp:setColor(1, 60, 0, 40)
     disp:setColor(2, 128, 0, 140)
-    disp:setColor(3, 0, 128, 140) 
+    disp:setColor(3, 0, 128, 140)
     disp:drawGradientBox(0, 0, disp:getWidth(), disp:getHeight())
 
     disp:setColor(255, 255, 255)
@@ -31,7 +32,7 @@ function M.run()
       h = h + 10
       x = bit.rshift(lcg_rnd() * (disp:getWidth()-w), 8)
       y = bit.rshift(lcg_rnd() * (disp:getHeight()-h-20), 8)
-    
+
       disp:drawBox(x, y+20, w, h)
   end
 

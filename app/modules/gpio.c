@@ -5,9 +5,10 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "task/task.h"
 #include "user_interface.h"
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <string.h>
 #include "gpio.h"
 #include "hw_timer.h"
 
@@ -58,7 +59,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 
     while (needs_callback)  {
       // Note that the interrupt level only modifies 'seen' and
-      // the base level only modifies 'reported'. 
+      // the base level only modifies 'reported'.
 
       // Do the actual callback
       lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
@@ -76,8 +77,9 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
         then = system_get_time() & 0x7fffffff;
       }
 
-      lua_call(L, 3, 0);
-    } 
+      if(luaL_pcallx(L, 3, 0) != LUA_OK)
+        return;
+    }
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Level triggered -- re-enable the callback
@@ -105,10 +107,10 @@ static int lgpio_trig( lua_State* L )
     gpio_cb_ref[pin] = LUA_NOREF;
 
   } else if (lua_gettop(L)==2 && old_pin_ref != LUA_NOREF) {
-    // keep the old one if no callback 
+    // keep the old one if no callback
     old_pin_ref = LUA_NOREF;
 
-  } else if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  } else if (lua_isfunction(L, 3)) {
     // set up the new callback if present
     lua_pushvalue(L, 3);
     gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -154,7 +156,7 @@ static int lgpio_mode( lua_State* L )
 
 NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
 NODE_DBG("Pin data at mode: %d %08x, %d %d %d, %08x\n",
-          pin, pin_mux[pin], pin_num[pin], pin_func[pin], 
+          pin, pin_mux[pin], pin_num[pin], pin_func[pin],
 #ifdef GPIO_INTERRUPT_ENABLE
           pin_int_type[pin], gpio_cb_ref[pin]
 #else
@@ -229,17 +231,14 @@ static void seroutasync_done (task_param_t arg)
 {
   lua_State *L = lua_getstate();
   if (serout.delay_table) {
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
   if (serout.lua_done_ref != LUA_NOREF) {
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     serout.lua_done_ref = LUA_NOREF;
-    if (lua_pcall(L, 0, 0, 0)) {
-      // Uncaught Error. Print instead of sudden reset
-      luaL_error(L, "error: %s", lua_tostring(L, -1));
-    }
+    luaL_pcallx(L, 0, 0);
   }
 }
 
@@ -277,7 +276,7 @@ static int lgpio_serout( lua_State* L )
   }
 
   if (serout.delay_table) {
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
 
@@ -303,7 +302,7 @@ static int lgpio_serout( lua_State* L )
     serout.index = 0;
     seroutasync_cb(0);
   } else { // sync version for sub-50 µs resolution & total duration < 15 mSec
-    do { 
+    do {
       for( serout.index = 0;serout.index < serout.tablelen; serout.index++ ){
         NODE_DBG("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", serout.repeats, serout.index, serout.level, serout.pin, serout.tablelen, serout.delay_table[serout.index], system_get_time()); // timings is delayed for short timings when debug output is enabled
         GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[serout.pin]), serout.level);
@@ -311,7 +310,7 @@ static int lgpio_serout( lua_State* L )
         delayMicroseconds(serout.delay_table[serout.index]);
       }
     } while (serout.repeats--);
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
   return 0;
@@ -319,32 +318,32 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 #ifdef LUA_USE_MODULES_GPIO_PULSE
-extern const LUA_REG_TYPE gpio_pulse_map[];
+extern LROT_TABLE(gpio_pulse);
 extern int gpio_pulse_init(lua_State *);
 #endif
 
 // Module function map
-static const LUA_REG_TYPE gpio_map[] = {
-  { LSTRKEY( "mode" ),   LFUNCVAL( lgpio_mode ) },
-  { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
-  { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
-  { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
+LROT_BEGIN(gpio, NULL, 0)
+  LROT_FUNCENTRY( mode, lgpio_mode )
+  LROT_FUNCENTRY( read, lgpio_read )
+  LROT_FUNCENTRY( write, lgpio_write )
+  LROT_FUNCENTRY( serout, lgpio_serout )
 #ifdef LUA_USE_MODULES_GPIO_PULSE
-  { LSTRKEY( "pulse" ),  LROVAL( gpio_pulse_map ) }, //declared in gpio_pulse.c
+  LROT_TABENTRY( pulse, gpio_pulse )
 #endif
 #ifdef GPIO_INTERRUPT_ENABLE
-  { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
-  { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
+  LROT_FUNCENTRY( trig, lgpio_trig )
+  LROT_NUMENTRY( INT, INTERRUPT )
 #endif
-  { LSTRKEY( "OUTPUT" ),    LNUMVAL( OUTPUT ) },
-  { LSTRKEY( "OPENDRAIN" ), LNUMVAL( OPENDRAIN ) },
-  { LSTRKEY( "INPUT" ),     LNUMVAL( INPUT ) },
-  { LSTRKEY( "HIGH" ),      LNUMVAL( HIGH ) },
-  { LSTRKEY( "LOW" ),       LNUMVAL( LOW ) },
-  { LSTRKEY( "FLOAT" ),     LNUMVAL( FLOAT ) },
-  { LSTRKEY( "PULLUP" ),    LNUMVAL( PULLUP ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY( OUTPUT, OUTPUT )
+  LROT_NUMENTRY( OPENDRAIN, OPENDRAIN )
+  LROT_NUMENTRY( INPUT, INPUT )
+  LROT_NUMENTRY( HIGH, HIGH )
+  LROT_NUMENTRY( LOW, LOW )
+  LROT_NUMENTRY( FLOAT, FLOAT )
+  LROT_NUMENTRY( PULLUP, PULLUP )
+LROT_END (gpio, NULL, 0)
+
 
 int luaopen_gpio( lua_State *L ) {
 #ifdef LUA_USE_MODULES_GPIO_PULSE
@@ -362,4 +361,4 @@ int luaopen_gpio( lua_State *L ) {
   return 0;
 }
 
-NODEMCU_MODULE(GPIO, "gpio", gpio_map, luaopen_gpio);
+NODEMCU_MODULE(GPIO, "gpio", gpio, luaopen_gpio);

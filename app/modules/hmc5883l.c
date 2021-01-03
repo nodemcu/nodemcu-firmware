@@ -6,8 +6,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 static const uint32_t hmc5883_i2c_id = 0;
 static const uint8_t hmc5883_i2c_addr = 0x1E;
@@ -57,23 +57,6 @@ static int hmc5883_setup(lua_State* L) {
     return 0;
 }
 
-static int hmc5883_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("hmc5883l.init() is replaced by hmc5883l.setup()", "in the next version");
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(hmc5883_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return hmc5883_setup(L);
-}
-
 static int hmc5883_read(lua_State* L) {
 
     uint8_t data[6];
@@ -90,7 +73,7 @@ static int hmc5883_read(lua_State* L) {
     for (i=0; i<5; i++) {
 	data[i] = platform_i2c_recv_byte(hmc5883_i2c_id, 1);
     }
-    
+
     data[5] = platform_i2c_recv_byte(hmc5883_i2c_id, 0);
 
     platform_i2c_send_stop(hmc5883_i2c_id);
@@ -106,12 +89,10 @@ static int hmc5883_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE hmc5883_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( hmc5883_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( hmc5883_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( hmc5883_init )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(hmc5883, NULL, 0)
+  LROT_FUNCENTRY( read, hmc5883_read )
+  LROT_FUNCENTRY( setup, hmc5883_setup )
+LROT_END(hmc5883, NULL, 0)
 
-NODEMCU_MODULE(HMC5883L, "hmc5883l", hmc5883_map, NULL);
+
+NODEMCU_MODULE(HMC5883L, "hmc5883l", hmc5883, NULL);

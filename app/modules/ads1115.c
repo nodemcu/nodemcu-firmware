@@ -8,7 +8,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "osapi.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 
 //***************************************************************************
@@ -105,6 +105,8 @@
 
 #define ADS1115_DEFAULT_CONFIG_REG  (0x8583)    // Config register value after reset
 
+// #define ADS1115_INCLUDE_TEST_FUNCTION
+
 //***************************************************************************
 
 static const uint8_t ads1115_i2c_id = 0;
@@ -155,7 +157,8 @@ static uint16_t read_reg(uint8_t ads_addr, uint8_t reg) {
 }
 
 // convert ADC value to voltage corresponding to PGA settings
-static double get_volt(uint16_t gain, uint16_t value) {
+// returned voltage is in milivolts
+static double get_mvolt(uint16_t gain, uint16_t value) {
 
     double volt = 0;
 
@@ -248,10 +251,7 @@ static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
     if (config_read != ADS1115_DEFAULT_CONFIG_REG) {
         return luaL_error(L, "unexpected config value (%p) please reset device before calling this function", config_read);
     }
-    ads_ctrl_ud_t *ads_ctrl = (ads_ctrl_ud_t *)lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
-    if (NULL == ads_ctrl) {
-        return luaL_error(L, "ads1115 malloc: out of memory");
-    }
+    ads_ctrl_ud_t *ads_ctrl = lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
     luaL_getmetatable(L, metatable_name);
     lua_setmetatable(L, -2);
     ads_ctrl->chip_id = chip_id;
@@ -394,7 +394,7 @@ static int ads1115_lua_setting(lua_State *L) {
 }
 
 // Read the conversion register from the ADC device
-// Lua:     ads1115.device:startread(function(volt, voltdec, adc) print(volt,voltdec,adc) end)
+// Lua:     ads1115.device:startread(function(volt, voltdec, adc, sign) print(volt,voltdec,adc,sign) end)
 static int ads1115_lua_startread(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
 
@@ -411,7 +411,7 @@ static int ads1115_lua_startread(lua_State *L) {
         return 0;
     }
 
-    luaL_argcheck(L, (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION), 2, "Must be function");
+    luaL_argcheck(L, lua_isfunction(L, 2), 2, "Must be function");
     lua_pushvalue(L, 2);
     ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -455,45 +455,69 @@ static int ads1115_lua_startread(lua_State *L) {
     return 0;
 }
 
+static void read_common(ads_ctrl_ud_t * ads_ctrl, uint16_t raw, lua_State *L) {
+    double mvolt = get_mvolt(ads_ctrl->gain, raw);
+#ifdef LUA_NUMBER_INTEGRAL
+    int sign;
+    if (mvolt == 0) {
+        sign = 0;
+    } else if (mvolt > 0) {
+        sign = 1;
+    } else {
+        sign = -1;
+    }
+    int uvolt;
+    if (sign >= 0) {
+        uvolt = (int)((mvolt - (int)mvolt) * 1000 + 0.5);
+    } else {
+        uvolt = -(int)((mvolt - (int)mvolt) * 1000 - 0.5);
+        mvolt = -mvolt;
+    }
+    lua_pushnumber(L, mvolt);
+    lua_pushinteger(L, uvolt);
+    lua_pushinteger(L, raw);
+    lua_pushinteger(L, sign);
+#else
+    lua_pushnumber(L, mvolt);
+    lua_pushnil(L);
+    lua_pushinteger(L, raw);
+    lua_pushnil(L);
+#endif
+}
+
+
 // adc conversion timer callback
 static int ads1115_lua_readoutdone(void * param) {
     ads_ctrl_ud_t * ads_ctrl = (ads_ctrl_ud_t *)param;
-
-    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
-    double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
-    int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
-    ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
-
+    uint16_t raw = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
     lua_State *L = lua_getstate();
     os_timer_disarm(&ads_ctrl->timer);
-
     lua_rawgeti(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     ads_ctrl->timer_ref = LUA_NOREF;
-
-    lua_pushnumber(L, ads1115_volt);
-    lua_pushinteger(L, ads1115_voltdec);
-    lua_pushinteger(L, ads1115_conversion);
-
-    lua_call(L, 3, 0);
+    read_common(ads_ctrl, raw, L);
+    luaL_pcallx(L, 4, 0);
 }
 
 // Read the conversion register from the ADC device
-// Lua:     volt,voltdec,adc = ads1115.device:read()
+// Lua:     volt,voltdec,adc,sign = ads1115.device:read()
 static int ads1115_lua_read(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
-
-    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
-    double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
-    int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
-    ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
-
-    lua_pushnumber(L, ads1115_volt);
-    lua_pushinteger(L, ads1115_voltdec);
-    lua_pushinteger(L, ads1115_conversion);
-
-    return 3;
+    uint16_t raw = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
+    read_common(ads_ctrl, raw, L);
+    return 4;
 }
+
+#ifdef ADS1115_INCLUDE_TEST_FUNCTION
+// this function simulates conversion using raw value provided as argument
+// Lua:  volt,volt_dec,adc,sign = ads1115.test_volt_conversion(-1)
+static int test_volt_conversion(lua_State *L) {
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
+    uint16_t raw = luaL_checkinteger(L, 2);
+    read_common(ads_ctrl, raw, L);
+    return 4;
+}
+#endif
 
 static int ads1115_lua_delete(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
@@ -504,68 +528,68 @@ static int ads1115_lua_delete(lua_State *L) {
     return 0;
 }
 
-static const LUA_REG_TYPE ads1115_map[] = {
+LROT_BEGIN(ads1115, NULL, 0)
+  LROT_FUNCENTRY( ads1115, ads1115_lua_register_1115 )
+  LROT_FUNCENTRY( ads1015, ads1115_lua_register_1015 )
+  LROT_FUNCENTRY( reset, ads1115_lua_reset )
+  LROT_NUMENTRY( ADDR_GND, ADS1115_I2C_ADDR_GND )
+  LROT_NUMENTRY( ADDR_VDD, ADS1115_I2C_ADDR_VDD )
+  LROT_NUMENTRY( ADDR_SDA, ADS1115_I2C_ADDR_SDA )
+  LROT_NUMENTRY( ADDR_SCL, ADS1115_I2C_ADDR_SCL )
+  LROT_NUMENTRY( SINGLE_SHOT, ADS1115_MODE_SINGLE )
+  LROT_NUMENTRY( CONTINUOUS, ADS1115_MODE_CONTIN )
+  LROT_NUMENTRY( DIFF_0_1, ADS1115_MUX_DIFF_0_1 )
+  LROT_NUMENTRY( DIFF_0_3, ADS1115_MUX_DIFF_0_3 )
+  LROT_NUMENTRY( DIFF_1_3, ADS1115_MUX_DIFF_1_3 )
+  LROT_NUMENTRY( DIFF_2_3, ADS1115_MUX_DIFF_2_3 )
+  LROT_NUMENTRY( SINGLE_0, ADS1115_MUX_SINGLE_0 )
+  LROT_NUMENTRY( SINGLE_1, ADS1115_MUX_SINGLE_1 )
+  LROT_NUMENTRY( SINGLE_2, ADS1115_MUX_SINGLE_2 )
+  LROT_NUMENTRY( SINGLE_3, ADS1115_MUX_SINGLE_3 )
+  LROT_NUMENTRY( GAIN_6_144V, ADS1115_PGA_6_144V )
+  LROT_NUMENTRY( GAIN_4_096V, ADS1115_PGA_4_096V )
+  LROT_NUMENTRY( GAIN_2_048V, ADS1115_PGA_2_048V )
+  LROT_NUMENTRY( GAIN_1_024V, ADS1115_PGA_1_024V )
+  LROT_NUMENTRY( GAIN_0_512V, ADS1115_PGA_0_512V )
+  LROT_NUMENTRY( GAIN_0_256V, ADS1115_PGA_0_256V )
+  LROT_NUMENTRY( DR_8SPS, ADS1115_DR_8SPS )
+  LROT_NUMENTRY( DR_16SPS, ADS1115_DR_16SPS )
+  LROT_NUMENTRY( DR_32SPS, ADS1115_DR_32SPS )
+  LROT_NUMENTRY( DR_64SPS, ADS1115_DR_64SPS )
+  LROT_NUMENTRY( DR_128SPS, ADS1115_DR_128SPS )
+  LROT_NUMENTRY( DR_250SPS, ADS1115_DR_250SPS )
+  LROT_NUMENTRY( DR_475SPS, ADS1115_DR_475SPS )
+  LROT_NUMENTRY( DR_490SPS, ADS1115_DR_490SPS )
+  LROT_NUMENTRY( DR_860SPS, ADS1115_DR_860SPS )
+  LROT_NUMENTRY( DR_920SPS, ADS1115_DR_920SPS )
+  LROT_NUMENTRY( DR_1600SPS, ADS1115_DR_1600SPS )
+  LROT_NUMENTRY( DR_2400SPS, ADS1115_DR_2400SPS )
+  LROT_NUMENTRY( DR_3300SPS, ADS1115_DR_3300SPS )
+  LROT_NUMENTRY( CONV_RDY_1, ADS1115_CQUE_1CONV )
+  LROT_NUMENTRY( CONV_RDY_2, ADS1115_CQUE_2CONV )
+  LROT_NUMENTRY( CONV_RDY_4, ADS1115_CQUE_4CONV )
+  LROT_NUMENTRY( COMP_1CONV, ADS1115_CQUE_1CONV )
+  LROT_NUMENTRY( COMP_2CONV, ADS1115_CQUE_2CONV )
+  LROT_NUMENTRY( COMP_4CONV, ADS1115_CQUE_4CONV )
+  LROT_NUMENTRY( CMODE_TRAD, ADS1115_CMODE_TRAD )
+  LROT_NUMENTRY( CMODE_WINDOW, ADS1115_CMODE_WINDOW )
+LROT_END(ads1115, NULL, 0)
 
-    {   LSTRKEY( "ads1115" ),       LFUNCVAL(ads1115_lua_register_1115) },
-    {   LSTRKEY( "ads1015" ),       LFUNCVAL(ads1115_lua_register_1015) },
-    {   LSTRKEY( "reset" ),         LFUNCVAL(ads1115_lua_reset)     },
-    {   LSTRKEY( "ADDR_GND" ),      LNUMVAL(ADS1115_I2C_ADDR_GND)   },
-    {   LSTRKEY( "ADDR_VDD" ),      LNUMVAL(ADS1115_I2C_ADDR_VDD)   },
-    {   LSTRKEY( "ADDR_SDA" ),      LNUMVAL(ADS1115_I2C_ADDR_SDA)   },
-    {   LSTRKEY( "ADDR_SCL" ),      LNUMVAL(ADS1115_I2C_ADDR_SCL)   },
-    {   LSTRKEY( "SINGLE_SHOT" ),   LNUMVAL(ADS1115_MODE_SINGLE)    },
-    {   LSTRKEY( "CONTINUOUS" ),    LNUMVAL(ADS1115_MODE_CONTIN)    },
-    {   LSTRKEY( "DIFF_0_1" ),      LNUMVAL(ADS1115_MUX_DIFF_0_1)   },
-    {   LSTRKEY( "DIFF_0_3" ),      LNUMVAL(ADS1115_MUX_DIFF_0_3)   },
-    {   LSTRKEY( "DIFF_1_3" ),      LNUMVAL(ADS1115_MUX_DIFF_1_3)   },
-    {   LSTRKEY( "DIFF_2_3" ),      LNUMVAL(ADS1115_MUX_DIFF_2_3)   },
-    {   LSTRKEY( "SINGLE_0" ),      LNUMVAL(ADS1115_MUX_SINGLE_0)   },
-    {   LSTRKEY( "SINGLE_1" ),      LNUMVAL(ADS1115_MUX_SINGLE_1)   },
-    {   LSTRKEY( "SINGLE_2" ),      LNUMVAL(ADS1115_MUX_SINGLE_2)   },
-    {   LSTRKEY( "SINGLE_3" ),      LNUMVAL(ADS1115_MUX_SINGLE_3)   },
-    {   LSTRKEY( "GAIN_6_144V" ),   LNUMVAL(ADS1115_PGA_6_144V)     },
-    {   LSTRKEY( "GAIN_4_096V" ),   LNUMVAL(ADS1115_PGA_4_096V)     },
-    {   LSTRKEY( "GAIN_2_048V" ),   LNUMVAL(ADS1115_PGA_2_048V)     },
-    {   LSTRKEY( "GAIN_1_024V" ),   LNUMVAL(ADS1115_PGA_1_024V)     },
-    {   LSTRKEY( "GAIN_0_512V" ),   LNUMVAL(ADS1115_PGA_0_512V)     },
-    {   LSTRKEY( "GAIN_0_256V" ),   LNUMVAL(ADS1115_PGA_0_256V)     },
-    {   LSTRKEY( "DR_8SPS" ),       LNUMVAL(ADS1115_DR_8SPS)        },
-    {   LSTRKEY( "DR_16SPS" ),      LNUMVAL(ADS1115_DR_16SPS)       },
-    {   LSTRKEY( "DR_32SPS" ),      LNUMVAL(ADS1115_DR_32SPS)       },
-    {   LSTRKEY( "DR_64SPS" ),      LNUMVAL(ADS1115_DR_64SPS)       },
-    {   LSTRKEY( "DR_128SPS" ),     LNUMVAL(ADS1115_DR_128SPS)      },
-    {   LSTRKEY( "DR_250SPS" ),     LNUMVAL(ADS1115_DR_250SPS)      },
-    {   LSTRKEY( "DR_475SPS" ),     LNUMVAL(ADS1115_DR_475SPS)      },
-    {   LSTRKEY( "DR_490SPS" ),     LNUMVAL(ADS1115_DR_490SPS)      },
-    {   LSTRKEY( "DR_860SPS" ),     LNUMVAL(ADS1115_DR_860SPS)      },
-    {   LSTRKEY( "DR_920SPS" ),     LNUMVAL(ADS1115_DR_920SPS)      },
-    {   LSTRKEY( "DR_1600SPS" ),    LNUMVAL(ADS1115_DR_1600SPS)     },
-    {   LSTRKEY( "DR_2400SPS" ),    LNUMVAL(ADS1115_DR_2400SPS)     },
-    {   LSTRKEY( "DR_3300SPS" ),    LNUMVAL(ADS1115_DR_3300SPS)     },
-    {   LSTRKEY( "CONV_RDY_1" ),    LNUMVAL(ADS1115_CQUE_1CONV)     },
-    {   LSTRKEY( "CONV_RDY_2" ),    LNUMVAL(ADS1115_CQUE_2CONV)     },
-    {   LSTRKEY( "CONV_RDY_4" ),    LNUMVAL(ADS1115_CQUE_4CONV)     },
-    {   LSTRKEY( "COMP_1CONV" ),    LNUMVAL(ADS1115_CQUE_1CONV)     },
-    {   LSTRKEY( "COMP_2CONV" ),    LNUMVAL(ADS1115_CQUE_2CONV)     },
-    {   LSTRKEY( "COMP_4CONV" ),    LNUMVAL(ADS1115_CQUE_4CONV)     },
-    {   LSTRKEY( "CMODE_TRAD"),     LNUMVAL(ADS1115_CMODE_TRAD)     },
-    {   LSTRKEY( "CMODE_WINDOW"),   LNUMVAL(ADS1115_CMODE_WINDOW)   },
-    {   LNILKEY, LNILVAL                                            }
-};
 
-static const LUA_REG_TYPE ads1115_instance_map[] = {
-    {   LSTRKEY( "setting" ),       LFUNCVAL(ads1115_lua_setting)   },
-    {   LSTRKEY( "startread" ),     LFUNCVAL(ads1115_lua_startread) },
-    {   LSTRKEY( "read" ),          LFUNCVAL(ads1115_lua_read)      },
-    {   LSTRKEY( "__index" ),       LROVAL(ads1115_instance_map)    },
-    {   LSTRKEY( "__gc" ),          LFUNCVAL(ads1115_lua_delete)    },
-    {   LNILKEY, LNILVAL                                            }
-};
-
+LROT_BEGIN(ads1115_instance, NULL, LROT_MASK_GC_INDEX)
+  LROT_TABENTRY(  __index  , ads1115_instance )
+  LROT_FUNCENTRY( __gc, ads1115_lua_delete )
+  LROT_FUNCENTRY( setting, ads1115_lua_setting )
+  LROT_FUNCENTRY( startread, ads1115_lua_startread )
+  LROT_FUNCENTRY( read, ads1115_lua_read )
+#ifdef ADS1115_INCLUDE_TEST_FUNCTION
+  LROT_FUNCENTRY( test_volt_conversion, test_volt_conversion )
+#endif
+LROT_END(ads1115_instance, NULL, LROT_MASK_GC_INDEX)
 
 int luaopen_ads1115(lua_State *L) {
-    luaL_rometatable(L, metatable_name, (void *)ads1115_instance_map);
+    luaL_rometatable(L, metatable_name, LROT_TABLEREF(ads1115_instance));
     return 0;
 }
 
-NODEMCU_MODULE(ADS1115, "ads1115", ads1115_map, luaopen_ads1115);
+NODEMCU_MODULE(ADS1115, "ads1115", ads1115, luaopen_ads1115);

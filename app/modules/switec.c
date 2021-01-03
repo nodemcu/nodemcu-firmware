@@ -1,6 +1,6 @@
 /*
  * Module for interfacing with Switec instrument steppers (and
- * similar devices). These are the steppers that are used in automotive 
+ * similar devices). These are the steppers that are used in automotive
  * instrument panels and the like. Run off 5 volts at low current.
  *
  * Code inspired by:
@@ -16,7 +16,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "task/task.h"
 #include "driver/switec.h"
 
@@ -25,29 +25,29 @@
 static int stopped_callback[SWITEC_CHANNEL_COUNT] = { LUA_NOREF, LUA_NOREF, LUA_NOREF };
 static task_handle_t tasknumber;
 
-static void callback_free(lua_State* L, unsigned int id) 
+static void callback_free(lua_State* L, unsigned int id)
 {
   luaL_unref(L, LUA_REGISTRYINDEX, stopped_callback[id]);
   stopped_callback[id] = LUA_NOREF;
 }
 
-static void callback_set(lua_State* L, unsigned int id, int argNumber) 
+static void callback_set(lua_State* L, unsigned int id, int argNumber)
 {
-  if (lua_type(L, argNumber) == LUA_TFUNCTION || lua_type(L, argNumber) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, argNumber)) {
     lua_pushvalue(L, argNumber);  // copy argument (func) to the top of stack
     callback_free(L, id);
     stopped_callback[id] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 }
 
-static void callback_execute(lua_State* L, unsigned int id) 
+static void callback_execute(lua_State* L, unsigned int id)
 {
   if (stopped_callback[id] != LUA_NOREF) {
     int callback = stopped_callback[id];
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
     callback_free(L, id);
 
-    lua_call(L, 0, 0);
+    luaL_pcallx(L, 0, 0);
   }
 }
 
@@ -60,7 +60,7 @@ int platform_switec_exists( unsigned int id )
 static int lswitec_setup( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int pin[4];
@@ -88,21 +88,21 @@ static int lswitec_setup( lua_State* L )
   if (switec_setup(id, pin, deg_per_sec, tasknumber)) {
     return luaL_error(L, "Unable to setup stepper.");
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: close( id )
 static int lswitec_close( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   callback_free(L, id);
   if (switec_close( id )) {
     return luaL_error( L, "Unable to close stepper." );
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: reset( id )
@@ -114,14 +114,14 @@ static int lswitec_reset( lua_State* L )
   if (switec_reset( id )) {
     return luaL_error( L, "Unable to reset stepper." );
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: moveto( id, pos [, cb] )
 static int lswitec_moveto( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int pos;
@@ -143,7 +143,7 @@ static int lswitec_moveto( lua_State* L )
 static int lswitec_getpos( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int32_t pos;
@@ -152,8 +152,8 @@ static int lswitec_getpos( lua_State* L )
   if (switec_getpos( id, &pos, &dir, &target )) {
     return luaL_error( L, "Unable to get position." );
   }
-  lua_pushnumber(L, pos);
-  lua_pushnumber(L, dir);
+  lua_pushinteger(L, pos);
+  lua_pushinteger(L, dir);
   return 2;
 }
 
@@ -177,7 +177,7 @@ static int lswitec_dequeue(lua_State* L)
   return 0;
 }
 
-static void lswitec_task(os_param_t param, uint8_t prio) 
+static void lswitec_task(os_param_t param, uint8_t prio)
 {
   (void) param;
   (void) prio;
@@ -196,17 +196,17 @@ static int switec_open(lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE switec_map[] = {
-  { LSTRKEY( "setup" ),    LFUNCVAL( lswitec_setup ) },
-  { LSTRKEY( "close" ),    LFUNCVAL( lswitec_close ) },
-  { LSTRKEY( "reset" ),    LFUNCVAL( lswitec_reset ) },
-  { LSTRKEY( "moveto" ),   LFUNCVAL( lswitec_moveto) },
-  { LSTRKEY( "getpos" ),   LFUNCVAL( lswitec_getpos) },
+LROT_BEGIN(switec, NULL, 0)
+  LROT_FUNCENTRY( setup, lswitec_setup )
+  LROT_FUNCENTRY( close, lswitec_close )
+  LROT_FUNCENTRY( reset, lswitec_reset )
+  LROT_FUNCENTRY( moveto, lswitec_moveto )
+  LROT_FUNCENTRY( getpos, lswitec_getpos )
 #ifdef SQITEC_DEBUG
-  { LSTRKEY( "dequeue" ),  LFUNCVAL( lswitec_dequeue) },
+  LROT_FUNCENTRY( dequeue, lswitec_dequeue )
 #endif
 
-  { LNILKEY, LNILVAL }
-};
+LROT_END(switec, NULL, 0)
 
-NODEMCU_MODULE(SWITEC, "switec", switec_map, switec_open);
+
+NODEMCU_MODULE(SWITEC, "switec", switec, switec_open);

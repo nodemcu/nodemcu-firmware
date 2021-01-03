@@ -49,13 +49,13 @@
  * The lwIP version of the resolver also adds a non-blocking version of
  * gethostbyname() that will work with a raw API application. This function
  * checks for an IP address string first and converts it if it is valid.
- * gethostbyname() then does a dns_lookup() to see if the name is 
- * already in the table. If so, the IP is returned. If not, a query is 
+ * gethostbyname() then does a dns_lookup() to see if the name is
+ * already in the table. If so, the IP is returned. If not, a query is
  * issued and the function returns with a ERR_INPROGRESS status. The app
  * using the dns client must then go into a waiting state.
  *
  * Once a hostname has been resolved (or found to be non-existent),
- * the resolver code calls a specified callback function (which 
+ * the resolver code calls a specified callback function (which
  * must be implemented by the module that uses the resolver).
  */
 
@@ -177,7 +177,7 @@ struct dns_table_entry {
   u8_t  seqno;
   u8_t  err;
   u32_t ttl;
-  char name[DNS_MAX_NAME_LENGTH];
+  char *name;
   ip_addr_t ipaddr;
   /* pointer to callback on DNS query done */
   dns_found_callback found;
@@ -238,7 +238,7 @@ dns_init()
   ip_addr_t dnsserver;
 
 //  dns_payload = (u8_t *)LWIP_MEM_ALIGN(dns_payload_buffer);
-  
+
   /* initialize default DNS server address */
   DNS_SERVER_ADDRESS(&dnsserver);
 
@@ -660,7 +660,7 @@ dns_check_entry(u8_t i)
       pEntry->numdns  = 0;
       pEntry->tmr     = 1;
       pEntry->retries = 0;
-      
+
       /* send DNS packet for this entry */
       err = dns_send(pEntry->numdns, pEntry->name, i);
       if (err != ERR_OK) {
@@ -773,7 +773,7 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
     goto memerr;
   }
 
-  /* copy dns payload inside static buffer for processing */ 
+  /* copy dns payload inside static buffer for processing */
   if (pbuf_copy_partial(p, dns_payload, p->tot_len, 0) == p->tot_len) {
     /* The ID in the DNS header should be our entry into the name table. */
     hdr = (struct dns_hdr*)dns_payload;
@@ -924,11 +924,14 @@ dns_enqueue(const char *name, dns_found_callback found, void *callback_arg)
   LWIP_DEBUGF(DNS_DEBUG, ("dns_enqueue: \"%s\": use DNS entry %"U16_F"\n", name, (u16_t)(i)));
 
   /* fill the entry */
+  namelen = LWIP_MIN(os_strlen(name), DNS_MAX_NAME_LENGTH-1);
+  if ((pEntry->name = (char *) mem_realloc(pEntry->name, namelen+1)) == NULL) {
+    return ERR_MEM;
+  }
   pEntry->state = DNS_STATE_NEW;
   pEntry->seqno = dns_seqno++;
   pEntry->found = found;
   pEntry->arg   = callback_arg;
-  namelen = LWIP_MIN(os_strlen(name), DNS_MAX_NAME_LENGTH-1);
   MEMCPY(pEntry->name, name, namelen);
   pEntry->name[namelen] = 0;
 

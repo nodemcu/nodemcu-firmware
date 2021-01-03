@@ -106,29 +106,6 @@ static int am2320_setup(lua_State* L)
     return 3;
 }
 
-static int am2320_init(lua_State* L)
-{
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("am2320.init() is replaced by am2320.setup()", "in the next version");
-
-    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-        return luaL_error(L, "wrong arg range");
-    }
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    if (scl == 0 || sda == 0) {
-        return luaL_error(L, "no i2c for D0");
-    }
-
-    platform_i2c_setup(am2320_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return am2320_setup(L);
-}
-
 static int am2320_read(lua_State* L)
 {
     int ret;
@@ -138,7 +115,7 @@ static int am2320_read(lua_State* L)
 	uint16_t rh;
 	uint16_t temp;
     } nfo;
- 
+
     ret = _read(am2320_i2c_id, &nfo, sizeof(nfo)-2, 0x00);
     if(ret)
         return luaL_error(L, "transmission error");
@@ -152,12 +129,10 @@ static int am2320_read(lua_State* L)
     return 2;
 }
 
-static const LUA_REG_TYPE am2320_map[] = {
-    { LSTRKEY( "read" ),  LFUNCVAL( am2320_read )},
-    { LSTRKEY( "setup" ), LFUNCVAL( am2320_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),  LFUNCVAL( am2320_init )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(am2320, NULL, 0)
+  LROT_FUNCENTRY( read, am2320_read )
+  LROT_FUNCENTRY( setup, am2320_setup )
+LROT_END(am2320, NULL, 0)
 
-NODEMCU_MODULE(AM2320, "am2320", am2320_map, NULL);
+
+NODEMCU_MODULE(AM2320, "am2320", am2320, NULL);

@@ -2,7 +2,7 @@
 #ifndef __PIN_MAP_H__
 #define __PIN_MAP_H__
 
-#include "c_types.h"
+#include <stdint.h>
 #include "user_config.h"
 #include "gpio.h"
 

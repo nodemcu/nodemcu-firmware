@@ -1,7 +1,9 @@
 #ifndef _MECH_H_
 #define _MECH_H_
 
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 typedef struct
 {

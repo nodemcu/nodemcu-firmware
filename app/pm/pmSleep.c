@@ -1,7 +1,9 @@
-#include "pmSleep.h"
+#include <pm/pmSleep.h>
 #ifdef  PMSLEEP_ENABLE
 #define STRINGIFY_VAL(x) #x
 #define STRINGIFY(x) STRINGIFY_VAL(x)
+
+//TODO: figure out why timed light_sleep doesn't work
 
 //holds duration error string
 //uint32 PMSLEEP_SLEEP_MAX_TIME=FPM_SLEEP_MAX_TIME-1;
@@ -28,17 +30,18 @@ static void wifi_suspended_timer_cb(int arg);
 
 /*  INTERNAL FUNCTIONS  */
 
-#include "swTimer/swTimer.h"
 static void suspend_all_timers(void){
-#ifdef ENABLE_TIMER_SUSPEND
-  swtmr_suspend(NULL);
+#ifdef TIMER_SUSPEND_ENABLE
+  extern void swtmr_suspend_timers();
+  swtmr_suspend_timers();
 #endif
   return;
 }
 
 static void resume_all_timers(void){
-#ifdef ENABLE_TIMER_SUSPEND
-  swtmr_resume(NULL);
+#ifdef TIMER_SUSPEND_ENABLE
+  extern void swtmr_resume_timers();
+  swtmr_resume_timers();
 #endif
   return;
 }
@@ -49,7 +52,7 @@ static void null_mode_check_timer_cb(void* arg){
     if(current_config.sleep_mode == LIGHT_SLEEP_T){
       if((READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0 &&
          (READ_PERI_REG(UART_STATUS(1)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0){
-        ets_timer_disarm(&null_mode_check_timer);
+        os_timer_disarm(&null_mode_check_timer);
         suspend_all_timers();
         //Ensure UART 0/1 TX FIFO is clear
         SET_PERI_REG_MASK(UART_CONF0(0), UART_TXFIFO_RST);//RESET FIFO
@@ -71,6 +74,8 @@ static void null_mode_check_timer_cb(void* arg){
         PMSLEEP_DBG("wifi_fpm_do_sleep success, starting wifi_suspend_test timer");
         os_timer_disarm(&wifi_suspended_test_timer);
         os_timer_setfn(&wifi_suspended_test_timer, (os_timer_func_t*)wifi_suspended_timer_cb, NULL);
+          //The callback wifi_suspended_timer_cb detects when the esp8266 has successfully entered modem_sleep and executes the developer's suspend_cb.
+          //Since this timer is only used in modem_sleep and will never be active outside of modem_sleep, it is unnecessary to register the cb with SWTIMER_REG_CB.
         os_timer_arm(&wifi_suspended_test_timer, 1, 1);
       }
       else{ // This should never happen. if it does, return the value for error reporting
@@ -78,7 +83,7 @@ static void null_mode_check_timer_cb(void* arg){
         PMSLEEP_ERR("wifi_fpm_do_sleep returned %d", retval_wifi_fpm_do_sleep);
       }
     }
-    ets_timer_disarm(&null_mode_check_timer);
+    os_timer_disarm(&null_mode_check_timer);
     return;
   }
 }
@@ -155,9 +160,9 @@ void pmSleep_execute_lua_cb(int* cb_ref){
   if (*cb_ref != LUA_NOREF){
     lua_State* L = lua_getstate(); // Get Lua main thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, *cb_ref); // Push resume callback onto the stack
-    lua_unref(L, *cb_ref); // Remove resume callback from registry
+    luaL_unref(L, LUA_REGISTRYINDEX, *cb_ref); // Remove resume callback from registry
     *cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
-    lua_call(L, 0, 0); // Execute resume callback
+    luaL_pcallx(L, 0, 0); // Execute resume callback
   }
 
 }
@@ -173,24 +178,24 @@ uint8 pmSleep_get_state(void){
 int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, int *suspend_lua_cb_ref, int *resume_lua_cb_ref){
   lua_Integer Linteger_tmp = 0;
 
-  lua_getfield(L, table_idx, "duration");
-  if( !lua_isnil(L, -1) ){  /* found? */
-    if( lua_isnumber(L, -1) ){
-      lua_Integer Linteger=luaL_checkinteger(L, -1);
-      luaL_argcheck(L,(((Linteger >= PMSLEEP_SLEEP_MIN_TIME) && (Linteger <= PMSLEEP_SLEEP_MAX_TIME)) ||
-          (Linteger == 0)), table_idx, PMSLEEP_DURATION_ERR_STR);
-      cfg->sleep_duration = (uint32)Linteger; // Get suspend duration
+  if( cfg->sleep_mode == MODEM_SLEEP_T ){ //WiFi suspend
+    lua_getfield(L, table_idx, "duration");
+    if( !lua_isnil(L, -1) ){  /* found? */
+      if( lua_isnumber(L, -1) ){
+        lua_Integer Linteger=luaL_checkinteger(L, -1);
+        luaL_argcheck(L,(((Linteger >= PMSLEEP_SLEEP_MIN_TIME) && (Linteger <= PMSLEEP_SLEEP_MAX_TIME)) ||
+            (Linteger == 0)), table_idx, PMSLEEP_DURATION_ERR_STR);
+        cfg->sleep_duration = (uint32)Linteger; // Get suspend duration
+      }
+      else{
+        return luaL_argerror( L, table_idx, "duration: must be number" );
+      }
     }
     else{
-      return luaL_argerror( L, table_idx, "duration: must be number" );
+      return luaL_argerror( L, table_idx, PMSLEEP_DURATION_ERR_STR );
     }
-  }
-  else{
-    return luaL_argerror( L, table_idx, PMSLEEP_DURATION_ERR_STR );
-  }
-  lua_pop(L, 1);
+    lua_pop(L, 1);
 
-  if( cfg->sleep_mode == MODEM_SLEEP_T ){ //WiFi suspend
     lua_getfield(L, table_idx, "suspend_cb");
     if( !lua_isnil(L, -1) ){  /* found? */
       if( lua_isfunction(L, -1) ){
@@ -204,7 +209,7 @@ int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, 
     lua_pop(L, 1);
   }
   else if (cfg->sleep_mode == LIGHT_SLEEP_T){ //CPU suspend
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
     lua_getfield(L, table_idx, "wake_pin");
     if( !lua_isnil(L, -1) ){  /* found? */
       if( lua_isnumber(L, -1) ){
@@ -216,9 +221,11 @@ int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, 
         return luaL_argerror( L, table_idx, "wake_pin: must be number" );
       }
     }
-    else if(cfg->sleep_duration == 0){
-      return luaL_argerror( L, table_idx, "wake_pin: must specify pin if sleep duration is indefinite" );
-    }
+    else{
+      return luaL_argerror( L, table_idx, "wake_pin: must specify pin" );
+//    else if(cfg->sleep_duration == 0){
+//      return luaL_argerror( L, table_idx, "wake_pin: must specify pin if sleep duration is indefinite" );
+  }
     lua_pop(L, 1);
 
     lua_getfield(L, table_idx, "int_type");
@@ -300,7 +307,7 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
   PMSLEEP_DBG("START");
 
   lua_State* L = lua_getstate();
-#ifndef ENABLE_TIMER_SUSPEND
+#ifndef TIMER_SUSPEND_ENABLE
   if(cfg->sleep_mode == LIGHT_SLEEP_T){
     luaL_error(L, "timer suspend API is disabled, light sleep unavailable");
     return;
@@ -336,7 +343,7 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
     wifi_fpm_open(); // Enable force sleep API
 
     if (cfg->sleep_mode == LIGHT_SLEEP_T){
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
       if(platform_gpio_exists(cfg->wake_pin) && cfg->wake_pin > 0){
         PMSLEEP_DBG("Wake-up pin is %d\t interrupt type is %d", cfg->wake_pin, cfg->int_type);
 
@@ -363,13 +370,14 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
 
     wifi_fpm_set_wakeup_cb(resume_cb); // Set resume C callback
 
-    c_memcpy(&current_config, cfg, sizeof(pmSleep_param_t));
+    memcpy(&current_config, cfg, sizeof(pmSleep_param_t));
     PMSLEEP_DBG("sleep duration is %d", current_config.sleep_duration);
 
-    //this timer intentionally bypasses the swtimer timer registration process
-    ets_timer_disarm(&null_mode_check_timer);
-    ets_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
-    ets_timer_arm_new(&null_mode_check_timer, 1, 1, 1);
+    os_timer_disarm(&null_mode_check_timer);
+    os_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
+      //The function null_mode_check_timer_cb checks that the esp8266 has successfully changed the opmode to NULL_MODE prior to entering LIGHT_SLEEP
+      //This callback doesn't need to be registered with SWTIMER_REG_CB since the timer will have terminated before entering LIGHT_SLEEP
+    os_timer_arm(&null_mode_check_timer, 1, 1);
   }
   else{
     PMSLEEP_ERR("opmode change fail");

@@ -6,8 +6,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 static const uint32_t adxl345_i2c_id = 0;
 static const uint8_t adxl345_i2c_addr = 0x53;
@@ -45,23 +45,6 @@ static int adxl345_setup(lua_State* L) {
     return 0;
 }
 
-static int adxl345_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("adxl345.init() is replaced by adxl345.setup()", "in the next version");
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(adxl345_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-    
-    return adxl345_setup(L);
-}
-
 static int adxl345_read(lua_State* L) {
 
     uint8_t data[6];
@@ -77,7 +60,7 @@ static int adxl345_read(lua_State* L) {
     for (i=0; i<5; i++) {
 	data[i] = platform_i2c_recv_byte(adxl345_i2c_id, 1);
     }
-    
+
     data[5] = platform_i2c_recv_byte(adxl345_i2c_id, 0);
 
     platform_i2c_send_stop(adxl345_i2c_id);
@@ -93,12 +76,10 @@ static int adxl345_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE adxl345_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( adxl345_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( adxl345_setup )},
-    /// init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( adxl345_init )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(adxl345, NULL, 0)
+  LROT_FUNCENTRY( read, adxl345_read )
+  LROT_FUNCENTRY( setup, adxl345_setup )
+LROT_END(adxl345, NULL, 0)
 
-NODEMCU_MODULE(ADXL345, "adxl345", adxl345_map, NULL);
+
+NODEMCU_MODULE(ADXL345, "adxl345", adxl345, NULL);

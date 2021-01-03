@@ -33,7 +33,8 @@
 
 #include "mech.h"
 #include "sdk-aes.h"
-#include "c_string.h"
+#include <string.h>
+#include <strings.h>
 
 /* ----- AES ---------------------------------------------------------- */
 
@@ -58,7 +59,7 @@ static bool do_aes (crypto_op_t *co, bool with_cbc)
 
   char iv[AES_BLOCKSIZE] = { 0 };
   if (with_cbc && co->ivlen)
-    c_memcpy (iv, co->iv, co->ivlen < AES_BLOCKSIZE ? co->ivlen : AES_BLOCKSIZE);
+    memcpy (iv, co->iv, co->ivlen < AES_BLOCKSIZE ? co->ivlen : AES_BLOCKSIZE);
 
   const char *src = co->data;
   char *dst = co->out;
@@ -68,7 +69,7 @@ static bool do_aes (crypto_op_t *co, bool with_cbc)
   {
     char block[AES_BLOCKSIZE] = { 0 };
     size_t n = left > AES_BLOCKSIZE ? AES_BLOCKSIZE : left;
-    c_memcpy (block, src, n);
+    memcpy (block, src, n);
 
     if (with_cbc && co->op == OP_ENCRYPT)
     {

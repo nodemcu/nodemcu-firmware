@@ -20,11 +20,10 @@
 
 #define ltable_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_MATH
-#include C_HEADER_STRING
+#include <math.h>
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -33,7 +32,8 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "ltable.h"
-#include "lrotable.h"
+#include "lstring.h"
+
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -48,7 +48,7 @@
 
 
 #define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
-  
+
 #define hashstr(t,str)  hashpow2(t, (str)->tsv.hash)
 #define hashboolean(t,p)        hashpow2(t, p)
 
@@ -68,6 +68,10 @@
 */
 #define numints		cast_int(sizeof(lua_Number)/sizeof(int))
 
+static const TValue* rotable_findentry(ROTable *rotable, TString *key, unsigned *ppos);
+static void rotable_next_helper(lua_State *L, ROTable *pentries, int pos,
+                             TValue *key, TValue *val);
+static void rotable_next(lua_State *L, ROTable *rotable, TValue *key, TValue *val);
 
 
 #define dummynode		(&dummynode_)
@@ -86,7 +90,7 @@ static Node *hashnum (const Table *t, lua_Number n) {
   int i;
   if (luai_numeq(n, 0))  /* avoid problems with -0 */
     return gnode(t, 0);
-  c_memcpy(a, &n, sizeof(a));
+  memcpy(a, &n, sizeof(a));
   for (i = 1; i < numints; i++) a[0] += a[i];
   return hashmod(t, a[0]);
 }
@@ -105,11 +109,11 @@ static Node *mainposition (const Table *t, const TValue *key) {
       return hashstr(t, rawtsvalue(key));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalue(key));
-    case LUA_TROTABLE:
-      return hashpointer(t, rvalue(key));
     case LUA_TLIGHTUSERDATA:
     case LUA_TLIGHTFUNCTION:
       return hashpointer(t, pvalue(key));
+    case LUA_TROTABLE:
+      return hashpointer(t, hvalue(key));
     default:
       return hashpointer(t, gcvalue(key));
   }
@@ -163,7 +167,12 @@ static int findindex (lua_State *L, Table *t, StkId key) {
 
 
 int luaH_next (lua_State *L, Table *t, StkId key) {
-  int i = findindex(L, t, key);  /* find original element */
+  int i;
+  if (isrotable(t)) {
+    rotable_next(L, (ROTable *) t, key, key+1);
+    return ttisnil(key) ? 0 : 1;
+  }
+  i = findindex(L, t, key);  /* find original element */
   for (i++; i < t->sizearray; i++) {  /* try first array part */
     if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
       setnvalue(key, cast_num(i+1));
@@ -179,12 +188,6 @@ int luaH_next (lua_State *L, Table *t, StkId key) {
     }
   }
   return 0;  /* no more elements */
-}
-
-
-int luaH_next_ro (lua_State *L, void *t, StkId key) {
-  luaR_next(L, t, key, key+1);
-  return ttisnil(key) ? 0 : 1;
 }
 
 
@@ -330,7 +333,7 @@ static Node *find_prev_node(Node *mp, Node *next) {
 ** first, check whether the moving node's main position is free. If not, check whether
 ** colliding node is in its main position or not: if it is not, move colliding
 ** node to an empty place and put moving node in its main position; otherwise
-** (colliding node is in its main position), moving node goes to an empty position. 
+** (colliding node is in its main position), moving node goes to an empty position.
 */
 static int move_node (lua_State *L, Table *t, Node *node) {
   Node *mp = mainposition(t, key2tval(node));
@@ -445,7 +448,8 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int oldasize = t->sizearray;
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(L, t, nasize);
-  resize_hashpart(L, t, nhsize);
+  if (t->node != dummynode || nhsize>0)
+    resize_hashpart(L, t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
@@ -519,11 +523,11 @@ void luaH_free (lua_State *L, Table *t) {
 
 
 /*
-** inserts a new key into a hash table; first, check whether key's main 
-** position is free. If not, check whether colliding node is in its main 
-** position or not: if it is not, move colliding node to an empty place and 
-** put new key in its main position; otherwise (colliding node is in its main 
-** position), new key goes to an empty position. 
+** inserts a new key into a hash table; first, check whether key's main
+** position is free. If not, check whether colliding node is in its main
+** position or not: if it is not, move colliding node to an empty place and
+** put new key in its main position; otherwise (colliding node is in its main
+** position), new key goes to an empty position.
 */
 static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
   Node *mp = mainposition(t, key);
@@ -562,6 +566,8 @@ static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
 ** search function for integers
 */
 const TValue *luaH_getnum (Table *t, int key) {
+  if (isrotable(t))
+    return luaO_nilobject;
   /* (1 <= key && key <= t->sizearray) */
   if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))
     return &t->array[key-1];
@@ -577,17 +583,16 @@ const TValue *luaH_getnum (Table *t, int key) {
   }
 }
 
-/* same thing for rotables */
-const TValue *luaH_getnum_ro (void *t, int key) {
-  const TValue *res = luaR_findentry(t, NULL, key, NULL);
-  return res ? res : luaO_nilobject;
-}
-
-
 /*
 ** search function for strings
 */
 const TValue *luaH_getstr (Table *t, TString *key) {
+
+  if (isrotable(t)) {
+    if (key->tsv.len>LUA_MAX_ROTABLE_NAME)
+      return luaO_nilobject;
+    return rotable_findentry((ROTable*) t, key, NULL);
+  }
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
     if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)
@@ -597,67 +602,41 @@ const TValue *luaH_getstr (Table *t, TString *key) {
   return luaO_nilobject;
 }
 
-/* same thing for rotables */
-const TValue *luaH_getstr_ro (void *t, TString *key) {
-  char keyname[LUA_MAX_ROTABLE_NAME + 1];
-  const TValue *res;  
-  if (!t)
-    return luaO_nilobject;
-  luaR_getcstr(keyname, key, LUA_MAX_ROTABLE_NAME);   
-  res = luaR_findentry(t, keyname, 0, NULL);
-  return res ? res : luaO_nilobject;
-}
-
 
 /*
 ** main search function
 */
 const TValue *luaH_get (Table *t, const TValue *key) {
-  switch (ttype(key)) {
-    case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));
-    case LUA_TNUMBER: {
-      int k;
-      lua_Number n = nvalue(key);
-      lua_number2int(k, n);
-      if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */
-        return luaH_getnum(t, k);  /* use specialized version */
-      /* else go through */
-    }
-    default: {
-      Node *n = mainposition(t, key);
-      do {  /* check whether `key' is somewhere in the chain */
-        if (luaO_rawequalObj(key2tval(n), key))
-          return gval(n);  /* that's it */
-        else n = gnext(n);
-      } while (n);
-      return luaO_nilobject;
-    }
+  int type = ttype(key);
+  if (type == LUA_TNIL)
+    return luaO_nilobject;
+  if (type == LUA_TSTRING)
+    return luaH_getstr(t, rawtsvalue(key));
+  if (isrotable(t))
+    return luaO_nilobject;
+  if (type == LUA_TNUMBER) {
+    int k;
+    lua_Number n = nvalue(key);
+    lua_number2int(k, n);
+    if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */
+      return luaH_getnum(t, k);  /* use specialized version */
   }
-}
-
-/* same thing for rotables */
-const TValue *luaH_get_ro (void *t, const TValue *key) {
-  switch (ttype(key)) {
-    case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr_ro(t, rawtsvalue(key));
-    case LUA_TNUMBER: {
-      int k;
-      lua_Number n = nvalue(key);
-      lua_number2int(k, n);
-      if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */
-        return luaH_getnum_ro(t, k);  /* use specialized version */
-      /* else go through */
-    }
-    default: {
-      return luaO_nilobject;
-    }
-  }
+  /* default */
+  Node *n = mainposition(t, key);
+  do {  /* check whether `key' is somewhere in the chain */
+    if (luaO_rawequalObj(key2tval(n), key))
+      return gval(n);  /* that's it */
+    else n = gnext(n);
+  } while (n);
+  return luaO_nilobject;
 }
 
 
 TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
-  const TValue *p = luaH_get(t, key);
+  const TValue *p;
+  if (isrotable(t))
+    luaG_runerror(L, "table is readonly");
+  p  = luaH_get(t, key);
   t->flags = 0;
   if (p != luaO_nilobject)
     return cast(TValue *, p);
@@ -671,7 +650,10 @@ TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
 
 
 TValue *luaH_setnum (lua_State *L, Table *t, int key) {
-  const TValue *p = luaH_getnum(t, key);
+  const TValue *p;
+  if (isrotable(t))
+    luaG_runerror(L, "table is readonly");
+  p = luaH_getnum(t, key);
   if (p != luaO_nilobject)
     return cast(TValue *, p);
   else {
@@ -683,7 +665,10 @@ TValue *luaH_setnum (lua_State *L, Table *t, int key) {
 
 
 TValue *luaH_setstr (lua_State *L, Table *t, TString *key) {
-  const TValue *p = luaH_getstr(t, key);
+  const TValue *p;
+  if (isrotable(t))
+    luaG_runerror(L, "table is readonly");
+  p  = luaH_getstr(t, key);
   if (p != luaO_nilobject)
     return cast(TValue *, p);
   else {
@@ -723,7 +708,10 @@ static int unbound_search (Table *t, unsigned int j) {
 ** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
 */
 int luaH_getn (Table *t) {
-  unsigned int j = t->sizearray;
+  unsigned int j;
+  if(isrotable(t))
+    return 0;
+  j = t->sizearray;
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
     unsigned int i = 0;
@@ -740,21 +728,142 @@ int luaH_getn (Table *t) {
   else return unbound_search(t, j);
 }
 
-/* same thing for rotables */
-int luaH_getn_ro (void *t) {
-  int i = 1, len=0;
-  
-  while(luaR_findentry(t, NULL, i ++, NULL))
-    len ++;
-  return len;
-}
-
-#if defined(LUA_DEBUG)
-
-Node *luaH_mainposition (const Table *t, const TValue *key) {
-  return mainposition(t, key);
-}
 
 int luaH_isdummy (Node *n) { return n == dummynode; }
 
+
+/*
+** All keyed ROTable access passes through rotable_findentry().  ROTables
+** are simply a list of <key><TValue value> pairs.
+**
+** The global KeyCache is used to avoid a relatively expensive Flash memory
+** vector scan.  A simple hash on the key's TString addr and the ROTable
+** addr selects the cache line.  The line's slots are then scanned for a
+** hit.
+**
+** Unlike the standard hast which uses a prime line count therefore requires
+** the use of modulus operation which is expensive on an IoT processor
+** without H/W divide.  This hash is power of 2 based which might not be
+** quite so uniform but can be calcuated without using H/W-based instructions.
+**
+** If a match is found and the table addresses match, then this entry is
+** probed first. In practice the hit-rate here is over 99% so the code
+** rarely fails back to doing the linear scan in ROM.
+** Note that this hash does a couple of prime multiples and a modulus 2^X
+** with is all evaluated in H/W, and adequately randomizes the lookup.
+*/
+#define LA_LINES 32
+#define LA_SLOTS 4
+static size_t cache [LA_LINES][LA_SLOTS];
+
+#define HASH(a,b) ((((29*(size_t)(a)) ^ (37*((b)->tsv.hash)))>>4) % LA_LINES)
+#define NDX_SHFT 24
+#define ADDR_MASK (((size_t) 1<<24)-1)
+
+/*
+ * Find a string key entry in a rotable and return it.  Note that this internally
+ * uses a null key to denote a metatable search.
+ */
+static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos) {
+  const ROTable_entry *e = cast(const ROTable_entry *, t->entry);
+  const int tl = getlsizenode(t);
+  const char *strkey = getstr(key);
+  size_t *cl = cache[HASH(t, key)];
+  int i, j = 1, l;
+
+  if (!e || gettt(key) != LUA_TSTRING)
+    return luaO_nilobject;
+
+  l = key->tsv.len;
+  /* scan the ROTable lookaside cache and return if hit found */
+  for (i=0; i<LA_SLOTS; i++) {
+    int cl_ndx = cl[i] >> NDX_SHFT;
+    if ((((size_t)t - cl[i]) & ADDR_MASK) == 0 && cl_ndx < tl &&
+        strcmp(e[cl_ndx].key, strkey) == 0) {
+       if (ppos)
+          *ppos = cl_ndx;
+      return &e[cl_ndx].value;
+    }
+  }
+
+ /*
+  * A lot of search misses are metavalues, but tables typically only have at
+  * most a couple of them, so these are always put at the front of the table
+  * in ascending order and the metavalue scan short circuits using a straight
+  * strcmp()
+  */
+  lu_int32 name4 = *(lu_int32 *) strkey;
+  if (*(char*)&name4  == '_') {
+    for(i = 0; i < tl; i++) {
+      j = strcmp(e[i].key, strkey);
+      if (j>=0)
+        break;
+    }
+  } else {
+ /*
+  * Ordinary (non-meta) keys can be unsorted.  This is for legacy compatiblity,
+  * plus misses are pretty rare in this case.  The masked name4 comparison is
+  * safe 4-byte comparison that nearly always avoids the more costly strcmp()
+  * for an actual hit validation.
+  */
+    lu_int32 mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+    for(i = 0; i < tl; i++) {
+      if (((*(lu_int32 *)e[i].key ^ name4) & mask4) != 0)
+        continue;
+      j = strcmp(e[i].key, strkey);
+      if (j==0)
+        break;
+    }
+  }
+  if (j)
+    return luaO_nilobject;
+  if (ppos)
+    *ppos = i;
+  /* In the case of a hit, update the lookaside cache */
+  for (j = LA_SLOTS-1; j>0; j--)
+    cl[j] = cl[j-1];
+  cl[0] = ((size_t)t & ADDR_MASK) + (i << NDX_SHFT);
+  return &e[i].value;
+}
+
+
+static void rotable_next_helper(lua_State *L, ROTable *t, int pos,
+                             TValue *key, TValue *val) {
+  const ROTable_entry *e = cast(const ROTable_entry *, t->entry);
+  if (pos < getlsizenode(t)) {
+    /* Found an entry */
+    setsvalue(L, key, luaS_new(L, e[pos].key));
+    setobj2s(L, val, &e[pos].value);
+  } else {
+    setnilvalue(key);
+    setnilvalue(val);
+  }
+}
+
+
+/* next (used for iteration) */
+static void rotable_next(lua_State *L, ROTable *t, TValue *key, TValue *val) {
+  unsigned keypos = getlsizenode(t);
+
+  /* Special case: if key is nil, return the first element of the rotable */
+  if (ttisnil(key))
+    rotable_next_helper(L, t, 0, key, val);
+  else if (ttisstring(key)) {
+    /* Find the previous key again */
+    if (ttisstring(key)) {
+      rotable_findentry(t, rawtsvalue(key), &keypos);
+    }
+    /* Advance to next key */
+    rotable_next_helper(L, t, ++keypos, key, val);
+  }
+}
+
+
+
+#if defined(LUA_DEBUG)
+Node *luaH_mainposition (const Table *t, const TValue *key) {
+  return mainposition(t, key);
+}
 #endif
+
+

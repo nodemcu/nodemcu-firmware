@@ -22,7 +22,7 @@
  *
  */
 
-#include "c_types.h"
+#include <stdint.h>
 
 #include <stdio.h>
 //#include "os.h"

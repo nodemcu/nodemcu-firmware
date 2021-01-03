@@ -79,6 +79,7 @@
 #define VALUEWEAKBIT	4
 #define FIXEDBIT	5
 #define SFIXEDBIT	6
+#define LFSBIT		6
 #define READONLYBIT 7
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
@@ -100,6 +101,13 @@
 #define isfixedstack(x)	testbit((x)->marked, FIXEDSTACKBIT)
 #define fixedstack(x)	l_setbit((x)->marked, FIXEDSTACKBIT)
 #define unfixedstack(x)	resetbit((x)->marked, FIXEDSTACKBIT)
+#ifndef LUA_CROSS_COMPILER
+#define isLFSobject(x)  testbit(getmarked(x), LFSBIT)
+#define stringfix(s)    if (!test2bits(getmarked(&(s)->tsv), FIXEDBIT, LFSBIT)) {l_setbit((s)->tsv.marked, FIXEDBIT);}
+#else
+#define isLFSobject(x) (0)
+#define stringfix(s)   {l_setbit((s)->tsv.marked, FIXEDBIT);}
+#endif
 
 #define luaC_checkGC(L) { \
   condhardstacktests(luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1)); \

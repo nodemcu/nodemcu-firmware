@@ -46,15 +46,20 @@ void __attribute__((noreturn)) TEXT_SECTION_ATTR rtc_time_enter_deep_sleep_final
 
 void rtctime_early_startup (void)
 {
-  Cache_Read_Enable (0, 0, 1);
+//  Cache_Read_Enable (0, 0, 1);
   rtc_time_register_bootup ();
   rtc_time_switch_clocks ();
-  Cache_Read_Disable ();
+//  Cache_Read_Disable ();
 }
 
 void rtctime_late_startup (void)
 {
   rtc_time_switch_system ();
+}
+
+int rtctime_get_rate (void)
+{
+  return rtc_time_get_rate();
 }
 
 void rtctime_adjust_rate (int rate)
@@ -131,28 +136,29 @@ static int rtctime_set (lua_State *L)
   if (!rtc_time_check_magic ())
     rtc_time_prepare ();
 
-  uint32_t sec = luaL_checknumber (L, 1);
-  uint32_t usec = 0;
-  if (lua_isnumber (L, 2))
-    usec = lua_tonumber (L, 2);
+  if (lua_isnumber(L, 1)) {
+    uint32_t sec = luaL_checkinteger (L, 1);
+    uint32_t usec = 0;
+    if (lua_isnumber (L, 2))
+      usec = lua_tointeger (L, 2);
 
-  struct rtc_timeval tv = { sec, usec };
-  rtctime_settimeofday (&tv);
+    struct rtc_timeval tv = { sec, usec };
+    rtctime_settimeofday (&tv);
+  }
 
   if (lua_isnumber(L, 3))
-    rtc_time_set_rate(lua_tonumber(L, 3));
+    rtc_time_set_rate(lua_tointeger(L, 3));
   return 0;
 }
-
 
 // sec, usec = rtctime.get ()
 static int rtctime_get (lua_State *L)
 {
   struct rtc_timeval tv;
   rtctime_gettimeofday (&tv);
-  lua_pushnumber (L, tv.tv_sec);
-  lua_pushnumber (L, tv.tv_usec);
-  lua_pushnumber (L, rtc_time_get_rate());
+  lua_pushinteger (L, tv.tv_sec);
+  lua_pushinteger (L, tv.tv_usec);
+  lua_pushinteger (L, rtc_time_get_rate());
   return 3;
 }
 
@@ -160,17 +166,26 @@ static void do_sleep_opt (lua_State *L, int idx)
 {
   if (lua_isnumber (L, idx))
   {
-    uint32_t opt = lua_tonumber (L, idx);
+    uint32_t opt = lua_tointeger (L, idx);
     if (opt < 0 || opt > 4)
       luaL_error (L, "unknown sleep option");
     system_deep_sleep_set_option (opt);
   }
 }
 
+// rtctime.adjust_delta (usec)
+static int rtctime_adjust_delta (lua_State *L)
+{
+  uint32_t us = luaL_checkinteger (L, 1);
+  lua_pushinteger(L, rtc_time_adjust_delta_by_rate(us));
+  return 1;
+}
+
+
 // rtctime.dsleep (usec, option)
 static int rtctime_dsleep (lua_State *L)
 {
-  uint32_t us = luaL_checknumber (L, 1);
+  uint32_t us = luaL_checkinteger (L, 1);
   do_sleep_opt (L, 2);
   rtctime_deep_sleep_us (us); // does not return
   return 0;
@@ -183,8 +198,8 @@ static int rtctime_dsleep_aligned (lua_State *L)
   if (!rtctime_have_time ())
     return luaL_error (L, "time not available, unable to align");
 
-  uint32_t align_us = luaL_checknumber (L, 1);
-  uint32_t min_us = luaL_checknumber (L, 2);
+  uint32_t align_us = luaL_checkinteger (L, 1);
+  uint32_t min_us = luaL_checkinteger (L, 2);
   do_sleep_opt (L, 3);
   rtctime_deep_sleep_until_aligned_us (align_us, min_us); // does not return
   return 0;
@@ -219,13 +234,14 @@ static int rtctime_epoch2cal (lua_State *L)
 }
 
 // Module function map
-static const LUA_REG_TYPE rtctime_map[] = {
-  { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
-  { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
-  { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
-  { LSTRKEY("dsleep_aligned"), LFUNCVAL(rtctime_dsleep_aligned) },
-  { LSTRKEY("epoch2cal"),      LFUNCVAL(rtctime_epoch2cal) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(rtctime, NULL, 0)
+  LROT_FUNCENTRY( set, rtctime_set )
+  LROT_FUNCENTRY( get, rtctime_get )
+  LROT_FUNCENTRY( adjust_delta, rtctime_adjust_delta )
+  LROT_FUNCENTRY( dsleep, rtctime_dsleep )
+  LROT_FUNCENTRY( dsleep_aligned, rtctime_dsleep_aligned )
+  LROT_FUNCENTRY( epoch2cal, rtctime_epoch2cal )
+LROT_END(rtctime, NULL, 0)
 
-NODEMCU_MODULE(RTCTIME, "rtctime", rtctime_map, NULL);
+
+NODEMCU_MODULE(RTCTIME, "rtctime", rtctime, NULL);

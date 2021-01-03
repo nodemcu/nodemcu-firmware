@@ -130,7 +130,7 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
 
     struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
     struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		
+
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
     {
     	if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
@@ -237,9 +237,10 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
 
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
 	{
-		if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, sta_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, ap_netif)) {
+		if( netif_is_up(sta_netif) && \
+            netif_is_up(ap_netif) && \
+            ip_addr_isbroadcast(&dst_ip, sta_netif) && \
+            ip_addr_isbroadcast(&dst_ip, ap_netif)) {
 
 		  p_temp = pbuf_alloc(PBUF_TRANSPORT, datalen, PBUF_RAM);
 		  if (pbuf_copy (p_temp,p) != ERR_OK) {
@@ -384,41 +385,4 @@ espconn_udp_server(struct espconn *pespconn)
         udp_recv(upcb, espconn_udp_recv, (void *)pserver);
         return ESPCONN_OK;
     }
-}
-
-/******************************************************************************
- * FunctionName : espconn_igmp_leave
- * Description  : leave a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_igmp_leave(ip_addr_t *host_ip, ip_addr_t *multicast_ip)
-{
-    if (igmp_leavegroup(host_ip, multicast_ip) != ERR_OK) {
-        LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("udp_leave_multigrup failed!\n"));
-        return -1;
-    };
-
-    return ESPCONN_OK;
-}
-
-/******************************************************************************
- * FunctionName : espconn_igmp_join
- * Description  : join a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_igmp_join(ip_addr_t *host_ip, ip_addr_t *multicast_ip)
-{
-    if (igmp_joingroup(host_ip, multicast_ip) != ERR_OK) {
-        LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("udp_join_multigrup failed!\n"));
-        return -1;
-    };
-
-    /* join to any IP address at the port  */
-    return ESPCONN_OK;
 }

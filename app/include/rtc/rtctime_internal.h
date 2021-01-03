@@ -34,7 +34,7 @@
 
 /*
  * It is vital that this file is only included once in the entire
- * system. 
+ * system.
  */
 
 #ifndef _RTCTIME_INTERNAL_H_
@@ -533,7 +533,7 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
 
   if (rtc_time_check_wake_magic())
     rtc_time_set_sleep_magic();
-  else 
+  else
     bbram_save();
 
   rtc_reg_write(RTC_TARGET_ADDR,rtc_time_read_raw()+cycles);
@@ -689,11 +689,15 @@ static inline void rtc_time_switch_to_system_clock(void)
 
 static inline void rtc_time_tmrfn(void* arg);
 
+#include "pm/swtimer.h"
+
 static void rtc_time_install_timer(void)
 {
   static ETSTimer tmr;
 
   os_timer_setfn(&tmr,rtc_time_tmrfn,NULL);
+  SWTIMER_REG_CB(rtc_time_tmrfn, SWTIMER_RESUME);
+    //I believe the function rtc_time_tmrfn compensates for drift in the clock and updates rtc time accordingly, This timer should probably be resumed
   os_timer_arm(&tmr,10000,1);
 }
 
@@ -779,8 +783,12 @@ static inline void rtc_time_prepare(void)
   rtc_time_select_frc2_source();
 }
 
+static int32_t rtc_time_adjust_delta_by_rate(int32_t delta) {
+  return (delta * ((1ull << 32) + (int) rtc_usrate)) >> 32;
+}
+
 static uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
-  uint64_t usoff = us - rtc_usatlastrate; 
+  uint64_t usoff = us - rtc_usatlastrate;
   uint64_t usadj = (usoff * ((1ull << 32) + (int) rtc_usrate)) >> 32;
   usadj = usadj + rtc_rateadjustedus;
 

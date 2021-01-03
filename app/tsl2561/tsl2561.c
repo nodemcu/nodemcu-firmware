@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*! 
+/*!
  @file     tsl2561.c
  @author   K. Townsend (microBuilder.eu)/ Adapted for nodeMCU by Michael Lucas (Aeprox @github)
- 
+
  @brief    Drivers for the TAOS TSL2561 I2C digital luminosity sensor
 
  @section DESCRIPTION
@@ -76,14 +76,8 @@ static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_1X;
 static tsl2561Address_t tsl2561Address = TSL2561_ADDRESS_FLOAT;
 static tsl2561Package_t tsl2561Package = TSL2561_PACKAGE_T_FN_CL;
 
-static void delay_ms(uint16_t ms)
-{
-  while (ms--)
-    os_delay_us(1000);
-}
-
 /**************************************************************************/
-/*! 
+/*!
  @brief  Writes an 8 bit values over I2C
  */
 /**************************************************************************/
@@ -97,7 +91,7 @@ tsl2561Error_t tsl2561Write8(uint8_t reg, uint8_t value) {
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Reads a 16 bit values over I2C
  */
 /**************************************************************************/
@@ -129,7 +123,7 @@ tsl2561Error_t tsl2561Read16(uint8_t reg, uint16_t *value) {
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Enables the device
  */
 /**************************************************************************/
@@ -143,7 +137,7 @@ tsl2561Error_t tsl2561Enable(void) {
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Disables the device (putting it in lower power sleep mode)
  */
 /**************************************************************************/
@@ -166,7 +160,7 @@ void tsl2561SetPackage(uint8_t package){
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Initialises the I2C block
  */
 /**************************************************************************/
@@ -185,7 +179,7 @@ tsl2561Error_t tsl2561Init(uint8_t sda, uint8_t scl) {
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Sets the integration time and gain (controls sensitivity)
  */
 /**************************************************************************/
@@ -218,7 +212,7 @@ tsl2561Error_t tsl2561SetTiming(tsl2561IntegrationTime_t integration, tsl2561Gai
 }
 
 /**************************************************************************/
-/*! 
+/*!
  @brief  Reads the luminosity on both channels from the TSL2561
  */
 /**************************************************************************/
@@ -236,13 +230,13 @@ tsl2561Error_t tsl2561GetLuminosity(uint16_t *broadband, uint16_t *ir) {
 	// Wait x ms for ADC to complete
 	switch (_tsl2561IntegrationTime) {
 	case TSL2561_INTEGRATIONTIME_13MS:
-		delay_ms(14); //systickDelay(14);
+		os_delay_us(14000); //systickDelay(14);
 		break;
 	case TSL2561_INTEGRATIONTIME_101MS:
-		delay_ms(102); //systickDelay(102);
+		os_delay_us(102000); //systickDelay(102);
 		break;
 	default:
-		delay_ms(404); //systickDelay(404);
+		os_delay_us(404000); //systickDelay(404);
 		break;
 	}
 
@@ -267,8 +261,8 @@ tsl2561Error_t tsl2561GetLuminosity(uint16_t *broadband, uint16_t *ir) {
 }
 
 /**************************************************************************/
-/*! 
- @brief  Calculates LUX from the supplied ch0 (broadband) and ch1 
+/*!
+ @brief  Calculates LUX from the supplied ch0 (broadband) and ch1
  (IR) readings
  */
 /**************************************************************************/

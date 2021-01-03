@@ -1,3 +1,4 @@
+
 /*
 ** $Id: lobject.c,v 2.22.1.1 2007/12/27 13:02:25 roberto Exp $
 ** Some generic functions over Lua objects
@@ -7,12 +8,11 @@
 
 #define lobject_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STRING
-#include C_HEADER_STDLIB
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "ldo.h"
 #include "lmem.h"
@@ -53,7 +53,8 @@ int luaO_fb2int (int x) {
 
 
 int luaO_log2 (unsigned int x) {
-  static const lu_byte log_2[256] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = {
+#ifdef LUA_CROSS_COMPILER
+  static const lu_byte log_2[256] = {
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -65,10 +66,12 @@ int luaO_log2 (unsigned int x) {
   };
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
-#ifdef LUA_CROSS_COMPILER
   return l + log_2[x];
 #else
-  return l + byte_of_aligned_array(log_2,x);
+ /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
+  * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
+  asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x));
+  return 31 - x;
 #endif
 }
 
@@ -85,7 +88,7 @@ int luaO_rawequalObj (const TValue *t1, const TValue *t2) {
     case LUA_TLIGHTUSERDATA:
       return pvalue(t1) == pvalue(t2);
     case LUA_TROTABLE:
-      return rvalue(t1) == rvalue(t2);
+      return hvalue(t1) == hvalue(t2);
     case LUA_TLIGHTFUNCTION:
       return fvalue(t1) == fvalue(t2);
     default:
@@ -100,11 +103,11 @@ int luaO_str2d (const char *s, lua_Number *result) {
   *result = lua_str2number(s, &endptr);
   if (endptr == s) return 0;  /* conversion failed */
   if (*endptr == 'x' || *endptr == 'X')  /* maybe an hexadecimal constant? */
-#if defined(LUA_CROSS_COMPILER) 
+#if defined(LUA_CROSS_COMPILER)
     {
     long lres = strtoul(s, &endptr, 16);
-#if LONG_MAX != 2147483647L
-    if (lres & ~0xffffffffL) 
+#if INT_MAX != 2147483647L
+    if (lres & ~0xffffffffL)
       *result = cast_num(-1);
     else if (lres & 0x80000000L)
       *result = cast_num(lres | ~0x7fffffffL);
@@ -113,7 +116,7 @@ int luaO_str2d (const char *s, lua_Number *result) {
       *result = cast_num(lres);
     }
 #else
-    *result = cast_num(c_strtoul(s, &endptr, 16));
+    *result = cast_num(strtoul(s, &endptr, 16));
 #endif
   if (*endptr == '\0') return 1;  /* most common case */
   while (isspace(cast(unsigned char, *endptr))) endptr++;
@@ -134,7 +137,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
   int n = 1;
   pushstr(L, "");
   for (;;) {
-    const char *e = c_strchr(fmt, '%');
+    const char *e = strchr(fmt, '%');
     if (e == NULL) break;
     setsvalue2s(L, L->top, luaS_newlstr(L, fmt, e-fmt));
     incr_top(L);
@@ -164,7 +167,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
       }
       case 'p': {
         char buff[4*sizeof(void *) + 8]; /* should be enough space for a `%p' */
-        c_sprintf(buff, "%p", va_arg(argp, void *));
+        sprintf(buff, "%p", va_arg(argp, void *));
         pushstr(L, buff);
         break;
       }
@@ -203,7 +206,7 @@ const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
 
 void luaO_chunkid (char *out, const char *source, size_t bufflen) {
   if (*source == '=') {
-    c_strncpy(out, source+1, bufflen);  /* remove first char */
+    strncpy(out, source+1, bufflen);  /* remove first char */
     out[bufflen-1] = '\0';  /* ensures null termination */
   }
   else {  /* out = "source", or "...source" */
@@ -211,26 +214,26 @@ void luaO_chunkid (char *out, const char *source, size_t bufflen) {
       size_t l;
       source++;  /* skip the `@' */
       bufflen -= sizeof(" '...' ");
-      l = c_strlen(source);
-      c_strcpy(out, "");
+      l = strlen(source);
+      strcpy(out, "");
       if (l > bufflen) {
         source += (l-bufflen);  /* get last part of file name */
-        c_strcat(out, "...");
+        strcat(out, "...");
       }
-      c_strcat(out, source);
+      strcat(out, source);
     }
     else {  /* out = [string "string"] */
-      size_t len = c_strcspn(source, "\n\r");  /* stop at first newline */
+      size_t len = strcspn(source, "\n\r");  /* stop at first newline */
       bufflen -= sizeof(" [string \"...\"] ");
       if (len > bufflen) len = bufflen;
-      c_strcpy(out, "[string \"");
+      strcpy(out, "[string \"");
       if (source[len] != '\0') {  /* must truncate? */
-        c_strncat(out, source, len);
-        c_strcat(out, "...");
+        strncat(out, source, len);
+        strcat(out, "...");
       }
       else
-        c_strcat(out, source);
-      c_strcat(out, "\"]");
+        strcat(out, source);
+      strcat(out, "\"]");
     }
   }
 }

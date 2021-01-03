@@ -6,10 +6,9 @@
 
 #define lgc_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -21,13 +20,11 @@
 #include "lstring.h"
 #include "ltable.h"
 #include "ltm.h"
-#include "lrotable.h"
 
 #define GCSTEPSIZE	1024u
 #define GCSWEEPMAX	40
 #define GCSWEEPCOST	10
 #define GCFINALIZECOST	100
-
 
 #define maskmarks	cast_byte(~(bitmask(BLACKBIT)|WHITEBITS))
 
@@ -37,10 +34,10 @@
 #define white2gray(x)	reset2bits((x)->gch.marked, WHITE0BIT, WHITE1BIT)
 #define black2gray(x)	resetbit((x)->gch.marked, BLACKBIT)
 
-#define stringmark(s)	reset2bits((s)->tsv.marked, WHITE0BIT, WHITE1BIT)
+#define stringmark(s)	if (!isLFSobject(&(s)->tsv)) {reset2bits((s)->tsv.marked, WHITE0BIT, WHITE1BIT);}
 
 
-#define isfinalized(u)		testbit((u)->marked, FINALIZEDBIT)
+#define isfinalized(u)		testbit(getmarked(u), FINALIZEDBIT)
 #define markfinalized(u)	l_setbit((u)->marked, FINALIZEDBIT)
 
 
@@ -55,28 +52,33 @@
 #define markobject(g,t) { if (iswhite(obj2gco(t))) \
 		reallymarkobject(g, obj2gco(t)); }
 
-
 #define setthreshold(g)  (g->GCthreshold = (g->estimate/100) * g->gcpause)
 
 
 static void removeentry (Node *n) {
   lua_assert(ttisnil(gval(n)));
-  if (iscollectable(gkey(n)))
+  if (ttype(gkey(n)) != LUA_TDEADKEY && iscollectable(gkey(n)))
+//  The gkey is always in RAM so it can be marked as DEAD even though it
+//  refers to an LFS object.
     setttype(gkey(n), LUA_TDEADKEY);  /* dead key; remove it */
 }
 
 
 static void reallymarkobject (global_State *g, GCObject *o) {
+  /* don't mark LFS Protos (or strings) */
+  if (gettt(&o->gch) == LUA_TPROTO && isLFSobject(&(o->gch)))
+    return;
+
   lua_assert(iswhite(o) && !isdead(g, o));
   white2gray(o);
-  switch (o->gch.tt) {
+  switch (gettt(&o->gch)) {
     case LUA_TSTRING: {
       return;
     }
     case LUA_TUSERDATA: {
       Table *mt = gco2u(o)->metatable;
       gray2black(o);  /* udata are never gray */
-      if (mt && !luaR_isrotable(mt)) markobject(g, mt);
+      if (mt && isrwtable(mt)) markobject(g, mt);
       markobject(g, gco2u(o)->env);
       return;
     }
@@ -154,18 +156,21 @@ size_t luaC_separateudata (lua_State *L, int all) {
   return deadmem;
 }
 
-
 static int traversetable (global_State *g, Table *h) {
   int i;
   int weakkey = 0;
   int weakvalue = 0;
-  const TValue *mode;
-  if (h->metatable && !luaR_isrotable(h->metatable))
-    markobject(g, h->metatable);
-  mode = gfasttm(g, h->metatable, TM_MODE);
+  const TValue *mode = luaO_nilobject;
+
+  if (h->metatable) {
+    if (isrwtable(h->metatable))
+      markobject(g, h->metatable);
+    mode = gfasttm(g, h->metatable, TM_MODE);
+  }
+
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
-    weakkey = (c_strchr(svalue(mode), 'k') != NULL);
-    weakvalue = (c_strchr(svalue(mode), 'v') != NULL);
+    weakkey = (strchr(svalue(mode), 'k') != NULL);
+    weakvalue = (strchr(svalue(mode), 'v') != NULL);
     if (weakkey || weakvalue) {  /* is really weak? */
       h->marked &= ~(KEYWEAK | VALUEWEAK);  /* clear bits */
       h->marked |= cast_byte((weakkey << KEYWEAKBIT) |
@@ -180,6 +185,8 @@ static int traversetable (global_State *g, Table *h) {
     while (i--)
       markvalue(g, &h->array[i]);
   }
+  if (luaH_isdummy (h->node))
+    return weakkey || weakvalue;
   i = sizenode(h);
   while (i--) {
     Node *n = gnode(h, i);
@@ -202,6 +209,8 @@ static int traversetable (global_State *g, Table *h) {
 */
 static void traverseproto (global_State *g, Proto *f) {
   int i;
+  if (isLFSobject(f))
+    return;                   /* don't traverse Protos in LFS */
   if (f->source) stringmark(f->source);
   for (i=0; i<f->sizek; i++)  /* mark literals */
     markvalue(g, &f->k[i]);
@@ -282,7 +291,7 @@ static l_mem propagatemark (global_State *g) {
   GCObject *o = g->gray;
   lua_assert(isgray(o));
   gray2black(o);
-  switch (o->gch.tt) {
+  switch (gettt(&o->gch)) {
     case LUA_TTABLE: {
       Table *h = gco2h(o);
       g->gray = h->gclist;
@@ -317,14 +326,8 @@ static l_mem propagatemark (global_State *g) {
                              sizeof(TValue) * p->sizek +
                              sizeof(LocVar) * p->sizelocvars +
                              sizeof(TString *) * p->sizeupvalues +
-                             (proto_is_readonly(p) ? 0 : sizeof(Instruction) * p->sizecode +
-#ifdef LUA_OPTIMIZE_DEBUG
-                                                         (p->packedlineinfo ?
-                                                            c_strlen(cast(char *, p->packedlineinfo))+1 :
-                                                            0));
-#else
-                                                         sizeof(int) * p->sizelineinfo);
-#endif
+                             sizeof(Instruction) * p->sizecode +
+                               (p->packedlineinfo ?  strlen(cast(char *, p->packedlineinfo))+1 : 0);
     }
     default: lua_assert(0); return 0;
   }
@@ -387,8 +390,11 @@ static void cleartable (GCObject *l) {
 
 
 static void freeobj (lua_State *L, GCObject *o) {
-  switch (o->gch.tt) {
-    case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
+  switch (gettt(&o->gch)) {
+    case LUA_TPROTO:
+      lua_assert(!isLFSobject(&(o->gch)));
+      luaF_freeproto(L, gco2p(o));
+      break;
     case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
     case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(L, gco2h(o)); break;
@@ -398,6 +404,7 @@ static void freeobj (lua_State *L, GCObject *o) {
       break;
     }
     case LUA_TSTRING: {
+      lua_assert(!isLFSobject(&(o->gch)));
       G(L)->strt.nuse--;
       luaM_freemem(L, o, sizestring(gco2ts(o)));
       break;
@@ -420,6 +427,7 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
   global_State *g = G(L);
   int deadmask = otherwhite(g);
   while ((curr = *p) != NULL && count-- > 0) {
+    lua_assert(!isLFSobject(&(curr->gch)) || curr->gch.tt == LUA_TTHREAD);
     if (curr->gch.tt == LUA_TTHREAD)  /* sweep open upvalues of each thread */
       sweepwholelist(L, &gco2th(curr)->openupval);
     if ((curr->gch.marked ^ WHITEBITS) & deadmask) {  /* not dead? */
@@ -503,8 +511,8 @@ void luaC_freeall (lua_State *L) {
 
 static void markmt (global_State *g) {
   int i;
-  for (i=0; i<NUM_TAGS; i++)
-    if (g->mt[i] && !luaR_isrotable(g->mt[i])) markobject(g, g->mt[i]);
+  for (i=0; i<LUA_NUMTAGS; i++)
+    if (g->mt[i] && isrwtable(g->mt[i])) markobject(g, g->mt[i]);
 }
 
 
@@ -538,7 +546,7 @@ static void atomic (lua_State *L) {
   size_t udsize;  /* total size of userdata to be finalized */
   /* remark occasional upvalues of (maybe) dead threads */
   remarkupvals(g);
-  /* traverse objects cautch by write barrier and by 'remarkupvals' */
+  /* traverse objects caucht by write barrier and by 'remarkupvals' */
   propagateall(g);
   /* remark weak tables */
   g->gray = g->weak;
@@ -694,10 +702,10 @@ void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v) {
   global_State *g = G(L);
   lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
   lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-  lua_assert(ttype(&o->gch) != LUA_TTABLE);
+  lua_assert((gettt(o) & LUA_TMASK) != LUA_TTABLE);
   /* must keep invariant? */
   if (g->gcstate == GCSpropagate)
-    reallymarkobject(g, v);  /* restore invariant */
+    reallymarkobject(g, v);  /* Restore invariant */
   else  /* don't mind */
     makewhite(g, o);  /* mark as white just to avoid other barriers */
 }

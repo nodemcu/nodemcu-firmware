@@ -7,12 +7,11 @@
 
 #define llex_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_CTYPE
-#include C_HEADER_LOCALE
-#include C_HEADER_STRING
+#include <ctype.h>
+#include <locale.h>
+#include <string.h>
 
 #include "ldo.h"
 #include "llex.h"
@@ -154,7 +153,7 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source) {
 
 
 static int check_next (LexState *ls, const char *set) {
-  if (!c_strchr(set, ls->current))
+  if (!strchr(set, ls->current))
     return 0;
   save_and_next(ls);
   return 1;
@@ -422,7 +421,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           /* look for reserved word */
           save(ls, '\0');
           for (i = 0; i < NUM_RESERVED; i++)
-            if (!c_strcmp(luaX_tokens[i], luaZ_buffer(ls->buff)))
+            if (!strcmp(luaX_tokens[i], luaZ_buffer(ls->buff)))
               return i + FIRST_RESERVED;
           ts = luaX_newstring(ls, luaZ_buffer(ls->buff),
                                   luaZ_bufflen(ls->buff) - 1);

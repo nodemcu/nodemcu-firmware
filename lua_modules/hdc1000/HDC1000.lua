@@ -1,7 +1,7 @@
 -------------------------------------------------------
 
--- This library was written for the Texas Instruments 
--- HDC1000 temperature and humidity sensor. 
+-- This library was written for the Texas Instruments
+-- HDC1000 temperature and humidity sensor.
 -- It should work for the HDC1008 too.
 -- Written by Francesco Truzzi (francesco@truzzi.me)
 -- Released under GNU GPL v2.0 license.
@@ -40,9 +40,9 @@ local HDC1000_TEMP_HUMI_14BIT = 0x00
 local function read16()
 	i2c.start(id)
 	i2c.address(id, HDC1000_ADDR, i2c.RECEIVER)
-	data_temp = i2c.read(0, 2)
+	local data_temp = i2c.read(0, 2)
 	i2c.stop(id)
-	data = bit.lshift(string.byte(data_temp, 1, 1), 8) + string.byte(data_temp, 2, 2)
+	local data = bit.lshift(string.byte(data_temp, 1, 1), 8) + string.byte(data_temp, 2, 2)
 	return data
 end
 
@@ -69,10 +69,9 @@ function M.batteryDead()
 
 end
 
--- initalize i2c
-function M.init(sda, scl, drdyn_pin)
+-- setup i2c
+function M.setup(drdyn_pin)
 	_drdyn_pin = drdyn_pin
-	i2c.setup(id, sda, scl, i2c.SLOW)
 end
 
 function M.config(addr, resolution, heater)

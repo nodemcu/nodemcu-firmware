@@ -6,12 +6,11 @@
 
 #define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
-#include C_HEADER_ERRNO
-#include C_HEADER_LOCALE
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
-#include C_HEADER_TIME
+#include <errno.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define loslib_c
 #define LUA_LIB
@@ -20,8 +19,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
-
+#include "lnodemcu.h"
 
 static int os_pushresult (lua_State *L, int i, const char *filename) {
   int en = errno;  /* calls to Lua API may change this value */
@@ -218,33 +216,28 @@ static int os_setlocale (lua_State *L) {
 
 
 static int os_exit (lua_State *L) {
-  c_exit(luaL_optint(L, 1, EXIT_SUCCESS));
+  exit(luaL_optint(L, 1, EXIT_SUCCESS));
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE syslib[] = {
-  {LSTRKEY("clock"),     LFUNCVAL(os_clock)},
-  {LSTRKEY("date"),      LFUNCVAL(os_date)},
+LROT_BEGIN(oslib, NULL, 0)
+  LROT_FUNCENTRY( clock, os_clock )
+  LROT_FUNCENTRY( date, os_date )
 #if !defined LUA_NUMBER_INTEGRAL
-  {LSTRKEY("difftime"),  LFUNCVAL(os_difftime)},
+  LROT_FUNCENTRY( difftime, os_difftime )
 #endif
-  {LSTRKEY("execute"),   LFUNCVAL(os_execute)},
-  {LSTRKEY("exit"),      LFUNCVAL(os_exit)},
-  {LSTRKEY("getenv"),    LFUNCVAL(os_getenv)},
-  {LSTRKEY("remove"),    LFUNCVAL(os_remove)},
-  {LSTRKEY("rename"),    LFUNCVAL(os_rename)},
-  {LSTRKEY("setlocale"), LFUNCVAL(os_setlocale)},
-  {LSTRKEY("time"),      LFUNCVAL(os_time)},
-  {LSTRKEY("tmpname"),   LFUNCVAL(os_tmpname)},
-  {LNILKEY, LNILVAL}
-};
-
+  LROT_FUNCENTRY( execute, os_execute )
+  LROT_FUNCENTRY( exit, os_exit )
+  LROT_FUNCENTRY( getenv, os_getenv )
+  LROT_FUNCENTRY( remove, os_remove )
+  LROT_FUNCENTRY( rename, os_rename )
+  LROT_FUNCENTRY( setlocale, os_setlocale )
+  LROT_FUNCENTRY( time, os_time )
+  LROT_FUNCENTRY( tmpname, os_tmpname )
+LROT_END(oslib, NULL, 0)
 /* }====================================================== */
 
 
 
 LUALIB_API int luaopen_os (lua_State *L) {
-  LREGISTER(L, LUA_OSLIBNAME, syslib);
+   return 1;
 }

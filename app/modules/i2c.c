@@ -15,13 +15,16 @@ static int i2c_setup( lua_State *L )
   MOD_CHECK_ID( gpio, sda );
   MOD_CHECK_ID( gpio, scl );
 
-  if(scl==0 || sda==0)
-    return luaL_error( L, "no i2c for D0" );
+  if ( sda == 0 )
+    return luaL_error( L, "i2c SDA on D0 is not supported" );
 
   s32 speed = ( s32 )luaL_checkinteger( L, 4 );
-  if (speed <= 0)
+  if ( speed <= 0 )
     return luaL_error( L, "wrong arg range" );
-  lua_pushinteger( L, platform_i2c_setup( id, sda, scl, (u32)speed ) );
+  speed = platform_i2c_setup( id, sda, scl, (u32)speed );
+  if ( speed == 0 )
+    return luaL_error( L, "failed to initialize i2c %d", id );
+  lua_pushinteger( L, speed );
   return 1;
 }
 
@@ -31,7 +34,10 @@ static int i2c_start( lua_State *L )
   unsigned id = luaL_checkinteger( L, 1 );
 
   MOD_CHECK_ID( i2c, id );
-  platform_i2c_send_start( id );
+  if (platform_i2c_configured( id ) )
+      platform_i2c_send_start( id );
+  else
+      luaL_error( L, "i2c %d is not configured", id );
   return 0;
 }
 
@@ -140,18 +146,19 @@ static int i2c_read( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE i2c_map[] = {
-  { LSTRKEY( "setup" ),       LFUNCVAL( i2c_setup ) },
-  { LSTRKEY( "start" ),       LFUNCVAL( i2c_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( i2c_stop ) },
-  { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
-  { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
-  { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
- //{ LSTRKEY( "FAST" ),       LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
-  { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
-  { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
-  { LSTRKEY( "RECEIVER" ),    LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(i2c, NULL, 0)
+  LROT_FUNCENTRY( setup, i2c_setup )
+  LROT_FUNCENTRY( start, i2c_start )
+  LROT_FUNCENTRY( stop, i2c_stop )
+  LROT_FUNCENTRY( address, i2c_address )
+  LROT_FUNCENTRY( write, i2c_write )
+  LROT_FUNCENTRY( read, i2c_read )
+  LROT_NUMENTRY( FASTPLUS, PLATFORM_I2C_SPEED_FASTPLUS )
+  LROT_NUMENTRY( FAST, PLATFORM_I2C_SPEED_FAST )
+  LROT_NUMENTRY( SLOW, PLATFORM_I2C_SPEED_SLOW )
+  LROT_NUMENTRY( TRANSMITTER, PLATFORM_I2C_DIRECTION_TRANSMITTER )
+  LROT_NUMENTRY( RECEIVER, PLATFORM_I2C_DIRECTION_RECEIVER )
+LROT_END(i2c, NULL, 0)
 
-NODEMCU_MODULE(I2C, "i2c", i2c_map, NULL);
+
+NODEMCU_MODULE(I2C, "i2c", i2c, NULL);

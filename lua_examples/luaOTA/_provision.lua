@@ -1,23 +1,22 @@
 --SAFETRIM
 -- function _provision(self,socket,first_rec)
- 
+
 local self, socket, first_rec = ...
-local crypto, file, json, node, table = crypto, file, sjson,   node, table
+local crypto, file, json, node, table = crypto, file, sjson, node, table
 local stripdebug, gc = node.stripdebug, collectgarbage
 
 local buf = {}
-gc(); gc() 
+gc(); gc()
 
 local function getbuf()  -- upval: buf, table
   if #buf > 0 then return table.remove(buf, 1) end -- else return nil
 end
 
 -- Process a provisioning request record
-local function receiveRec(socket, rec)  -- upval: self, buf, crypto
-  -- Note that for 2nd and subsequent responses, we assme that the service has 
-  -- "authenticated" itself, so any protocol errors are fatal and lkely to 
+local function receiveRec(sck, rec)  -- upval: self, buf, crypto
+  -- Note that for 2nd and subsequent responses, we assume that the service has
+  -- "authenticated" itself, so any protocol errors are fatal and likely to
   -- cause a repeating boot, throw any protocol errors are thrown.
-  local buf, config, file, log = buf, self.config, file, self.log
   local cmdlen = (rec:find('\n',1, true) or 0) - 1
   local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
   if cmdlen < 16 or
@@ -25,7 +24,9 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
     return error("Invalid command signature")
   end
 
-  local s; s, cmd = pcall(json.decode, cmd)
+  local s
+  s, cmd = pcall(json.decode, cmd)
+  if not s then error("JSON decode error") end
   local action,resp = cmd.a, {s = "OK"}
   local chunk
 
@@ -59,18 +60,18 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
       if not msg then
         gc(); gc()
         local code, name = string.dump(lcf), cmd.name:sub(1,-5) .. ".lc"
-        local s = file.open(name, "w+")
-        if s then
+        local f = file.open(name, "w+")
+        if f then
           for i = 1, #code, 1024 do
-            s = s and file.write(code:sub(i, ((i+1023)>#code) and i+1023 or #code))
+            f = f and file.write(code:sub(i, ((i+1023)>#code) and i+1023 or #code))
           end
           file.close()
-          if not s then file.remove(name) end
+          if not f then file.remove(name) end
         end
-        if s then
+        if f then
           resp.lcsize=#code
           print("Updated ".. name)
-        else 
+        else
           msg = "file write failed"
         end
      end
@@ -80,22 +81,22 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
      buf = {}
 
     elseif action == "dl" then
-      local s = file.open(cmd.name, "w+")
-      if s then
+      local dlFile = file.open(cmd.name, "w+")
+      if dlFile then
         for i = 1, #buf do
-           s = s and file.write(buf[i])
+           dlFile = dlFile and file.write(buf[i])
         end
         file.close()
       end
-   
-      if s then
-        print("Updated ".. name)
-      else 
-        file.remove(name)
+
+      if dlFile then
+        print("Updated ".. cmd.name)
+      else
+        file.remove(cmd.name)
         resp.s = "write failed"
       end
       buf = {}
-   
+
     elseif action == "ul" then
       if file.open(cmd.name, "r") then
         file.seek("set", cmd.offset)
@@ -109,17 +110,17 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
       file.open(self.prefix.."config.json", "w+")
       file.writeline(json.encode(cmd))
       file.close()
-      socket:close()
+      sck:close()
       print("Restarting to load new application")
       node.restart()  -- reboot just schedules a restart
       return
     end
   end
-  self.socket_send(socket, resp, chunk)
+  self.socket_send(sck, resp, chunk)
   gc()
 end
 
 -- Replace the receive CB by the provisioning version and then tailcall this to
--- process this first record. 
+-- process this first record.
 socket:on("receive", receiveRec)
 return receiveRec(socket, first_rec)

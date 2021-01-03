@@ -4,6 +4,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "user_interface.h"
 
 static int wps_callback_ref;
 
@@ -29,7 +30,7 @@ LOCAL void ICACHE_FLASH_ATTR user_wps_status_cb(int status)
   if (wps_callback_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, wps_callback_ref);
     lua_pushinteger(L, status);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -41,7 +42,7 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 
   wps_callback_ref = LUA_NOREF;
 
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  if (lua_isfunction(L, 1))
     wps_callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   else
     return luaL_error (L, "Argument not a function");
@@ -52,22 +53,22 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 }
 
 // Module function map
-const LUA_REG_TYPE wps_map[] = {
-  { LSTRKEY( "disable" ),  LFUNCVAL( wps_disable ) },
-  { LSTRKEY( "enable" ),   LFUNCVAL( wps_enable ) },
-  { LSTRKEY( "start" ),    LFUNCVAL( wps_start ) },
-  { LSTRKEY( "SUCCESS" ),  LNUMVAL( WPS_CB_ST_SUCCESS ) },
-  { LSTRKEY( "FAILED" ),   LNUMVAL( WPS_CB_ST_FAILED ) },
-  { LSTRKEY( "TIMEOUT" ),  LNUMVAL( WPS_CB_ST_TIMEOUT ) },
-  { LSTRKEY( "WEP" ),      LNUMVAL( WPS_CB_ST_WEP ) },
-  { LSTRKEY( "SCAN_ERR" ), LNUMVAL( 4 ) }, // WPS_CB_ST_SCAN_ERR
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(wps, NULL, 0)
+  LROT_FUNCENTRY( disable, wps_disable )
+  LROT_FUNCENTRY( enable, wps_enable )
+  LROT_FUNCENTRY( start, wps_start )
+  LROT_NUMENTRY( SUCCESS, WPS_CB_ST_SUCCESS )
+  LROT_NUMENTRY( FAILED, WPS_CB_ST_FAILED )
+  LROT_NUMENTRY( TIMEOUT, WPS_CB_ST_TIMEOUT )
+  LROT_NUMENTRY( WEP, WPS_CB_ST_WEP )
+  LROT_NUMENTRY( SCAN_ERR, 4 )
+LROT_END(wps, NULL, 0)
+
 
 int luaopen_wps( lua_State *L )
 {
   return 0;
 }
 
-NODEMCU_MODULE(WPS, "wps", wps_map, luaopen_wps);
+NODEMCU_MODULE(WPS, "wps", wps, luaopen_wps);
 

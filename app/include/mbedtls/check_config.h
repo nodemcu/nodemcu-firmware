@@ -2,8 +2,9 @@
  * \file check_config.h
  *
  * \brief Consistency checks for configuration options
- *
- *  Copyright (C) 2006-2016, ARM Limited, All Rights Reserved
+ */
+/*
+ *  Copyright (C) 2006-2018, ARM Limited, All Rights Reserved
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -77,9 +78,18 @@
 #error "MBEDTLS_DHM_C defined, but not all prerequisites"
 #endif
 
+#if defined(MBEDTLS_SSL_TRUNCATED_HMAC_COMPAT) && !defined(MBEDTLS_SSL_TRUNCATED_HMAC)
+#error "MBEDTLS_SSL_TRUNCATED_HMAC_COMPAT defined, but not all prerequisites"
+#endif
+
 #if defined(MBEDTLS_CMAC_C) && \
     !defined(MBEDTLS_AES_C) && !defined(MBEDTLS_DES_C)
 #error "MBEDTLS_CMAC_C defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_NIST_KW_C) && \
+    ( !defined(MBEDTLS_AES_C) || !defined(MBEDTLS_CIPHER_C) )
+#error "MBEDTLS_NIST_KW_C defined, but not all prerequisites"
 #endif
 
 #if defined(MBEDTLS_ECDH_C) && !defined(MBEDTLS_ECP_C)
@@ -98,11 +108,22 @@
 #error "MBEDTLS_ECJPAKE_C defined, but not all prerequisites"
 #endif
 
+#if defined(MBEDTLS_ECP_RESTARTABLE)           && \
+    ( defined(MBEDTLS_ECDH_COMPUTE_SHARED_ALT) || \
+      defined(MBEDTLS_ECDH_GEN_PUBLIC_ALT)     || \
+      defined(MBEDTLS_ECDSA_SIGN_ALT)          || \
+      defined(MBEDTLS_ECDSA_VERIFY_ALT)        || \
+      defined(MBEDTLS_ECDSA_GENKEY_ALT)        || \
+      defined(MBEDTLS_ECP_INTERNAL_ALT)        || \
+      defined(MBEDTLS_ECP_ALT) )
+#error "MBEDTLS_ECP_RESTARTABLE defined, but it cannot coexist with an alternative ECP implementation"
+#endif
+
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC) && !defined(MBEDTLS_HMAC_DRBG_C)
 #error "MBEDTLS_ECDSA_DETERMINISTIC defined, but not all prerequisites"
 #endif
 
-#if defined(MBEDTLS_ECP_C) && ( !defined(MBEDTLS_BIGNUM_C) || (   \
+#if defined(MBEDTLS_ECP_C) && ( !defined(MBEDTLS_BIGNUM_C) || (    \
     !defined(MBEDTLS_ECP_DP_SECP192R1_ENABLED) &&                  \
     !defined(MBEDTLS_ECP_DP_SECP224R1_ENABLED) &&                  \
     !defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED) &&                  \
@@ -113,8 +134,14 @@
     !defined(MBEDTLS_ECP_DP_BP512R1_ENABLED)   &&                  \
     !defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED) &&                  \
     !defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED) &&                  \
-    !defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED) ) )
+    !defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED) &&                  \
+    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED) &&                 \
+    !defined(MBEDTLS_ECP_DP_CURVE448_ENABLED) ) )
 #error "MBEDTLS_ECP_C defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_PK_PARSE_C) && !defined(MBEDTLS_ASN1_PARSE_C)
+#error "MBEDTLS_PK_PARSE_C defined, but not all prerequesites"
 #endif
 
 #if defined(MBEDTLS_ENTROPY_C) && (!defined(MBEDTLS_SHA512_C) &&      \
@@ -186,6 +213,10 @@
 #error "MBEDTLS_HAVEGE_C defined, but not all prerequisites"
 #endif
 
+#if defined(MBEDTLS_HKDF_C) && !defined(MBEDTLS_MD_C)
+#error "MBEDTLS_HKDF_C defined, but not all prerequisites"
+#endif
+
 #if defined(MBEDTLS_HMAC_DRBG_C) && !defined(MBEDTLS_MD_C)
 #error "MBEDTLS_HMAC_DRBG_C defined, but not all prerequisites"
 #endif
@@ -248,6 +279,14 @@
 #if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C) &&                          \
     ( !defined(MBEDTLS_PLATFORM_C) || !defined(MBEDTLS_PLATFORM_MEMORY) )
 #error "MBEDTLS_MEMORY_BUFFER_ALLOC_C defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_MEMORY_BACKTRACE) && !defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
+#error "MBEDTLS_MEMORY_BACKTRACE defined, but not all prerequesites"
+#endif
+
+#if defined(MBEDTLS_MEMORY_DEBUG) && !defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
+#error "MBEDTLS_MEMORY_DEBUG defined, but not all prerequesites"
 #endif
 
 #if defined(MBEDTLS_PADLOCK_C) && !defined(MBEDTLS_HAVE_ASM)
@@ -662,7 +701,7 @@
 /*
  * Avoid warning from -pedantic. This is a convenient place for this
  * workaround since this is included by every single file before the
- * #if defined(MBEDTLS_xxx_C) that results in emtpy translation units.
+ * #if defined(MBEDTLS_xxx_C) that results in empty translation units.
  */
 typedef int mbedtls_iso_c_forbids_empty_translation_units;
 

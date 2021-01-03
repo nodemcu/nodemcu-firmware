@@ -4,7 +4,7 @@
 #ifndef __SWITEC_H__
 #define __SWITEC_H__
 
-#include "c_types.h"
+#include <stdint.h>
 
 #define SWITEC_CHANNEL_COUNT	3
 

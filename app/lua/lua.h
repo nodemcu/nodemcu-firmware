@@ -8,19 +8,10 @@
 
 #ifndef lua_h
 #define lua_h
-#ifdef LUAC_CROSS_FILE
-#include "luac_cross.h"
-#endif
-#ifdef LUA_CROSS_COMPILER
+#include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <ctype.h>
-#else
-#include "c_stdarg.h"
-#include "c_stddef.h"
-#include "c_types.h"
-#include <ctype.h>
-#endif
 
 #include "luaconf.h"
 
@@ -48,7 +39,8 @@
 #define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))
 
 
-/* thread status; 0 is OK */
+/* thread status */
+#define LUA_OK		0
 #define LUA_YIELD	1
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
@@ -79,18 +71,22 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 ** basic types
 */
 #define LUA_TNONE		(-1)
-
 #define LUA_TNIL		0
 #define LUA_TBOOLEAN		1
-#define LUA_TROTABLE  2
-#define LUA_TLIGHTFUNCTION  3
-#define LUA_TLIGHTUSERDATA	4
-#define LUA_TNUMBER		5
-#define LUA_TSTRING		6
-#define LUA_TTABLE		7
-#define LUA_TFUNCTION		8
-#define LUA_TUSERDATA		9
-#define LUA_TTHREAD		10
+#define LUA_TLIGHTUSERDATA	2
+#define LUA_TNUMBER		3
+#define LUA_TSTRING		4
+#define LUA_TTABLE		5
+#define LUA_TFUNCTION		6
+#define LUA_TUSERDATA		7
+#define LUA_TTHREAD		8
+
+#define LUA_TISROTABLE		(1<<4)
+#define LUA_TISLIGHTFUNC	(1<<5)
+#define LUA_TMASK               15
+
+#define LUA_TROTABLE		(LUA_TTABLE + LUA_TISROTABLE)
+#define LUA_TLIGHTFUNCTION	(LUA_TFUNCTION + LUA_TISLIGHTFUNC)
 
 /* minimum Lua stack available to a C function */
 #define LUA_MINSTACK	20
@@ -103,18 +99,18 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 #include LUA_USER_H
 #endif
 
-#if defined(LUA_OPTIMIZE_DEBUG) && LUA_OPTIMIZE_DEBUG == 0
-#undef LUA_OPTIMIZE_DEBUG
+#ifndef LUAI_OPTIMIZE_DEBUG
+#define LUAI_OPTIMIZE_DEBUG 2
 #endif
 
 /* type of numbers in Lua */
 typedef LUA_NUMBER lua_Number;
+typedef LUA_FLOAT lua_Float;
 
 
 /* type for integer functions */
 typedef LUA_INTEGER lua_Integer;
-
-
+typedef LUAI_UINT32 lua_Unsigned;
 
 /*
 ** state manipulation
@@ -129,6 +125,7 @@ LUA_API lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
 /*
 ** basic stack manipulation
 */
+LUA_API int   (lua_absindex) (lua_State *L, int idx);
 LUA_API int   (lua_gettop) (lua_State *L);
 LUA_API void  (lua_settop) (lua_State *L, int idx);
 LUA_API void  (lua_pushvalue) (lua_State *L, int idx);
@@ -149,11 +146,14 @@ LUA_API int             (lua_isstring) (lua_State *L, int idx);
 LUA_API int             (lua_iscfunction) (lua_State *L, int idx);
 LUA_API int             (lua_isuserdata) (lua_State *L, int idx);
 LUA_API int             (lua_type) (lua_State *L, int idx);
+LUA_API int             (lua_fulltype) (lua_State *L, int idx);
 LUA_API const char     *(lua_typename) (lua_State *L, int tp);
 
-LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);
-LUA_API int            (lua_rawequal) (lua_State *L, int idx1, int idx2);
-LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
+LUA_API int             (lua_rawequal) (lua_State *L, int idx1, int idx2);
+#define LUA_OPEQ    0
+#define LUA_OPLT    1
+#define LUA_OPLE    2
+LUA_API int             (lua_compare) (lua_State *L, int idx1, int idx2, int op);
 
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
@@ -173,7 +173,6 @@ LUA_API void  (lua_pushnil) (lua_State *L);
 LUA_API void  (lua_pushnumber) (lua_State *L, lua_Number n);
 LUA_API void  (lua_pushinteger) (lua_State *L, lua_Integer n);
 LUA_API void  (lua_pushlstring) (lua_State *L, const char *s, size_t l);
-LUA_API void  (lua_pushrolstring) (lua_State *L, const char *s, size_t l);
 LUA_API void  (lua_pushstring) (lua_State *L, const char *s);
 LUA_API const char *(lua_pushvfstring) (lua_State *L, const char *fmt,
                                                       va_list argp);
@@ -181,18 +180,17 @@ LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
 LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
-LUA_API void  (lua_pushlightfunction) (lua_State *L, void *p);
-LUA_API void  (lua_pushrotable) (lua_State *L, void *p);
 LUA_API int   (lua_pushthread) (lua_State *L);
 
 
 /*
 ** get functions (Lua -> stack)
 */
-LUA_API void  (lua_gettable) (lua_State *L, int idx);
-LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);
-LUA_API void  (lua_rawget) (lua_State *L, int idx);
-LUA_API void  (lua_rawgeti) (lua_State *L, int idx, int n);
+LUA_API int   (lua_gettable) (lua_State *L, int idx);
+LUA_API int   (lua_getfield) (lua_State *L, int idx, const char *k);
+LUA_API int   (lua_rawget) (lua_State *L, int idx);
+LUA_API int   (lua_rawgeti) (lua_State *L, int idx, int n);
+LUA_API int   (lua_rawgetp) (lua_State *L, int idx, const void *p);
 LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);
 LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);
 LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);
@@ -206,6 +204,7 @@ LUA_API void  (lua_settable) (lua_State *L, int idx);
 LUA_API void  (lua_setfield) (lua_State *L, int idx, const char *k);
 LUA_API void  (lua_rawset) (lua_State *L, int idx);
 LUA_API void  (lua_rawseti) (lua_State *L, int idx, int n);
+LUA_API void  (lua_rawsetp) (lua_State *L, int idx, const void *p);
 LUA_API int   (lua_setmetatable) (lua_State *L, int objindex);
 LUA_API int   (lua_setfenv) (lua_State *L, int idx);
 
@@ -218,8 +217,8 @@ LUA_API int   (lua_pcall) (lua_State *L, int nargs, int nresults, int errfunc);
 LUA_API int   (lua_cpcall) (lua_State *L, lua_CFunction func, void *ud);
 LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
                                         const char *chunkname);
-
-LUA_API int (lua_dump) (lua_State *L, lua_Writer writer, void *data);
+LUA_API int   (lua_dump) (lua_State *L, lua_Writer writer, void *data, int stripping);
+LUA_API int   (lua_stripdebug) (lua_State *L, int stripping);
 
 
 /*
@@ -279,10 +278,8 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
 #define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
-#define lua_islightfunction(L,n) (lua_type(L, (n)) == LUA_TLIGHTFUNCTION)
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
-#define lua_isrotable(L,n)	(lua_type(L, (n)) == LUA_TROTABLE)
-#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
+#define lua_islightuserdata(L,n) (lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
@@ -297,14 +294,24 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 
+#define lua_equal(L,idx1,idx2)		lua_compare(L,(idx1),(idx2),LUA_OPEQ)
+#define lua_lessthan(L,idx1,idx2)	lua_compare(L,(idx1),(idx2),LUA_OPLT)
 
+#define lua_pushunsigned(L,n)	lua_pushinteger(L, (lua_Integer)(n))
+#define lua_tounsigned(L,i)	((lua_Unsigned)lua_tointeger(L,i))
+
+/* error codes from cross-compiler returned by lua_dump */
+/* target integer is too small to hold a value */
+#define LUA_ERR_CC_INTOVERFLOW 101
+
+/* target lua_Number is integral but a constant is non-integer */
+#define LUA_ERR_CC_NOTINTEGER 102
 
 /*
 ** compatibility macros and functions
 */
 
 // BogdanM: modified for eLua interrupt support
-//#define lua_open()	luaL_newstate()
 lua_State* lua_open(void);
 lua_State* lua_getstate(void);
 
@@ -382,21 +389,56 @@ struct lua_Debug {
 
 /* }====================================================================== */
 
-typedef struct __lua_load{
-  lua_State *L;
-  int firstline;
-  char *line;
-  int line_position;
-  size_t len;
-  int done;
-  const char *prmt;
-}lua_Load;
+/* NodeMCU extensions to the standard API */
 
-int lua_main( int argc, char **argv );
+typedef struct ROTable ROTable;
+typedef const struct ROTable_entry ROTable_entry;
 
-#ifndef LUA_CROSS_COMPILER
-void lua_handle_input (bool force);
+LUA_API void (lua_pushrotable) (lua_State *L, const ROTable *p);
+LUA_API void (lua_createrotable) (lua_State *L, ROTable *t, ROTable_entry *e, ROTable *mt);
+LUA_API int  (lua_pushstringsarray) (lua_State *L, int opt);
+LUA_API int  (lua_freeheap) (void);
+
+LUA_API void (lua_getlfsconfig) (lua_State *L, int *);
+LUA_API int  (lua_pushlfsindex) (lua_State *L);
+
+#define EGC_NOT_ACTIVE        0   // EGC disabled
+#define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
+#define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
+#define EGC_ALWAYS            4   // always run EGC before an allocation
+
+#ifdef LUA_USE_ESP
+
+#define LUA_QUEUE_APP   0
+#define LUA_QUEUE_UART  1
+
+/**DEBUG**/extern void dbg_printf(const char *fmt, ...)
+                       __attribute__ ((format (printf, 1, 2)));
+#define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b))
+
+LUA_API void (lua_setegcmode) (lua_State *L, int mode, int limit);
+LUA_API void (lua_getegcinfo) (lua_State *L, int *totals);
+
+#else
+
+#define ICACHE_RODATA_ATTR
+#define dbg_printf printf
+
 #endif
+
+#ifdef DEVELOPMENT_USE_GDB
+LUALIB_API void (lua_debugbreak)(void);
+#else
+#define lua_debugbreak() (void)(0)
+#endif
+
+// EGC operations modes
+#define EGC_NOT_ACTIVE        0   // EGC disabled
+#define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
+#define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
+#define EGC_ALWAYS            4   // always run EGC before an allocation
+
+void legc_set_mode(lua_State *L, int mode, int limit);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

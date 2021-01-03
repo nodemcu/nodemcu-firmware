@@ -1,11 +1,10 @@
-#include "c_stdio.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "coap.h"
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "lualib.h"
 
 #include "os_type.h"
 #include "user_interface.h"
@@ -21,14 +20,14 @@ void endpoint_setup(void)
 static const coap_endpoint_path_t path_well_known_core = {2, {".well-known", "core"}};
 static int handle_get_well_known_core(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
-    outpkt->content.p = (uint8_t *)c_zalloc(MAX_PAYLOAD_SIZE);      // this should be free-ed when outpkt is built in coap_server_respond()
+    outpkt->content.p = (uint8_t *)calloc(1,MAX_PAYLOAD_SIZE);      // this should be free-ed when outpkt is built in coap_server_respond()
     if(outpkt->content.p == NULL){
         NODE_DBG("not enough memory\n");
         return COAP_ERR_BUFFER_TOO_SMALL;
     }
     outpkt->content.len = MAX_PAYLOAD_SIZE;
     build_well_known_rsp(outpkt->content.p, outpkt->content.len);
-    return coap_make_response(scratch, outpkt, (const uint8_t *)outpkt->content.p, c_strlen(outpkt->content.p), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
+    return coap_make_response(scratch, outpkt, (const uint8_t *)outpkt->content.p, strlen(outpkt->content.p), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
 }
 
 static const coap_endpoint_path_t path_variable = {2, {"v1", "v"}};
@@ -49,17 +48,17 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
         {
             coap_luser_entry *h = ep->user_entry->next;     // ->next: skip the first entry(head)
             while(NULL != h){
-                if (opt[count-1].buf.len != c_strlen(h->name))
+                if (opt[count-1].buf.len != strlen(h->name))
                 {
                     h = h->next;
                     continue;
                 }
-                if (0 == c_memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
+                if (0 == memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
                 {
                     NODE_DBG("/v1/v/");
                     NODE_DBG((char *)h->name);
                     NODE_DBG(" match.\n");
-                    if(c_strlen(h->name))
+                    if(strlen(h->name))
                     {
                         n = lua_gettop(L);
                         lua_getglobal(L, h->name);
@@ -70,7 +69,7 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
                         } else {
                             const char *res = lua_tostring(L,-1);
                             lua_settop(L, n);
-                            return coap_make_response(scratch, outpkt, (const uint8_t *)res, c_strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, h->content_type);
+                            return coap_make_response(scratch, outpkt, (const uint8_t *)res, strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, h->content_type);
                         }
                     }
                 } else {
@@ -105,18 +104,18 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
         {
             coap_luser_entry *h = ep->user_entry->next;     // ->next: skip the first entry(head)
             while(NULL != h){
-                if (opt[count-1].buf.len != c_strlen(h->name))
+                if (opt[count-1].buf.len != strlen(h->name))
                 {
                     h = h->next;
                     continue;
                 }
-                if (0 == c_memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
+                if (0 == memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
                 {
                     NODE_DBG("/v1/f/");
                     NODE_DBG((char *)h->name);
                     NODE_DBG(" match.\n");
 
-                    if(c_strlen(h->name))
+                    if(strlen(h->name))
                     {
                         n = lua_gettop(L);
                         lua_getglobal(L, h->name);
@@ -141,7 +140,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                                     NODE_DBG("\n");
                                     lua_settop(L, n);
                                     return coap_make_response(scratch, outpkt, ret, len, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
-                                } 
+                                }
                             } else {
                                 lua_settop(L, n);
                                 return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
@@ -157,12 +156,11 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
             goto end;
         }
     }
-    NODE_DBG("none match.\n");    
+    NODE_DBG("none match.\n");
 end:
     return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
 }
 
-extern lua_Load gLoad;
 static const coap_endpoint_path_t path_command = {2, {"v1", "c"}};
 static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
@@ -170,18 +168,22 @@ static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_BAD_REQUEST, COAP_CONTENTTYPE_TEXT_PLAIN);
     if (inpkt->payload.len > 0)
     {
-        lua_Load *load = &gLoad;
-        if(load->line_position == 0){
-            coap_buffer_to_string(load->line, load->len,&inpkt->payload);
-            load->line_position = c_strlen(load->line)+1;
-            // load->line[load->line_position-1] = '\n';
-            // load->line[load->line_position] = 0;
-            // load->line_position++;
-            load->done = 1;
-            NODE_DBG("Get command:\n");
-            NODE_DBG(load->line); // buggy here
-            NODE_DBG("\nResult(if any):\n");
-            system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+        char line[LUA_MAXINPUT+1];
+        if (!coap_buffer_to_string(line, LUA_MAXINPUT, &inpkt->payload)) {
+            lua_State *L = lua_getstate();
+            int base = lua_gettop(L), n, status;
+            int l = strlen(line);
+            line[l++] = '\n';
+            /* compile and exec payload; any error or results will be left on the stack and printed */
+            /* TODO: consider returning output as result instead of printing */ 
+            luaL_dostring(L, line);
+            if ((n = lua_gettop(L) - base) > 0)
+            {
+                lua_getglobal(L, "print");
+                lua_insert(L, base);
+                lua_pcall(L, n, 0, 0);
+                lua_settop(L, base);
+            }
         }
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
     }
@@ -217,7 +219,7 @@ void build_well_known_rsp(char *rsp, uint16_t rsplen)
     int i;
     uint16_t len = rsplen;
 
-    c_memset(rsp, 0, len);
+    memset(rsp, 0, len);
 
     len--; // Null-terminated string
 
@@ -228,57 +230,57 @@ void build_well_known_rsp(char *rsp, uint16_t rsplen)
             continue;
         }
         if (NULL == ep->user_entry){
-            if (0 < c_strlen(rsp)) {
-                c_strncat(rsp, ",", len);
+            if (0 < strlen(rsp)) {
+                strncat(rsp, ",", len);
                 len--;
             }
-        
-            c_strncat(rsp, "<", len);
+
+            strncat(rsp, "<", len);
             len--;
 
             for (i = 0; i < ep->path->count; i++) {
-                c_strncat(rsp, "/", len);
+                strncat(rsp, "/", len);
                 len--;
 
-                c_strncat(rsp, ep->path->elems[i], len);
-                len -= c_strlen(ep->path->elems[i]);
+                strncat(rsp, ep->path->elems[i], len);
+                len -= strlen(ep->path->elems[i]);
             }
 
-            c_strncat(rsp, ">;", len);
+            strncat(rsp, ">;", len);
             len -= 2;
 
-            c_strncat(rsp, ep->core_attr, len);
-            len -= c_strlen(ep->core_attr);
+            strncat(rsp, ep->core_attr, len);
+            len -= strlen(ep->core_attr);
         } else {
             coap_luser_entry *h = ep->user_entry->next;     // ->next: skip the first entry(head)
             while(NULL != h){
-                if (0 < c_strlen(rsp)) {
-                    c_strncat(rsp, ",", len);
+                if (0 < strlen(rsp)) {
+                    strncat(rsp, ",", len);
                     len--;
                 }
-            
-                c_strncat(rsp, "<", len);
+
+                strncat(rsp, "<", len);
                 len--;
 
                 for (i = 0; i < ep->path->count; i++) {
-                    c_strncat(rsp, "/", len);
+                    strncat(rsp, "/", len);
                     len--;
 
-                    c_strncat(rsp, ep->path->elems[i], len);
-                    len -= c_strlen(ep->path->elems[i]);
+                    strncat(rsp, ep->path->elems[i], len);
+                    len -= strlen(ep->path->elems[i]);
                 }
 
-                c_strncat(rsp, "/", len);
+                strncat(rsp, "/", len);
                 len--;
 
-                c_strncat(rsp, h->name, len);
-                len -= c_strlen(h->name);
+                strncat(rsp, h->name, len);
+                len -= strlen(h->name);
 
-                c_strncat(rsp, ">;", len);
+                strncat(rsp, ">;", len);
                 len -= 2;
 
-                c_strncat(rsp, ep->core_attr, len);
-                len -= c_strlen(ep->core_attr);  
+                strncat(rsp, ep->core_attr, len);
+                len -= strlen(ep->core_attr);
 
                 h = h->next;
             }

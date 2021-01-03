@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -13,7 +14,7 @@ function M.run()
     disp:setColor(3, 0, 255, 255)
 
     disp:drawGradientBox(0, 0, disp:getWidth(), disp:getHeight())
-  
+
     disp:setColor(255, 255, 255)
     disp:setPrintPos(2,18)
     disp:setPrintDir(0)

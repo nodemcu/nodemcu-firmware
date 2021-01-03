@@ -148,11 +148,11 @@
 #define SPIFFS_PACKED __attribute__((packed))
 #elif defined(__ICCARM__) || defined(__CC_ARM)
     /* For IAR ARM and Keil MDK-ARM compilers */
-#define SPIFFS_PACKED 
+#define SPIFFS_PACKED
 
 #else
     /* Unknown compiler */
-#define SPIFFS_PACKED 
+#define SPIFFS_PACKED
 #endif
 
 
@@ -262,8 +262,8 @@
 #define SPIFFS_FH_OFFS(fs, fh)   ((fh) != 0 ? ((fh) + (fs)->cfg.fh_ix_offset) : 0)
 #define SPIFFS_FH_UNOFFS(fs, fh) ((fh) != 0 ? ((fh) - (fs)->cfg.fh_ix_offset) : 0)
 #else
-#define SPIFFS_FH_OFFS(fs, fh)   (fh)
-#define SPIFFS_FH_UNOFFS(fs, fh) (fh)
+#define SPIFFS_FH_OFFS(fs, fh)   ((spiffs_file)(fh))
+#define SPIFFS_FH_UNOFFS(fs, fh) ((spiffs_file)(fh))
 #endif
 
 
@@ -492,7 +492,11 @@ typedef struct SPIFFS_PACKED {
 // object index header page header
 typedef struct SPIFFS_PACKED
 #if SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
-                __attribute(( aligned(sizeof(spiffs_page_ix)) ))
+#ifdef _MSC_VER
+                 __declspec( align( 2 ) ) // must track sizeof(spiffs_page_ix) in spiffs_config.h
+#else
+                 __attribute(( aligned(sizeof(spiffs_page_ix)) ))
+#endif
 #endif
 {
   // common page header

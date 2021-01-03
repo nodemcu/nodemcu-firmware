@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 

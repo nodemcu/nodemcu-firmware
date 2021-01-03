@@ -3,13 +3,13 @@
  * Copyright (C) 2010,2011 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #ifndef _COAP_STR_H_
 #define _COAP_STR_H_
 
-#include "c_string.h"
+#include <string.h>
 
 typedef struct {
   size_t length;		/* length of string */

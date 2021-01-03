@@ -7,11 +7,7 @@
 #ifndef lundump_h
 #define lundump_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdint.h>
-#else
-#include "c_stdint.h"
-#endif
 
 #include "lobject.h"
 #include "lzio.h"
@@ -53,12 +49,5 @@ LUAI_FUNC void luaU_print (const Proto* f, int full);
 
 /* size of header of binary files */
 #define LUAC_HEADERSIZE		12
-
-/* error codes from cross-compiler */
-/* target integer is too small to hold a value */
-#define LUA_ERR_CC_INTOVERFLOW 101
-
-/* target lua_Number is integral but a constant is non-integer */
-#define LUA_ERR_CC_NOTINTEGER 102
 
 #endif

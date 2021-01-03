@@ -1,8 +1,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 
 static inline uint32_t _getCycleCount(void) {
@@ -68,7 +68,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   const char *rgb = luaL_checklstring(L, 2, &length);
 
   // dont modify lua-internal lstring - make a copy instead
-  char *buffer = (char *)c_malloc(length);
+  char *buffer = (char *)malloc(length);
 
   // Ignore incomplete Byte triples at the end of buffer
   length -= length % 3;
@@ -95,20 +95,19 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
 
   os_delay_us(500); // reset time
 
-  c_free(buffer);
+  free(buffer);
 
   return 0;
 }
 
-static const LUA_REG_TYPE tm1829_map[] =
-{
-  { LSTRKEY( "write" ), LFUNCVAL( tm1829_write) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tm1829, NULL, 0)
+  LROT_FUNCENTRY( write, tm1829_write )
+LROT_END(tm1829, NULL, 0)
+
 
 int luaopen_tm1829(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
   return 0;
 }
 
-NODEMCU_MODULE(TM1829, "tm1829", tm1829_map, luaopen_tm1829);
+NODEMCU_MODULE(TM1829, "tm1829", tm1829, luaopen_tm1829);

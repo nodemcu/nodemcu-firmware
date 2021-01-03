@@ -1039,6 +1039,7 @@ mdns_reg(struct mdns_info *info) {
 	   os_timer_disarm(&mdns_timer);
    }
 }
+#include "pm/swtimer.h"
 
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
@@ -1129,6 +1130,8 @@ mdns_init(struct mdns_info *info) {
 
 		os_timer_disarm(&mdns_timer);
 		os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
+		SWTIMER_REG_CB(mdns_reg, SWTIMER_RESTART);
+		  //going on the above comment, it's probably a good idea to let mdns_reg run it's course. not sure if the 1 second timing is important, so lets restart it to be safe.
 		os_timer_arm(&mdns_timer, 1000, 1);
 	}
 }

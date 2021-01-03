@@ -2,11 +2,10 @@
 #define _NODEMCU_SPIFFS_H
 
 #ifndef NODEMCU_SPIFFS_NO_INCLUDE
-#include "c_stdint.h"
-#include "c_stddef.h"
-#include "c_stdio.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include "user_interface.h"
-typedef uint32_t intptr_t;
 #endif
 
 // Turn off stats
@@ -23,4 +22,7 @@ typedef uint32_t intptr_t;
 // Reduce the chance of returning disk full
 #define SPIFFS_GC_MAX_RUNS          256
 
+#define SPIFFS_SECURE_ERASE         0
+
+extern void myspiffs_set_automount();
 #endif

@@ -1,7 +1,8 @@
 #ifndef __ONEWIRE_H__
 #define __ONEWIRE_H__
 
-#include "c_types.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 // You can exclude certain features from OneWire.  In theory, this
 // might save some space.  In practice, the compiler automatically

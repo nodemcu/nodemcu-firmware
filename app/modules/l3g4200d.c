@@ -6,8 +6,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 static const uint32_t i2c_id = 0;
 static const uint8_t i2c_addr = 0x69;
@@ -48,23 +48,6 @@ static int l3g4200d_setup(lua_State* L) {
     return 0;
 }
 
-static int l3g4200d_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("l3g4200d.init() is replaced by l3g4200d.setup()", "in the next version");
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return l3g4200d_setup(L);
-}
-
 static int l3g4200d_read(lua_State* L) {
 
     uint8_t data[6];
@@ -80,7 +63,7 @@ static int l3g4200d_read(lua_State* L) {
     for (i=0; i<5; i++) {
 	data[i] = platform_i2c_recv_byte(i2c_id, 1);
     }
-    
+
     data[5] = platform_i2c_recv_byte(i2c_id, 0);
 
     platform_i2c_send_stop(i2c_id);
@@ -96,12 +79,10 @@ static int l3g4200d_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE l3g4200d_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( l3g4200d_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( l3g4200d_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( l3g4200d_init )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(l3g4200d, NULL, 0)
+  LROT_FUNCENTRY( read, l3g4200d_read )
+  LROT_FUNCENTRY( setup, l3g4200d_setup )
+LROT_END(l3g4200d, NULL, 0)
 
-NODEMCU_MODULE(L3G4200D, "l3g4200d", l3g4200d_map, NULL);
+
+NODEMCU_MODULE(L3G4200D, "l3g4200d", l3g4200d, NULL);

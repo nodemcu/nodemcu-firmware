@@ -2,10 +2,10 @@
 
 #include "platform.h"
 #include "common.h"
-#include "c_stdio.h"
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "llimits.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include "gpio.h"
 #include "user_interface.h"
 #include "driver/gpio16.h"
@@ -17,7 +17,8 @@
 #define INTERRUPT_TYPE_IS_LEVEL(x)   ((x) >= GPIO_PIN_INTR_LOLEVEL)
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static task_handle_t gpio_task_handle;
+static platform_task_handle_t gpio_task_handle;
+static int task_init_handler(void);
 
 #ifdef GPIO_INTERRUPT_HOOK_ENABLE
 struct gpio_hook_entry {
@@ -25,12 +26,12 @@ struct gpio_hook_entry {
   uint32_t               bits;
 };
 struct gpio_hook {
-  struct gpio_hook_entry *entry;
   uint32_t                all_bits;
   uint32_t                count;
+  struct gpio_hook_entry  entry[1];
 };
 
-static struct gpio_hook platform_gpio_hook;
+static struct gpio_hook *platform_gpio_hook;
 #endif
 #endif
 
@@ -55,10 +56,12 @@ static const int uart_bitrates[] = {
     BIT_RATE_3686400
 };
 
-int platform_init()
+int platform_init ()
 {
   // Setup the various forward and reverse mappings for the pins
   get_pin_map();
+
+  (void) task_init_handler();
 
   cmn_platform_init();
   // All done
@@ -83,7 +86,7 @@ uint8_t platform_key_led( uint8_t level){
 /*
  * Set GPIO mode to output. Optionally in RAM helper because interrupts are dsabled
  */
-static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
+static void NO_INTR_CODE set_gpio_no_interrupt(uint8_t pin, uint8_t push_pull) {
   unsigned pnum = pin_num[pin];
   ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -105,6 +108,7 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
                    GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) |
                    GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
   }
+
   ETS_GPIO_INTR_ENABLE();
 }
 
@@ -112,7 +116,7 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
  * Set GPIO mode to interrupt. Optionally RAM helper because interrupts are dsabled
  */
 #ifdef GPIO_INTERRUPT_ENABLE
-static void NO_INTR_CODE set_gpio_interrupt(uint8 pin) {
+static void NO_INTR_CODE set_gpio_interrupt(uint8_t pin) {
   ETS_GPIO_INTR_DISABLE();
   PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
   GPIO_DIS_OUTPUT(pin_num[pin]);
@@ -153,12 +157,15 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
     case PLATFORM_GPIO_INPUT:
       GPIO_DIS_OUTPUT(pin_num[pin]);
-      /* run on */
+      set_gpio_no_interrupt(pin, TRUE);
+      break;
     case PLATFORM_GPIO_OUTPUT:
       set_gpio_no_interrupt(pin, TRUE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
     case PLATFORM_GPIO_OPENDRAIN:
       set_gpio_no_interrupt(pin, FALSE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -205,16 +212,16 @@ int platform_gpio_read( unsigned pin )
 
 #ifdef GPIO_INTERRUPT_ENABLE
 static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
-  uint32 j=0;
-  uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-  uint32 now = system_get_time();
-  UNUSED(dummy);
+  uint32_t j=0;
+  uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+  uint32_t now = system_get_time();
+  (void)(dummy);
 
 #ifdef GPIO_INTERRUPT_HOOK_ENABLE
-  if (gpio_status & platform_gpio_hook.all_bits) {
-    for (j = 0; j < platform_gpio_hook.count; j++) {
-       if (gpio_status & platform_gpio_hook.entry[j].bits)
-         gpio_status = (platform_gpio_hook.entry[j].func)(gpio_status);
+  if (gpio_status & platform_gpio_hook->all_bits) {
+    for (j = 0; j < platform_gpio_hook->count; j++) {
+       if (gpio_status & platform_gpio_hook->entry[j].bits)
+         gpio_status = (platform_gpio_hook->entry[j].func)(gpio_status);
     }
   }
 #endif
@@ -240,22 +247,27 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
 
         if (diff == 0 || diff & 0x8000) {
-          uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-	  if (!task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
+          uint32_t level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
+	  if (!platform_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
             // If we fail to post, then try on the next interrupt
             pin_counter[i].seen |= 0x8000;
           }
           // We re-enable the interrupt when we execute the callback (if level)
         }
+      } else {
+        // this is an unexpected interrupt so shut it off for now
+        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
       }
     }
   }
 }
 
-void platform_gpio_init( task_handle_t gpio_task )
+void platform_gpio_init( platform_task_handle_t gpio_task )
 {
   gpio_task_handle = gpio_task;
-
+  // No error handling but this is called at startup when there is a lot of free RAM
+  platform_gpio_hook =  calloc (1, sizeof(*platform_gpio_hook) - sizeof(struct gpio_hook_entry));
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, NULL);
 }
 
@@ -270,74 +282,53 @@ void platform_gpio_init( task_handle_t gpio_task )
  */
 int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
 {
-  struct gpio_hook nh, oh = platform_gpio_hook;
-  int i, j;
+  struct gpio_hook *oh = platform_gpio_hook;
+  int i, j, cur = -1;
 
-  if (!hook) {
-    // Cannot register or unregister null hook
+  if (!hook)   // Cannot register or unregister null hook
     return 0;
-  }
 
-  int delete_slot = -1;
-
-  // If hook already registered, just update the bits
-  for (i=0; i<oh.count; i++) {
-    if (hook == oh.entry[i].func) {
-      if (!bits) {
-	// Unregister if move to zero bits
-	delete_slot = i;
-	break;
-      }
-      if (bits & (oh.all_bits & ~oh.entry[i].bits)) {
-	// Attempt to hook an already hooked bit
-	return 0;
-      }
-      // Update the hooked bits (in the right order)
-      uint32_t old_bits = oh.entry[i].bits;
-      *(volatile uint32_t *) &oh.entry[i].bits = bits;
-      *(volatile uint32_t *) &oh.all_bits = (oh.all_bits & ~old_bits) | bits;
-      return 1;
+  // Is the hook already registered?
+  for (i=0; i<oh->count; i++) {
+    if (hook == oh->entry[i].func) {
+      cur = i;
+      break;
     }
   }
 
-  // This must be the register new hook / delete old hook
-  
-  if (delete_slot < 0) {
-    if (bits & oh.all_bits) {
-      return 0;   // Attempt to hook already hooked bits
-    }
-    nh.count = oh.count + 1;    // register a new hook
-  } else {
-    nh.count = oh.count - 1;    // unregister an old hook
-  }
+  // return error status if there is a bits clash
+  if (oh->all_bits & ~(cur < 0 ? 0 : oh->entry[cur].bits) & bits)
+    return 0;
 
-  // These return NULL if the count = 0 so only error check if > 0)
-  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
-  if (nh.count && !(nh.entry)) {
-    return 0;  // Allocation failure
-  }
+  // Allocate replacement hook block and return 0 on alloc failure
+  int count = oh->count + (cur < 0 ? 1 : (bits == 0 ? -1 : 0)); 
+  struct gpio_hook *nh = malloc (sizeof *oh + (count -1)*sizeof(struct gpio_hook_entry));
+  if (!oh)
+    return 0;
 
-  for (i=0, j=0; i<oh.count; i++) {
-    // Don't copy if this is the entry to delete
-    if (i != delete_slot) {
-      nh.entry[j++]   = oh.entry[i];
-    }
-  }
+  nh->all_bits = 0;
+  nh->count = count;
 
-  if (delete_slot < 0) { // for a register add the hook to the tail and set the all bits
-    nh.entry[j].bits  = bits;
-    nh.entry[j].func  = hook;
-    nh.all_bits = oh.all_bits | bits;
-  } else {    // for an unregister clear the matching all bits
-    nh.all_bits = oh.all_bits & (~oh.entry[delete_slot].bits);
+  for (i=0, j=0; i<oh->count; i++) {
+    if (i == cur && !bits) 
+      continue;  /* unregister entry is a no-op */
+    nh->entry[j] = oh->entry[i];  /* copy existing entry */
+    if (i == cur)
+      nh->entry[j].bits = bits;   /* update bits if this is a replacement */
+    nh->all_bits |= nh->entry[j++].bits;
   }
-
+ 
+  if (cur < 0) {                  /* append new hook entry */
+    nh->entry[j].func = hook;
+    nh->entry[j].bits = bits;
+    nh->all_bits |= bits;
+  } 
+       
   ETS_GPIO_INTR_DISABLE();
-  // This is a structure copy, so interrupts need to be disabled
   platform_gpio_hook = nh;
   ETS_GPIO_INTR_ENABLE();
 
-  c_free(oh.entry);
+  free(oh);
   return 1;
 }
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
@@ -727,16 +718,19 @@ uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t spe
   platform_gpio_mode(sda, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);   // inside this func call platform_pwm_close
   platform_gpio_mode(scl, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);    // disable gpio interrupt first
 
-  i2c_master_gpio_init(sda, scl);
-  return PLATFORM_I2C_SPEED_SLOW;
+  return i2c_master_setup(id, sda, scl, speed);
+}
+
+bool platform_i2c_configured( unsigned id ){
+  return i2c_master_configured(id);
 }
 
 void platform_i2c_send_start( unsigned id ){
-  i2c_master_start();
+  i2c_master_start(id);
 }
 
 void platform_i2c_send_stop( unsigned id ){
-  i2c_master_stop();
+  i2c_master_stop(id);
 }
 
 int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
@@ -746,22 +740,17 @@ int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
            PLATFORM_I2C_DIRECTION_RECEIVER == 1 ) ) {
     direction = ( direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ) ? 0 : 1;
   }
-
-  i2c_master_writeByte( (uint8_t) ((address << 1) | direction ));
-  // Low-level returns nack (0=acked); we return ack (1=acked).
-  return ! i2c_master_getAck();
+  return i2c_master_writeByte(id,
+    (uint8_t) ((address << 1) + (direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ? 0 : 1))
+  );
 }
 
-int platform_i2c_send_byte( unsigned id, uint8_t data ){
-  i2c_master_writeByte(data);
-  // Low-level returns nack (0=acked); we return ack (1=acked).
-  return ! i2c_master_getAck();
+int platform_i2c_send_byte(unsigned id, uint8_t data ){
+  return i2c_master_writeByte(id, data);
 }
 
 int platform_i2c_recv_byte( unsigned id, int ack ){
-  uint8_t r = i2c_master_readByte();
-  i2c_master_setAck( !ack );
-  return r;
+  return i2c_master_readByte(id, ack);
 }
 
 // *****************************************************************************
@@ -859,19 +848,19 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
   if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
-    apbuf = (uint32_t *)c_malloc(size);
+    apbuf = (uint32_t *)malloc(size);
     if(!apbuf)
       return 0;
-    c_memcpy(apbuf, from, size);
+    memcpy(apbuf, from, size);
   }
   system_soft_wdt_feed ();
-  r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
+  r = flash_write(toaddr, apbuf?(uint32_t *)apbuf:(uint32_t *)from, size);
   if(apbuf)
-    c_free(apbuf);
+    free(apbuf);
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr);
+    NODE_ERR( "ERROR in flash_write: r=%d at %p\n", r, toaddr);
     return 0;
   }
 }
@@ -893,45 +882,286 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if( ((uint32_t)to) & blkmask )
   {
     uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
-    uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
+    uint32_t* to2=(uint32_t*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
     r = flash_read(fromaddr, to2, size2);
     if(SPI_FLASH_RESULT_OK == r)
     {
-      os_memmove(to,to2,size2);
+      memmove(to,to2,size2);  // This is overlapped so must be memmove and not memcpy
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
       r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
-      os_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
     }
   }
   else
-    r = flash_read(fromaddr, (uint32 *)to, size);
+    r = flash_read(fromaddr, (uint32_t *)to, size);
 
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
+    NODE_ERR( "ERROR in flash_read: r=%d at %p\n", r, fromaddr);
     return 0;
   }
 }
 
 int platform_flash_erase_sector( uint32_t sector_id )
 {
-  system_soft_wdt_feed ();
+  NODE_DBG( "flash_erase_sector(%u)\n", sector_id);
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
-{
+static uint32_t flash_map_meg_offset (void) {
   uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
   if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
     return -1;
-  bool b0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 1 : 0;
-  bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
-  uint32_t meg = (b1 << 1) | b0;
-  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
+  uint32_t m0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 0x100000 : 0;
+  uint32_t m1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 0x200000 : 0;
+  return m0 + m1;
+}
+
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr) {
+  uint32_t meg = flash_map_meg_offset();
+  return (meg&1) ? -1 : mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg ;
+}
+
+uint32_t platform_flash_phys2mapped (uint32_t phys_addr) {
+  uint32_t meg = flash_map_meg_offset();
+  return (meg&1) ? -1 : phys_addr + INTERNAL_FLASH_MAPPED_ADDRESS - meg;
+}
+
+uint32_t platform_flash_get_partition (uint32_t part_id, uint32_t *addr) {
+  partition_item_t pt = {0,0,0};
+  system_partition_get_item(SYSTEM_PARTITION_CUSTOMER_BEGIN + part_id, &pt);
+  if (addr) {
+    *addr = pt.addr;
+  }
+  return  pt.type == 0 ? 0 : pt.size;
+}
+/*
+ * The Reboot Config Records are stored in the 4K flash page at offset 0x10000 (in
+ * the linker section .irom0.ptable) and is used for configuration changes that
+ * persist across reboots. This page contains a sequence of records, each of which
+ * is word-aligned and comprises a header and body of length 0-64 words.  The 4-byte
+ * header comprises a length, a RCR id, and two zero fill bytes.  These are written
+ * using flash NAND writing rules, so any unused area (all 0xFF) can be overwritten
+ * by a new record without needing to erase the RCR page.  Ditto any existing
+ * record can be marked as deleted by over-writing the header with the id set to
+ * PLATFORM_RCR_DELETED (0x0).  Note that the last word is not used additions so a
+ * scan for PLATFORM_RCR_FREE will always terminate.
+ *
+ * The number of updates is extremely low, so it is unlikely (but possible) that
+ * the page might fill with the churn of new RCRs, so in this case the write function
+ * compacts the page by eliminating all deleted records.  This does require a flash
+ * sector erase.
+ *
+ * NOTE THAT THIS ALGO ISN'T 100% ROBUST, eg. a powerfail between the erase and the
+ * wite-back will leave the page unitialised; ditto a powerfail between the record
+ * appned and old deletion will leave two records.  However this is better than the
+ * general integrity of SPIFFS, for example and the vulnerable window is typically
+ * less than 1 mSec every configuration change.
+ */
+extern uint32_t _irom0_text_start[];
+#define RCR_WORD(i) (_irom0_text_start[i])
+#define WORDSIZE sizeof(uint32_t)
+#define FLASH_SECTOR_WORDS (INTERNAL_FLASH_SECTOR_SIZE/WORDSIZE)
+
+uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
+    platform_rcr_t *rcr = (platform_rcr_t *) &RCR_WORD(0);
+    uint32_t i = 0;
+   /*
+    * Chain down the RCR page looking for a record that matches the record
+    * ID. If found return the size of the record and optionally its address.
+    */
+   while (1) {
+        // copy RCR header into RAM to avoid unaligned exceptions
+        platform_rcr_t r = (platform_rcr_t) RCR_WORD(i);
+        if (r.id == rec_id) {
+            if (rec) *rec = &RCR_WORD(i+1);
+            return r.len * WORDSIZE;
+        } else if (r.id == PLATFORM_RCR_FREE) {
+            break;
+        }
+        i += 1 + r.len;
+    }
+    return ~0;
+}
+
+uint32_t platform_rcr_get_startup_option() {
+  static uint32_t option = ~0;
+  uint32_t *option_p;
+
+  if (option == ~0) {
+    option = 0;
+
+    if (platform_rcr_read(PLATFORM_RCR_STARTUP_OPTION, (void **) &option_p) == sizeof(*option_p)) {
+      option = *option_p;
+    }
+  }
+  return option;
+}
+
+uint32_t platform_rcr_delete (uint8_t rec_id) {
+  uint32_t *rec = NULL;
+  platform_rcr_read(rec_id, (void**)&rec);
+  if (rec) {
+    uint32_t *pHdr = rec - 1;  /* the header is the word proceeding the rec */ 
+    platform_rcr_t hdr = {.hdr = *pHdr};
+    hdr.id = PLATFORM_RCR_DELETED;
+    platform_s_flash_write(&hdr, platform_flash_mapped2phys((uint32_t) pHdr), WORDSIZE);
+    return 0;
+  }
+  return ~0;
+}
+
+/*
+ * Chain down the RCR page and look for an existing record that matches the record
+ * ID and the first free record.  If there is enough room, then append the new
+ * record and mark any previous record as deleted.  If the page is full then GC,
+ * erase the page and rewrite with the GCed content.
+ */
+#define MAXREC 65
+uint32_t platform_rcr_write (uint8_t rec_id, const void *inrec, uint8_t n) {
+    uint32_t nwords = (n+WORDSIZE-1) / WORDSIZE;
+    uint32_t reclen = (nwords+1)*WORDSIZE;
+    uint32_t *prev=NULL, *new = NULL;
+
+    // make local stack copy of inrec including header and any trailing fill bytes
+    uint32_t rec[MAXREC];
+    if (nwords >= MAXREC)
+        return ~0;
+    rec[0] = 0; rec[nwords] = 0;
+    ((platform_rcr_t *) rec)->id = rec_id;
+    ((platform_rcr_t *) rec)->len = nwords;
+    memcpy(rec+1, inrec, n);  // let memcpy handle 0 and odd byte cases
+
+    // find previous copy if any and exit if the replacement is the same value
+    uint8_t np = platform_rcr_read (rec_id, (void **) &prev);
+    if (prev && !os_memcmp(prev-1, rec, reclen))
+        return n;
+
+    // find next free slot
+    platform_rcr_read (PLATFORM_RCR_FREE, (void **) &new);
+    uint32_t nfree = &RCR_WORD(FLASH_SECTOR_WORDS) - new;
+
+    // Is there enough room to fit the rec in the RCR page?
+    if (nwords < nfree) {  // Note inequality needed to leave at least one all set word
+        uint32_t addr = platform_flash_mapped2phys((uint32_t)&new[-1]);
+        platform_s_flash_write(rec, addr, reclen);
+
+        if (prev) { // If a previous exists, then overwrite the hdr as DELETED
+            platform_rcr_t rcr = {0};
+            addr = platform_flash_mapped2phys((uint32_t)&prev[-1]);
+            rcr.id = PLATFORM_RCR_DELETED; rcr.len = np/WORDSIZE;
+            platform_s_flash_write(&rcr, addr, WORDSIZE);
+        }
+
+    } else {
+        platform_rcr_t *rcr = (platform_rcr_t *) &RCR_WORD(0), newrcr = {0};
+        uint32_t flash_addr = platform_flash_mapped2phys((uint32_t)&RCR_WORD(0));
+        uint32_t *buf, i, l, pass;
+
+        for (pass = 1; pass <= 2; pass++)  {
+            for (i = 0, l = 0; i < FLASH_SECTOR_WORDS - nfree; ) {
+                platform_rcr_t r = rcr[i]; // again avoid unaligned exceptions
+                if (r.id == PLATFORM_RCR_FREE)
+                    break;
+                if (r.id != PLATFORM_RCR_DELETED && r.id != rec_id) {
+                    if (pass == 2) memcpy(buf + l, rcr + i, (r.len + 1)*WORDSIZE);
+                    l += r.len + 1;
+                }
+                i += r.len + 1;
+            }
+            if (pass == 2) memcpy(buf + l, rec, reclen);
+            l += nwords + 1;
+            if (pass == 1) buf = malloc(l * WORDSIZE);
+
+            if (l >= FLASH_SECTOR_WORDS || !buf)
+                return ~0;
+        }
+        platform_flash_erase_sector(flash_addr/INTERNAL_FLASH_SECTOR_SIZE);
+        platform_s_flash_write(buf, flash_addr, l*WORDSIZE);
+        free(buf);
+    }
+    return nwords*WORDSIZE;
 }
 
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 {
-  c_printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+  printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+}
+
+#define TH_MONIKER 0x68680000
+#define TH_MASK    0xFFF80000
+#define TH_UNMASK  (~TH_MASK)
+#define TH_SHIFT   2
+#define TH_ALLOCATION_BRICK 4   // must be a power of 2
+#define TASK_DEFAULT_QUEUE_LEN 8
+#define TASK_PRIORITY_MASK    3
+#define TASK_PRIORITY_COUNT   3
+
+/*
+ * Private struct to hold the 3 event task queues and the dispatch callbacks
+ */
+static struct taskQblock {
+  os_event_t *task_Q[TASK_PRIORITY_COUNT];
+  platform_task_callback_t *task_func;
+  int task_count;
+  } TQB = {0};
+
+static void platform_task_dispatch (os_event_t *e) {
+  platform_task_handle_t handle = e->sig;
+  if ( (handle & TH_MASK) == TH_MONIKER) {
+    uint16_t entry    = (handle & TH_UNMASK) >> TH_SHIFT;
+    uint8_t  priority = handle & TASK_PRIORITY_MASK;
+    if ( priority <= PLATFORM_TASK_PRIORITY_HIGH &&
+         TQB.task_func &&
+         entry < TQB.task_count ){
+      /* call the registered task handler with the specified parameter and priority */
+      TQB.task_func[entry](e->par, priority);
+      return;
+    }
+  }
+  /* Invalid signals are ignored */
+  NODE_DBG ( "Invalid signal issued: %08x",  handle);
+}
+
+/*
+ * Initialise the task handle callback for a given priority.
+ */
+static int task_init_handler (void) {
+  int p, qlen = TASK_DEFAULT_QUEUE_LEN;
+  for (p = 0; p < TASK_PRIORITY_COUNT; p++){
+    TQB.task_Q[p] = (os_event_t *) malloc( sizeof(os_event_t)*qlen );
+    if (TQB.task_Q[p]) {
+      os_memset(TQB.task_Q[p], 0, sizeof(os_event_t)*qlen);
+      system_os_task(platform_task_dispatch, p, TQB.task_Q[p], TASK_DEFAULT_QUEUE_LEN);
+    } else {
+      NODE_DBG ( "Malloc failure in platform_task_init_handler" );
+      return PLATFORM_ERR;
+    }
+  }
+}
+
+
+/*
+ * Allocate a task handle in the relevant TCB.task_Q.  Note that these Qs are resized
+ * as needed growing in 4 unit bricks.  No GC is adopted so handles are permanently
+ * allocated during boot life.  This isn't an issue in practice as only a few handles
+ * are created per priority during application init and the more volitile Lua tasks
+ * are allocated in the Lua registery using the luaX interface which is layered on
+ * this mechanism.
+ */
+platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
+  if ( (TQB.task_count & (TH_ALLOCATION_BRICK - 1)) == 0 ) {
+    TQB.task_func = (platform_task_callback_t *) realloc(
+        TQB.task_func,
+        sizeof(platform_task_callback_t) * (TQB.task_count+TH_ALLOCATION_BRICK));
+    if (!TQB.task_func) {
+      NODE_DBG ( "Malloc failure in platform_task_get_id");
+      return 0;
+    }
+    os_memset (TQB.task_func+TQB.task_count, 0,
+               sizeof(platform_task_callback_t)*TH_ALLOCATION_BRICK);
+  }
+  TQB.task_func[TQB.task_count++] = t;
+  return TH_MONIKER + ((TQB.task_count-1) << TH_SHIFT);
 }

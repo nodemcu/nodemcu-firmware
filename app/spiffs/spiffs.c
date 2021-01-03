@@ -1,16 +1,35 @@
-#include "c_stdio.h"
+#include <stdio.h>
 #include "platform.h"
 #include "spiffs.h"
 
+/*
+ * With the intoduction of a unified FatFS and SPIFFS support (#1397), the SPIFFS
+ * interface is now abstracted through a uses a single SPIFFS entry point
+ * myspiffs_realm() which returns a vfs_fs_fns object (as does myfatfs_realm()).
+ * All other functions and data are static.
+ *
+ * Non-OS SDK V3.0 introduces a flash partition table (PT) and SPIFFS has now been
+ * updated to support this:
+ *   -  SPIFFS limits search to the specifed SPIFFS0 address and size.
+ *   -  Any headroom / offset from other partitions is reflected in the PT allocations.
+ *   -  Unforced mounts will attempt to mount any valid SPIFSS found in this range
+ *      (NodeMCU uses the SPIFFS_USE_MAGIC setting to make existing FS discoverable).
+ *   -  Subject to the following, no offset or FS search is done.  The FS is assumed
+ *      to be at the first valid location at the start of the partition.
+ */
 #include "spiffs_nucleus.h"
 
-spiffs fs;
+static spiffs fs;
+
+static void (*automounter)();
 
 #define LOG_PAGE_SIZE       	256
 #define LOG_BLOCK_SIZE		(INTERNAL_FLASH_SECTOR_SIZE * 2)
 #define LOG_BLOCK_SIZE_SMALL_FS	(INTERNAL_FLASH_SECTOR_SIZE)
 #define MIN_BLOCKS_FS		4
-  
+#define MASK_1MB (0x100000-1)
+#define ALIGN (0x2000)
+
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
@@ -27,14 +46,20 @@ static s32_t my_spiffs_write(u32_t addr, u32_t size, u8_t *src) {
   return SPIFFS_OK;
 }
 
+static int erase_cnt = -1;  // If set to >=0 then erasing gives a ... feedback
 static s32_t my_spiffs_erase(u32_t addr, u32_t size) {
   u32_t sect_first = platform_flash_get_sector_of_address(addr);
   u32_t sect_last = sect_first;
-  while( sect_first <= sect_last )
-    if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
+  while( sect_first <= sect_last ) {
+    if (erase_cnt >= 0 && (erase_cnt++ & 0xF) == 0) {
+      dbg_printf(".");
+    }
+    if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR ) {
       return SPIFFS_ERR_INTERNAL;
+    }
+  }
   return SPIFFS_OK;
-} 
+}
 
 void myspiffs_check_callback(spiffs_check_type type, spiffs_check_report report, u32_t arg1, u32_t arg2){
   // if(SPIFFS_CHECK_PROGRESS == report) return;
@@ -42,131 +67,65 @@ void myspiffs_check_callback(spiffs_check_type type, spiffs_check_report report,
 }
 
 /*******************
-The W25Q32BV array is organized into 16,384 programmable pages of 256-bytes each. Up to 256 bytes can be programmed at a time. 
-Pages can be erased in groups of 16 (4KB sector erase), groups of 128 (32KB block erase), groups of 256 (64KB block erase) or 
-the entire chip (chip erase). The W25Q32BV has 1,024 erasable sectors and 64 erasable blocks respectively. 
-The small 4KB sectors allow for greater flexibility in applications that require data and parameter storage. 
+ * Note that the W25Q32BV array is organized into 16,384 programmable pages of 256-bytes 
+ * each. Up to 256 bytes can be programmed at a time.  Pages can be erased in groups of 
+ * 16 (4KB sector erase), groups of 128 (32KB block erase), groups of 256 (64KB block 
+ * erase) or the entire chip (chip erase). The W25Q32BV has 1,024 erasable sectors and 
+ * 64 erasable blocks respectively. The small 4KB sectors allow for greater flexibility 
+ * in applications that require data and parameter storage. 
+ *
+ * Returns  TRUE if FS was found.
+ */
+static bool myspiffs_set_cfg(spiffs_config *cfg, bool force_create) {
+  uint32 pt_start, pt_size, pt_end;
 
-********************/
-
-static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int block_size) {
-#ifdef SPIFFS_FIXED_LOCATION
-  cfg->phys_addr = (SPIFFS_FIXED_LOCATION + block_size - 1) & ~(block_size-1);
-#else
-  cfg->phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ) + offset;
-  cfg->phys_addr = (cfg->phys_addr + align - 1) & ~(align - 1);
-#endif
-#ifdef SPIFFS_SIZE_1M_BOUNDARY
-  cfg->phys_size = ((0x100000 - (SYS_PARAM_SEC_NUM * INTERNAL_FLASH_SECTOR_SIZE) - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1)) & 0xfffff;
-#else
-  cfg->phys_size = (INTERNAL_FLASH_SIZE - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1);
-#endif
-  if ((int) cfg->phys_size < 0) {
+  pt_size = platform_flash_get_partition (NODEMCU_SPIFFS0_PARTITION, &pt_start);
+  if (pt_size == 0) {
     return FALSE;
   }
-  cfg->log_block_size = block_size; 
-
-  return (cfg->phys_size / block_size) >= MIN_BLOCKS_FS;
-}
-
-/*
- * Returns  TRUE if FS was found
- * align must be a power of two
- */
-static bool myspiffs_set_cfg_block(spiffs_config *cfg, int align, int offset, int block_size, bool force_create) {
-  cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE; // according to datasheet
-  cfg->log_page_size = LOG_PAGE_SIZE; // as we said
+  pt_end = pt_start + pt_size;
 
   cfg->hal_read_f = my_spiffs_read;
   cfg->hal_write_f = my_spiffs_write;
   cfg->hal_erase_f = my_spiffs_erase;
-
-  if (!myspiffs_set_location(cfg, align, offset, block_size)) {
+  cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE;
+  cfg->log_page_size = LOG_PAGE_SIZE;
+  cfg->phys_addr = (pt_start + ALIGN - 1) & ~(ALIGN - 1);
+  cfg->phys_size = (pt_end & ~(ALIGN - 1)) - cfg->phys_addr;
+ 
+  if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
     return FALSE;
+  } else if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE) {
+    cfg->log_block_size = LOG_BLOCK_SIZE_SMALL_FS;
+  } else  {
+    cfg->log_block_size = LOG_BLOCK_SIZE;
   }
-
-  NODE_DBG("fs.start:%x,max:%x\n",cfg->phys_addr,cfg->phys_size);
 
 #ifdef SPIFFS_USE_MAGIC_LENGTH
-  if (force_create) {
-    return TRUE;
-  }
-
-  int size = SPIFFS_probe_fs(cfg);
-
-  if (size > 0 && size < cfg->phys_size) {
-    NODE_DBG("Overriding size:%x\n",size);
-    cfg->phys_size = size;
-  }
-  if (size > 0) {
-    return TRUE;
-  }
-  return FALSE;
-#else
-  return TRUE;
-#endif
-}
-
-static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool force_create) {
-  if (force_create) {
-    return myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE         , TRUE) ||
-           myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE_SMALL_FS, TRUE);
-  }
-
-  return myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE_SMALL_FS, FALSE) ||
-         myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE         , FALSE);
-}
-
-static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
-  int i;
-
   if (!force_create) {
-#ifdef SPIFFS_FIXED_LOCATION
-    if (myspiffs_set_cfg(cfg, 0, 0, FALSE)) {
-      return TRUE;
-    }
-#else
-    if (INTERNAL_FLASH_SIZE >= 700000) {
-      for (i = 0; i < 8; i++) {
-	if (myspiffs_set_cfg(cfg, 0x10000, 0x10000 * i, FALSE)) {
-	  return TRUE;
-	}
-      }
-    }
+    int size = SPIFFS_probe_fs(cfg);
 
-    for (i = 0; i < 8; i++) {
-      if (myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * i, FALSE)) {
-	return TRUE;
-      }
+    if (size > 0 && size < cfg->phys_size) {
+      NODE_DBG("Overriding size:%x\n",size);
+      cfg->phys_size = size;
     }
-#endif
-  }
-
-  // No existing file system -- set up for a format
-  if (INTERNAL_FLASH_SIZE >= 700000) {
-    myspiffs_set_cfg(cfg, 0x10000, 0x10000, TRUE);
-#ifndef SPIFFS_MAX_FILESYSTEM_SIZE
-    if (cfg->phys_size < 400000) {
-      // Don't waste so much in alignment
-      myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * 4, TRUE);
+    if (size <= 0) {
+      return FALSE;
     }
-#endif
-  } else {
-    myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, 0, TRUE);
-  }
-
-#ifdef SPIFFS_MAX_FILESYSTEM_SIZE
-  if (cfg->phys_size > SPIFFS_MAX_FILESYSTEM_SIZE) {
-    cfg->phys_size = (SPIFFS_MAX_FILESYSTEM_SIZE) & ~(cfg->log_block_size - 1);
   }
 #endif
-  
-  return FALSE;
+
+  NODE_DBG("myspiffs set cfg block: %x  %x  %x  %x  %x  %x\n", pt_start, pt_end,
+           cfg->phys_size, cfg->phys_addr, cfg->phys_size, cfg->log_block_size);
+
+  return TRUE;
 }
 
-static bool myspiffs_mount_internal(bool force_mount) {
+
+static bool myspiffs_mount(bool force_mount) {
+  STARTUP_COUNT;
   spiffs_config cfg;
-  if (!myspiffs_find_cfg(&cfg, force_mount) && !force_mount) {
+  if (!myspiffs_set_cfg(&cfg, force_mount) && !force_mount) {
     return FALSE;
   }
 
@@ -186,11 +145,8 @@ static bool myspiffs_mount_internal(bool force_mount) {
     // myspiffs_check_callback);
     0);
   NODE_DBG("mount res: %d, %d\n", res, fs.err_code);
+  STARTUP_COUNT;
   return res == SPIFFS_OK;
-}
-
-bool myspiffs_mount() {
-  return myspiffs_mount_internal(FALSE);
 }
 
 void myspiffs_unmount() {
@@ -202,42 +158,23 @@ void myspiffs_unmount() {
 int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
-  myspiffs_mount_internal(TRUE);
+  myspiffs_mount(TRUE);
   SPIFFS_unmount(&fs);
 
   NODE_DBG("Formatting: size 0x%x, addr 0x%x\n", fs.cfg.phys_size, fs.cfg.phys_addr);
+  erase_cnt = 0;
+  int status = SPIFFS_format(&fs);
+  erase_cnt = -1;
 
-  if (SPIFFS_format(&fs) < 0) {
-    return 0;
-  }
-
-  return myspiffs_mount();
+  return status < 0 ? 0 : myspiffs_mount(FALSE);
 }
-
-#if 0
-void test_spiffs() {
-  char buf[12];
-
-  // Surely, I've mounted spiffs before entering here
-  
-  spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
-  if (SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
-  SPIFFS_close(&fs, fd); 
-
-  fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
-  if (SPIFFS_read(&fs, fd, (u8_t *)buf, 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
-  SPIFFS_close(&fs, fd);
-
-  NODE_DBG("--> %s <--\n", buf);
-}
-#endif
 
 
 // ***************************************************************************
 // vfs API
 // ***************************************************************************
 
-#include <c_stdlib.h>
+#include <stdlib.h>
 #include "vfs_int.h"
 
 #define MY_LDRV_ID "FLASH"
@@ -348,7 +285,7 @@ static sint32_t myspiffs_vfs_closedir( const struct vfs_dir *dd ) {
   sint32_t res = SPIFFS_closedir( d );
 
   // free descriptor memory
-  c_free( (void *)dd );
+  free( (void *)dd );
 }
 
 static sint32_t myspiffs_vfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf ) {
@@ -356,11 +293,11 @@ static sint32_t myspiffs_vfs_readdir( const struct vfs_dir *dd, struct vfs_stat 
   struct spiffs_dirent dirent;
 
   if (SPIFFS_readdir( d, &dirent )) {
-    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+    memset( buf, 0, sizeof( struct vfs_stat ) );
 
     // copy entries to  item
     // fill in supported stat entries
-    c_strncpy( buf->name, dirent.name, FS_OBJ_NAME_LEN+1 );
+    strncpy( buf->name, dirent.name, FS_OBJ_NAME_LEN+1 );
     buf->name[FS_OBJ_NAME_LEN] = '\0';
     buf->size = dirent.size;
     return VFS_RES_OK;
@@ -383,7 +320,7 @@ static sint32_t myspiffs_vfs_close( const struct vfs_file *fd ) {
   sint32_t res = SPIFFS_close( &fs, fh );
 
   // free descriptor memory
-  c_free( (void *)fd );
+  free( (void *)fd );
 
   return res;
 }
@@ -459,21 +396,21 @@ static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {
 
 
 static int fs_mode2flag(const char *mode){
-  if(c_strlen(mode)==1){
-  	if(c_strcmp(mode,"w")==0)
+  if(strlen(mode)==1){
+  	if(strcmp(mode,"w")==0)
   	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_TRUNC;
-  	else if(c_strcmp(mode, "r")==0)
+  	else if(strcmp(mode, "r")==0)
   	  return SPIFFS_RDONLY;
-  	else if(c_strcmp(mode, "a")==0)
+  	else if(strcmp(mode, "a")==0)
   	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_APPEND;
   	else
   	  return SPIFFS_RDONLY;
-  } else if (c_strlen(mode)==2){
-  	if(c_strcmp(mode,"r+")==0)
+  } else if (strlen(mode)==2){
+  	if(strcmp(mode,"r+")==0)
   	  return SPIFFS_RDWR;
-  	else if(c_strcmp(mode, "w+")==0)
+  	else if(strcmp(mode, "w+")==0)
   	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_TRUNC;
-  	else if(c_strcmp(mode, "a+")==0)
+  	else if(strcmp(mode, "a+")==0)
   	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_APPEND;
   	else
   	  return SPIFFS_RDONLY;
@@ -489,13 +426,13 @@ static vfs_file *myspiffs_vfs_open( const char *name, const char *mode ) {
   struct myvfs_file *fd;
   int flags = fs_mode2flag( mode );
 
-  if (fd = (struct myvfs_file *)c_malloc( sizeof( struct myvfs_file ) )) {
+  if (fd = (struct myvfs_file *)malloc( sizeof( struct myvfs_file ) )) {
     if (0 < (fd->fh = SPIFFS_open( &fs, name, flags, 0 ))) {
       fd->vfs_file.fs_type = VFS_FS_SPIFFS;
       fd->vfs_file.fns     = &myspiffs_file_fns;
       return (vfs_file *)fd;
     } else {
-      c_free( fd );
+      free( fd );
     }
   }
 
@@ -505,13 +442,13 @@ static vfs_file *myspiffs_vfs_open( const char *name, const char *mode ) {
 static vfs_dir *myspiffs_vfs_opendir( const char *name ){
   struct myvfs_dir *dd;
 
-  if (dd = (struct myvfs_dir *)c_malloc( sizeof( struct myvfs_dir ) )) {
+  if (dd = (struct myvfs_dir *)malloc( sizeof( struct myvfs_dir ) )) {
     if (SPIFFS_opendir( &fs, name, &(dd->d) )) {
       dd->vfs_dir.fs_type = VFS_FS_SPIFFS;
       dd->vfs_dir.fns     = &myspiffs_dd_fns;
       return (vfs_dir *)dd;
     } else {
-      c_free( dd );
+      free( dd );
     }
   }
 
@@ -522,10 +459,10 @@ static sint32_t myspiffs_vfs_stat( const char *name, struct vfs_stat *buf ) {
   spiffs_stat stat;
 
   if (0 <= SPIFFS_stat( &fs, name, &stat )) {
-    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+    memset( buf, 0, sizeof( struct vfs_stat ) );
 
     // fill in supported stat entries
-    c_strncpy( buf->name, stat.name, FS_OBJ_NAME_LEN+1 );
+    strncpy( buf->name, stat.name, FS_OBJ_NAME_LEN+1 );
     buf->name[FS_OBJ_NAME_LEN] = '\0';
     buf->size = stat.size;
 
@@ -555,7 +492,7 @@ static sint32_t myspiffs_vfs_fscfg( uint32_t *phys_addr, uint32_t *phys_size ) {
 
 static vfs_vol  *myspiffs_vfs_mount( const char *name, int num ) {
   // volume descriptor not supported, just return TRUE / FALSE
-  return myspiffs_mount() ? (vfs_vol *)1 : NULL;
+  return myspiffs_mount(FALSE) ? (vfs_vol *)1 : NULL;
 }
 
 static sint32_t myspiffs_vfs_format( void ) {
@@ -570,16 +507,25 @@ static void myspiffs_vfs_clearerr( void ) {
   SPIFFS_clearerr( &fs );
 }
 
+// The callback will be called on the first file operation
+void myspiffs_set_automount(void (*mounter)()) {
+  automounter = mounter;
+}
 
 // ---------------------------------------------------------------------------
 // VFS interface functions
 //
+
 vfs_fs_fns *myspiffs_realm( const char *inname, char **outname, int set_current_drive ) {
+  if (automounter) {
+    void (*mounter)() = automounter;
+    automounter = NULL;
+    mounter();
+  }
   if (inname[0] == '/') {
-    size_t idstr_len = c_strlen( MY_LDRV_ID );
     // logical drive is specified, check if it's our id
-    if (0 == c_strncmp( &(inname[1]), MY_LDRV_ID, idstr_len )) {
-      *outname = (char *)&(inname[1 + idstr_len]);
+    if (0 == strncmp(inname + 1, MY_LDRV_ID, sizeof(MY_LDRV_ID)-1)) {
+      *outname = (char *)(inname + sizeof(MY_LDRV_ID));
       if (*outname[0] == '/') {
         // skip leading /
         (*outname)++;

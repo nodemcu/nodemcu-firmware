@@ -1,6 +1,6 @@
 // ***************************************************************************
 // Port of BMP680 module for ESP8266 with nodeMCU
-// 
+//
 // Written by Lukas Voborsky, @voborsky
 // ***************************************************************************
 
@@ -9,7 +9,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include "user_interface.h"
+#include <math.h>
 
 #include "bme680_defs.h"
 
@@ -31,7 +32,7 @@ static uint8 os_hum = 0; // stores humidity oversampling settings
 static uint16_t heatr_dur;
 static int8_t amb_temp = 23; //DEFAULT_AMBIENT_TEMP;
 
-static uint32_t bme680_h = 0; 
+static uint32_t bme680_h = 0;
 static double bme680_hc = 1.0;
 
 // return 0 if good
@@ -67,7 +68,10 @@ static uint8_t r8u(uint8_t reg) {
 	return ret[0];
 }
 
-/* This part of code is coming from the original bme680.c driver by Bosch.
+// replace 'dev->calib.' with 'bme680_data.'
+// replace 'dev->amb_temp' with 'amb_temp'
+
+/**\mainpage
  * Copyright (C) 2017 - 2018 Bosch Sensortec GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,19 +111,12 @@ static uint8_t r8u(uint8_t reg) {
  * other rights of third parties which may result from its use.
  * No license is granted by implication or otherwise under any patent or
  * patent rights of the copyright holder.
+ *
+ * File		bme680.c
+ * @date	19 Jun 2018
+ * @version	3.5.9
+ *
  */
-
-/**static variables */
-/**Look up table for the possible gas range values */
-uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
-        UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777), UINT32_C(2147483647),
-        UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228), UINT32_C(2147483647), UINT32_C(2126008810),
-        UINT32_C(2147483647), UINT32_C(2147483647) };
-/**Look up table for the possible gas range values */
-uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
-        UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016), UINT32_C(
-                8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000), UINT32_C(250000),
-        UINT32_C(125000) };
 
 static uint8_t calc_heater_res(uint16_t temp)
 {
@@ -131,9 +128,7 @@ static uint8_t calc_heater_res(uint16_t temp)
 	int32_t var5;
 	int32_t heatr_res_x100;
 
-	if (temp < 200) /* Cap temperature */
-		temp = 200;
-	else if (temp > 400)
+	if (temp > 400) /* Cap temperature */
 		temp = 400;
 
 	var1 = (((int32_t) amb_temp * bme680_data.par_gh3) / 1000) * 256;
@@ -172,12 +167,12 @@ static int16_t calc_temperature(uint32_t temp_adc)
 	int64_t var3;
 	int16_t calc_temp;
 
-	var1 = ((int32_t) temp_adc / 8) - ((int32_t) bme680_data.par_t1 * 2);
-	var2 = (var1 * (int32_t) bme680_data.par_t2) / 2048;
-	var3 = ((var1 / 2) * (var1 / 2)) / 4096;
-	var3 = ((var3) * ((int32_t) bme680_data.par_t3 * 16)) / 16384;
+	var1 = ((int32_t) temp_adc >> 3) - ((int32_t) bme680_data.par_t1 << 1);
+	var2 = (var1 * (int32_t) bme680_data.par_t2) >> 11;
+	var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
+	var3 = ((var3) * ((int32_t) bme680_data.par_t3 << 4)) >> 14;
 	bme680_data.t_fine = (int32_t) (var2 + var3);
-	calc_temp = (int16_t) (((bme680_data.t_fine * 5) + 128) / 256);
+	calc_temp = (int16_t) (((bme680_data.t_fine * 5) + 128) >> 8);
 
 	return calc_temp;
 }
@@ -187,27 +182,37 @@ static uint32_t calc_pressure(uint32_t pres_adc)
 	int32_t var1;
 	int32_t var2;
 	int32_t var3;
-	int32_t calc_pres;
+	int32_t pressure_comp;
 
-	var1 = (((int32_t) bme680_data.t_fine) / 2) - 64000;
-	var2 = ((var1 / 4) * (var1 / 4)) / 2048;
-	var2 = ((var2) * (int32_t) bme680_data.par_p6) / 4;
-	var2 = var2 + ((var1 * (int32_t) bme680_data.par_p5) * 2);
-	var2 = (var2 / 4) + ((int32_t) bme680_data.par_p4 * 65536);
-	var1 = ((var1 / 4) * (var1 / 4)) / 8192;
-	var1 = (((var1) * ((int32_t) bme680_data.par_p3 * 32)) / 8) + (((int32_t) bme680_data.par_p2 * var1) / 2);
-	var1 = var1 / 262144;
-	var1 = ((32768 + var1) * (int32_t) bme680_data.par_p1) / 32768;
-	calc_pres = (int32_t) (1048576 - pres_adc);
-	calc_pres = (int32_t) ((calc_pres - (var2 / 4096)) * (3125));
-	calc_pres = ((calc_pres / var1) * 2);
-	var1 = ((int32_t) bme680_data.par_p9 * (int32_t) (((calc_pres / 8) * (calc_pres / 8)) / 8192)) / 4096;
-	var2 = ((int32_t) (calc_pres / 4) * (int32_t) bme680_data.par_p8) / 8192;
-	var3 = ((int32_t) (calc_pres / 256) * (int32_t) (calc_pres / 256) * (int32_t) (calc_pres / 256)
-	        * (int32_t) bme680_data.par_p10) / 131072;
-	calc_pres = (int32_t) (calc_pres) + ((var1 + var2 + var3 + ((int32_t) bme680_data.par_p7 * 128)) / 16);
+	var1 = (((int32_t)bme680_data.t_fine) >> 1) - 64000;
+	var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
+		(int32_t)bme680_data.par_p6) >> 2;
+	var2 = var2 + ((var1 * (int32_t)bme680_data.par_p5) << 1);
+	var2 = (var2 >> 2) + ((int32_t)bme680_data.par_p4 << 16);
+	var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13) *
+		((int32_t)bme680_data.par_p3 << 5)) >> 3) +
+		(((int32_t)bme680_data.par_p2 * var1) >> 1);
+	var1 = var1 >> 18;
+	var1 = ((32768 + var1) * (int32_t)bme680_data.par_p1) >> 15;
+	pressure_comp = 1048576 - pres_adc;
+	pressure_comp = (int32_t)((pressure_comp - (var2 >> 12)) * ((uint32_t)3125));
+	if (pressure_comp >= BME680_MAX_OVERFLOW_VAL)
+		pressure_comp = ((pressure_comp / var1) << 1);
+	else
+		pressure_comp = ((pressure_comp << 1) / var1);
+	var1 = ((int32_t)bme680_data.par_p9 * (int32_t)(((pressure_comp >> 3) *
+		(pressure_comp >> 3)) >> 13)) >> 12;
+	var2 = ((int32_t)(pressure_comp >> 2) *
+		(int32_t)bme680_data.par_p8) >> 13;
+	var3 = ((int32_t)(pressure_comp >> 8) * (int32_t)(pressure_comp >> 8) *
+		(int32_t)(pressure_comp >> 8) *
+		(int32_t)bme680_data.par_p10) >> 17;
 
-	return (uint32_t) calc_pres;
+	pressure_comp = (int32_t)(pressure_comp) + ((var1 + var2 + var3 +
+		((int32_t)bme680_data.par_p7 << 7)) >> 4);
+
+	return (uint32_t)pressure_comp;
+
 }
 
 static uint32_t calc_humidity(uint16_t hum_adc)
@@ -221,19 +226,19 @@ static uint32_t calc_humidity(uint16_t hum_adc)
 	int32_t temp_scaled;
 	int32_t calc_hum;
 
-	temp_scaled = (((int32_t) bme680_data.t_fine * 5) + 128) / 256;
+	temp_scaled = (((int32_t) bme680_data.t_fine * 5) + 128) >> 8;
 	var1 = (int32_t) (hum_adc - ((int32_t) ((int32_t) bme680_data.par_h1 * 16)))
-	        - (((temp_scaled * (int32_t) bme680_data.par_h3) / ((int32_t) 100)) / 2);
+		- (((temp_scaled * (int32_t) bme680_data.par_h3) / ((int32_t) 100)) >> 1);
 	var2 = ((int32_t) bme680_data.par_h2
-	        * (((temp_scaled * (int32_t) bme680_data.par_h4) / ((int32_t) 100))
-	                + (((temp_scaled * ((temp_scaled * (int32_t) bme680_data.par_h5) / ((int32_t) 100))) / 64)
-	                        / ((int32_t) 100)) + (int32_t) (1 * 16384))) / 1024;
+		* (((temp_scaled * (int32_t) bme680_data.par_h4) / ((int32_t) 100))
+			+ (((temp_scaled * ((temp_scaled * (int32_t) bme680_data.par_h5) / ((int32_t) 100))) >> 6)
+				/ ((int32_t) 100)) + (int32_t) (1 << 14))) >> 10;
 	var3 = var1 * var2;
-	var4 = (int32_t) bme680_data.par_h6 * 128;
-	var4 = ((var4) + ((temp_scaled * (int32_t) bme680_data.par_h7) / ((int32_t) 100))) / 16;
-	var5 = ((var3 / 16384) * (var3 / 16384)) / 1024;
-	var6 = (var4 * var5) / 2;
-	calc_hum = (((var3 + var6) / 1024) * ((int32_t) 1000)) / 4096;
+	var4 = (int32_t) bme680_data.par_h6 << 7;
+	var4 = ((var4) + ((temp_scaled * (int32_t) bme680_data.par_h7) / ((int32_t) 100))) >> 4;
+	var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+	var6 = (var4 * var5) >> 1;
+	calc_hum = (((var3 + var6) >> 10) * ((int32_t) 1000)) >> 12;
 
 	if (calc_hum > 100000) /* Cap at 100%rH */
 		calc_hum = 100000;
@@ -243,6 +248,19 @@ static uint32_t calc_humidity(uint16_t hum_adc)
 	return (uint32_t) calc_hum;
 }
 
+
+/**static variables */
+	/**Look up table 1 for the possible gas range values */
+	uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777),
+		UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2147483647) };
+	/**Look up table 2 for the possible gas range values */
+	uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
+		UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016),
+		UINT32_C(8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000),
+		UINT32_C(250000), UINT32_C(125000) };
+
 static uint32_t calc_gas_resistance(uint16_t gas_res_adc, uint8_t gas_range)
 {
 	int64_t var1;
@@ -250,20 +268,22 @@ static uint32_t calc_gas_resistance(uint16_t gas_res_adc, uint8_t gas_range)
 	int64_t var3;
 	uint32_t calc_gas_res;
 
-	var1 = (int64_t) ((1340 + (5 * (int64_t) bme680_data.range_sw_err)) * ((int64_t) lookupTable1[gas_range])) / 65536;
-	var2 = (((int64_t) ((int64_t) gas_res_adc * 32768) - (int64_t) (16777216)) + var1);
-	var3 = (((int64_t) lookupTable2[gas_range] * (int64_t) var1) / 512);
-	calc_gas_res = (uint32_t) ((var3 + ((int64_t) var2 / 2)) / (int64_t) var2);
+	var1 = (int64_t) ((1340 + (5 * (int64_t) bme680_data.range_sw_err)) *
+		((int64_t) lookupTable1[gas_range])) >> 16;
+	var2 = (((int64_t) ((int64_t) gas_res_adc << 15) - (int64_t) (16777216)) + var1);
+	var3 = (((int64_t) lookupTable2[gas_range] * (int64_t) var1) >> 9);
+	calc_gas_res = (uint32_t) ((var3 + ((int64_t) var2 >> 1)) / (int64_t) var2);
 
 	return calc_gas_res;
 }
+
 
 uint16_t calc_dur()
 {
 	uint32_t tph_dur; /* Calculate in us */
 
 	/* TPH measurement duration */
-  
+
 	tph_dur = ((uint32_t) (os_temp + os_pres + os_hum) * UINT32_C(1963));
 	tph_dur += UINT32_C(477 * 4); /* TPH switching duration */
 	tph_dur += UINT32_C(477 * 5); /* Gas measurement duration */
@@ -329,7 +349,7 @@ static int bme680_lua_setup(lua_State* L) {
 	r8u_n(BME680_COEFF_ADDR1, BME680_COEFF_ADDR1_LEN, buff);
   r8u_n(BME680_COEFF_ADDR2, BME680_COEFF_ADDR2_LEN, &buff[BME680_COEFF_ADDR1_LEN]);
 
-	reg = buff + 1; 
+	reg = buff + 1;
 	bme680_data.par_t2 = r16sLE_buf(reg); reg+=2; // #define BME680_T3_REG		(3)
 	bme680_data.par_t3 = (int8_t) reg[0]; reg+=2; // #define BME680_P1_LSB_REG	(5)
 	bme680_data.par_p1 = r16uLE_buf(reg); reg+=2; // #define BME680_P2_LSB_REG	(7)
@@ -354,21 +374,21 @@ static int bme680_lua_setup(lua_State* L) {
   bme680_data.par_t1 = r16uLE_buf(reg); reg+=2; // #define BME680_GH2_LSB_REG	(35)
   bme680_data.par_gh2 = r16sLE_buf(reg); reg+=2; // #define BME680_GH1_REG		(37)
 	bme680_data.par_gh1 = reg[0]; reg++; // #define BME680_GH3_REG		(38)
-	bme680_data.par_gh3 = reg[0]; 
+	bme680_data.par_gh3 = reg[0];
 #undef r16uLE_buf
 #undef r16sLE_buf
-  
+
   /* Other coefficients */
   bme680_data.res_heat_range = ((r8u(BME680_ADDR_RES_HEAT_RANGE_ADDR) & BME680_RHRANGE_MSK) / 16);
   bme680_data.res_heat_val = (int8_t) r8u(BME680_ADDR_RES_HEAT_VAL_ADDR);
   bme680_data.range_sw_err = ((int8_t) r8u(BME680_ADDR_RANGE_SW_ERR_ADDR) & (int8_t) BME680_RSERROR_MSK) / 16;
-    
+
   NODE_DBG("par_T: %d\t%d\t%d\n", bme680_data.par_t1, bme680_data.par_t2, bme680_data.par_t3);
   NODE_DBG("par_P: %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme680_data.par_p1, bme680_data.par_p2, bme680_data.par_p3, bme680_data.par_p4, bme680_data.par_p5, bme680_data.par_p6, bme680_data.par_p7, bme680_data.par_p8, bme680_data.par_p9, bme680_data.par_p10);
   NODE_DBG("par_H: %d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme680_data.par_h1, bme680_data.par_h2, bme680_data.par_h3, bme680_data.par_h4, bme680_data.par_h5, bme680_data.par_h6, bme680_data.par_h7);
   NODE_DBG("par_GH: %d\t%d\t%d\n", bme680_data.par_gh1, bme680_data.par_gh2, bme680_data.par_gh3);
   NODE_DBG("res_heat_range, res_heat_val, range_sw_err: %d\t%d\t%d\n", bme680_data.res_heat_range, bme680_data.res_heat_val, bme680_data.range_sw_err);
-	
+
   uint8_t full_init = !lua_isnumber(L, 7)?1:lua_tointeger(L, 7); // 7-th parameter: init the chip too
   if (full_init) {
     uint8_t filter;
@@ -380,22 +400,22 @@ static int bme680_lua_setup(lua_State* L) {
     os_temp = (!lua_isnumber(L, 1)?BME680_OS_2X:(luaL_checkinteger(L, 1)&bit3)); // 1-st parameter: temperature oversampling
     os_pres = (!lua_isnumber(L, 2)?BME680_OS_16X:(luaL_checkinteger(L, 2)&bit3)); // 2-nd parameter: pressure oversampling
     os_hum = (!lua_isnumber(L, 3))?BME680_OS_1X:(luaL_checkinteger(L, 3)&bit3);
-    bme680_mode = BME680_SLEEP_MODE | (os_pres << 2) | (os_temp << 5); 
+    bme680_mode = BME680_SLEEP_MODE | (os_pres << 2) | (os_temp << 5);
     os_hum = os_hum; // 3-rd parameter: humidity oversampling
-       
+
     filter = ((!lua_isnumber(L, 6)?BME680_FILTER_SIZE_31:(luaL_checkinteger(L, 6)&bit3)) << 2); // 6-th parameter: IIR filter
-  
+
     NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme680_mode, os_hum, filter);
-    
+
     heatr_dur = (!lua_isnumber(L, 5)?DEFAULT_HEATER_DUR:(luaL_checkinteger(L, 5))); // 5-th parameter: heater duration
     w8u(BME680_GAS_WAIT0_ADDR, calc_heater_dur(heatr_dur));
     w8u(BME680_RES_HEAT0_ADDR, calc_heater_res((!lua_isnumber(L, 4)?DEFAULT_HEATER_TEMP:(luaL_checkinteger(L, 4))))); // 4-th parameter: heater temperature
-  
+
     w8u(BME680_CONF_ODR_FILT_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_ODR_FILT_ADDR), BME680_FILTER, filter)); // #define BME680_CONF_ODR_FILT_ADDR		UINT8_C(0x75)
-    
-    // set heater on 
+
+    // set heater on
     w8u(BME680_CONF_HEAT_CTRL_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_HEAT_CTRL_ADDR), BME680_HCTRL, 1));
-    
+
     w8u(BME680_CONF_T_P_MODE_ADDR, bme680_mode);
     w8u(BME680_CONF_OS_H_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_OS_H_ADDR), BME680_OSH, os_hum));
     w8u(BME680_CONF_ODR_RUN_GAS_NBC_ADDR, 1 << 4 | 0 & bit3);
@@ -410,19 +430,19 @@ static void bme280_readoutdone (void *arg)
 	NODE_DBG("timer out\n");
 	lua_State *L = lua_getstate();
 	lua_rawgeti (L, LUA_REGISTRYINDEX, lua_connected_readout_ref);
-	lua_call (L, 0, 0);
 	luaL_unref (L, LUA_REGISTRYINDEX, lua_connected_readout_ref);
 	os_timer_disarm (&bme680_timer);
+	luaL_pcallx (L, 0, 0);
 }
 
 static int bme680_lua_startreadout(lua_State* L) {
 	uint32_t delay;
-	
+
 	if (lua_isnumber(L, 1)) {
 		delay = luaL_checkinteger(L, 1);
 		if (!delay) {delay = calc_dur();} // if delay is 0 then set the default delay
 	}
-	
+
 	if (!lua_isnoneornil(L, 2)) {
 		lua_pushvalue(L, 2);
 		lua_connected_readout_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -432,7 +452,7 @@ static int bme680_lua_startreadout(lua_State* L) {
 
   w8u(BME680_CONF_OS_H_ADDR, os_hum);
   w8u(BME680_CONF_T_P_MODE_ADDR, (bme680_mode & 0xFC) | BME680_FORCED_MODE);
-  
+
 	NODE_DBG("control old: %x, control: %x, delay: %d\n", bme680_mode, (bme680_mode & 0xFC) | BME680_FORCED_MODE, delay);
 
 	if (lua_connected_readout_ref != LUA_NOREF) {
@@ -455,7 +475,7 @@ static int bme680_lua_read(lua_State* L) {
 	uint16_t adc_hum;
 	uint16_t adc_gas_res;
   uint8_t status;
-  
+
 	uint32_t qfe;
 	uint8_t calc_qnh = lua_isnumber(L, 1);
 
@@ -468,9 +488,9 @@ static int bme680_lua_read(lua_State* L) {
   adc_temp = (uint32_t) (((uint32_t) buff[5] * 4096) | ((uint32_t) buff[6] * 16) | ((uint32_t) buff[7] / 16));
   adc_hum = (uint16_t) (((uint32_t) buff[8] * 256) | (uint32_t) buff[9]);
   adc_gas_res = (uint16_t) ((uint32_t) buff[13] * 4 | (((uint32_t) buff[14]) / 64));
-  
+
   gas_range = buff[14] & BME680_GAS_RANGE_MSK;
- 
+
   status |= buff[14] & BME680_GASM_VALID_MSK;
   status |= buff[14] & BME680_HEAT_STAB_MSK;
   NODE_DBG("status, new_data, gas_range, gasm_valid: 0x%x, 0x%x, 0x%x, 0x%x\n", status, status & BME680_NEW_DATA_MSK, buff[14] & BME680_GAS_RANGE_MSK, buff[14] & BME680_GASM_VALID_MSK);
@@ -534,14 +554,14 @@ static int bme680_lua_dewpoint(lua_State* L) {
 	return 1;
 }
 
-static const LUA_REG_TYPE bme680_map[] = {
-	{ LSTRKEY( "setup" ), LFUNCVAL(bme680_lua_setup)},
-	{ LSTRKEY( "startreadout" ),  LFUNCVAL(bme680_lua_startreadout)},
-	{ LSTRKEY( "qfe2qnh" ),  LFUNCVAL(bme680_lua_qfe2qnh)},
-	{ LSTRKEY( "altitude" ),  LFUNCVAL(bme680_lua_altitude)},
-	{ LSTRKEY( "dewpoint" ),  LFUNCVAL(bme680_lua_dewpoint)},
-	{ LSTRKEY( "read" ),  LFUNCVAL(bme680_lua_read)},
-	{ LNILKEY, LNILVAL}
-};
+LROT_BEGIN(bme680, NULL, 0)
+  LROT_FUNCENTRY( setup, bme680_lua_setup )
+  LROT_FUNCENTRY( startreadout, bme680_lua_startreadout )
+  LROT_FUNCENTRY( qfe2qnh, bme680_lua_qfe2qnh )
+  LROT_FUNCENTRY( altitude, bme680_lua_altitude )
+  LROT_FUNCENTRY( dewpoint, bme680_lua_dewpoint )
+  LROT_FUNCENTRY( read, bme680_lua_read )
+LROT_END(bme680, NULL, 0)
 
-NODEMCU_MODULE(BME680, "bme680", bme680_map, NULL);
+
+NODEMCU_MODULE(BME680, "bme680", bme680, NULL);

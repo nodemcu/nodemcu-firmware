@@ -102,10 +102,9 @@ static int rfswitch_send( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE rfswitch_map[] =
-{
-  { LSTRKEY( "send" ),       LFUNCVAL( rfswitch_send ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(rfswitch, NULL, 0)
+  LROT_FUNCENTRY( send, rfswitch_send )
+LROT_END(rfswitch, NULL, 0)
 
-NODEMCU_MODULE(RFSWITCH, "rfswitch", rfswitch_map, NULL);
+
+NODEMCU_MODULE(RFSWITCH, "rfswitch", rfswitch, NULL);
