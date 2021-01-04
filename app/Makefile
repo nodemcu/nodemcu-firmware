@@ -16,10 +16,15 @@ TARGET = eagle
 FLAVOR = debug
 
 # Handle Lua Directory selector
-ifeq ("$(LUA)","53")
+ifeq ("$(LUA)","")
+  LUA_DIR := lua
+else ifeq ("$(LUA)","51")
+  LUA_DIR := lua
+else ifeq ("$(LUA)","53")
   LUA_DIR := lua53
 else
-  LUA_DIR := lua
+  $(error Unsupported value "$(LUA)" for variable "LUA", \
+    expected "51", "53" or unset/empty)
 endif
 
 ifndef PDIR # {
@@ -158,7 +163,7 @@ DDEFINES += 						\
 # Required for each makefile to inherit from the parent
 #
 INCLUDES := -I $(PDIR)libc -I $(PDIR)$(LUA_DIR) -I $(PDIR)platform \
-            $(INCLUDES) -I $(PDIR) -I $(PDIR)include 
+            $(INCLUDES) -I $(PDIR) -I $(PDIR)include
 PDIR := ../$(PDIR)
 
 sinclude $(PDIR)Makefile

@@ -18,6 +18,20 @@ endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
 
+
+# Validate LUA setting
+ifeq ("$(LUA)","")
+else ifeq ("$(LUA)","51")
+  # ok
+else ifeq ("$(LUA)","53")
+  $(error Your variable LUA="$(LUA)" looks like you probably want \
+    app/lua53/Makefile instead)
+else
+  $(error Unsupported value "$(LUA)" for variable "LUA", \
+    expected empty/unset (recommended) or "51")
+endif
+
+
 #############################################################
 # Configuration i.e. compile options etc.
 # Target specific stuff (defines etc.) goes in here!
