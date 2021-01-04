@@ -306,7 +306,7 @@ node.output(nil, 0)
 
 ## node.osoutput()
 
-Redirects the debugging output from the Espressif SDK to a callback function allowing it to be captured or processed in lua.
+Redirects the debugging output from the Espressif SDK to a callback function allowing it to be captured or processed in Lua.
 
 ####Syntax
 `node.osoutput(function(str))`
@@ -527,4 +527,3 @@ priority is 2
 priority is 1
 priority is 0
 ```
-
