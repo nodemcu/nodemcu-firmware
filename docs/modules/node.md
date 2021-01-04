@@ -304,6 +304,35 @@ node.output(nil, 0)
 #### See also
 [`node.input()`](#nodeinput)
 
+## node.osoutput()
+
+Redirects the debugging output from the Espressif SDK to a callback function allowing it to be captured or processed in lua.
+
+####Syntax
+`node.osoutput(function(str))`
+
+#### Parameters
+
+- `function(str)` a function accepts debugging output as str, and can send the output to a socket (or maybe a file). `nil` to unregister the previous function.
+
+#### Returns
+
+Nothing
+
+#### Example
+
+```lua
+function luaprint(str)
+  print("lua space: "str)
+end
+node.osoutput(luaprint)
+```
+
+```lua
+-- disable all output completely
+node.osoutput(nil)
+```
+
 ## node.readvdd33() --deprecated
 Moved to [`adc.readvdd33()`](adc/#adcreadvdd33).
 
