@@ -245,7 +245,7 @@ static int node_output(lua_State *L) {
     return 0;
 }
 
-// The implementation of node.osoutput redirect all OS logging to LUA space
+// The implementation of node.osoutput redirect all OS logging to Lua space
 lua_ref_t os_output_redir = LUA_NOREF;  // this will hold the Lua callback
 static vprintf_like_t oldvprintf;       // keep the old vprintf
 
