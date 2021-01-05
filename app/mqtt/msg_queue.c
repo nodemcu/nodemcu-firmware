@@ -18,6 +18,8 @@ msg_queue_t *msg_enqueue(msg_queue_t **head, mqtt_message_t *msg, uint16_t msg_i
     return NULL;
   }
 
+  node->sent = 0;
+
   node->msg.data = (uint8_t *)calloc(1,msg->length);
   if(!node->msg.data){
     NODE_DBG("not enough memory\n");
