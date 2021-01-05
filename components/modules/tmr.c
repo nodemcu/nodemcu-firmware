@@ -43,7 +43,7 @@ static void alarm_timer_task(task_param_t param, task_prio_t prio)
 {
   tmr_t tmr = (tmr_t)param;
   lua_State* L = lua_getstate();
-  if (tmr->cb_ref == LUA_NOREF)
+  if (tmr->cb_ref == LUA_NOREF || tmr->self_ref == LUA_NOREF)
     return;
   lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->cb_ref);
   lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->self_ref);
