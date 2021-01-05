@@ -131,16 +131,6 @@ N.test('mix saturation correctly ', function()
     ok(eq({buffer1:get(1)}, {0,5,1}))
 end)
 
-N.test('mix with strings correctly ', function()
-    local buffer1 = pixbuf.newBuffer(1, 3)
-    local buffer2 = pixbuf.newBuffer(1, 3)
-
-    buffer1:fill(10,22,54)
-    buffer2:fill(10,27,55)
-    buffer1:mix(-257,buffer1,255,buffer2)
-    ok(eq({buffer1:get(1)}, {0,5,1}))
-end)
-
 N.test('power', function()
     local buffer = pixbuf.newBuffer(2, 4)
     buffer:fill(10,22,54,234)

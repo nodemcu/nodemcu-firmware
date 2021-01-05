@@ -297,29 +297,46 @@ Map a function across each pixel of one, or zip a function along two,
 pixbuf(s), storing into the buffer on which it is called.
 
 #### Syntax
-`buffer0:map(f, [buffer1], [ilo], [ihi], [buffer2, [ilo2]])`
+`buffer0:map(f, [buffer1], [start1], [end1], [buffer2, [start2]])`
 
 #### Parameters
- - `f` This is the mapping function; it is applied for each pixel to each channel of `buffer1` and
-   all channels from `buffer2`, if given.  It must return a value for each channel of the output
-   buffer.
+ - `f` This is the mapping function; it is applied for each pixel to all channels of `buffer1` and
+   all channels of `buffer2`, if given.  It must return a value for each channel of the output
+   buffer, `buffer0`.
  - `buffer1` The first source buffer.  Defaults to `buffer0`.
- - `ilo` This is the start of the mapped range. Negative values can be used.  The default is 1.
- - `ihi` this is the end of the mapped range. Negative values can be used. The default is -1.
+ - `start1` This is the start of the mapped range of `buffer1`. Negative values can be used and will be interpreted as before the end of `buffer1`.  The default is 1.
+ - `end1` this is the end of the mapped range. Negative values can be used. The default is -1 (i.e., the end of `buffer1`).
  - `buffer2` is a second buffer, for zip operations
- - `ilo2` This is the start of the mapped range within `buffer2`.  Negative values can be used.
-   The default is 1.
+ - `start2` This is the start of the mapped range within `buffer2`.  Negative values can be used and will be interpreted as before the end of `buffer2`.  The default is 1.
 
-`buffer0` must have `ihi - ilo + 1` pixels (which is true of the defaults, when
-`buffer1` is `buffer0` and `ilo` is 1 and `ihi` is -1).
+`buffer0` must have sufficient room to recieve all pixels from `start1` to
+`end1` (which is true of the defaults, when `buffer1` is `buffer0` and `start1`
+is 1 and `end1` is -1).  `buffer2`, if given, must have sufficient pixels after
+`start2`.
 
 #### Returns
 `buffer0`
 
-#### Example
+#### Examples
+
+Change channel order within a single buffer:
+```Lua
+buffer:map(function(r,g,b) return g,r,b end)
 ```
-buffer:map(function(r,g,b) return g,r,b end) -- Change channel order
-buffer:map(function(r,g,b) return g,r,b end, nil, 2, 5) -- Change channel order for a subset of pixels
-outbuf:map(function(r,g,b) return b end, inbuf, 10, 20) -- Extract one channel for a subset of pixels
-outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3) -- Per-pixel concatenation, w/ offsets
+
+Change channel order for a subset of pixels:
+```Lua
+buffer:map(function(r,g,b) return g,r,b end, nil, 2, 5)
+```
+
+Extract one channel for a subset of pixels:
+```Lua
+outbuf = pixbuf.create(11, 1)
+outbuf:map(function(r,g,b) return b end, inbuf, 10, 20)
+```
+
+Concatenate channels per pixel, possibly with different offsets in buffers:
+```Lua
+outbuf:map(function(...) return ... end, inbuf1, inbuf2)
+outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3)
 ```

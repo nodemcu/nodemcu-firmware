@@ -46,7 +46,7 @@ static pixbuf *pixbuf_new(lua_State *L, size_t leds, size_t chans) {
   // Allocate memory
 
   // A crude hack of an overflow check, but unlikely to be reached in practice
-  if ((leds > 8192) || (chans > 8)) {
+  if ((leds > 8192) || (chans > 32)) {
     luaL_error(L, "pixbuf size limits exeeded");
     return NULL; // UNREACHED
   }
