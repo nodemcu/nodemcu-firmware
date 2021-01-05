@@ -245,6 +245,46 @@ static int node_output(lua_State *L) {
     return 0;
 }
 
+// The implementation of node.osoutput redirect all OS logging to Lua space
+lua_ref_t os_output_redir = LUA_NOREF;  // this will hold the Lua callback
+static vprintf_like_t oldvprintf;       // keep the old vprintf
+
+// redir_vprintf will be called everytime the OS attempts to print a trace statement
+int redir_vprintf(const char *fmt, va_list ap)
+{
+    static char data[128];
+    int size = vsnprintf(data, 128, fmt, ap);
+
+    if (os_output_redir != LUA_NOREF) {  // prepare lua call
+        lua_State *L = lua_getstate();
+        lua_rawgeti(L, LUA_REGISTRYINDEX, os_output_redir);  // push function reference
+        lua_pushlstring(L, (char *)data, size);           // push data
+        lua_pcall(L, 1, 0, 0);                            // invoke callback
+    }
+    return size;
+}
+
+
+// Lua: node.output(func, serial_debug)
+static int node_osoutput(lua_State *L) {
+    if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+        if (os_output_redir == LUA_NOREF) {
+            // register our log redirect first time this is invoked
+            oldvprintf = esp_log_set_vprintf(redir_vprintf);
+        } else {
+            luaX_unset_ref(L, &os_output_redir);  // dereference previous callback
+        }
+        luaX_set_ref(L, 1, &os_output_redir);  // set the callback
+    } else {
+        if (os_output_redir != LUA_NOREF) {
+            esp_log_set_vprintf(oldvprintf);
+            luaX_unset_ref(L, &os_output_redir);                // forget callback
+        }
+    }
+
+    return 0;
+}
+
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
  *           2 discard Local and Upvalue debug info
@@ -494,6 +534,7 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( heap,       node_heap )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )
+  LROT_FUNCENTRY( osoutput,   node_osoutput )
   LROT_FUNCENTRY( osprint,    node_osprint )
   LROT_FUNCENTRY( restart,    node_restart )
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
