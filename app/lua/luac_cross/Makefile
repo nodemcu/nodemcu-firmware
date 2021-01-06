@@ -15,6 +15,20 @@ CCFLAGS += -Wall
 
 TARGET = host
 
+
+# Validate LUA setting
+ifeq ("$(LUA)","")
+else ifeq ("$(LUA)","51")
+  # ok
+else ifeq ("$(LUA)","53")
+  $(error Your variable LUA="$(LUA)" looks like you probably want \
+    app/lua53/host/Makefile instead)
+else
+  $(error Unsupported value "$(LUA)" for variable "LUA", \
+    expected empty/unset (recommended) or "51")
+endif
+
+
 VERBOSE ?=
 V ?= $(VERBOSE)
 ifeq ("$(V)","1")

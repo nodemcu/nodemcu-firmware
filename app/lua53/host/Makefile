@@ -23,6 +23,18 @@ else
   # MAKEFLAGS += --silent -w
 endif  # $(V)==1
 
+
+# Validate LUA setting
+ifeq ("$(LUA)","53")
+  # ok
+else ifeq ("$(LUA)","51")
+  $(error Your variable LUA="$(LUA)" looks like you probably want \
+    app/lua/luac_cross/Makefile instead)
+else
+  $(error Expected environment variable "LUA" to be "53", not "$(LUA)")
+endif
+
+
 DEBUG ?=
 ifeq ("$(DEBUG)","1")
     FLAVOR         =   debug
