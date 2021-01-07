@@ -240,3 +240,19 @@ jobs:
         ./tools/travis/run-luacheck-${{ matrix.os }}.sh
       shell: bash
 
+
+
+  doc_check:
+
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-16.04 
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: all_docks_linked
+      run: ./tools/check_docs.sh
+      shell: bash
+
