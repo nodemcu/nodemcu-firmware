@@ -252,7 +252,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: false
-    - name: all_docks_linked
-      run: ./tools/check_docs.sh
+    - name: all_modules_linked
+      run: ./tools/check_docs_module_linkage.sh
       shell: bash
 
