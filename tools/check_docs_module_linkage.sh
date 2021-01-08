@@ -7,3 +7,4 @@ grep "modules/" mkdocs.yml | sed "s/ *- .*: *'//" | sed "s/'//" | sort > /tmp/do
 find docs/modules/ docs/lua-modules/ -name "*.md" | sed "sxdocs/xx" | sort > /tmp/files
 
 diff /tmp/doc /tmp/files && echo "all *.md files are reflected in mkdocs.yml"
+
