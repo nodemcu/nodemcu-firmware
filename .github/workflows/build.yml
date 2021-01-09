@@ -179,6 +179,13 @@ jobs:
         ../../luac.cross -e ../NTest/NTest_NTest.lua | tee log
         grep "failed. 0" log
       shell: bash
+    - name: NTest hosttests
+      run: |
+        cd tests
+        cp NTest/NTest.lua .
+        ../luac.cross -e NTest_lua.lua | tee log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
+      shell: bash
 
 
   NTest_win:
@@ -206,6 +213,13 @@ jobs:
         cd tests/NTest
         ../../luac.cross.exe -e ../NTest/NTest_NTest.lua | tee log
         grep "failed. 0" log
+      shell: bash
+    - name: NTest hosttests
+      run: |
+        cd tests
+        cp NTest/NTest.lua .
+        ../luac.cross.exe -e NTest_lua.lua | tee log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
       shell: bash
 
 

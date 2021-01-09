@@ -19,6 +19,39 @@ local function TERMINAL_HANDLER(e, test, msg, errormsg)
   end
 end
 
+-- implement pseudo task handling for on host testing
+local drain_post_queue = function() end
+
+if not node then  -- assume we run on host, not on MCU
+  local post_queue = {{},{},{}}
+
+  drain_post_queue = function()
+    while #post_queue[1] + #post_queue[2] + #post_queue[3] > 0 do
+      for i = 3, 1, -1 do
+        if #post_queue[i] > 0 then
+          local f = table.remove(post_queue[i], 1)
+          if f then
+            f()
+          end
+          break
+        end
+      end
+    end
+  end
+
+  -- luacheck: push ignore 121 122 (setting read-only global variable)
+  node = {}
+  node.task = {LOW_PRIORITY = 1, MEDIUM_PRIORITY = 2, HIGH_PRIORITY = 3}
+  node.task.post = function (p, f)
+    table.insert(post_queue[p], f)
+  end
+
+  node.setonerror = function(fn) node.Host_Error_Func = fn end  -- luacheck: ignore 142
+  -- luacheck: pop
+end
+
+
+
 --[[
 if equal returns true
 if different returns {msg = "<reason>"}
@@ -233,6 +266,7 @@ local function NTest(testrunname, failoldinterface)
     table.insert(pendingtests, testfn)
     if #pendingtests == 1 then
       runpending()
+      drain_post_queue()
     end
   end
 
