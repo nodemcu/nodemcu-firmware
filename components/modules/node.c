@@ -48,6 +48,109 @@ static int node_restart (lua_State *L)
    return 0;
 }
 
+static void node_sleep_set_uart (lua_State *L, int uart)
+{
+  int err = esp_sleep_enable_uart_wakeup(uart);
+  if (err) {
+    luaL_error(L, "Error %d returned from esp_sleep_enable_uart_wakeup(%d)", err, uart);
+  }
+}
+
+static bool node_sleep_get_time_options (lua_State *L, int64_t *usecs)
+{
+  lua_getfield(L, 1, "us");
+  lua_getfield(L, 1, "secs");
+  bool option_present = !lua_isnil(L, 2) || !lua_isnil(L, 3);
+  lua_pop(L, 2);
+  *usecs = 0;
+  if (option_present) {
+    *usecs += opt_checkint(L, "us", 0);
+    *usecs += (int64_t)opt_checkint(L, "secs", 0) * 1000000;
+  }
+  return option_present;
+}
+
+static int node_sleep (lua_State *L)
+{
+  // Start with known state, to ensure previous sleep calls don't leave any
+  // settings left over
+  int err = esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+  lua_settop(L, 1);
+  luaL_checkanytable(L, 1);
+
+  // uart options: uart = num|{num, num, ...}
+  lua_getfield(L, -1, "uart");
+  int type = lua_type(L, -1);
+  if (type == LUA_TNUMBER) {
+    node_sleep_set_uart(L, lua_tointeger(L, -1));
+  } else if (type == LUA_TTABLE) {
+    for (int i = 1; ; i++) {
+      lua_rawgeti(L, -1, i);
+      if (lua_isnil(L, -1)) {
+        lua_pop(L, 1); // uart[i]
+        break;
+      }
+      int uart = lua_tointeger(L, -1);
+      lua_pop(L, 1); // uart[i]
+      node_sleep_set_uart(L, uart);
+    }
+  } else if (type != LUA_TNIL) {
+    return opt_error(L, "uart", "must be integer or table");
+  }
+  lua_pop(L, 1); // uart
+
+  // gpio option: boolean (individual pins are configured in advance with gpio.wakeup())
+
+  // Make sure to do GPIO before touch, because esp_sleep_enable_gpio_wakeup()
+  // seems to think touch is not compatible with GPIO wakeup and will error the
+  // call if you order them the other way round, despite the fact that
+  // esp_sleep_enable_touchpad_wakeup() does not have a similar check, and I've
+  // tested using both GPIO and touch wakeups at once and it works fine for me.
+  // I think this is simply a bug in the Espressif SDK, because sleep_modes.rst
+  // only mentions compatibility issues with touch and EXT0 wakeup, which is
+  // not the same as GPIO wakeup.
+  if (opt_checkbool(L, "gpio", false)) {
+    err = esp_sleep_enable_gpio_wakeup();
+    if (err) {
+      return luaL_error(L, "Error %d returned from esp_sleep_enable_gpio_wakeup()", err);
+    }
+  }
+
+  // time options: us, secs
+  int64_t usecs = 0;
+  if (node_sleep_get_time_options(L, &usecs)) {
+    esp_sleep_enable_timer_wakeup(usecs);
+  }
+
+  // touch option: boolean
+  if (opt_checkbool(L, "touch", false)) {
+    err = esp_sleep_enable_touchpad_wakeup();
+    if (err) {
+      return luaL_error(L, "Error %d returned from esp_sleep_enable_touchpad_wakeup()", err);
+    }
+  }
+
+  // ulp option: boolean
+  if (opt_checkbool(L, "ulp", false)) {
+    err = esp_sleep_enable_ulp_wakeup();
+    if (err) {
+      return luaL_error(L, "Error %d returned from esp_sleep_enable_ulp_wakeup()", err);
+    }
+  }
+
+  err = esp_light_sleep_start();
+  if (err == ESP_ERR_INVALID_STATE) {
+    return luaL_error(L, "WiFi and BT must be stopped before sleeping");
+  } else if (err) {
+    return luaL_error(L, "Error %d returned from esp_light_sleep_start()", err);
+  }
+
+  esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+  lua_pushinteger(L, (int)cause);
+  return 1;
+}
+
 
 // Lua: node.dsleep (microseconds|{opts})
 static int node_dsleep (lua_State *L)
@@ -60,15 +163,7 @@ static int node_dsleep (lua_State *L)
     enable_timer_wakeup = true;
     usecs = lua_tointeger(L, 1);
   } else if (type == LUA_TTABLE) {
-    // time options: us, secs
-    lua_getfield(L, 1, "us");
-    lua_getfield(L, 1, "secs");
-    enable_timer_wakeup = !lua_isnil(L, 2) || !lua_isnil(L, 3);
-    lua_pop(L, 2);
-    if (enable_timer_wakeup) {
-      usecs = opt_checkint(L, "us", 0);
-      usecs += (int64_t)opt_checkint(L, "secs", 0) * 1000000;
-    }
+    enable_timer_wakeup = node_sleep_get_time_options(L, &usecs);
 
     // GPIO wakeup options: gpio = num|{num, num, ...}
     uint64_t pin_mask = 0;
@@ -524,6 +619,15 @@ LROT_BEGIN(node_task)
 LROT_END(node_task, NULL, 0)
 
 
+// Wakup reasons
+LROT_BEGIN(node_wakeup)
+  LROT_NUMENTRY ( GPIO,     ESP_SLEEP_WAKEUP_GPIO )
+  LROT_NUMENTRY ( TIMER,    ESP_SLEEP_WAKEUP_TIMER )
+  LROT_NUMENTRY ( TOUCHPAD, ESP_SLEEP_WAKEUP_TOUCHPAD )
+  LROT_NUMENTRY ( UART,     ESP_SLEEP_WAKEUP_UART )
+  LROT_NUMENTRY ( ULP,      ESP_SLEEP_WAKEUP_ULP )
+LROT_END(node_wakeup, NULL, 0)
+
 LROT_BEGIN(node)
   LROT_FUNCENTRY( chipid,     node_chipid )
   LROT_FUNCENTRY( compile,    node_compile )
@@ -537,9 +641,11 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( osoutput,   node_osoutput )
   LROT_FUNCENTRY( osprint,    node_osprint )
   LROT_FUNCENTRY( restart,    node_restart )
+  LROT_FUNCENTRY( sleep,      node_sleep )
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
   LROT_TABENTRY ( task,       node_task )
   LROT_FUNCENTRY( uptime,     node_uptime )
+  LROT_TABENTRY ( wakeup,     node_wakeup )
 LROT_END(node, NULL, 0)
 
 

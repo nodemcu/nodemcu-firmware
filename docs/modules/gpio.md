@@ -109,8 +109,13 @@ Establish or clear a callback function to run on interrupt for a GPIO.
 #### Returns
 `nil`
 
+
 ## gpio.wakeup()
-Configuring wake-from-sleep-on-GPIO-level.
+Configure whether the given pin should trigger wake up from light sleep initiated by [`node.sleep()`](node.md#nodesleep).
+
+Note that the `level` specified here overrides the interrupt type set by `gpio.trig()`, and wakeup only supports the level-triggered options `gpio.INTR_LOW` and `gpio.INTR_HIGH`. Therefore it is not possible to configure an edge-triggered GPIO callback in combination with wake from light sleep, at least not without reconfiguring the pin immediately before and after the call to `node.sleep()`.
+
+The call to `node.sleep()` must additionally include `gpio = true` in the `options` in order for any GPIO to trigger wakeup.
 
 #### Syntax
 `gpio.wakeup(pin, level)`
@@ -118,12 +123,15 @@ Configuring wake-from-sleep-on-GPIO-level.
 #### Parameters
 - `pin`, see [GPIO Overview](#gpio-overview)
 - `level` wake-up level, one of
-    - `gpio.INTR_NONE` to disable wake-up
-    - `gpio.INTR_LOW` for wake-up on low level
-    - `gpio.INTR_HIGH` for wake-up on high level
+    - `gpio.INTR_NONE` changes to the level of this pin will not trigger wake from light sleep
+    - `gpio.INTR_LOW` if this pin is low it should trigger wake from light sleep 
+    - `gpio.INTR_HIGH` if this pin is high it should trigger wake from light sleep 
 
 #### Returns
 `nil`
+
+#### See also
+[`node.sleep()`](node.md#nodesleep)
 
 
 ## gpio.write()

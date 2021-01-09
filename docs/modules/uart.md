@@ -175,6 +175,30 @@ Set UART controllers communication mode
 #### Returns
 `nil`
 
+
+## uart.wakeup()
+
+Configure the light sleep wakeup threshold. This is the number of positive edges that must be seen on the UART RX pin before a light sleep wakeup will be triggered. The minimum value is 3. The default value is undefined, therefore you should always call this function before the first time you call `node.sleep()` with the uart option set.
+
+#### Syntax
+`uart.wakeup(id, val)`
+
+#### Parameters
+- `id` uart id
+- `val` the new value 
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+uart.wakeup(0, 5)
+```
+
+#### See also
+[`node.sleep()`](node/#nodesleep)
+
+
 ## uart.write()
 
 Write string or byte to the UART.
