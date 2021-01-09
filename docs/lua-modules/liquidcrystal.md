@@ -237,6 +237,12 @@ liquidcrystal:blink(true)
 ## liquidcrystal.busy
 Get busy status of the LCD. When using GPIO backend without `rw` argument specification function does nothing.
 
+!!! note
+  At least some HD44780s and/or interfaces have been observed to count polling
+  the busy flag as grounds for incrementing their position in memory.  This is
+  mysterious, but software should restore the position after observing that the
+  busy flag is clear.
+
 #### Syntax
 `liquidcrystal.busy(self)`
 
@@ -428,6 +434,11 @@ liquidcrystal:leftToRight()
 
 ## liquidcrystal.position
 Get current position of the cursor. Position is 0 indexed. When using GPIO backend without `rw` argument specification function does nothing.
+
+!!! note
+  At least some HD44780s and/or interfaces have been observed to count reading
+  the position as grounds for incrementing their position in memory.  This is
+  mysterious, but software likely intends to restore the position anyway.
 
 #### Syntax
 `liquidcrystal.position(self)`
