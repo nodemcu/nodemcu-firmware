@@ -73,6 +73,9 @@ LUAC_MODULE(bit)
 LUAC_MODULE(color_utils)
 LUAC_MODULE_INIT(sjson, luaopen_sjson)
 LUAC_MODULE(pipe)
+#ifndef _MSC_VER 
+LUAC_MODULE_INIT(pixbuf, luaopen_pixbuf)
+#endif
 #endif
 
 LUAC_MODULE(base_func);
@@ -93,6 +96,9 @@ LROT_BEGIN(rotables, LROT_TABLEREF(rotables_meta), 0)
   LROT_TABENTRY(color_utils, color_utils)
   LROT_TABENTRY(sjson, sjson)
   LROT_TABENTRY(pipe, pipe)
+#ifndef _MSC_VER 
+  LROT_TABENTRY(pixbuf, pixbuf)
+#endif
 #endif
 LROT_END(rotables, LROT_TABLEREF(rotables_meta), 0)
 
@@ -106,6 +112,9 @@ LROT_BEGIN(lua_libs, NULL, 0)
   LROT_FUNCENTRY(color_utils, NULL)
   LROT_FUNCENTRY(sjson, luaopen_sjson)
   LROT_FUNCENTRY(pipe, NULL)
+#ifndef _MSC_VER 
+  LROT_FUNCENTRY(pixbuf, luaopen_pixbuf)
+#endif
 #endif
 LROT_END(lua_libs, NULL, 0)
 
