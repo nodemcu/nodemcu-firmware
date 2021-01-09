@@ -146,6 +146,9 @@
     <ClCompile Include="..\..\app\modules\sjson.c">
       <Filter>app\modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\app\modules\pipe.c">
+      <Filter>app\modules</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\app\sjson\jsonsl.c">
       <Filter>app\sjson</Filter>
     </ClCompile>

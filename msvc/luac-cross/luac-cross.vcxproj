@@ -215,6 +215,7 @@
     <ClCompile Include="..\..\app\modules\bit.c" />
     <ClCompile Include="..\..\app\modules\color_utils.c" />
     <ClCompile Include="..\..\app\modules\sjson.c" />
+    <ClCompile Include="..\..\app\modules\pipe.c" />
     <ClCompile Include="..\..\app\modules\struct.c" />
     <ClCompile Include="..\..\app\sjson\jsonsl.c" />
     <ClCompile Include="..\..\app\uzlib\crc32.c" />
