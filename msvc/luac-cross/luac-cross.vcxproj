@@ -104,7 +104,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,7 +167,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

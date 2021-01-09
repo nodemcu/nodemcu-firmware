@@ -743,7 +743,6 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       } else {
         luaL_addstring(&b, value);
       }
-      lua_pop(L, 1);
       break;
     }
 
