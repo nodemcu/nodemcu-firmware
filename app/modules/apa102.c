@@ -102,10 +102,6 @@ static int apa102_write(lua_State* L) {
     return luaL_argerror(L, 3, "String or pixbuf expected");
   }
 
-  if (nbr_frames > 100000) {
-    return luaL_error(L, "The supplied buffer is too long, and might cause the callback watchdog to bark.");
-  }
-
   // Initialize the output pins
   platform_gpio_mode(data_pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
   GPIO_OUTPUT_SET(alt_data_pin, PLATFORM_GPIO_HIGH); // Set pin high
