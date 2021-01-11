@@ -1,4 +1,4 @@
-local i2c, bit = i2c, bit --luacheck: read globals i2c bit
+local i2c, bit = i2c, bit
 
 return function(bus_args)
    local busid = bus_args.id or 0
