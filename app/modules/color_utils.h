@@ -3,9 +3,6 @@
 
 #include "lnodemcu.h"
 
-
-#include "lnodemcu.h"
-
 /**
 * Convert hsv to grb
 * hue is 0-360, sat and val are 0-255
