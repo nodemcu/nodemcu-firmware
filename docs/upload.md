@@ -36,6 +36,16 @@ Source: [https://github.com/andidittrich/NodeMCU-Tool](https://github.com/andidi
 
 Supported platforms: macOS, Linux Windows, anything that runs Node.js
 
+### go-mcu
+
+> go-mcu provides an alternative way to work with NodeMCU-based modules like the ESP8266. Inspired by NodeMCU-Tool and nodemcu-uploader. It can be used as a Go package but also as a standalone CLI tool.
+>
+> One of the goals is to take advantage of Go's cross compilation capability while keeping a minimal set of runtime dependencies.
+
+Source: [https://github.com/matiasinsaurralde/go-mcu](https://github.com/matiasinsaurralde/go-mcu)
+
+Supported platforms: macOS, Linux, Windows
+
 ## init.lua
 You will see "lua: cannot open init.lua" printed to the serial console when the device boots after it's been freshly flashed. If NodeMCU finds a `init.lua` in the root of the file system it will execute it as part of the boot sequence (standard Lua feature). Hence, your application is initialized and triggered from `init.lua`. Usually you first set up the WiFi connection and only continue once that has been successful.
 
