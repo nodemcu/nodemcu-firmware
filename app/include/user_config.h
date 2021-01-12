@@ -161,7 +161,7 @@
 // further details, as the scope of these changes is not obvious.
 
 //  Enable the wifi.startsmart() and wifi.stopsmart()
-//#define WIFI_SMART_ENABLE
+#define WIFI_SMART_ENABLE
 
 //  Enable wifi.sta.config() event callbacks
 #define WIFI_SDK_EVENT_MONITOR_ENABLE
