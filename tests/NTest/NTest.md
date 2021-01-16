@@ -145,7 +145,7 @@ ok(f.errors[3] ~= nil)
 
 ## Reports
 
-Another useful feature is that you can customize test reports as you need. The default `reports` just more or less prints out a basic report. You can easily override this behavior as well as add any other information you need (number of passed/failed assertions, time the test took etc):
+Another useful feature is that you can customize test reports as you need. The default `outputhandler` just more or less prints out a basic report. You can easily override (or augment by wrapping, e.g.) this behavior as well as add any other information you need (number of passed/failed assertions, time the test took etc):
 
 Events are:
 `start`   when testing starts
@@ -161,7 +161,7 @@ Events are:
 local passed = 0
 local failed = 0
 
-tests.report(function(event, testfunc, msg)
+tests.outputhandler = function(event, testfunc, msg)
   if event == 'begin' then
     print('Started test', testfunc)
     passed = 0
@@ -176,7 +176,7 @@ tests.report(function(event, testfunc, msg)
   elseif event == 'except' then
     print('ERROR', testfunc, msg)
   end
-end)
+end
 ```
 
 Additionally, you can pass a different environment to keep `_G` unpolluted:
@@ -184,8 +184,7 @@ You need to set it, so the helper functions mentioned above can be added before 
 
 ``` Lua
 local myenv = {}
-
-tests.report(function() ... end, myenv)
+tests.env = myenv
 
 tests.test('Some test', function()
   myenv.ok(myenv.eq(...))
@@ -193,7 +192,7 @@ tests.test('Some test', function()
 end)
 ```
 
-You can set any of the parameters to `nil` to leave the value unchanged. 
+You can restore `env` or `outputhandler` to their defaults by setting their values to `nil`.
 
 
 ## Appendix

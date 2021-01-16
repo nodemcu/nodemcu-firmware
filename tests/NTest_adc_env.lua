@@ -1,7 +1,8 @@
 -- Walk the ADC through a stepped triangle wave using the attached voltage
 -- divider and I2C GPIO expander.
 
-local N = require('NTest')("adc-env")
+local N = ...
+N = (N or require "NTest")("adc-env")
 
 -- TODO: Preflight test that we are in the correct environment with an I2C
 -- expander in the right place with the right connections.

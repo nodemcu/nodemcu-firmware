@@ -3,7 +3,8 @@
 --   Node GPIO 13 (index 7) is connected to I2C expander channel B6; node OUT
 --   Node GPIO 15 (index 8) is connected to I2C expander channel B7; node IN
 
-local N = require('NTest')("gpio-env")
+local N = ...
+N = (N or require "NTest")("gpio-env")
 
 -- TODO: Preflight test that we are in the correct environment with an I2C
 -- expander in the right place with the right connections.
