@@ -70,14 +70,21 @@ static bool node_sleep_get_time_options (lua_State *L, int64_t *usecs)
   return option_present;
 }
 
-static int node_sleep (lua_State *L)
+static void node_sleep_disable_wakeup_sources (lua_State *L)
 {
   // Start with known state, to ensure previous sleep calls don't leave any
   // settings left over
   int err = esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+  if (err) {
+    luaL_error(L, "Error %d returned from esp_sleep_disable_wakeup_source", err);
+  }
+}
 
+static int node_sleep (lua_State *L)
+{
   lua_settop(L, 1);
   luaL_checkanytable(L, 1);
+  node_sleep_disable_wakeup_sources(L);
 
   // uart options: uart = num|{num, num, ...}
   lua_getfield(L, -1, "uart");
@@ -111,7 +118,7 @@ static int node_sleep (lua_State *L)
   // only mentions compatibility issues with touch and EXT0 wakeup, which is
   // not the same as GPIO wakeup.
   if (opt_checkbool(L, "gpio", false)) {
-    err = esp_sleep_enable_gpio_wakeup();
+    int err = esp_sleep_enable_gpio_wakeup();
     if (err) {
       return luaL_error(L, "Error %d returned from esp_sleep_enable_gpio_wakeup()", err);
     }
@@ -125,7 +132,7 @@ static int node_sleep (lua_State *L)
 
   // touch option: boolean
   if (opt_checkbool(L, "touch", false)) {
-    err = esp_sleep_enable_touchpad_wakeup();
+    int err = esp_sleep_enable_touchpad_wakeup();
     if (err) {
       return luaL_error(L, "Error %d returned from esp_sleep_enable_touchpad_wakeup()", err);
     }
@@ -133,13 +140,13 @@ static int node_sleep (lua_State *L)
 
   // ulp option: boolean
   if (opt_checkbool(L, "ulp", false)) {
-    err = esp_sleep_enable_ulp_wakeup();
+    int err = esp_sleep_enable_ulp_wakeup();
     if (err) {
       return luaL_error(L, "Error %d returned from esp_sleep_enable_ulp_wakeup()", err);
     }
   }
 
-  err = esp_light_sleep_start();
+  int err = esp_light_sleep_start();
   if (err == ESP_ERR_INVALID_STATE) {
     return luaL_error(L, "WiFi and BT must be stopped before sleeping");
   } else if (err) {
@@ -156,6 +163,7 @@ static int node_sleep (lua_State *L)
 static int node_dsleep (lua_State *L)
 {
   lua_settop(L, 1);
+  node_sleep_disable_wakeup_sources(L);
   bool enable_timer_wakeup = false;
   int64_t usecs = 0;
   int type = lua_type(L, 1);
