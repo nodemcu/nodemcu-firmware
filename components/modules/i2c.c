@@ -1,4 +1,4 @@
-// Module for interfacing with the I2C interface
+// Module for interfacing with the ESP32 I2C interfaces
 
 #include "module.h"
 #include "lauxlib.h"
@@ -8,28 +8,34 @@
 #include "i2c_common.h"
 
 
-// Lua: i2c.setup( id, sda, scl, speed )
+// Lua: speed = i2c.setup( id, sda, scl, speed [,stretchfactor] )
 static int i2c_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   unsigned sda = luaL_checkinteger( L, 2 );
   unsigned scl = luaL_checkinteger( L, 3 );
   uint32_t speed = (uint32_t)luaL_checkinteger( L, 4 );
+  int stretchfactor = 1;
+  int timeout;
 
-  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid i2c interface id" );
   MOD_CHECK_ID( gpio, sda );
   MOD_CHECK_ID( gpio, scl );
 
   if (id == I2C_ID_SW) {
-    luaL_argcheck( L, speed <= PLATFORM_I2C_SPEED_SLOW, 4, "wrong arg range" );
+    luaL_argcheck( L, speed <= PLATFORM_I2C_SPEED_SLOW, 4, "i2c speed too high for i2c.SW interface" );
     if (!platform_i2c_setup( id, sda, scl, (uint32_t)speed ))
       luaL_error( L, "setup failed" );
+    lua_pushinteger(L,speed);
   } else {
-    luaL_argcheck( L, speed <= PLATFORM_I2C_SPEED_FASTPLUS, 4, "wrong arg range" );
-    li2c_hw_master_setup( L, id, sda, scl, speed );
+    luaL_argcheck( L, speed <= PLATFORM_I2C_SPEED_FASTPLUS, 4, "i2c speed too high for i2c.HWx interfaces" );
+    if (lua_gettop( L ) > 4) stretchfactor = luaL_checkinteger( L, 5 );
+
+    timeout=li2c_hw_master_setup( L, id, sda, scl, speed, stretchfactor);
+    lua_pushinteger(L,timeout);
   }
 
-  return 0;
+  return 1;
 }
 
 // Lua: i2c.start( id )
@@ -37,11 +43,11 @@ static int i2c_start( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
 
-  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid i2c interface id" );
 
   if (id == I2C_ID_SW) {
     if (!platform_i2c_send_start( id ))
-      luaL_error( L, "command failed");
+      luaL_error( L, "start command failed on i2c.SW interface");
   } else {
     li2c_hw_master_start( L, id );
   }
@@ -54,11 +60,11 @@ static int i2c_stop( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
 
-  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid i2c interface id" );
 
   if (id == I2C_ID_SW) {
     if (!platform_i2c_send_stop( id ))
-      luaL_error( L, "command failed" );
+      luaL_error( L, "stop command failed on i2c.SW interface" );
   } else {
     li2c_hw_master_stop( L, id );
   }
@@ -66,22 +72,23 @@ static int i2c_stop( lua_State *L )
   return 0;
 }
 
-// Lua: status = i2c.address( id, address, direction )
+// Lua: status = i2c.address( id , address , direction [, ack_check_en] )
 static int i2c_address( lua_State *L )
 {
   int stack = 0;
 
   unsigned id = luaL_checkinteger( L, ++stack );
-  luaL_argcheck( L, id < I2C_ID_MAX, stack, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, stack, "invalid i2c interface id" );
 
   int address = luaL_checkinteger( L, ++stack );
-  luaL_argcheck( L, address >= 0 && address <= 127, stack, "wrong arg range" );
+  luaL_argcheck( L, address >= 0 && address <= 127, stack, "i2c address out of 7-bit range" );
+// *** FIX ME what about 10-bit addresses ???
 
   int direction = luaL_checkinteger( L, ++stack );
   luaL_argcheck( L,
 		 direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ||
 		 direction == PLATFORM_I2C_DIRECTION_RECEIVER,
-		 stack, "wrong arg range" );
+		 stack, "invalid i2c address direction" );
 
   bool ack_check_en = luaL_optbool( L, ++stack, true );
 
@@ -90,18 +97,19 @@ static int i2c_address( lua_State *L )
     ret = platform_i2c_send_address( id, (uint16_t)address, direction, ack_check_en ? 1 : 0 );
   } else {
     ret = li2c_hw_master_address( L, id, (uint16_t)address, direction, ack_check_en );
+// bad parameters could cause failure to enqueue, but all have been checked, so it should always return true
   }
   lua_pushboolean( L,  ret > 0 );
 
   return 1;
 }
 
-// Lua: wrote = i2c.write( id, data1, [data2], ..., [datan] )
-// data can be either a string, a table or an 8-bit number
+// Lua: wrote = i2c.write( id, data1, [data2], ..., [datan] [, ack_check_en] )
+// each of the data elements can be either a string, a table or an 8-bit number
 static int i2c_write( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
-  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid i2c interface id" );
 
   const char *pdata;
   size_t datalen, i;
@@ -116,7 +124,8 @@ static int i2c_write( lua_State *L )
   }
 
   if( lua_gettop( L ) < 2 )
-    return luaL_error( L, "wrong arg type" );
+    return luaL_error( L, "not enough or wrong arg types for i2c.write" );
+
   for( argn = 2; argn <= lua_gettop( L ); argn ++ )
   {
     // lua_isnumber() would silently convert a string of digits to an integer
@@ -125,7 +134,7 @@ static int i2c_write( lua_State *L )
     {
       numdata = ( int )luaL_checkinteger( L, argn );
       if( numdata < 0 || numdata > 255 )
-        return luaL_error( L, "wrong arg range" );
+        return luaL_error( L, "numeric value for i2c.write does not fit in 1 byte" );
       if (id == I2C_ID_SW) {
 	if( platform_i2c_send_byte( id, numdata, 1) != 1 && ack_check_en )
 	  break;
@@ -143,7 +152,7 @@ static int i2c_write( lua_State *L )
         numdata = ( int )luaL_checkinteger( L, -1 );
         lua_pop( L, 1 );
         if( numdata < 0 || numdata > 255 )
-          return luaL_error( L, "wrong arg range" );
+          return luaL_error( L, "table value for i2c.write does not fit in 1 byte" );
 	if (id == I2C_ID_SW) {
 	  if( platform_i2c_send_byte( id, numdata, 1 ) == 0 && ack_check_en)
 	    break;
@@ -174,20 +183,19 @@ static int i2c_write( lua_State *L )
   return 1;
 }
 
-// Lua: read = i2c.read( id, size )
+// Lua: read = i2c.read( id, size ) for SW interface or i2c.read( id, size ) for HWx interfaces
 static int i2c_read( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
-  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid id" );
+  luaL_argcheck( L, id < I2C_ID_MAX, 1, "invalid i2c interface id" );
 
-  uint32_t size = ( uint32_t )luaL_checkinteger( L, 2 ), i;
+  uint32_t size = ( uint32_t ) luaL_checkinteger( L, 2 );
+  luaL_argcheck( L, size > 0, 2, "i2c read size of 0 is invalid" );
 
   if (id == I2C_ID_SW) {
     luaL_Buffer b;
+    uint32_t i;
     int data;
-
-    if( size == 0 )
-      return 0;
     luaL_buffinit( L, &b );
     for( i = 0; i < size; i ++ )
       if( ( data = platform_i2c_recv_byte( id, i < size - 1 ) ) == -1 )
