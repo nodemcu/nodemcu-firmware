@@ -23,7 +23,9 @@ jobs:
         echo ${{ github.ref }}
         echo $GITHUB_REF
         echo ${GITHUB_REF/*\/}
-        echo ${{ github.ref }/*\/}
+        echo ${{ github.ref }}
+        a="${{ github.ref }}"
+        echo ${a/*\/}
         set
         "%programfiles%\git\usr\bin\xargs"
         cd msvc
