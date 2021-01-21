@@ -71,7 +71,7 @@ jobs:
           name: luac.cross_51_float_win
           path: ./
       - name: upload luac.cross to release
-        id: upload-luac.cross 
+        id: upload-luac-cross 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
