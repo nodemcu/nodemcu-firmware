@@ -20,9 +20,10 @@ jobs:
 #        submodules: true
     - name: Build luac.cross.exe
       run: |
-        echo ${{ GITHUB_REF }}
+        echo ${{ github.ref }}
         echo $GITHUB_REF
         echo ${GITHUB_REF/*\/}
+        echo ${{ github.ref }/*\/}
         set
         "%programfiles%\git\usr\bin\xargs"
         cd msvc
