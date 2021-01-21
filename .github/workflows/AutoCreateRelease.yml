@@ -42,18 +42,18 @@ jobs:
 
   Create_Release:
     name: Create Release
-    needs: build_luac_cross_win
+#    needs: build_luac_cross_win
     runs-on: ubuntu-latest
     steps:
-    - name: Build luac.cross.exe
-      run: |
-        echo ${{ github.ref }}
-        echo $GITHUB_REF
-        echo ${GITHUB_REF/*\/}
-        echo ${{ github.ref }}
-        a="${{ github.ref }}"
-        echo ${a/*\/}
-        set
+      - name: Build luac.cross.exe
+        run: |
+          echo ${{ github.ref }}
+          echo $GITHUB_REF
+          echo ${GITHUB_REF/*\/}
+          echo ${{ github.ref }}
+          a="${{ github.ref }}"
+          echo ${a/*\/}
+          set
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Create Release
