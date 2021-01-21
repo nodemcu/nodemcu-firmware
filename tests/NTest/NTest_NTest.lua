@@ -406,43 +406,13 @@ end -- load_tests()
 
 local cbWrap = function(cb) return cb end
 
--- implement pseudo task handling for on host testing
-local drain_post_queue = function() end
-
-if not node then
-  local post_queue = {{},{},{}}
-
-  drain_post_queue = function()
-    while #post_queue[1] + #post_queue[2] + #post_queue[3] > 0 do
-      for i = 3, 1, -1 do
-        if #post_queue[i] > 0 then
-          local f = table.remove(post_queue[i], 1)
-          if f then
-            f()
-          end
-          break
-        end
-      end
-    end
-  end
-
-  -- luacheck: push ignore 121 122 (setting read-only global variable)
-  node = {}
-  node.task = {LOW_PRIORITY = 1, MEDIUM_PRIORITY = 2, HIGH_PRIORITY = 3}
-  node.task.post = function (p, f)
-    table.insert(post_queue[p], f)
-  end
-
-  local errorfunc
-  node.setonerror = function(fn) errorfunc = fn end
-  -- luacheck: pop
-
+if not node.LFS then  -- assume we run on host, not on MCU. node is already defined by NTest if running on host
   cbWrap = function(cb)
       return function(...)
           local ok, p1,p2,p3,p4 = pcall(cb, ...)
           if not ok then
-            if errorfunc then
-              errorfunc(p1)
+            if node.Host_Error_Func then  -- luacheck: ignore 143
+              node.Host_Error_Func(p1)  -- luacheck: ignore 143
             else
               print(p1, "::::::::::::: reboot :::::::::::::")
             end
@@ -464,8 +434,8 @@ end
 
 local pass
 -- Set meta test handler
-N.report(function(e, test, msg, errormsg)
-  local function consumemsg(msg, area) -- luacheck: ignore  
+N.outputhandler = function(e, test, msg, errormsg)
+  local function consumemsg(msg, area) -- luacheck: ignore
     if not expected[1][area][1] then
       print("--- FAIL "..expected[1].name..' ('..area..'ed): unexpected "'..
         msg..'"')
@@ -517,7 +487,7 @@ N.report(function(e, test, msg, errormsg)
   else
     print("Extra output: ", e, test, msg, errormsg)
   end
-end)
+end
 
 local async_queue = {}
 async = function(f) table.insert(async_queue, cbWrap(f)) end
@@ -535,6 +505,12 @@ local function drain_async_queue()
 end
 
 metatest = function(name, f, expectedPassed, expectedFailed, expectedExcept, asyncMode)
+  table.insert(expected, {
+    name = name,
+    pass = expectedPassed,
+    fail = expectedFailed,
+    except = expectedExcept or {}
+  })
   local ff = f
   if asyncMode then
     ff = function(...)
@@ -549,15 +525,7 @@ metatest = function(name, f, expectedPassed, expectedFailed, expectedExcept, asy
   else
     N.test(name, ff)
   end
-  table.insert(expected, {
-    name = name,
-    pass = expectedPassed,
-    fail = expectedFailed,
-    except = expectedExcept or {}
-  })
 end
 
 
 load_tests()
-
-drain_post_queue()

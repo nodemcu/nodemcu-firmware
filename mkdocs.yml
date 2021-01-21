@@ -105,6 +105,7 @@ pages:
     - 'pcm' : 'modules/pcm.md'
     - 'perf': 'modules/perf.md'
     - 'pipe': 'modules/pipe.md'
+    - 'pixbuf': 'modules/pixbuf.md'
     - 'pwm' : 'modules/pwm.md'
     - 'pwm2' : 'modules/pwm2.md'
     - 'rfswitch' : 'modules/rfswitch.md'

@@ -1,4 +1,5 @@
-local N = require('NTest')("file")
+local N = ...
+N = (N or require "NTest")("file")
 
 local function cleanup()
     file.remove("testfile")

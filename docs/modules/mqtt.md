@@ -64,8 +64,6 @@ m = mqtt.Client("clientid", 120, "user", "password")
 -- to topic "/lwt" if client don't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
-m:on("connect", function(client) print ("connected") end)
-m:on("connfail", function(client, reason) print ("connection failed", reason) end)
 m:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
@@ -96,11 +94,11 @@ m:connect("192.168.11.118", 1883, false, function(client)
   client:publish("/topic", "hello", 0, 0, function(client) print("sent") end)
 end,
 function(client, reason)
-  print("failed reason: " .. reason)
+  print("Connection failed reason: " .. reason)
 end)
 
-m:close();
--- you can call m:connect again
+m:close()
+-- you can call m:connect again after the offline callback fires
 ```
 
 # MQTT Client
@@ -108,7 +106,11 @@ m:close();
 
 ## mqtt.client:close()
 
-Closes connection to the broker.
+Schedules a clean teardown of the connection.
+
+MQTT requires clients to actively signal a desire to disconnect to the server
+to avoid sending their LWT.  Thus, the Client is not immediately reusable
+after this call, but only after the "offline" callback has fired.
 
 #### Syntax
 `mqtt:close()`
@@ -117,7 +119,7 @@ Closes connection to the broker.
 none
 
 #### Returns
-`true` on success, `false` otherwise
+`nil`
 
 ## mqtt.client:connect()
 

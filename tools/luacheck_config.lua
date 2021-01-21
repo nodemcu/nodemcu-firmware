@@ -487,6 +487,22 @@ stds.nodemcu_libs = {
         new = empty
       }
     },
+    pipe = {
+      fields = {
+        create = empty
+      }
+    },
+    pixbuf = {
+      fields = {
+        FADE_IN = empty,
+        FADE_OUT = empty,
+        SHIFT_CIRCULAR = empty,
+        SHIFT_LOGICAL = empty,
+        init = empty,
+        newBuffer = empty,
+        write = empty
+      }
+    },
     pwm = {
       fields = {
         close = empty,
@@ -609,7 +625,8 @@ stds.nodemcu_libs = {
         PROG = empty,
         STOP = empty,
         UP = empty,
-        sendcommand = empty
+        sendcommand = empty,
+        listen = empty
       }
     },
     spi = {

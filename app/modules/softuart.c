@@ -194,6 +194,7 @@ static int softuart_init(softuart_t *s)
 		}
 		return platform_gpio_register_intr_hook(mask, softuart_intr_handler);
     }
+    return 1;
 }
 
 
@@ -206,30 +207,27 @@ static int softuart_setup(lua_State *L)
 	NODE_DBG("[SoftUART]: setup called\n");
 	baudrate = (uint32_t)luaL_checkinteger(L, 1); // Get Baudrate from
 	luaL_argcheck(L, (baudrate > 0 && baudrate < 230400), 1, "Invalid baud rate");
-	lua_remove(L, 1); // Remove baudrate argument from stack
-	if (lua_gettop(L) == 2) { // 2 arguments: 1st can be nil
-		if (lua_isnil(L, 1)) {
-			tx_gpio_id = 0xFF;
-		} else {
-			tx_gpio_id = (uint8_t)luaL_checkinteger(L, 1);
-			luaL_argcheck(L, (platform_gpio_exists(tx_gpio_id) && tx_gpio_id != 0)
-				, 2, "Invalid SoftUART tx GPIO");
-		}
-		rx_gpio_id = (uint8_t)luaL_checkinteger(L, 2);
+
+  if (lua_isnoneornil(L, 2)) {
+    tx_gpio_id = 0xFF;
+  } else {
+    tx_gpio_id = (uint8_t)luaL_checkinteger(L, 2);
+    luaL_argcheck(L, (platform_gpio_exists(tx_gpio_id) && tx_gpio_id != 0)
+      , 2, "Invalid SoftUART tx GPIO");
+  }
+
+  if (lua_isnoneornil(L, 3)) {
+    rx_gpio_id = 0xFF;
+  } else {
+    rx_gpio_id = (uint8_t)luaL_checkinteger(L, 3);
 		luaL_argcheck(L, (platform_gpio_exists(rx_gpio_id) && rx_gpio_id != 0)
 			, 3, "Invalid SoftUART rx GPIO");
 		luaL_argcheck(L, softuart_gpio_instances[rx_gpio_id] == NULL
 			, 3, "SoftUART rx already configured on the pin");
+  }
 
-	} else if (lua_gettop(L) == 1) { // 1 argument: transmit part only
-		rx_gpio_id = 0xFF;
-		tx_gpio_id = (uint8_t)luaL_checkinteger(L, 1);
-		luaL_argcheck(L, (platform_gpio_exists(tx_gpio_id) && tx_gpio_id != 0)
-			, 2, "Invalid SoftUART tx GPIO");
-	} else {
-		// SoftUART object without receive and transmit part would be useless
-		return luaL_error(L, "Not enough arguments");
-	}
+  // SoftUART object without receive and transmit part would be useless
+  if ((rx_gpio_id == 0xFF) && (tx_gpio_id == 0xFF)) {return luaL_error(L, "Not enough arguments");}
 
 	softuart = (softuart_t*)lua_newuserdata(L, sizeof(softuart_t));
 	softuart->pin_rx = rx_gpio_id;

@@ -1,5 +1,115 @@
-NodeMCU Testing Environment
-===========================
+# Introduction
+
+Welcome to the NodeMCU self-test suite.  Here you will find our growing effort
+to ensure that our software behaves as we think it should and that we do not
+regress against earlier versions.
+
+Our tests are written using [NTest](./NTest/NTest.md), a lightweight yet
+featureful framework for specifying unit tests.
+
+# Building and Running Test Software on NodeMCU Devices
+
+Naturally, to test NodeMCU on its intended hardware, you will need one or more
+NodeMCU-capable boards.  At present, the test environment is specified using
+two ESP8266 Devices Under Test (DUTs), but we envision expanding this to mixed
+ESP8266/ESP32 environments as well.
+
+Test programs live beside this file.  While many test programs run on the
+NodeMCU DUTs, but there is reason to want to orchestrate DUTs and the
+environment using the host.  Files matching the glob `NTest_*.lua` are intended
+for on-DUT execution.
+
+## Manual Test Invocation
+
+At the moment, the testing regime and host-based orchestration is still in
+development, and so things are a little more manual than perhaps desired.  The
+`NTest`-based test programs all assume that they can `require "NTest"`, and so
+the easiest route to success is to
+
+* build an LFS image containing
+
+  * [package.loader support for LFS](../lua_examples/lfs/_init.lua)
+
+  * [NTest itself](./NTest/NTest.lua)
+
+  * Any additional Lua support modules required (e.g., [mcp23017
+  support](../lua_modules/mcp23017/mcp23017.lua) )
+
+* build a firmware with the appropriate C modules
+
+* program the board with your firmware and LFS images
+
+* ensure that `package.loader` is patched appropriately on startup
+
+* transfer the `NTest_foo` program you wish to run to the device SPIFFS
+  (or have included it in the LFS).
+
+* at the interpreter prompt, say `dofile("NTest_foo.lua")` (or
+  `node.LFS.get("NTest_foo")()`) to run the `foo` test program.
+
+## Experimental Host Orchestration
+
+Enthusiastic testers are encouraged to try using our very new, very
+experimental host test runner, [tap-driver.expect](./tap-driver.expect).  To
+use this program, in addition to the above, the LFS environment should contain
+[NTestTapOut](./tests/utils/NTestTapOut.lua), an output adapter for `NTest`,
+making it speak a slight variant of the [Test Anything
+Protocol](https://testanything.org/).  This structured output is scanned for
+by the script on the host.
+
+You'll need `expect` and TCL and some TCL libraries available; on Debian, that
+amounts to
+
+    apt install tcl tcllib tclx8.4 expect
+
+This program should be invoked from beside this file with something like
+
+    TCLLIBPATH=./expectnmcu ./tap-driver.expect -serial /dev/ttyUSB3 -lfs ./lfs.img NTest_file.lua
+
+This will...
+
+* transfer and install the specified LFS module (and reboot the device to load LFS)
+
+* transfer the test program
+
+* run the test program with `NTest` shimmed to use the `NTestTapOut` output
+  handler
+
+* summarize the results
+
+* return 0 if and only if all tests have passed
+
+This tool is quite flexible and takes a number of other options and flags
+controlling aspects of its behavior:
+
+* Additional files, Lua or otherwise, may be transferred by specifing them
+  before the test to run (e.g., `./tap-driver.expect a.lua b.lua
+  NTest_foo.lua`); dually, a `-noxfer` flag will suppress transferring even the
+  last file.  All transferred files are moved byte-for-byte to the DUT's
+  SPIFFS with names, but not directory components, preserved.
+
+* The `-lfs LFS.img` option need not be specified and, if not given, any
+  existing `LFS` image will remain on the device for use by the test.
+
+* A `-nontestshim` flag will skip attempting to shim the given test program
+  with `NTestTapOut`; the test program is expected to provide its own TAP
+  output.  The `-tpfx` argument can be used to override the leading `TAP: `
+  sigil used by the `NTestTapOut` output handler.
+
+* A `-runfunc` option indicates that the last argument is not a file to
+  transfer but rather a function to be run.  It will be invoked at the REPL
+  with a single argument, the shimmed `NTest` constructor, unless `-nontestshim`
+  is given, in which case the argument will be `nil`.
+
+* A `-notests` option suppresses running tests (making the tool merely another
+  option for loading files to the device).
+
+Transfers will be significantly faster if
+[pipeutils](../lua_examples/pipeutils.lua) is available to `require` on the
+DUT, but a fallback strategy exists if not.  We suggest either including
+`pipeutils` in LFS images, in SPIFFS, or as the first file to be transferred.
+
+# NodeMCU Testing Environment
 
 Herein we define the environment our testing framework expects to see
 when it runs. It is composed of two ESP8266 devices, each capable of
@@ -16,8 +126,7 @@ so long as TXD, RXD, DTR, and RTS are wired across.
 
 A particular implementation of this can be found at [Test Harness](HardwareTestHarness.html).
 
-Peripherals
------------
+## Peripherals
 
 ### I2C Bus
 
