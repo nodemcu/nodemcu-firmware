@@ -46,28 +46,28 @@ bmpIdRegister = 0xD0
 bmpChipSignature = 0x55
 
 -- initialize i2c software interface
-i2c.setup( id , sda , scl , speed )
+i2c.setup(id, sda, scl, speed)
 
 -- attempt to read chip id and compare against expected value
 function simple_check_chip( dev_address, dev_register , dev_signature )
-  i2c.start( id )
-  assert( i2c.address( id , dev_address , i2c.TRANSMITTER ) , "!!i2c device did not ACK first address operation" )
-  i2c.write( id , dev_register )
-  i2c.start( id ) -- repeated start condition
-  assert( i2c.address( id , dev_address , i2c.RECEIVER ) , "!!i2c device did not ACK second address operation" )
-  if i2c.read( id , 1):byte() == dev_signature then
-    print( "..chip is operational" )
+  i2c.start(id)
+  assert(i2c.address(id, dev_address, i2c.TRANSMITTER) , "!!i2c device did not ACK first address operation" )
+  i2c.write(id, dev_register)
+  i2c.start(id) -- repeated start condition
+  assert( i2c.address(id, dev_address, i2c.RECEIVER) , "!!i2c device did not ACK second address operation" )
+  if i2c.read(id, 1):byte() == dev_signature then
+    print("..chip is operational")
   else
-    print( "!!The chip does not have the expected signature" )
+    print("!!The chip does not have the expected signature")
   end
-   i2c.stop( id )
+   i2c.stop(id)
 end
 -- 
-print( "Chip check, should fail because device address is wrong" )
-simple_check_chip( bmpAddress+1 , bmpIdRegister , bmpChipSignature)
+print("Chip check, should fail because device address is wrong")
+simple_check_chip(bmpAddress+1, bmpIdRegister, bmpChipSignature)
 
-print( "Chip check, should succeed if chip is present and functional" )
-simple_check_chip( bmpAddress , bmpIdRegister , bmpChipSignature)
+print("Chip check, should succeed if chip is present and functional")
+simple_check_chip(bmpAddress, bmpIdRegister, bmpChipSignature)
 
 ```
 
@@ -84,55 +84,55 @@ bmpIdRegister = 0xD0
 bmpChipSignature = 0x55
 
 -- initialize i2c software interface
-i2c.setup( id , sda , scl , speed )
+i2c.setup(id, sda, scl, speed)
 
 -- read a single byte from the chip
-function read_byte( dev_address, dev_register , callback )
-  i2c.start( id )
-  i2c.address( id , dev_address , i2c.TRANSMITTER )
-  i2c.write( id , dev_register )
-  i2c.start( id ) -- repeated start condition
-  i2c.address( id , dev_address , i2c.RECEIVER )
-  i2c.read( id , 1)
-  i2c.stop( id )
-  return i2c.transfer( id , callback )
+function read_byte(dev_address, dev_register , callback )
+  i2c.start(id)
+  i2c.address(id, dev_address, i2c.TRANSMITTER)
+  i2c.write(id, dev_register)
+  i2c.start(id) -- repeated start condition
+  i2c.address(id, dev_address, i2c.RECEIVER)
+  i2c.read(id, 1)
+  i2c.stop(id)
+  return i2c.transfer(id, callback)
 end
 
 -- check results returned
-function check( value , 	ack )
+function check(value, ack)
   if ack then
     if value:byte() == bmpChipSignature then
-      print( "..chip is operational" )
+      print("..chip is operational")
     else
-      print( "!!The chip does not have the expected signature" )
+      print("!!The chip does not have the expected signature")
     end
   else
-    print( "!!chip did not respond" )
+    print("!!chip did not respond")
   end
 end
 --
-print( "synchronous use")
+print("synchronous use")
 
-print( "Chip check, should fail because device address is wrong" )
-check( read_byte( bmpAddress+1 , bmpIdRegister ) )
+print("Chip check, should fail because device address is wrong")
+check(read_byte(bmpAddress+1, bmpIdRegister))
 
-print( "Chip check, should succeed if chip is present and functional" )
-check( read_byte( bmpAddress , bmpIdRegister ) )
+print("Chip check, should succeed if chip is present and functional")
+check(read_byte(bmpAddress, bmpIdRegister))
 
-print( "asynchronous use")
+print("asynchronous use")
 
-print( "Chip check, should fail because device address is wrong" )
-read_byte( bmpAddress+1 , bmpIdRegister, check)
+print("Chip check, should fail because device address is wrong")
+read_byte(bmpAddress+1, bmpIdRegister, check)
 
-print( "Chip check, should succeed if chip is present and functional" )
-read_byte( bmpAddress , bmpIdRegister , check)
+print("Chip check, should succeed if chip is present and functional")
+read_byte(bmpAddress, bmpIdRegister, check)
 ```
 
 ## i2c.address()
 Perform (`SW`) or enqueue (`HWx`) an I²C address operation, defining data transfer direction for the next operation (read or write).
 
 #### Syntax
-`i2c.address( id , device_addr , direction [, ack_check_en] )`
+`i2c.address(id, device_addr, direction [, ack_check_en])`
 
 #### Parameters
 - `id` interface id
@@ -155,7 +155,7 @@ for interfaces `i2c.HW0` and `i2c.HW1`: always returns `true`.
 Perform (`SW`) or enqueue (`HWx`) a data read operation for a variable number of bytes.
 
 #### Syntax
-`i2c.read( id , len )`
+`i2c.read(id, len)`
 
 #### Parameters
 - `id` I²C interface id
@@ -178,7 +178,7 @@ The value returned by a read operation is a string. Refer to the slave datasheet
 Initialize the I²C interface for master mode.
 
 #### Syntax
-`i2c.setup( id , pinSDA , pinSCL , speed [,stretchfactor] )`
+`i2c.setup(id, pinSDA, pinSCL, speed [,stretchfactor])`
 
 #### Parameters
 - `id` interface id
@@ -220,7 +220,7 @@ for interfaces `i2c.HW0` and `i2c.HW1`:  returns `timeout` expressed as CPU cloc
 Perform (`SW`) or enqueue (`HWx`) an I²C start condition.
 
 #### Syntax
-`i2c.start( id )`
+`i2c.start(id)`
 
 #### Parameters
 `id` interface id
@@ -235,7 +235,7 @@ no returned value
 Perform (`SW`) or enqueue (`HWx`) an I²C stop condition.
 
 #### Syntax
-`i2c.stop( id )`
+`i2c.stop(id)`
 
 #### Parameters
 `id` interface id
@@ -256,7 +256,7 @@ Without a callback function, the transfer is executed synchronously and `i2c.tra
 In this case, this function returns read values and an ACK flag.
 
 #### Syntax
-`i2c.transfer( id [, callback] [, to_ms] )`
+`i2c.transfer(id [, callback] [, to_ms])`
 
 #### Parameters
 - `id` hardware interface id only , `i2c.SW` not allowed
@@ -282,7 +282,7 @@ This timeout should not be confused with the timeout specified in `i2c.setup`.
 Perform (`SW`) or enqueue (`HWx`) data write to I²C bus.
 
 #### Syntax
-`i2c.write( id , data1 [, data2[, ..., datan] [, ack_check_en] )`
+`i2c.write(id, data1 [, data2[, ..., datan]] [, ack_check_en] )`
 
 #### Parameters
 - `id` interface id
@@ -307,7 +307,7 @@ The I²C slave mode is only available for the hardware interfaces `i2c.HW0` and 
 Registers or unregisters an event callback handler.
 
 #### Syntax
-`i2c.slave.on( id , event [, cb_fn] )`
+`i2c.slave.on(id, event [, cb_fn] )`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
@@ -322,7 +322,7 @@ Registers or unregisters an event callback handler.
 Initialize the I²C interface for slave mode.
 
 #### Syntax
-`i2c.slave.setup( id , slave_config )`
+`i2c.slave.setup(id, slave_config)`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
@@ -343,7 +343,7 @@ Writes send data for the master into the transmit buffer. This function returns 
 Data items can be multiple numbers, strings or lua tables.
 
 #### Syntax
-`i2c.slave.send( id, data1 [, data2[, ..., datan] )`
+`i2c.slave.send(id, data1 [, data2[, ..., datan])`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
