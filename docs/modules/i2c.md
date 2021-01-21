@@ -49,7 +49,7 @@ bmpChipSignature = 0x55
 i2c.setup(id, sda, scl, speed)
 
 -- attempt to read chip id and compare against expected value
-function simple_check_chip( dev_address, dev_register , dev_signature )
+function simple_check_chip(dev_address, dev_register, dev_signature)
   i2c.start(id)
   assert(i2c.address(id, dev_address, i2c.TRANSMITTER) , "!!i2c device did not ACK first address operation" )
   i2c.write(id, dev_register)
