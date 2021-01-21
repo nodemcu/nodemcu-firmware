@@ -10,14 +10,41 @@ on:
 
 jobs:
 
-  build_luac_cross_win:
+#  build_luac_cross_win:
 
-    runs-on: windows-latest
+#    runs-on: windows-latest
 
-    steps:
+#    steps:
 #    - uses: actions/checkout@v2
 #      with:
 #        submodules: true
+#    - name: Build luac.cross.exe
+#      run: |
+#        echo ${{ github.ref }}
+#        echo $GITHUB_REF
+#        echo ${GITHUB_REF/*\/}
+#        echo ${{ github.ref }}
+#        a="${{ github.ref }}"
+#        echo ${a/*\/}
+#        set
+#        "%programfiles%\git\usr\bin\xargs"
+#        cd msvc
+#        "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
+#        mv luac-cross/x64/Release/luac.cross.exe ../luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+#      shell: cmd
+#    - name: Upload luac.cross
+#      if: ${{ success() }}
+#      uses: actions/upload-artifact@v2
+#      with:
+#        name: luac.cross_51_float_win
+#        path: luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+
+
+  Create_Release:
+    name: Create Release
+    needs: build_luac_cross_win
+    runs-on: ubuntu-latest
+    steps:
     - name: Build luac.cross.exe
       run: |
         echo ${{ github.ref }}
@@ -27,24 +54,6 @@ jobs:
         a="${{ github.ref }}"
         echo ${a/*\/}
         set
-        "%programfiles%\git\usr\bin\xargs"
-        cd msvc
-        "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
-        mv luac-cross/x64/Release/luac.cross.exe ../luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
-      shell: cmd
-    - name: Upload luac.cross
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: luac.cross_51_float_win
-        path: luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
-
-
-  Create_Release:
-    name: Create Release
-    needs: build_luac_cross_win
-    runs-on: ubuntu-latest
-    steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Create Release
