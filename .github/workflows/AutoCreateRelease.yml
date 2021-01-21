@@ -10,28 +10,28 @@ on:
 
 jobs:
 
-  build_luac_cross_win:
+#  build_luac_cross_win:
 
-    runs-on: windows-latest
+#    runs-on: windows-latest
 
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Build luac.cross.exe
-      run: |
-        set
-        "%programfiles%\git\usr\bin\xargs"
-        cd msvc
-        "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
-        mv luac-cross/x64/Release/luac.cross.exe ..
-      shell: cmd
-    - name: Upload luac.cross
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: luac.cross_51_float_win
-        path: luac.cross.exe
+#    steps:
+#    - uses: actions/checkout@v2
+#      with:
+#        submodules: true
+#    - name: Build luac.cross.exe
+#      run: |
+#        set
+#        "%programfiles%\git\usr\bin\xargs"
+#        cd msvc
+ #       "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
+#        mv luac-cross/x64/Release/luac.cross.exe ..
+#      shell: cmd
+#    - name: Upload luac.cross
+#      if: ${{ success() }}
+#      uses: actions/upload-artifact@v2
+#      with:
+#        name: luac.cross_51_float_win
+#        path: luac.cross.exe
 
 
   Create_Release:
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TAG: ${GITHUB_REF/*\/}
+      TAG: ${ ${GITHUB_REF/*\/} }
 
     steps:
       - name: Build luac.cross.exe
@@ -59,7 +59,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${GITHUB_REF/*\/}
+          tag_name: ${{ github.ref }}
           release_name: ${GITHUB_REF/*\/}
           body: |
             Please note that as per #3164 this project switched the default branch from `master` to `release` with the previous release. For the time being both are kept in sync as to ease the transition for our community. However, expect `master` to disappear sooner or later.
@@ -77,11 +77,11 @@ jobs:
             
           prerelease: false
           draft: true
-      - name: Download luac.cross
-        uses: actions/download-artifact@v1
-        with:
-          name: luac.cross_51_float_win
-          path: ./
+#      - name: Download luac.cross
+#        uses: actions/download-artifact@v1
+#        with:
+#          name: luac.cross_51_float_win
+#          path: ./
       - name: upload luac.cross to release
         id: upload-luac-cross 
         uses: actions/upload-release-asset@v1
