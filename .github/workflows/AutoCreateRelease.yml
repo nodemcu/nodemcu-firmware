@@ -53,6 +53,9 @@ jobs:
           a="${{ github.ref }}"
           echo ${a/*\/}
           set
+      - name: Build luac.cross.exe
+        run: |
+          echo $a
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
