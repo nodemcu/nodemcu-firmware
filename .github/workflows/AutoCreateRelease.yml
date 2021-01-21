@@ -1,1 +1,85 @@
+name: Create Release
 
+on:
+  push:
+    tags:
+      - '3.*-release_*'
+    branches:
+      - release
+
+jobs:
+
+  build_luac_cross_win:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Build luac.cross.exe
+      run: |
+        set
+        "%programfiles%\git\usr\bin\xargs"
+        cd msvc
+        "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
+        mv luac-cross/x64/Release/luac.cross.exe ../luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+      shell: cmd
+    - name: Upload luac.cross
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: luac.cross_51_float_win
+        path: luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+
+
+  Create_Release:
+    name: Create Release
+    needs: build_luac_cross_win
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${GITHUB_REF/*\/}
+          release_name: ${GITHUB_REF/*\/}
+          body: |
+            Please note that as per #3164 this project switched the default branch from `master` to `release` with the previous release. For the time being both are kept in sync as to ease the transition for our community. However, expect `master` to disappear sooner or later.
+
+            ## Breaking Changes
+            - <comment> - #<PR_Id>
+
+            ## New Modules
+            - [wiegand](https://nodemcu.readthedocs.io/en/latest/modules/wiegand/) C module - #3203
+
+            ##  Bug Fixes
+            Please see [the release milestone](https://github.com/nodemcu/nodemcu-firmware/milestone/16?closed=1) for details.
+
+            ## Deprecation
+            
+          prerelease: false
+          draft: true
+      - name: Download luac.cross
+        uses: actions/download-artifact@v1
+        with:
+          name: luac.cross_51_float_win
+          path: ./
+      - name: upload luac.cross to release
+        id: upload-luac.cross 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+          asset_name: luac.cross_${GITHUB_REF/*\/}_x64_float_Lua51.exe
+          asset_content_type: application/x-msdownload
+          
+          
+          
+        
