@@ -38,9 +38,14 @@ jobs:
     name: Create Release
     needs: build_luac_cross_win
     runs-on: ubuntu-latest
+
+    env:
+      TAG: ${GITHUB_REF/*\/}
+
     steps:
       - name: Build luac.cross.exe
         run: |
+          echo $TAG
           echo ${{ github.ref }}
           echo $GITHUB_REF
           echo ${GITHUB_REF/*\/}
@@ -48,8 +53,6 @@ jobs:
           a="${{ github.ref }}"
           echo ${a/*\/}
           set
-#      - name: Checkout code
-#        uses: actions/checkout@v2
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
