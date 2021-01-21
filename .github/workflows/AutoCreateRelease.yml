@@ -6,6 +6,7 @@ on:
       - '3.*-release_*'
     branches:
       - release
+      - AutoCreateRelease
 
 jobs:
 
