@@ -36,7 +36,7 @@ jobs:
 
   Create_Release:
     name: Create Release
-    needs: build_luac_cross_win
+#    needs: build_luac_cross_win
     runs-on: ubuntu-latest
 
     env:
