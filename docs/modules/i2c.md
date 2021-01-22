@@ -343,7 +343,7 @@ Writes send data for the master into the transmit buffer. This function returns 
 Data items can be multiple numbers, strings or lua tables.
 
 #### Syntax
-`i2c.slave.send(id, data1 [, data2[, ..., datan])`
+`i2c.slave.send(id, data1[, data2[, ..., datan]])`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
