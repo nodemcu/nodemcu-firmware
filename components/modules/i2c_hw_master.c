@@ -3,6 +3,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "driver/i2c.h"
+#include "soc/i2c_reg.h"
 
 #include "i2c_common.h"
 
@@ -165,11 +166,11 @@ static int i2c_lua_checkerr( lua_State *L, esp_err_t err ) {
 
   switch (err) {
   case ESP_OK: return 0;
-  case ESP_FAIL: msg = "command failed or NACK from slave"; break;
-  case ESP_ERR_INVALID_ARG: msg = "parameter error"; break;
-  case ESP_ERR_INVALID_STATE: msg = "driver state error"; break;
-  case ESP_ERR_TIMEOUT: msg = "timeout"; break;
-  default: msg = "unknown error"; break;
+  case ESP_FAIL: msg = "i2c command failed or NACK from slave"; break;
+  case ESP_ERR_INVALID_ARG: msg = "i2c parameter error"; break;
+  case ESP_ERR_INVALID_STATE: msg = "i2c driver state error"; break;
+  case ESP_ERR_TIMEOUT: msg = "i2c timeout"; break;
+  default: msg = "i2c unknown error"; break;
   }
 
   return luaL_error( L, msg );
@@ -191,7 +192,8 @@ static void i2c_setup_ud_transfer( lua_State *L, i2c_hw_master_ud_type *ud )
 // Cares for I2C driver creation and initialization.
 // Prepares an empty job descriptor and triggers setup of FreeRTOS stuff.
 //
-void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl, uint32_t speed )
+int li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl, uint32_t speed, unsigned stretchfactor )
+
 {
   get_udata(L, id);
 
@@ -199,19 +201,27 @@ void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl
   memset( &cfg, 0, sizeof( cfg ) );
   cfg.mode = I2C_MODE_MASTER;
 
-  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(sda), 1, "invalid sda pin" );
+  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(sda), 2, "invalid sda pin" );
   cfg.sda_io_num = sda;
   cfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
 
-  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(scl), 1, "invalid scl pin" );
+  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(scl), 3, "invalid scl pin" );
   cfg.scl_io_num = scl;
   cfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
 
-  luaL_argcheck( L, speed > 0 && speed <= 1000000, 1, "invalid speed" );
+  luaL_argcheck( L, speed > 0 && speed <= 1000000, 4, "invalid speed" );
   cfg.master.clk_speed = speed;
 
   // init driver level
   i2c_lua_checkerr( L, i2c_param_config( port, &cfg ) );
+
+  luaL_argcheck( L, stretchfactor > 0 , 5, "invalid stretch factor" );
+  int timeoutcycles;
+  i2c_lua_checkerr( L, i2c_get_timeout( port, &timeoutcycles) );
+  timeoutcycles = timeoutcycles * stretchfactor;
+  luaL_argcheck( L, timeoutcycles * stretchfactor <= I2C_TIME_OUT_REG_V, 5, "excessive stretch factor" );
+  i2c_lua_checkerr( L, i2c_set_timeout( port, timeoutcycles) );
+ 
   i2c_lua_checkerr( L, i2c_driver_install( port, cfg.mode, 0, 0, 0 ));
 
   job->port = port;
@@ -227,6 +237,7 @@ void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl
     i2c_driver_delete( port );
     luaL_error( L, "rtos task creation failed" );
   }
+  return timeoutcycles;
 }
 
 void li2c_hw_master_start( lua_State *L, unsigned id )
@@ -288,9 +299,9 @@ void li2c_hw_master_read( lua_State *L, unsigned id, uint32_t len )
   res->len = len;
   job->result = res;
 
-  if (len > 1)
-    i2c_lua_checkerr( L, i2c_master_read( job->cmd, res->data, len-1, 0 ) );
-  i2c_lua_checkerr( L, i2c_master_read( job->cmd, res->data + len-1, 1, 1 ) );
+// call i2c_master_read specifying a NACK on last byte read
+  i2c_lua_checkerr( L, i2c_master_read( job->cmd, res->data,len,I2C_MASTER_LAST_NACK) );
+
 }
 
 // Initiate the I2C transfer
