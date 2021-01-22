@@ -307,7 +307,7 @@ The I²C slave mode is only available for the hardware interfaces `i2c.HW0` and 
 Registers or unregisters an event callback handler.
 
 #### Syntax
-`i2c.slave.on(id, event [, cb_fn] )`
+`i2c.slave.on(id, event[, cb_fn])`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
