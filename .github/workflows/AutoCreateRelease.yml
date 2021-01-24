@@ -63,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
           tag_name: ${{ github.ref }}
-          release_name: RELEASE_NAME
+          release_name: $RELEASE_NAME
           body: |
             Please note that as per #3164 this project switched the default branch from `master` to `release` with the previous release. For the time being both are kept in sync as to ease the transition for our community. However, expect `master` to disappear sooner or later.
 
@@ -92,6 +92,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./luac.cross.exe
-          asset_name: luac.cross_$RELEASE_NAME_x64_float_Lua51.exe
+#          asset_path: ./luac.cross.exe
+#          asset_name: luac.cross_RELEASE_NAME_x64_float_Lua51.exe
+          asset_path: ./
+          asset_name: luac.cross.exe
           asset_content_type: application/x-msdownload
