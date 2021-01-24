@@ -39,9 +39,6 @@ jobs:
 #    needs: build_luac_cross_win
     runs-on: ubuntu-latest
 
-    env:
-      TAG: ${ ${GITHUB_REF/*\/} }
-
     steps:
       - name: Build luac.cross.exe
         run: |
@@ -55,7 +52,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{env.RELEASE_NAME }}
           release_name: ${{env.RELEASE_NAME }}
           body: |
             Please note that as per #3164 this project switched the default branch from `master` to `release` with the previous release. For the time being both are kept in sync as to ease the transition for our community. However, expect `master` to disappear sooner or later.
