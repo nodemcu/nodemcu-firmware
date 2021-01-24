@@ -55,7 +55,7 @@ jobs:
           echo "RELEASE_NAME=${GITHUB_REF/*\/}" >> $GITHUB_ENV
       - name: Build luac.cross.exe
         run: |
-          touch luac.cross.exe
+          la > luac.cross.exe
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
