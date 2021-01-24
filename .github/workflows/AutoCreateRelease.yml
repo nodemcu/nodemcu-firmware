@@ -45,13 +45,6 @@ jobs:
     steps:
       - name: Build luac.cross.exe
         run: |
-          echo $TAG
-          echo ${{ github.ref }}
-          echo $GITHUB_REF
-          echo ${GITHUB_REF/*\/}
-          echo ${{ github.ref }}
-          a="${{ github.ref }}"
-          echo ${a/*\/}
           echo "RELEASE_NAME=${GITHUB_REF/*\/}" >> $GITHUB_ENV
       - name: Build luac.cross.exe
         run: |
@@ -68,7 +61,7 @@ jobs:
             Please note that as per #3164 this project switched the default branch from `master` to `release` with the previous release. For the time being both are kept in sync as to ease the transition for our community. However, expect `master` to disappear sooner or later.
 
             ## Breaking Changes
-            - <comment> - #<PR_Id>
+            - Description - #<PR_Id>
 
             ## New Modules
             - [wiegand](https://nodemcu.readthedocs.io/en/latest/modules/wiegand/) C module - #3203
@@ -94,6 +87,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./luac.cross.exe
           asset_name: luac.cross_${{env.RELEASE_NAME }}_x64_float_Lua51.exe
-#          asset_path: ./
-#          asset_name: luac.cross.exe
           asset_content_type: application/x-msdownload
