@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - '3.*-release_*'
-    branches:
-      - AutoCreateRelease
 
 jobs:
 
@@ -39,12 +37,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Build luac.cross.exe
+      - name: Set release name
         run: |
           echo "RELEASE_NAME=${GITHUB_REF/*\/}" >> $GITHUB_ENV
-#      - name: Build luac.cross.exe
-#        run: |
-#          ls > luac.cross.exe
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
