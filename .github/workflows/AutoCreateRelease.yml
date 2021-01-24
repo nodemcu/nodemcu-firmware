@@ -52,7 +52,7 @@ jobs:
           echo ${{ github.ref }}
           a="${{ github.ref }}"
           echo ${a/*\/}
-          echo "RELEASE_NAME=${GITHUB_REF/*\/}"" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${GITHUB_REF/*\/}" >> $GITHUB_ENV
       - name: Build luac.cross.exe
         run: |
           touch luac.cross.exe
