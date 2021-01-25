@@ -271,6 +271,14 @@ static int uart_wakeup (lua_State *L)
   return 0;
 }
 
+static int luart_tx_flush (lua_State *L)
+{
+  uint32_t id = luaL_checkinteger(L, 1);
+  MOD_CHECK_ID(uart, id);
+  uart_tx_flush(id);
+  return 0;
+}
+
 // Module function map
 LROT_BEGIN(uart)
   LROT_FUNCENTRY( setup,                      uart_setup )
@@ -281,6 +289,7 @@ LROT_BEGIN(uart)
   LROT_FUNCENTRY( setmode,                    uart_setmode )
   LROT_FUNCENTRY( getconfig,                  uart_getconfig )
   LROT_FUNCENTRY( wakeup,                     uart_wakeup )
+  LROT_FUNCENTRY( txflush,                    luart_tx_flush )
   LROT_NUMENTRY( STOPBITS_1,                  PLATFORM_UART_STOPBITS_1 )
   LROT_NUMENTRY( STOPBITS_1_5,                PLATFORM_UART_STOPBITS_1_5 )
   LROT_NUMENTRY( STOPBITS_2,                  PLATFORM_UART_STOPBITS_2 )
