@@ -2,6 +2,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 
+#include "sodium_module.h"
 #include "sodium.h"
 
 static void check_init(lua_State *L)
@@ -149,7 +150,7 @@ static void get_key_and_outlen(lua_State* L, int idx, const uint8_t **key, size_
 }
 
 // sodium.generichash(data, [key [, outlen]])
-static int l_crypto_generichash(lua_State* L)
+int l_sodium_generichash(lua_State* L)
 {
   check_init(L);
   size_t data_len;
@@ -179,7 +180,7 @@ typedef struct
 } sodium_generichash_state;
 
 // sodium.generichash_init([key [, outlen]])
-static int l_crypto_generichash_init(lua_State* L)
+int l_sodium_generichash_init(lua_State* L)
 {
   check_init(L);
   size_t key_len;
@@ -199,7 +200,7 @@ static int l_crypto_generichash_init(lua_State* L)
   return 1;
 }
 
-static int l_crypto_generichash_update(lua_State* L)
+static int l_sodium_generichash_update(lua_State* L)
 {
   sodium_generichash_state *state = (sodium_generichash_state *)luaL_checkudata(L, 1, generichash_state_mt);
   size_t data_len;
@@ -208,7 +209,7 @@ static int l_crypto_generichash_update(lua_State* L)
   return 0;
 }
 
-static int l_crypto_generichash_final(lua_State* L)
+static int l_sodium_generichash_final(lua_State* L)
 {
   sodium_generichash_state *state = (sodium_generichash_state *)luaL_checkudata(L, 1, generichash_state_mt);
   uint8_t out[crypto_generichash_BYTES_MAX];
@@ -235,13 +236,14 @@ LROT_END(crypto_box, NULL, 0)
 LROT_BEGIN(sodium)
   LROT_TABENTRY(random,     random)
   LROT_TABENTRY(crypto_box, crypto_box)
-  LROT_FUNCENTRY(generichash, l_crypto_generichash)
-  LROT_FUNCENTRY(generichash_init, l_crypto_generichash_init)
+  LROT_FUNCENTRY(generichash, l_sodium_generichash)
+  LROT_FUNCENTRY(generichash_init, l_sodium_generichash_init)
 LROT_END(sodium, NULL, 0)
 
 LROT_BEGIN(generichash_state)
-  LROT_FUNCENTRY(update, l_crypto_generichash_update)
-  LROT_FUNCENTRY(final, l_crypto_generichash_final)
+  LROT_FUNCENTRY(update, l_sodium_generichash_update)
+  LROT_FUNCENTRY(final, l_sodium_generichash_final)
+  LROT_FUNCENTRY(finalize, l_sodium_generichash_final) // for compat with crypto hasher API
   LROT_TABENTRY(__index, generichash_state)
 LROT_END(generichash_state, NULL, 0)
 

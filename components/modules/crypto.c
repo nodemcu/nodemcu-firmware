@@ -5,14 +5,18 @@
 #include "mbedtls/md.h"
 #include "module.h"
 #include "platform.h"
+#include "sodium_module.h"
 
 #define HASH_METATABLE "crypto.hasher"
+
+// Must not overlap with mbedtls_md_type_t
+#define SODIUM_BLAKE2B (-1)
 
 // algo_info_t describes a hashing algorithm and output size
 typedef struct {
     const char* name;
     const size_t size;
-    const mbedtls_md_type_t type;
+    const int type; // either a mbedtls_md_type_t or SODIUM_BLAKE2B
 } algo_info_t;
 
 // hash_context_t contains information about an ongoing hash operation
@@ -32,21 +36,21 @@ static const algo_info_t algorithms[] = {
     { "SHA256",    32, MBEDTLS_MD_SHA256 },
     { "SHA384",    64, MBEDTLS_MD_SHA384 },
     { "SHA512",    64, MBEDTLS_MD_SHA512 },
+#ifdef CONFIG_NODEMCU_CMODULE_SODIUM
+    { "BLAKE2b",     0, SODIUM_BLAKE2B }, // 0 because no fixed size for BLAKE2b hashes
+#endif
 };
 
+
+const int MAX_HASH_SIZE = 64; // Must be >= all the sizes in the above array
 
 //NUM_ALGORITHMS contains the actual number of enabled algorithms
 const int NUM_ALGORITHMS = sizeof(algorithms) / sizeof(algo_info_t);
 
-// crypto_new_hash (LUA: hasher = crypto.new_hash(algo)) allocates
-// a hashing context for the requested algorithm
-static int crypto_new_hash_or_hmac(lua_State* L, bool is_hmac) {
+static const algo_info_t* crypto_get_algo(lua_State* L, bool is_hmac)
+{
     const algo_info_t *ainfo = NULL;
     const char *algo = luaL_checkstring(L, 1);
-    const unsigned char *key = NULL;
-    size_t key_len = 0;
-    if (is_hmac)
-        key = (const unsigned char *)luaL_checklstring(L, 2, &key_len);
 
     for (int i = 0; i < NUM_ALGORITHMS; i++) {
         if (strcasecmp(algo, algorithms[i].name) == 0) {
@@ -56,7 +60,38 @@ static int crypto_new_hash_or_hmac(lua_State* L, bool is_hmac) {
     }
 
     if (ainfo == NULL) {
-        return luaL_error(L, "Unsupported algorithm: %s", algo);
+        luaL_error(L, "Unsupported algorithm: %s", algo);
+    }
+
+    if (ainfo->type == SODIUM_BLAKE2B && is_hmac) {
+        luaL_error(L, "'BLAKE2b' algorithm does not support HMAC");
+    } 
+
+    return ainfo;
+}
+
+// crypto_new_hash (LUA: hasher = crypto.new_hash(algo)) allocates
+// a hashing context for the requested algorithm
+static int crypto_new_hash_or_hmac(lua_State* L, bool is_hmac) {
+    const algo_info_t *ainfo = crypto_get_algo(L, is_hmac);
+    const unsigned char *key = NULL;
+    size_t key_len = 0;
+
+#ifdef CONFIG_NODEMCU_CMODULE_SODIUM
+    if (ainfo->type == SODIUM_BLAKE2B) {
+        lua_remove(L, 1); // algo
+        // Stack is now correct for calling l_sodium_generichash_init.
+        // Even though the underlying crypto_generichash_init() doesn't
+        // explicitly state it uses BLAKE2b (there's a separate
+        // crypto_generichash_blake2b_init API for that) in practice it is
+        // documented to do so, so I don't think it's necessary to worry about
+        // the distinction here.
+        return l_sodium_generichash_init(L);
+    }
+#endif
+
+    if (is_hmac) {
+        key = (const unsigned char *)luaL_checklstring(L, 2, &key_len);
     }
 
     // Instantiate a hasher object as a Lua userdata object
@@ -125,8 +160,8 @@ static int crypto_hash_finalize(lua_State* L) {
     // retrieve the hashing context:
     hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, HASH_METATABLE);
 
-    // reserve some space to retrieve the output hash, according to the current algorithm
-    unsigned char output[phctx->ainfo->size];
+    // reserve some space to retrieve the output hash
+    unsigned char output[MAX_HASH_SIZE];
 
     int err = 0;
     // call the hash finish function to retrieve the result
@@ -152,6 +187,45 @@ static int crypto_hash_gc(lua_State* L) {
     return 0;
 }
 
+static int crypto_hash(lua_State* L) {
+    const algo_info_t *ainfo = crypto_get_algo(L, false);
+#ifdef CONFIG_NODEMCU_CMODULE_SODIUM
+    if (ainfo->type == SODIUM_BLAKE2B) {
+        lua_remove(L, 1); // algo
+        // Stack is now correct for calling l_sodium_generichash().
+        return l_sodium_generichash(L);
+    }
+#endif
+    size_t size;
+    const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 2, &size);
+    const mbedtls_md_info_t *mdinfo = mbedtls_md_info_from_type(ainfo->type);
+    unsigned char output[MAX_HASH_SIZE];
+    int err = mbedtls_md(mdinfo, input, size, output);
+    if (err != 0) {
+        return luaL_error(L, "Error calculating hash");
+    }
+    lua_pushlstring(L, (const char*)output, ainfo->size);
+    return 1;
+}
+
+static int crypto_hmac(lua_State* L) {
+    const algo_info_t *ainfo = crypto_get_algo(L, true);
+    size_t key_len = 0;
+    const unsigned char *key = (const unsigned char *)luaL_checklstring(L, 2, &key_len);
+
+    size_t size;
+    const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 3, &size);
+
+    const mbedtls_md_info_t *mdinfo = mbedtls_md_info_from_type(ainfo->type);
+    unsigned char output[MAX_HASH_SIZE];
+    int err = mbedtls_md_hmac(mdinfo, key, key_len, input, size, output);
+    if (err != 0) {
+        return luaL_error(L, "Error calculating HMAC");
+    }
+    lua_pushlstring(L, (const char*)output, ainfo->size);
+    return 1;
+}
+
 // The following table defines methods of the hasher object
 LROT_BEGIN(crypto_hasher)
     LROT_FUNCENTRY(update,   crypto_hash_update)
@@ -162,6 +236,8 @@ LROT_END(crypto_hasher, NULL, 0)
 
 // This table defines the functions of the crypto module:
 LROT_BEGIN(crypto)
+    LROT_FUNCENTRY(hash, crypto_hash)
+    LROT_FUNCENTRY(hmac, crypto_hmac)
     LROT_FUNCENTRY(new_hash, crypto_new_hash)
     LROT_FUNCENTRY(new_hmac, crypto_new_hmac)
 LROT_END(crypto, NULL, 0)

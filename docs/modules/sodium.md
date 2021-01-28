@@ -135,8 +135,8 @@ Provides a way to calculate a hash in chunks, so that not all the data needs to 
 `sodium.generichash_init([key[, out_len]])`
 
 #### Parameters
-- `key` - Optional. As per sodium.generichash().
-- `out_len` - Optional. As per sodium.generichash().
+- `key` - Optional. As per [`sodium.generichash()`](#sodiumgenerichash).
+- `out_len` - Optional. As per [`sodium.generichash()`](#sodiumgenerichash).
 
 #### Returns
 An object with 2 methods, `update(data)` and `final()`. Call `update()` with each data chunk in turn, then call `final()` to fetch the resulting hash. Do not call `update()` again after calling `final()`: to calculate another hash, call `generichash_init()` again to get a new object.
