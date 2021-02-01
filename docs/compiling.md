@@ -57,11 +57,30 @@ facilitates simple OTA updates to an LFS based Lua application; the absolute for
 facilitates factory installation of LFS based applications.
 
 Also note that the `app/lua/luac_cross` make and Makefile can be executed to build
-just the `luac.cross` image.  You must first ensure that the following option in
-`app/include/user_config.h` is matched to your target configuration:
+just the `luac.cross` image.  You must first ensure that the following options in
+`app/include/user_config.h` are matched to your target configuration:
 
 ```c
-//#define LUA_NUMBER_INTEGRAL       // uncomment if you want an integer build
+// When using Lua 5.1, two different builds are now supported.
+// The main difference is in the // processing of numeric data types.
+// If LUA_NUMBER_INTEGRAL is defined, then
+// all numeric calculations are done in integer, with divide being an integer
+// operation, and decimal fraction constants are illegal.
+// Otherwise all floating point operations use doubles. All integer values
+// can be represented exactly in floating point.
+
+//#define LUA_NUMBER_INTEGRAL
+
+// When using Lua 5.3, two different builds are now supported. 
+// If LUA_NUMBER_64BITS is defined, then doubles are used to hold floating
+// point numbers and integers are 64 bits long. Integers smaller than 2^53 can be i
+// converted to doubles and back without any loss of precision.
+// Otherwise all floating point operations use floats, and integers are 32-bit.
+// Only integers under 2^24 can be represented exactly in floating point.
+// Note that Lua 5.3 also supports Integers natively, but you have to be careful 
+// not to promote an integer to a floating point variable as you can lose precision.
+
+//#define LUA_NUMBER_64BITS
 ```
 
 Note that the use of LFS and the LFS region size is now configured through the partition table.

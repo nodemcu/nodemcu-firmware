@@ -76,8 +76,8 @@ It configures I²C backend and returns backend object.
 	In most cases only `sda` and `scl` parameters are required
 
 #### Parameters
-- `sda`: I²C data pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/master/modules/i2c/#i2csetup) will be skipped
-- `scl`: I²C clock pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/master/modules/i2c/#i2csetup) will be skipped
+- `sda`: I²C data pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/release/modules/i2c/#i2csetup) will be skipped
+- `scl`: I²C clock pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/release/modules/i2c/#i2csetup) will be skipped
 - `busid`: I²C bus ID. Defaults to `0`
 - `busad`: chip I²C address. Defaults to `0x27` (default PCF8574 address)
 - `speed`: I²C speed. Defaults to `i2c.SLOW`
@@ -236,6 +236,12 @@ liquidcrystal:blink(true)
 
 ## liquidcrystal.busy
 Get busy status of the LCD. When using GPIO backend without `rw` argument specification function does nothing.
+
+!!! note
+  At least some HD44780s and/or interfaces have been observed to count polling
+  the busy flag as grounds for incrementing their position in memory.  This is
+  mysterious, but software should restore the position after observing that the
+  busy flag is clear.
 
 #### Syntax
 `liquidcrystal.busy(self)`
@@ -428,6 +434,11 @@ liquidcrystal:leftToRight()
 
 ## liquidcrystal.position
 Get current position of the cursor. Position is 0 indexed. When using GPIO backend without `rw` argument specification function does nothing.
+
+!!! note
+  At least some HD44780s and/or interfaces have been observed to count reading
+  the position as grounds for incrementing their position in memory.  This is
+  mysterious, but software likely intends to restore the position anyway.
 
 #### Syntax
 `liquidcrystal.position(self)`

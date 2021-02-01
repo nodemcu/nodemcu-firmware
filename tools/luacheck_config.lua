@@ -1,3 +1,4 @@
+stds = stds or ...   -- set stds if this script is called by another config script
 local empty = { }
 local read_write = {read_only = false}
 
@@ -423,6 +424,7 @@ stds.nodemcu_libs = {
         restore = empty,
         setcpufreq = empty,
         setpartitiontable = empty,
+        setonerror = empty,
         sleep = empty,
         stripdebug = empty,
         writercr = empty,
@@ -483,6 +485,22 @@ stds.nodemcu_libs = {
         RATE_8K = empty,
         SD = empty,
         new = empty
+      }
+    },
+    pipe = {
+      fields = {
+        create = empty
+      }
+    },
+    pixbuf = {
+      fields = {
+        FADE_IN = empty,
+        FADE_OUT = empty,
+        SHIFT_CIRCULAR = empty,
+        SHIFT_LOGICAL = empty,
+        init = empty,
+        newBuffer = empty,
+        write = empty
       }
     },
     pwm = {
@@ -607,7 +625,8 @@ stds.nodemcu_libs = {
         PROG = empty,
         STOP = empty,
         UP = empty,
-        sendcommand = empty
+        sendcommand = empty,
+        listen = empty
       }
     },
     spi = {
@@ -942,10 +961,8 @@ stds.nodemcu_libs = {
     },
     pack = empty,
     unpack  = empty,
-    size = empty,
-    package = {fields = {seeall = read_write}},
-    _ENV = empty
+    package = {fields = {seeall = read_write}}
   }
 }
 
-std = "lua51+nodemcu_libs"
+std = "lua51+lua53+nodemcu_libs"

@@ -104,7 +104,7 @@
 //## Modified for eLua
 //## Defaults search modules path to our ROM File System
 #ifndef LUA_RPC
-#define LUA_PATH_DEFAULT  "/rfs/?.lua;/rfs/?.lc;/mmc/?.lua;/mmc/?.lc;/rom/?.lua;/rom/?.lc"
+#define LUA_PATH_DEFAULT  "?.lc;?.lua"
 #define LUA_CPATH_DEFAULT ""
 #else // #ifndef LUA_RPC
 #define LUA_PATH_DEFAULT  \
@@ -180,6 +180,10 @@
   #define LUA_INTEGER long long
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #endif // #if !defined LUA_NUMBER_INTEGRAL
+
+#ifdef LUA_NUMBER_64BITS
+#error Lua 5.1 does not support 64 bit inetegers.
+#endif
 
 /*
 @@ LUA_API is a mark for all core API functions.

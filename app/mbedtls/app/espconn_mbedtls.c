@@ -42,6 +42,8 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 
 #include "sys/socket.h"
 #include "sys/espconn_mbedtls.h"
+#include "lwip/app/espconn_tcp.h"
+
 
 static os_event_t lwIPThreadQueue[lwIPThreadQueueLen];
 static bool lwIPThreadFlag = false;

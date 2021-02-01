@@ -45,6 +45,14 @@ extern "C" {
 
 typedef size_t mem_size_t;
 
+void *pvPortMalloc (size_t sz, const char *, unsigned, bool);
+void vPortFree (void *p, const char *, unsigned);
+void *pvPortZalloc (size_t sz, const char *, unsigned);
+void *pvPortRealloc (void *p, size_t n, const char *, unsigned);
+void* pvPortCalloc(size_t count,size_t size,const char *,unsigned);
+void* pvPortCallocIram(size_t count,size_t size,const char *,unsigned);
+void *pvPortZallocIram (size_t sz, const char *, unsigned);
+
 /* aliases for C library malloc() */
 #define mem_init()
 /* in case C library malloc() needs extra protection,

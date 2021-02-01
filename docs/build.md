@@ -28,7 +28,7 @@ If you decide to build with either the Docker image or the native environment th
 ```
 git clone --recurse-submodules -b <branch> https://github.com/nodemcu/nodemcu-firmware.git
 ```
-Omitting the optional `-b <branch>` will clone master.
+Omitting the optional `-b <branch>` will clone release.
 
 ## Build Options
 
@@ -76,17 +76,35 @@ editing `BIT_RATE_DEFAULT` in `app/include/user_config.h`:
 Note that, by default, the firmware runs an auto-baudrate detection algorithm so that typing a few characters at boot time will cause
 the firmware to lock onto that baud rate (between 1200 and 230400).
 
-### Integer build
-By default a build will be generated supporting floating-point variables.
+### Double build (Lua 5.3 only)
+By default a build will be generated supporting floating point variables (floats) and integers.
+To increase the precision of the floating point variables, a double build can be created. This
+is also the default in the Lua 5.1 builds. The downside is that more memory is consumed when
+storing variables.
+You can change this
+either by uncommenting `LUA_NUMBER_64BITS` in `app/include/user_config.h`:
+
+```c
+//#define LUA_NUMBER_64BITS
+```
+
+OR by overriding this with the `make` command 
+
+```
+make EXTRA_CCFLAGS="-DLUA_NUMBER_64BITS ....
+```
+
+### Integer build (Lua 5.1 only)
+By default a build will be generated supporting floating-point variables (doubles).
 To reduce memory size an integer build can be created.  You can change this
 either by uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
 
 ```c
-#define LUA_NUMBER_INTEGRAL
+//#define LUA_NUMBER_INTEGRAL
 ```
 
 OR by overriding this with the `make` command as it's [done during the CI
-build](https://github.com/nodemcu/nodemcu-firmware/blob/master/.travis.yml#L30):
+build](https://github.com/nodemcu/nodemcu-firmware/blob/release/.travis.yml#L30):
 
 ```
 make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....

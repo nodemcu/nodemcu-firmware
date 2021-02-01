@@ -17,6 +17,7 @@ GEN_LIBS = libapp.a
 
 endif
 
+STD_CFLAGS=-std=gnu11
 
 #############################################################
 # Configuration i.e. compile options etc.

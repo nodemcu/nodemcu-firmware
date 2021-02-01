@@ -71,38 +71,16 @@ local function readout(self)
           ((addr:byte(1) == DS18B20FAMILY) and 625 or 5000)
       local crc, b9 = ow_crc8(string.sub(data,1,8)), data:byte(9)
 
-      if 1/2 == 0 then
-        -- integer version
+      t = t / 10000
+      if math_floor(t)~=85 then
         if unit == 'F' then
-          t = (t * 18)/10 + 320000
+          t = t * 18/10 + 32
         elseif unit == 'K' then
-          t = t + 2731500
+          t = t + 27315/100
         end
-        local sgn = t<0 and -1 or 1
-        local tA = sgn*t
-        local tH=tA/10000
-        local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
-
-        if tH and (t~=850000) then
-          debugPrint(to_string(addr),(sgn<0 and "-" or "")..tH.."."..tL, crc, b9)
-          if crc==b9 then temp[addr]=(sgn<0 and "-" or "")..tH.."."..tL end
-          status[i] = 2
-        end
-        -- end integer version
-      else
-        -- float version
-        t = t / 10000
-        if math_floor(t)~=85 then
-          if unit == 'F' then
-            t = t * 18/10 + 32
-          elseif unit == 'K' then
-            t = t + 27315/100
-          end
-          debugPrint(to_string(addr), t, crc, b9)
-          if crc==b9 then temp[addr]=t end
-          status[i] = 2
-        end
-        -- end float version
+        debugPrint(to_string(addr), t, crc, b9)
+        if crc==b9 then temp[addr]=t end
+        status[i] = 2
       end
     end
     next = next or status[i] == 0

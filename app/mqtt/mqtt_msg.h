@@ -99,16 +99,15 @@ typedef struct mqtt_message_buffer
 
 typedef struct mqtt_connect_info
 {
-  char* client_id;
-  char* username;
-  char* password;
-  char* will_topic;
-  char* will_message;
+  const char* client_id;
+  const char* username;
+  const char* password;
+  const char* will_topic;
+  const char* will_message;
   int keepalive;
   int will_qos;
   int will_retain;
   int clean_session;
-  uint16_t max_message_length;
 
 } mqtt_connect_info_t;
 

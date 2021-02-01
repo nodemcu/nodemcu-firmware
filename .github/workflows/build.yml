@@ -1,0 +1,272 @@
+name: CI
+
+on:
+  push:
+    branches: [ release ]
+  pull_request:
+    branches: [ dev, release ]
+
+jobs:
+
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        lua_ver: [51, 53]
+        numbers: ['float']
+        include:
+          - lua_ver: 51
+            numbers: 'integral'  
+          - lua_ver: 53
+            numbers: '64bit'  
+    runs-on: ubuntu-16.04
+
+    env:
+      LUA: ${{ matrix.lua_ver }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - run: pip install pyserial
+      shell: bash
+    - run: sudo apt install srecord
+      shell: bash
+    - name: Build firmware
+      if: matrix.numbers == 'float'
+      run: make
+      shell: bash
+    - name: Build integral firmware
+      if: ${{ matrix.numbers == 'integral' }}
+      run: |
+        make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL"
+        mv luac.cross.int luac.cross
+      shell: bash
+    - name: Build 64bit firmware
+      if: ${{ matrix.numbers == '64bit' }}
+      run: |
+        make EXTRA_CCFLAGS="-DLUA_NUMBER_64BITS"
+      shell: bash
+    - name: Upload luac.cross
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
+        path: luac.cross
+
+
+  build_luac_cross_win:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Build luac.cross.exe
+      run: |
+        set
+        "%programfiles%\git\usr\bin\xargs"
+        cd msvc
+        "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
+        mv luac-cross/x64/Release/luac.cross.exe ..
+      shell: cmd
+    - name: Upload luac.cross
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: luac.cross_51_float_win
+        path: luac.cross.exe
+
+
+  compile_lua:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lua_ver: [51, 53]
+        numbers: ['float']
+        filter: [ 'cat' ]
+        include:
+          - lua_ver: 51
+            numbers: 'integral'
+            filter: 'grep -v "lua_modules/lm92/lm92.lua\|lua_modules/hdc1000/HDC1000.lua\|lua_examples/u8g2/graphics_test.lua"'  
+          - lua_ver: 53
+            numbers: '64bit'  
+            filter: 'cat'
+    needs: build
+    runs-on: ubuntu-16.04
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: Download luac.cross
+      uses: actions/download-artifact@v1
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
+        path: ./
+    - name: Fix file permission
+      run: chmod +x luac.cross
+    - name: compile Lua
+      run: |
+        find lua_modules lua_examples tests/NTest* -iname "*.lua" | ${{ matrix.filter }} | xargs --delimiter="\n" echo
+        find lua_modules lua_examples tests/NTest* -iname "*.lua" | ${{ matrix.filter }} | xargs --delimiter="\n" ./luac.cross -p
+      shell: bash
+
+
+  compile_lua_win:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lua_ver: [51]
+        numbers: ['float']
+        filter: [ 'cat' ]
+    needs: build_luac_cross_win
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: Download luac.cross
+      uses: actions/download-artifact@v1
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
+        path: ./
+    - name: compile Lua
+      run: |
+        PATH="/C/Program\ Files/Git/usr/bin:${PATH}"
+        find lua_modules lua_examples tests/NTest* -iname "*.lua" | ${{ matrix.filter }} | xargs --delimiter="\n" echo
+        find lua_modules lua_examples tests/NTest* -iname "*.lua" | ${{ matrix.filter }} | xargs --delimiter="\n" ./luac.cross -p
+      shell: bash
+
+
+  NTest:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lua_ver: [51, 53]
+        numbers: ['float']
+        include:
+          - lua_ver: 51
+            numbers: 'integral'  
+          - lua_ver: 53
+            numbers: '64bit'  
+    needs: build
+    runs-on: ubuntu-16.04
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: Download luac.cross
+      uses: actions/download-artifact@v1
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
+        path: ./
+    - name: Fix file permission
+      run: chmod +x luac.cross
+    - name: NTest selfcheck
+      run: |
+        cd tests/NTest
+        ../../luac.cross -e ../NTest/NTest_NTest.lua | tee log
+        grep "failed. 0" log
+      shell: bash
+    - name: NTest hosttests
+      run: |
+        cd tests
+        cp NTest/NTest.lua .
+        ../luac.cross -e NTest_lua.lua | tee log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
+      shell: bash
+
+
+  NTest_win:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lua_ver: [51]
+        numbers: ['float']
+    needs: build_luac_cross_win
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: Download luac.cross
+      uses: actions/download-artifact@v1
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
+        path: ./
+    - name: NTest selfcheck
+      run: |
+        cd tests/NTest
+        ../../luac.cross.exe -e ../NTest/NTest_NTest.lua | tee log
+        grep "failed. 0" log
+      shell: bash
+    - name: NTest hosttests
+      run: |
+        cd tests
+        cp NTest/NTest.lua .
+        ../luac.cross.exe -e NTest_lua.lua | tee log
+        (if grep  " ==>  " log ; then exit 1 ; fi)
+      shell: bash
+
+
+  luacheck:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 'linux'
+            vm: 'ubuntu-16.04'
+          - os: 'windows'
+            vm: 'windows-latest'
+    runs-on: ${{ matrix.vm }} 
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: false
+    - run: sudo apt install luarocks
+      if : matrix.os == 'linux'
+      shell: bash
+    - name: get luacheck.exe  # is also done in the travis script but in this action it does not run in bash
+      if : matrix.os == 'windows'
+      run: |
+        mkdir cache
+        C:msys64\usr\bin\wget.exe --tries=5 --timeout=10 --waitretry=10 --read-timeout=10 --retry-connrefused -O cache/luacheck.exe https://github.com/mpeterv/luacheck/releases/download/0.23.0/luacheck.exe
+      shell: cmd
+    - name: luacheck
+      run: |
+        PATH="/C/Program\ Files/Git/usr/bin:${PATH}"
+        ./tools/travis/run-luacheck-${{ matrix.os }}.sh
+      shell: bash
+
+
+
+  doc_check:
+
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-16.04 
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: false
+    - name: all_modules_linked
+      run: ./tools/check_docs_module_linkage.sh
+      shell: bash
+

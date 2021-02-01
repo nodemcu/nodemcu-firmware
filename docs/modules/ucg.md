@@ -66,7 +66,7 @@ All other pins can be assigned to any available GPIO:
 * D/C
 * RES (optional for some displays)
 
-Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua):
+Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_examples/ucglib/GraphicsTest.lua):
 ```lua
 spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
@@ -83,7 +83,7 @@ disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
 ```
 
 This object provides all of ucglib's methods to control the display.
-Again, refer to [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
+Again, refer to [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
 
 ### Display selection
 HW SPI based displays with support in u8g2 can be enabled.

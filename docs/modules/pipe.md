@@ -129,3 +129,11 @@ Write a string to a pipe object.
 #### Returns
 Nothing
 
+
+## pobj:nrec()
+
+Return the number of internal records in the pipe.  Each record ranges from 1
+to 256 bytes in length, with full chunks being the most common case.  As
+extracting from a pipe only to `unread` if too few bytes are available, it may
+be useful to have a quickly estimated upper bound on the length of the string
+that would be returned.

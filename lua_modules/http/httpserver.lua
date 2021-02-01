@@ -86,19 +86,22 @@ do
       local buf = ""
       local method, url
 
-      local cfini = function()
-        conn:on("receive", nil)
-        conn:on("disconnection", nil)
-        csend(function()
-          conn:on("sent", nil)
-          conn:close()
-        end)
-      end
-
       local ondisconnect = function(connection)
+        connection:on("receive", nil)
+        connection:on("disconnection", nil)
         connection:on("sent", nil)
         collectgarbage("collect")
       end
+
+      local cfini = function()
+        csend(function()
+          conn:on("sent", nil)
+          conn:close()
+          ondisconnect(conn)
+        end)
+      end
+
+
       -- header parser
       local cnt_len = 0
 

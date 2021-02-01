@@ -102,7 +102,7 @@ static void DumpNumber (lua_Number x, DumpState *D) {
 ** 0TTTNNNN or 1TTTNNNN (1NNNNNNN)* 0NNNNNNN
 */
 static void DumpIntTT (lu_byte tt, lua_Integer y, DumpState *D) {
-  int x = y < 0 ? -(y + 1) : y;
+  lua_Integer x = y < 0 ? -(y + 1) : y;
   lu_byte buf[sizeof(lua_Integer) + 3];
   lu_byte *b = buf + sizeof(buf) - 1;
   *b-- = x & 0x7f;  x >>= 7;
