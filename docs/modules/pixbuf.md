@@ -22,7 +22,7 @@ Allocate a new memory buffer to store LED values.
 `pixbuf.buffer` object
 
 ## pixbuf.buffer:get()
-Return the value at the given position, in native strip color order
+Return the value at the given position, in native strip color order.
 
 #### Syntax
 `buffer:get(index)`
@@ -41,7 +41,7 @@ print(buffer:get(1))
 ```
 
 ## pixbuf.buffer:set()
-Set the value at the given position, in native strip color order
+Set the value at the given position, in native strip color order.
 
 #### Syntax
 `buffer:set(index, color)`
@@ -77,7 +77,7 @@ buffer = pixbuf.newBuffer(32, 3):set(1, string.char(0, 255, 0))
 ```
 
 ## pixbuf.buffer:size()
-Return the size of the buffer in number of LEDs
+Return the size of the buffer in number of LEDs.
 
 #### Syntax
 `buffer:size()`
@@ -89,7 +89,7 @@ none
 `int`
 
 ## pixbuf.buffer:channels()
-Return the buffer's channel count
+Return the buffer's channel count.
 
 #### Syntax
 `buffer:channels()`
