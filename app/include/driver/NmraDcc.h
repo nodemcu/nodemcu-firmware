@@ -39,6 +39,13 @@
 //
 //------------------------------------------------------------------------
 
+// NodeMCU Lua port by @voborsky
+
+#define NODEMCUDCC
+// #define NODE_DEBUG
+// #define DCC_DEBUG
+// #define DCC_DBGVAR
+
 // Uncomment the following Line to Enable Service Mode CV Programming
 #define NMRA_DCC_PROCESS_SERVICEMODE
 
@@ -50,6 +57,7 @@
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
+#elif defined(NODEMCUDCC)
 #else
 #include "WProgram.h"
 #endif
@@ -204,9 +212,14 @@ typedef struct countOf_t {
     unsigned long Err;
 }countOf_t ;
 
+#ifdef NODEMCUDCC
+countOf_t countOf;
+#else
 extern struct countOf_t countOf;
 #endif
+#endif
 
+#ifndef NODEMCUDCC
 class NmraDcc
 {
   private:
@@ -214,6 +227,7 @@ class NmraDcc
     
   public:
     NmraDcc();
+#endif
 
 // Flag values to be logically ORed together and passed into the init() method
 #define FLAGS_MY_ADDRESS_ONLY        0x01	// Only process DCC Packets with My Address
@@ -225,7 +239,7 @@ class NmraDcc
 // Flag Bits that are cloned from CV29 relating the DCC Accessory Decoder 
 #define FLAGS_CV29_BITS		(FLAGS_OUTPUT_ADDRESS_MODE | FLAGS_DCC_ACCESSORY_DECODER)
 
-
+#ifndef NODEMCUDCC
   /*+
    *  pin() is called from setup() and sets up the pin used to receive DCC packets.
    *
@@ -402,6 +416,32 @@ void pin( uint8_t ExtIntPinNum, uint8_t EnablePullup);
 #endif
 
 };
+
+#else
+    #define DCC_RESET   1
+    #define DCC_IDLE    2
+    #define DCC_SPEED   3
+    #define DCC_SPEED_RAW   4
+    #define DCC_FUNC    5
+    #define DCC_TURNOUT 6
+    #define DCC_ACCESSORY   7
+    #define DCC_RAW     8
+    #define DCC_SERVICEMODE 9
+
+    #define CV_VALID    10
+    #define CV_READ     11
+    #define CV_WRITE    12
+    #define CV_RESET    13
+    #define CV_ACK_COMPLETE    14
+
+
+    void dcc_setup(uint8_t pin, uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, uint8_t OpsModeAddressBaseCV);
+
+
+    void dcc_close();
+
+    void dcc_init();
+#endif //#ifndef NODEMCUDCC
 
 /************************************************************************************
     Call-back functions
@@ -608,7 +648,11 @@ extern void    notifyDccMsg( DCC_MSG * Msg ) __attribute__ ((weak));
  *    1         - CV is valid.
  *    0         - CV is not valid.
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((weak));
+#endif
 
 /*+
  *  notifyCVRead()  Callback to read a CV.
@@ -622,10 +666,13 @@ extern uint8_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((we
  *    CV        - CV number.
  *
  *  Returns:
- *    Value     - Value of the CV.
+ *    Value     - Value of the CV. Or a value > 255 to indicate error.
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
-
+#endif
 /*+
  *  notifyCVWrite() Callback to write a value to a CV.
  *                  This is called when the library needs to write
@@ -639,10 +686,15 @@ extern uint8_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
  *    Value     - Value of the CV.
  *
  *  Returns:
- *    Value     - Value of the CV.
+ *    Value     - Value of the CV. Or a value > 255 to signal error. 
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVWrite( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVWrite( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#endif
 
+#ifndef NODEMCUDCC
 /*+
  *  notifyIsSetCVReady()  Callback to to determine if CVs can be written.
  *                        This is called when the library needs to determine
@@ -681,6 +733,7 @@ extern uint8_t notifyIsSetCVReady(void) __attribute__ ((weak));
  */
 extern void    notifyCVChange( uint16_t CV, uint8_t Value) __attribute__ ((weak));
 extern void    notifyDccCVChange( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#endif
 
 /*+
  *  notifyCVResetFactoryDefault() Called when CVs must be reset.
@@ -743,3 +796,4 @@ extern void notifyDccSigState( uint16_t Addr, uint8_t OutputIndex, uint8_t State
 #endif
 
 #endif
+
