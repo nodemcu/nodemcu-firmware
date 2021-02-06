@@ -37,7 +37,7 @@ static const algo_info_t algorithms[] = {
     { "SHA384",    64, MBEDTLS_MD_SHA384 },
     { "SHA512",    64, MBEDTLS_MD_SHA512 },
 #ifdef CONFIG_NODEMCU_CMODULE_SODIUM
-    { "BLAKE2b",     0, SODIUM_BLAKE2B }, // 0 because no fixed size for BLAKE2b hashes
+    { "BLAKE2b",   64, SODIUM_BLAKE2B }, // The hash size isn't fixed with BLAKE2b, but 64 is the maximum
 #endif
 };
 
