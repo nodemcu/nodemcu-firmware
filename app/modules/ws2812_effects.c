@@ -13,6 +13,15 @@
 #include "pixbuf.h"
 #include "color_utils.h"
 
+#ifdef LUA_USE_MODULES_WS2812_EFFECTS
+#ifndef LUA_USE_MODULES_PIXBUF
+#  error module pixbuf is required for ws2812_effects
+#endif
+#ifndef LUA_USE_MODULES_COLOR_UTILS
+#  error module color_utilsf is required for ws2812_effects
+#endif
+#endif
+
 #define CANARY_VALUE 0x32372132
 
 #define DEFAULT_MODE 0
