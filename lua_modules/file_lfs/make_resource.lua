@@ -42,16 +42,24 @@ print(string.format("output set to: %s", OUT))
 
 local res = io.open(OUT, "w")
 res:write("--  luacheck: max line length no\nlocal arg = ...\n")
+res:write(('local table_insert=table.insert\n'):format(inp, content))
+res:write(('local filelist={}\n\n'):format(inp, content))
 res:close(file)
 
 for _, a in pairs(larg) do
   local inp = string.match(a, ".*[/](.*)")
+  if not inp then inp = a end
   local content = readfile(a)
   print(string.format("# processing %s", inp))
 
   if content then
     res = io.open(OUT, "a")
-    res:write(('if arg == "%s" then return %q  end\n\n'):format(inp, content))
+    res:write(('table_insert(filelist, "%s")\n'):format(inp, content))
+    res:write(('if arg == "%s" then return %q end\n\n'):format(inp, content))
     res:close(file)
   end
 end
+
+res = io.open(OUT, "a")
+res:write('if arg == nil then return filelist end\n')
+res:close(file)

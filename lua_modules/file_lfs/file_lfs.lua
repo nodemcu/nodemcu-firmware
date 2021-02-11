@@ -1,8 +1,8 @@
 local FILE_READ_CHUNK = 1024
 
 local _file = file
-local file_exists, file_open, file_getcontents, file_rename, file_stat, file_putcontents, file_close =
-  _file.exists, _file.open, _file.getcontents, _file.rename, _file.stat, _file.putcontents, _file.close
+local file_exists, file_open, file_getcontents, file_rename, file_stat, file_putcontents, file_close, file_list =
+  _file.exists, _file.open, _file.getcontents, _file.rename, _file.stat, _file.putcontents, _file.close, _file.list
 local node_LFS_resource = node.LFS.resource or function() end -- luacheck: ignore
 
 local file_lfs = {}
@@ -123,6 +123,17 @@ file_lfs.stat = function(filename)
   else
     return file_stat(filename)
   end
+end
+
+file_lfs.list = function (pattern)
+  local filelist = file_list(pattern)
+  local fl = node_LFS_resource()
+  for _, f in ipairs(fl) do
+    if f:match(pattern or ".*") and not(filelist[f]) then
+      filelist[f] = #node_LFS_resource(f)
+    end
+  end
+  return filelist
 end
 
 setmetatable(file_lfs, {
