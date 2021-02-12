@@ -125,12 +125,14 @@ file_lfs.stat = function(filename)
   end
 end
 
-file_lfs.list = function (pattern)
+file_lfs.list = function (pattern, SPIFFs_only)
   local filelist = file_list(pattern)
-  local fl = node_LFS_resource()
-  for _, f in ipairs(fl) do
-    if f:match(pattern or ".*") and not(filelist[f]) then
-      filelist[f] = #node_LFS_resource(f)
+  if not SPIFFs_only then
+    local fl = node_LFS_resource()
+    for _, f in ipairs(fl) do
+      if f:match(pattern or ".*") and not(filelist[f]) then
+        filelist[f] = #node_LFS_resource(f)
+      end
     end
   end
   return filelist

@@ -20,7 +20,10 @@ end
 
 -- tests the functions above
 print(string.format("make_resource script - %d parameter(s)", #arg))
-print("parameters: [-o outputfile] file1 [file2] ...")
+if #arg==0 or arg[1]=="--help" then
+  print("parameters: [-o outputfile] file1 [file2] ...")
+  return
+end
 
 local larg = {}
 local outpar = false
@@ -42,10 +45,9 @@ print(string.format("output set to: %s", OUT))
 
 local res = io.open(OUT, "w")
 res:write("--  luacheck: max line length no\nlocal arg = ...\n")
-res:write(('local table_insert=table.insert\n'):format(inp, content))
-res:write(('local filelist={}\n\n'):format(inp, content))
 res:close(file)
 
+local filelist = ""
 for _, a in pairs(larg) do
   local inp = string.match(a, ".*[/](.*)")
   if not inp then inp = a end
@@ -54,12 +56,12 @@ for _, a in pairs(larg) do
 
   if content then
     res = io.open(OUT, "a")
-    res:write(('table_insert(filelist, "%s")\n'):format(inp, content))
+    filelist = filelist .. ('"%s",'):format(inp)
     res:write(('if arg == "%s" then return %q end\n\n'):format(inp, content))
     res:close(file)
   end
 end
 
 res = io.open(OUT, "a")
-res:write('if arg == nil then return filelist end\n')
+res:write(('if arg == nil then return {%s} end\n'):format(filelist))
 res:close(file)
