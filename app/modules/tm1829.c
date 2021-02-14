@@ -77,6 +77,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
     pixels = luaL_checklstring(L, 2, &length);
     break;
    }
+#ifdef LUA_USE_MODULES_PIXBUF      
   case LUA_TUSERDATA: {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
     luaL_argcheck(L, pixbuf_channels(buffer) == 3, 2, "Bad pixbuf format");
@@ -84,6 +85,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
     length = 3 * buffer->npix;
     break;
    }
+#endif
   default:
     return luaL_argerror(L, 2, "String or pixbuf expected");
   }
