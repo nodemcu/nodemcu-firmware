@@ -15,7 +15,7 @@ Note that dual mode is currently not supported for effects.
 
 !!! caution
 
-    This module depends on the [color utils module](color-utils.md). Things **will** fail if that module is missing in the firmware!
+    This module depends on the [color utils module](color-utils.md) and [pixbuf module](pixbuf.md). Things **will** fail if those modules are missing in the firmware!
 
 #### Example usage
 ```lua

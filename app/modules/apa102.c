@@ -91,6 +91,7 @@ static int apa102_write(lua_State* L) {
     nbr_frames = buf_len / 4;
     break;
    }
+#ifdef LUA_USE_MODULES_PIXBUF      
   case LUA_TUSERDATA: {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 3);
     luaL_argcheck(L, buffer->nchan == 4, 3, "Pixbuf not 4-channel");
@@ -98,6 +99,7 @@ static int apa102_write(lua_State* L) {
     nbr_frames = buffer->npix;
     break;
    }
+#endif
   default:
     return luaL_argerror(L, 3, "String or pixbuf expected");
   }
