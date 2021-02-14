@@ -176,6 +176,30 @@ Set UART controllers communication mode
 `nil`
 
 
+## uart.txflush()
+
+Wait for any data currently in the UART transmit buffers to be written out. It can be useful to call this immediately before a call to [`node.sleep()`](node.md#nodesleep) because otherwise data might not get written until after wakeup.
+
+#### Syntax
+`uart.txflush(id)`
+
+#### Parameters
+- `id` uart id
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+print("I want this to show up now not in 5 seconds")
+uart.txflush(0) -- assuming 0 is the console uart
+node.sleep({secs=5})
+```
+
+#### See also
+[`node.sleep()`](node.md#nodesleep)
+
+
 ## uart.wakeup()
 
 Configure the light sleep wakeup threshold. This is the number of positive edges that must be seen on the UART RX pin before a light sleep wakeup will be triggered. The minimum value is 3. The default value is undefined, therefore you should always call this function before the first time you call `node.sleep()` with the uart option set.
@@ -196,7 +220,7 @@ uart.wakeup(0, 5)
 ```
 
 #### See also
-[`node.sleep()`](node/#nodesleep)
+[`node.sleep()`](node.md#nodesleep)
 
 
 ## uart.write()
