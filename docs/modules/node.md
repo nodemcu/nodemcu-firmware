@@ -482,7 +482,7 @@ node.setcpufreq(node.CPU80MHZ)
 
 ## node.setonerror()
 
-Use this to override the default "always restart" action if wanted; for example to write an error to a logfile or to a network syslog before restarting.
+Overrides the default crash handling which always restarts the system. It can be used to e.g. write an error to a logfile or to secure connected hardware before restarting.
 
 !!! attention
 
