@@ -52,6 +52,7 @@ pages:
     - 'cohelper': 'lua-modules/cohelper.md'
     - 'ds18b20': 'lua-modules/ds18b20.md'
     - 'ds3231': 'lua-modules/ds3231.md'
+    - 'file_lfs': 'lua-modules/file_lfs.md'
     - 'fifo' : 'lua-modules/fifo.md'
     - 'fifosock' : 'lua-modules/fifosock.md'
     - 'ftpserver': 'lua-modules/ftpserver.md'
