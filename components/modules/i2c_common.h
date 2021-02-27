@@ -17,7 +17,7 @@ typedef enum {
 // Hardware master prototypes
 //
 void li2c_hw_master_init( lua_State *L );
-void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl, uint32_t speed );
+int li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl, uint32_t speed, unsigned stretchfactor );
 void li2c_hw_master_start( lua_State *L, unsigned id );
 void li2c_hw_master_stop( lua_State *L, unsigned id );
 int li2c_hw_master_address( lua_State *L, unsigned id, uint16_t address, uint8_t direction, bool ack_check_en );
