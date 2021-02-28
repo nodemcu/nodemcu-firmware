@@ -1,0 +1,9 @@
+*
+*.S
+*.dump
+*.bin
+*.bin_rep
+!.gitignore
+!blank.bin
+!esp_init_data_default.bin
+!esp_init_data_default_v05.bin

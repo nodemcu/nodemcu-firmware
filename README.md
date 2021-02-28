@@ -1,163 +1,70 @@
-# **NodeMcu** #
-###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-11-20
-# Change log
-[change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
-[变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
+# NodeMCU 3.0.0
+
+[![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
+[![Documentation Status](https://img.shields.io/badge/docs-release-yellow.svg?style=flat)](http://nodemcu.readthedocs.io/en/release/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/nodemcu/nodemcu-firmware/blob/release/LICENSE)
+
+### A Lua based firmware for ESP8266 WiFi SOC
+
+NodeMCU is an open source [Lua](https://www.lua.org/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/) and uses an on-module flash-based [SPIFFS](https://github.com/pellepl/spiffs) file system. NodeMCU is implemented in C and is layered on the [Espressif NON-OS SDK](https://github.com/espressif/ESP8266_NONOS_SDK).
+
+The firmware was initially developed as is a companion project to the popular ESP8266-based [NodeMCU development modules]((https://github.com/nodemcu/nodemcu-devkit-v1.0)), but the project is now community-supported, and the firmware can now be run on _any_ ESP module.
+
 # Summary
-- Easy to access wireless router
-- Based on Lua 5.1.4
-- Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, net, gpio, wifi, and system api.
-- GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
-- GPIO Map Table:
 
-<table>
-  <tr>
-    <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
-  </tr>
-  <tr>
-    <td>0</td><td>GPIO12</td><td>8</td><td>GPIO0</td>
-  </tr>
-  <tr>
-    <td>1</td><td>GPIO13</td><td>9</td><td>GPIO2</td>
-   </tr>
-   <tr>
-    <td>2</td><td>GPIO14</td><td>10</td><td>GPIO4</td>
-  </tr>
-  <tr>
-    <td>3</td><td>GPIO15</td><td>11</td><td>GPIO5</td>
-   </tr>
-   <tr>
-    <td>4</td><td>GPIO3</td><td></td><td></td>
-  </tr>
-  <tr>
-    <td>5</td><td>GPIO1</td><td></td><td></td>
-   </tr>
-   <tr>
-    <td>6</td><td>GPIO9</td><td></td><td></td>
-  </tr>
-  <tr>
-    <td>7</td><td>GPIO10</td<td></td><td></td>
-   </tr>
-</table>
+- Easy to program wireless node and/or access point
+- Based on Lua 5.1.4 or Lua 5.3 but without `debug`, `io`, `os` and (most of the) `math` modules
+- Asynchronous event-driven programming model
+- more than **70 built-in C modules** and **close to 20 Lua modules**
+- Firmware available with or without floating point support (integer-only uses less memory)
+- Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
+### LFS support
+In July 2018 support for a Lua Flash Store (LFS) was introduced. LFS  allows Lua code and its associated constant data to be executed directly out of flash-memory; just as the firmware itself is executed. This now enables NodeMCU developers to create **Lua applications with up to 256Kb** Lua code and read-only constants executing out of flash. All of the RAM is available for read-write data!
 
-#Flash the firmware
-nodemcu_512k.bin: 0x00000<br />
-for most esp8266 modules, just pull GPIO0 down and restart.
+# Programming Model
 
-#Connect the hardware in serial
-braudrate:9600
-
-#Start play
-
-####Connect to your ap
+The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](lua_examples) folder in the repository on GitHub.
 
 ```lua
-    print(wifi.sta.getip())
-    --0.0.0.0
-    wifi.setmode(wifi.STATION)
-    wifi.sta.config("SSID","password")
-    print(wifi.sta.getip())
-    --192.168.18.110
+-- a simple HTTP server
+srv = net.createServer(net.TCP)
+srv:listen(80, function(conn)
+	conn:on("receive", function(sck, payload)
+		print(payload)
+		sck:send("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1> Hello, NodeMCU.</h1>")
+	end)
+	conn:on("sent", function(sck) sck:close() end)
+end)
+```
+```lua
+-- connect to WiFi access point
+wifi.setmode(wifi.STATION)
+wifi.sta.config{ssid="SSID", pwd="password"}
 ```
 
-####Manipulate hardware like a arduino
-   
-```lua
-    pin = 1
-    gpio.mode(pin,gpio.OUTPUT)
-    gpio.write(pin,gpio.HIGH)
-    print(gpio.read(pin))
-```
+# Documentation
 
-####Write network application in nodejs style
-   
-```lua
-    -- A simple http client
-    conn=net.createConnection(net.TCP, 0) 
-    conn:on("receive", function(conn, payload) print(c) end )
-    conn:connect(80,"115.239.210.27")
-    conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
-        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
-```
+The entire [NodeMCU documentation](https://nodemcu.readthedocs.io) is maintained right in this repository at [/docs](docs). The fact that the API documentation is maintained in the same repository as the code that *provides* the API ensures consistency between the two. With every commit the documentation is rebuilt by Read the Docs and thus transformed from terse Markdown into a nicely browsable HTML site at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io).
 
-####Or a simple http server
-   
-```lua
-    -- A simple http server
-    srv=net.createServer(net.TCP) 
-    srv:listen(80,function(conn) 
-      conn:on("receive",function(conn,payload) 
-        print(payload) 
-        conn:send("<h1> Hello, NodeMcu.</h1>")
-      end) 
-      conn:on("sent",function(conn) conn:close() end)
-    end)
-```
+- How to [build the firmware](https://nodemcu.readthedocs.io/en/release/build/)
+- How to [flash the firmware](https://nodemcu.readthedocs.io/en/release/flash/)
+- How to [upload code and NodeMCU IDEs](https://nodemcu.readthedocs.io/en/release/upload/)
+- API documentation for every module
 
-####Do something shining
-```lua
-  function led(r,g,b) 
-    pwm.setduty(0,r) 
-    pwm.setduty(1,g) 
-    pwm.setduty(2,b) 
-  end
-  pwm.setup(0,500,50) 
-  pwm.setup(1,500,50) 
-  pwm.setup(2,500,50)
-  pwm.start(0) 
-  pwm.start(1) 
-  pwm.start(2)
-  led(50,0,0) -- red
-  led(0,0,50) -- blue
-```
+# Releases
 
-####And blink it
-```lua
-  lighton=0
-  tmr.alarm(1000,1,function()
-    if lighton==0 then 
-      lighton=1 
-      led(50,50,50) 
-    else 
-      lighton=0 
-      led(0,0,0) 
-    end 
-  end)
-```
+Due to the ever-growing number of modules available within NodeMCU, pre-built binaries are no longer made available. Use the automated [custom firmware build service](http://nodemcu-build.com/) to get the specific firmware configuration you need, or consult the [documentation](http://nodemcu.readthedocs.io/en/release/build/) for other options to build your own firmware.
 
-####If you want to run something when system started
-```lua
-  --init.lua will be excuted
-  file.open("init.lua","w")
-  file.writeline([[print("Hello, do this at the beginning.")]])
-  file.close()
-  node.restart()  -- this will restart the module.
-```
+This project uses two main branches, `release` and `dev`. `dev` is actively worked on and it's also where PRs should be created against. `release` thus can be considered "stable" even though there are no automated regression tests. The goal is to merge back to `release` roughly every 2 months. Depending on the current "heat" (issues, PRs) we accept changes to `dev` for 5-6 weeks and then hold back for 2-3 weeks before the next snap is completed.
 
-####With below code, you can telnet to your esp8266 now
-```lua
-    -- a simple telnet server
-    s=net.createServer(net.TCP,180) 
-    s:listen(2323,function(c) 
-       function s_output(str) 
-          if(c~=nil) 
-             then c:send(str) 
-          end 
-       end 
-       node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l) 
-          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-       end) 
-       c:on("disconnection",function(c) 
-          node.output(nil)        -- un-regist the redirect output function, output goes to serial
-       end) 
-       print("Welcome to NodeMcu world.")
-    end)
-```
-#Check this out
-Tencent QQ group: 309957875<br/>
-[nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br/>
-[nodemcu.com](http://www.nodemcu.com)
+A new tag is created every time `dev` is merged back to `release`. They are listed in the [releases section here on GitHub](https://github.com/nodemcu/nodemcu-firmware/releases). Tag names follow the \<SDK-version\>-release_yyyymmdd pattern.
+
+# Support
+
+See [https://nodemcu.readthedocs.io/en/release/support/](https://nodemcu.readthedocs.io/en/release/support/).
+
+# License
+
+[MIT](https://github.com/nodemcu/nodemcu-firmware/blob/release/LICENSE) © [zeroday](https://github.com/NodeMCU)/[nodemcu.com](http://nodemcu.com/index_en.html)
