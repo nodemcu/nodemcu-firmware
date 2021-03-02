@@ -286,33 +286,33 @@ static int ccs811_lua_mode(lua_State *L)
 // Lua: ccs811.read()
 static int ccs811_lua_read(lua_State *L)
 {
-  uint8_t buf[8];
-  bool ok;
+  uint8_t buf[4];
+  uint8_t status;
 
   css_ctrl_ud_t *css_ctrl = luaL_checkudata(L, 1, metatable_name);
 
   wake_up(css_ctrl->wake_pin);
 
-  // Read the results
-  read_short(css_ctrl->i2c_addr, CCS811_ALG_RESULT_DATA, buf);
-  uint16_t combined = buf[5] * 256 + buf[4];
-  if (combined & ~(CCS811_ERRSTAT_HWERRORS | CCS811_ERRSTAT_OK))
-    ok = false;                                            // Unused bits are 1: I2C transfer error
-  combined &= CCS811_ERRSTAT_HWERRORS | CCS811_ERRSTAT_OK; // Clear all unused bits
-  if (!ok)
-    combined |= CCS811_ERRSTAT_I2CFAIL;
-  // Clear ERROR_ID if flags are set
-  if (combined & CCS811_ERRSTAT_HWERRORS)
-  {
-    uint8_t err = read_reg(css_ctrl->i2c_addr, CCS811_ERROR_ID);
-    if (err == -1)
-      combined |= CCS811_ERRSTAT_I2CFAIL; // Propagate I2C error
+  // Check status
+  status = read_reg(css_ctrl->i2c_addr, CCS811_STATUS);
+  if(status & CCS811_ERRSTAT_ERROR == 0x01) {
+    uint8_t error = read_reg(css_ctrl->i2c_addr, CCS811_ERROR_ID);
+    lua_pushnumber(L, 0);
+    lua_pushnumber(L, 0);
+    lua_pushnumber(L, error);
+  } else if((status & CCS811_ERRSTAT_DATA_READY) == 0x08) {
+    // Read the results
+    read_short(css_ctrl->i2c_addr, CCS811_ALG_RESULT_DATA, buf);
+
+    lua_pushnumber(L, (buf[0] << 8) + buf[1]);
+    lua_pushnumber(L, (buf[2] << 8) + buf[3]);
+    lua_pushnumber(L, 0);
+  } else {
+    lua_pushnumber(L, 0);
+    lua_pushnumber(L, 0);
+    lua_pushnumber(L, 0x40);
   }
   wake_down(css_ctrl->wake_pin);
-
-  lua_pushnumber(L, (buf[0] << 8) + buf[1]);
-  lua_pushnumber(L, (buf[2] << 8) + buf[3]);
-  lua_pushnumber(L, combined);
 
   return 3;
 }
