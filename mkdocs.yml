@@ -79,6 +79,7 @@ pages:
     - 'bme680': 'modules/bme680.md'
     - 'bmp085': 'modules/bmp085.md'
     - 'cjson': 'modules/cjson.md'
+    - 'ccs811' : 'modules/ccs811.md'
     - 'coap': 'modules/coap.md'
     - 'color-utils': 'modules/color-utils.md'
     - 'cron': 'modules/cron.md'
