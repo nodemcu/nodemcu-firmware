@@ -1,15 +1,14 @@
--- tests for file_lfs module
--- resource.lua with index.html or favicon.ico or test.txt file needs to be embedded in LFS
--- the file should be larger than 1kB
-
 -- luacheck: globals file
 -- luacheck: new read globals node.LFS.resource
 file = require("file_lfs")
 
--- check standard SPIFFS file functions
-require("NTest_file")
+local Nt = ...
+Nt = (Nt or require "NTest")
 
-local N = require('NTest')("file_lfs")
+-- check standard SPIFFS file functions
+loadfile("NTest_file.lua")(Nt)
+
+local N = Nt("file_lfs")
 
 N.test('resource.lua in LFS', function()
   ok(node.LFS.resource~=nil, "resource.lua embedded in LFS")
@@ -95,7 +94,7 @@ N.test('seek file LFS', function()
 
   f:seek("end", -50)
   content = f:read(10)
-  ok(eq(testcontent:sub(#testcontent-50,#testcontent-41), content),"end -50")
+  ok(eq(testcontent:sub(#testcontent+1-50,#testcontent+1-41), content),"end -50")
 end)
 
 N.test('rename file LFS', function()

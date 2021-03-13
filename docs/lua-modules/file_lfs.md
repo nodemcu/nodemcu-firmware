@@ -163,3 +163,35 @@ If no parameters are given, the function simply returns the current file offset.
 
 #### Returns
 the resulting file position, or `nil` on error
+
+## file.stat()
+
+Get attribtues of a file or directory in a table. Elements of the table are:
+
+- `size` file size in bytes
+- `name` file name
+- `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
+
+    - `year`
+    - `mon`
+    - `day`
+    - `hour`
+    - `min`
+    - `sec`
+
+- `is_dir` flag `true` if item is a directory, otherwise `false`
+- `is_rdonly` flag `true` if item is read-only, otherwise `false`
+- `is_hidden` flag `true` if item is hidden, otherwise `false`
+- `is_sys` flag `true` if item is system, otherwise `false`
+- `is_arch` flag `true` if item is archive, otherwise `false`
+- `is_LFS` flag `true` if item is stored in LFS, otherwise `false` - **the only difference to `file.stat()`**
+
+#### Syntax
+`file.stat(filename)`
+
+#### Parameters
+`filename` file name
+
+#### Returns
+table containing file attributes
+

@@ -44,7 +44,7 @@ end
 print(string.format("output set to: %s", OUT))
 
 local res = io.open(OUT, "w")
-res:write("--  luacheck: max line length no\nlocal arg = ...\n")
+res:write("--  luacheck: max line length 10000\nlocal arg = ...\n")
 res:close(file)
 
 local filelist = ""

@@ -3,7 +3,7 @@ local FILE_READ_CHUNK = 1024
 local _file = file
 local file_exists, file_open, file_getcontents, file_rename, file_stat, file_putcontents, file_close, file_list =
   _file.exists, _file.open, _file.getcontents, _file.rename, _file.stat, _file.putcontents, _file.close, _file.list
-local node_LFS_resource = node.LFS.resource or function() end -- luacheck: ignore
+local node_LFS_resource = node.LFS.resource or function() return {} end -- luacheck: ignore
 
 local file_lfs = {}
 local current_file_lfs
@@ -17,10 +17,10 @@ local function file_lfs_create (filename)
     n_or_char = n_or_char or FILE_READ_CHUNK
     if type(n_or_char) == "number" then
       p1, p2 = pos, pos + n_or_char - 1
-    elseif type(n_or_char) == "string" then
+    elseif type(n_or_char) == "string" and #n_or_char == 1 then
       p1 = pos
       local _
-      _, p2 = content:find(n_or_char, p1)
+      _, p2 = content:find(n_or_char, p1, true)
       if not p2 then p2 = p1 + FILE_READ_CHUNK - 1 end
     else
       error("invalid parameter")
@@ -32,6 +32,7 @@ local function file_lfs_create (filename)
   end
 
   local seek = function (_, whence, offset)
+    offset = offset or 0
     local len = #content + 1 -- position starts at 1
     if whence == "set" then
       pos = offset + 1 -- 0 offset means position 1
@@ -96,10 +97,8 @@ end
 file_lfs.getcontents = function(filename)
   if file_exists(filename) then
     return file_getcontents(filename)
-  elseif node_LFS_resource(filename) then
-    return node_LFS_resource(filename)
   else
-    return file_getcontents(filename)
+    return node_LFS_resource(filename) or file_getcontents(filename)
   end
 end
 
@@ -118,7 +117,7 @@ file_lfs.stat = function(filename)
       name = filename,
       size = #node_LFS_resource(filename),
       time = {day = 1, hour = 0, min = 0, year = 1970, sec = 0, mon = 1},
-      is_hidden = false, is_rdonly = true, is_dir = false, is_arch = false, is_sys = false,
+      is_hidden = false, is_rdonly = true, is_dir = false, is_arch = false, is_sys = false, is_LFS = true
     }
   else
     return file_stat(filename)
@@ -131,7 +130,7 @@ file_lfs.list = function (pattern, SPIFFs_only)
     local fl = node_LFS_resource()
     if fl then
       for _, f in ipairs(fl) do
-        if f:match(pattern or ".*") and not(filelist[f]) then
+        if not(filelist[f]) and (not pattern or f:match(pattern)) then
           filelist[f] = #node_LFS_resource(f)
         end
       end
