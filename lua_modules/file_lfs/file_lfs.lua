@@ -3,7 +3,7 @@ local FILE_READ_CHUNK = 1024
 local _file = file
 local file_exists, file_open, file_getcontents, file_rename, file_stat, file_putcontents, file_close, file_list =
   _file.exists, _file.open, _file.getcontents, _file.rename, _file.stat, _file.putcontents, _file.close, _file.list
-local node_LFS_resource = node.LFS.resource or function() return {} end -- luacheck: ignore
+local node_LFS_resource = node.LFS.resource or function(filename) if filename then return else return {} end end -- luacheck: ignore
 
 local file_lfs = {}
 local current_file_lfs

@@ -184,7 +184,7 @@ Get attribtues of a file or directory in a table. Elements of the table are:
 - `is_hidden` flag `true` if item is hidden, otherwise `false`
 - `is_sys` flag `true` if item is system, otherwise `false`
 - `is_arch` flag `true` if item is archive, otherwise `false`
-- `is_LFS` flag `true` if item is stored in LFS, otherwise `false` - **the only difference to `file.stat()`**
+- `is_LFS` flag `true` if item is stored in LFS, otherwise it is not present in the `file.stat()` result table - **the only difference to `file.stat()`**
 
 #### Syntax
 `file.stat(filename)`
