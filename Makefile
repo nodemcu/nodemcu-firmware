@@ -302,9 +302,10 @@ $(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz:
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(GCCTOOLCHAIN)/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz -O $@ \
 	|| { rm -f "$@"; exit 1; }
-else
-toolchain: $(ESPTOOL)
-endif
+
+$(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
+	mkdir -p $(TOP_DIR)/cache/esptool/
+	$(WGET) $(GITHUB_ESPTOOL)/archive/v$(ESPTOOL_VER).tar.gz -O $@ || { rm -f "$@"; exit 1; }
 
 $(ESPTOOL): $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
@@ -312,9 +313,11 @@ $(ESPTOOL): $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
 	chmod +x $@
 	touch $@
 
-$(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
-	mkdir -p $(TOP_DIR)/cache/esptool/
-	$(WGET) $(GITHUB_ESPTOOL)/archive/v$(ESPTOOL_VER).tar.gz -O $@ || { rm -f "$@"; exit 1; }
+else
+toolchain:
+	echo "Using toolchain from $(TOOLCHAIN_ROOT)"
+	esptool.py version || { echo "esptool.py not available"; exit 1; }
+endif
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
