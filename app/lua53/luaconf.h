@@ -204,6 +204,39 @@
 #define LUA_QL(x)	    "'" x "'"     // No longer used in lua53, but still used
 #define LUA_QS		    LUA_QL("%s")  //  in some of our apllication modules
 
+/* =================================================================== */
+
+/*
+@@ LUA_LOAD_BYTE_FN is used to define macros for reading bytes from
+** object headers.  This can be used to speed up architectures which
+** must resort to trap-and-emulate for sub-word memory accesses.
+*/
+
+#ifdef LUA_USE_ESP
+/*
+** Byte field access macro.  On ESP targets this causes the compiler to emit
+** a l32i + extui instruction pair instead of a single l8ui avoiding a call
+** the S/W unaligned exception handler.  This is used to force aligned access
+** to commonly accessed fields in Flash-based record structures.  It is not
+** needed for RAM-only structures.
+*/
+#define LUA_LOAD_BYTE_FN(fn, type, field) \
+static inline lu_int32 fn(const type *o) { \
+  lu_int32 res;  /* extract named field */ \
+  asm ("l32i  %0, %1, %2;" \
+       "extui %0, %0, %3, 8;" \
+       : "=r"(res) : "r"(o) \
+         , "i"((offsetof(type, field)/4)*4) \
+         , "i"((offsetof(type, field)%4)*8) \
+       : );\
+  return res; }
+#endif
+
+#if !defined(LUA_LOAD_BYTE_FN)
+#define LUA_LOAD_BYTE_FN(fn, type, field) \
+  static inline lu_byte fn(const type *o) { return o->field; }
+#endif
+
 /*
 ** {==================================================================
 ** Other NodeMCU configuration.

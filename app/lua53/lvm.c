@@ -445,7 +445,7 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
 #define tostring(L,o)  \
 	(ttisstring(o) || (cvt2str(o) && (luaO_tostring(L, o), 1)))
 
-#define isemptystr(o)	(ttisshrstring(o) && getshrlen(tsvalue(o)) == 0)
+#define isemptystr(o)	(ttisshrstring(o) && getstrshrlen(tsvalue(o)) == 0)
 
 /* copy strings in stack from top - n up to top - 1 to buffer */
 static void copy2buff (StkId top, int n, char *buff) {
@@ -516,7 +516,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       return;
     }
     case LUA_TSHRSTR: {
-      setivalue(ra, getshrlen(tsvalue(rb)));
+      setivalue(ra, getstrshrlen(tsvalue(rb)));
       return;
     }
     case LUA_TLNGSTR: {
