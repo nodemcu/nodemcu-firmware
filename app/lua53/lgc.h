@@ -85,23 +85,23 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
-#define iswhite(x)      testbits(getmarked(x), WHITEBITS)
-#define isblack(x)      testbit(getmarked(x), BLACKBIT)
+#define iswhite(x)      testbits(getmarked((struct GCObject *)x), WHITEBITS)
+#define isblack(x)      testbit(getmarked((struct GCObject *)x), BLACKBIT)
 #define isgray(x)  /* neither white nor black */  \
-	(!testbits(getmarked(x), WHITEBITS | bitmask(BLACKBIT)))
+	(!testbits(getmarked((struct GCObject *)x), WHITEBITS | bitmask(BLACKBIT)))
 
 #define tofinalize(x)	testbit(getmarked(x), FINALIZEDBIT)
 
 #define otherwhite(g)	((g)->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-#define isdead(g,v)	isdeadm(otherwhite(g), getmarked(v))
+#define isdead(g,v)	isdeadm(otherwhite(g), getmarked((struct GCObject *)v))
 
 #define changewhite(x)	((x)->marked ^= WHITEBITS)
 #define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
 
 #define luaC_white(g)	cast(lu_byte, (g)->currentwhite & WHITEBITS)
 
-#define isLFSobj(x)   testbit(getmarked(x), LFSBIT)
+#define isLFSobj(x)   testbit(getmarked((struct GCObject *)x), LFSBIT)
 #define setLFSbit(x)  l_setbit((x)->marked, LFSBIT)
 /*
 ** Does one step of collection when debt becomes positive. 'pre'/'pos'

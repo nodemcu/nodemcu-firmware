@@ -125,7 +125,8 @@ static void DumpString (const TString *s, DumpState *D) {
   if (s == NULL) {
     DumpByte(LUAU_TSSTRING + 0, D);
   } else {
-    lu_byte tt = (gettt(s) == LUA_TSHRSTR) ? LUAU_TSSTRING : LUAU_TLSTRING;
+    lu_byte tt = (gettt((struct GCObject *)s) == LUA_TSHRSTR) \
+		 ? LUAU_TSSTRING : LUAU_TLSTRING;
     size_t l = tsslen(s);
     const char *str = getstr(s);
 #ifdef LUA_USE_HOST
@@ -314,7 +315,7 @@ static void addTS (TString *ts, DumpState *D) {
     return;
   if (ttisnil(luaH_getstr(D->stringIndex, ts))) {
     TValue k, v, *slot;
-    gettt(ts)<=LUA_TSHRSTR ? D->sTScnt++ : D->lTScnt++;
+    gettt((struct GCObject *)ts)<=LUA_TSHRSTR ? D->sTScnt++ : D->lTScnt++;
     setsvalue(L, &k, ts);
     setivalue(&v, D->sTScnt + D->lTScnt);
     slot = luaH_set(L, D->stringIndex, &k);

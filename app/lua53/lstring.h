@@ -24,13 +24,15 @@
 /*
 ** test whether a string is a reserved word
 */
-#define isreserved(s)	(gettt(s) == LUA_TSHRSTR && getextra(s) > 0)
+#define isreserved(s) \
+  (gettt((struct GCObject *)s) == LUA_TSHRSTR && getstrextra(s) > 0)
 
 
 /*
 ** equality for short strings, which are always internalized
 */
-#define eqshrstr(a,b)	check_exp(gettt(a) == LUA_TSHRSTR, (a) == (b))
+#define eqshrstr(a,b) \
+  check_exp(gettt((struct GCObject *)a) == LUA_TSHRSTR, (a) == (b))
 
 
 LUAI_FUNC unsigned int luaS_hash (const char *str, size_t l, unsigned int seed);
