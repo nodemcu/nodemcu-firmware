@@ -210,19 +210,23 @@ static lua_Integer LoadInteger (LoadState *S, lu_byte tt_data) {
   return (tt_data & LUAU_TMASK) == LUAU_TNUMNINT ? -x-1 : x;
 }
 static TString *LoadString_ (LoadState *S, int prelen) {
-  TString *ts;
-  char buff[LUAI_MAXSHORTLEN];
+  lua_State *L = S->L;
   int n = LoadInteger(S, (prelen < 0 ? LoadByte(S) : prelen)) - 1;
+  TString *ts;
   if (n < 0)
     return NULL;
   if  (S->useStrRefs)
     ts = S->TS[n];
   else if (n <= LUAI_MAXSHORTLEN) {  /* short string? */
+    char buff[LUAI_MAXSHORTLEN];
     LoadVector(S, buff, n);
-    ts = luaS_newlstr(S->L, buff, n);
+    ts = luaS_newlstr(L, buff, n);
   } else {                      /* long string */
-    ts = luaS_createlngstrobj(S->L, n);
+    ts = luaS_createlngstrobj(L, n);
+    setsvalue2s(L, L->top, ts);  /* anchor it ('loadVector' can GC) */
+    luaD_inctop(L);
     LoadVector(S, getstr(ts), n);             /* load directly in final place */
+    L->top--;  /* pop string */
   }
   return ts;
 }
@@ -299,8 +303,11 @@ static void LoadProtos (LoadState *S, Proto *f) {
   f->p = p;
   f->sizep = n;
   memset (p, 0, n * sizeof(*p));
-  for (i = 0; i < n; i++)
-    p[i] = LoadFunction(S, luaF_newproto(S->L), f->source);
+  for (i = 0; i < n; i++) {
+    p[i] = luaF_newproto(S->L);
+    luaC_objbarrier(S->L, f, p[i]);
+    p[i] = LoadFunction(S, p[i], f->source);
+  }
   if (S->mode != MODE_RAM) {
     f->p = StoreAV(S, cast(void **, p), n);
     luaM_freearray(S->L, p, n);
@@ -438,7 +445,8 @@ LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
   setclLvalue(L, L->top, cl);
   luaD_inctop(L);
   cl->p = luaF_newproto(L);
-  LoadFunction(&S, cl->p, NULL);
+  luaC_objbarrier(L, cl, cl->p);
+  cl->p = LoadFunction(&S, cl->p, NULL);
   lua_assert(cl->nupvalues == cl->p->sizeupvalues);
   return cl;
 }
