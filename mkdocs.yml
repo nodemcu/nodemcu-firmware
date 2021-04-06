@@ -118,6 +118,7 @@ pages:
     - 'sjson': 'modules/sjson.md'
     - 'sntp': 'modules/sntp.md'
     - 'softuart': 'modules/softuart.md'
+    - 'softuart2': 'modules/softuart2.md'
     - 'somfy': 'modules/somfy.md'
     - 'spi': 'modules/spi.md'
     - 'struct': 'modules/struct.md'
