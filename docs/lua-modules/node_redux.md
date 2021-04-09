@@ -1,12 +1,17 @@
 # NodeRedux Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2021-04-09 | [Shubham Srivastava](https://github.com/shubham-sri) | [Shubham Srivastava](https://github.com/shubham-sri) | [node_redux.lua](../../lua_modules/node_redux/node_redux.lua) |
+
+<br>
 Redux is a predictable state container for lua apps and NodeMCU.
 
-## Influences
+### Influences
 
 NodeRedux evolves the ideas of [Redux](https://redux.js.org/),
 which help to maintain state lua base app basically NodeMCU devices.
 
-## Basic Example
+### Basic Example
 
 The whole global state of your app is stored in an object tree inside a single _store_.
 The only way to change the state tree is to create an _action_,
@@ -16,18 +21,7 @@ functions that calculate a new state based on the old state and the action.
 
 
 ```lua
-local redux = require('redux') -- optional line for nodemcu, only need for lua app
-
--- This is a reducer - a function that takes a current state value and an
--- action object describing "what happened", and returns a new state value.
--- A reducer's function signature is: (state, action) => newState
---
--- The NodeRedux state should contain only plain Lua table.
--- The root state value is usually an table.  It's important that you should
--- not mutate the state table, but return a new table if the state changes.
---
--- You can use any conditional logic you want in a reducer. In this example,
--- we use a if statement, but it's not required.
+local redux = require('redux')
 
 local function counterReducer(state, action)
     state = state or { value = 0 }
@@ -111,18 +105,7 @@ redux.combineReducers({
 #### Example
 
 ```lua
-local redux = require('redux') -- optional line for nodemcu, only need for lua app
-
--- This is a reducer - a function that takes a current state value and an
--- action object describing "what happened", and returns a new state value.
--- A reducer's function signature is: (state, action) => newState
---
--- The NodeRedux state should contain only plain Lua table.
--- The root state value is usually an table.  It's important that you should
--- not mutate the state table, but return a new table if the state changes.
---
--- You can use any conditional logic you want in a reducer. In this example,
--- we use a if statement, but it's not required.
+local redux = require('redux')
 
 local function counterReducer(state, action)
     state = state or { value = 0 }
