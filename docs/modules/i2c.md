@@ -9,14 +9,15 @@ ESP8266 chip does not have hardware I²C, so module uses software I²C driver.
 It can be set up on any GPIO pins including GPIO16 (see below).
 
 This module supports:
- - Master mode
- - Multiple buses (up to 10) with different speeds on each bus
- - Standard(Slow, 100kHz), Fast(400kHz) and FastPlus(1MHz) modes or an arbitrary clock speed
- - Clock stretching (slow slave device can tell the master to wait)
- - Sharing SDA line over multiple I²C buses to save available pins
- - GPIO16 pin can be used as SCL pin, but selected bus will be limited to not more than FAST speed.
 
- HIGH-speed mode (3.5MHz clock) and 10-bit addressing scheme is not supported.
+- Master mode
+- Multiple buses (up to 10) with different speeds on each bus
+- Standard(Slow, 100kHz), Fast(400kHz) and FastPlus(1MHz) modes or an arbitrary clock speed
+- Clock stretching (slow slave device can tell the master to wait)
+- Sharing SDA line over multiple I²C buses to save available pins
+- GPIO16 pin can be used as SCL pin, but selected bus will be limited to not more than FAST speed.
+
+HIGH-speed mode (3.5MHz clock) and 10-bit addressing scheme is not supported.
 
 You have to call `i2c.setup` on a given I²C bus at least once before communicating to any device connected to that bus, otherwise you will get an error.
 
