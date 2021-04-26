@@ -19,7 +19,7 @@ The configuration is in effect for all channels of ADC1
 - `bits` One of `9`/`10`/`11`/`12`.
 
 #### Returns
-nil
+`nil`
 
 
 ## adc.setup()
@@ -33,13 +33,13 @@ Configuration ADC1 capture attenuation of channels
 - `adc_number` Only `adc.ADC1` now
 - `channel`  When using `adc.ADC1`: `0` to `7`. 0: GPIO36, 1: GPIO37, 2: GPIO38, 3: GPIO39, 4: GPIO32, 5: GPIO33, 6: GPIO34, 7: GPIO35
 - `atten` One of following constants
-  - `adc.ATTEN_0db`    The input voltage of ADC will be reduced to about 1/1    (1.1V when VDD_A=3.3V)
-  - `adc.ATTEN_2_5db`  The input voltage of ADC will be reduced to about 1/1.34 (1.5V when VDD_A=3.3V)
-  - `adc.ATTEN_6db`    The input voltage of ADC will be reduced to about 1/2    (2.2V when VDD_A=3.3V)
-  - `adc.ATTEN_11db`   The input voltage of ADC will be reduced to about 1/3.6  (3.9V when VDD_A=3.3V,  maximum voltage is limited by VDD_A)
+    - `adc.ATTEN_0db`    The input voltage of ADC will be reduced to about 1/1    (1.1V when VDD_A=3.3V)
+    - `adc.ATTEN_2_5db`  The input voltage of ADC will be reduced to about 1/1.34 (1.5V when VDD_A=3.3V)
+    - `adc.ATTEN_6db`    The input voltage of ADC will be reduced to about 1/2    (2.2V when VDD_A=3.3V)
+    - `adc.ATTEN_11db`   The input voltage of ADC will be reduced to about 1/3.6  (3.9V when VDD_A=3.3V,  maximum voltage is limited by VDD_A)
 
 #### Returns
-nil
+`nil`
 
 
 ## adc.read()
@@ -67,6 +67,9 @@ Read Hall sensor (GPIO36, GPIO39). We recommend using 12-bits width on ADC1.
 
 #### Syntax
 `adc.read_hall_sensor()`
+
+#### Parameters
+none
 
 #### Returns
 the sampled value (number)

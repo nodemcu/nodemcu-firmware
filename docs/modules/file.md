@@ -93,7 +93,7 @@ none
 #### See also
 [`file.remove()`](#fileremove)
 
-## file.fscfg ()
+## file.fscfg()
 
 Returns the flash address and physical size of the file system area, in bytes.
 
@@ -238,7 +238,7 @@ end
 
 Remove a file from the file system. The file must not be currently open.
 
-###Syntax
+#### Syntax
 `file.remove(filename)`
 
 #### Parameters
