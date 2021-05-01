@@ -8,6 +8,7 @@
 This module supports 3 different interfaces for I²C communication on a ESP-32.
 
 The interface `id` can be
+
 - `i2c.SW` software based bitbanging, master mode only, immediate execution, synchronous operation, maximum speed 100 KHz (Standard mode)
 - `i2c.HW0` ESP32 hardware bus interface 0, master or slave mode, deferred execution, synchronous or asynchronous operation, maximum speed 1 MHz (Fast-mode Plus)
 - `i2c.HW1` ESP32 hardware bus interface 1, master or slave mode, deferred execution, synchronous or asynchronous operation, maximum speed 1 MHz (Fast-mode Plus)
@@ -140,7 +141,7 @@ Perform (`SW`) or enqueue (`HWx`) an I²C address operation, defining data trans
 - `direction` `i2c.TRANSMITTER` for write mode , `i2c.RECEIVER` for read mode
 - `ack_check_en` enable check for slave ACK with `true` (default), disable check with `false`
 
-This last, optional parameter is only relevant for for hardware interfaces `i2c.HW0` and `i2c.HW1` and defaults to `true'.
+This last, optional parameter is only relevant for for hardware interfaces `i2c.HW0` and `i2c.HW1` and defaults to `true`.
 The I²C `address` operation is enqueued for later execution and this parameter will be used at that later time.
 At that time, if NO slave device produces an ACK to the address operation, the default assumption is that the slave at that address is absent or not functional. Any remaining I²C operations in the queue will be ignored/flushed/discarded and the communication will be stopped.
 This default queue flushing behaviour on slave NACK can be overridden by specifying `false`.
@@ -264,8 +265,9 @@ In this case, this function returns read values and an ACK flag.
 - `to_ms` optional timeout for the synchronous transfer in ms, defaults to 0 (infinite)
 
 The optional callback function should be defined to accept 2 arguments i.e. `function( data , ack )` where
-- `data `is the string from a read operation during the transfer (`nil` if no read or failed ACK )
-- `ack is a boolean (true = ACK received).
+
+- `data` is the string from a read operation during the transfer (`nil` if no read or failed ACK )
+- `ack` is a boolean (`true` = ACK received).
 
 The optional timeout parameter defaults to 0 meaning infinite and is only relevant for synchronous mode. This can be used to define an upper bound to the execution time of `i2c.transfer()`.
 It specifies the maximum delay in mS before `i2c.transfer()` returns, possibly before the complete I²C set of operations is executed. 

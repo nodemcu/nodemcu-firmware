@@ -26,9 +26,33 @@ The second value returned is the extended reset cause. Values are:
   - 5, wake from deep sleep
   - 6, external reset
 
+Or the internal reset code of the system can be returned as extended reset cause:
+
+  - 7: NO_MEAN                 no known reason
+  - 8: POWERON_RESET           power on reset, this includes reset button connected to power-on reset
+  - 9:
+  - 10 SW_RESET                software reset digital core caused by esp-idk firmware
+  - 11: OWDT_RESET             legacy watch dog reset digital core
+  - 12: DEEPSLEEP_RESET        Deep Sleep reset digital core
+  - 13: SDIO_RESET             Reset by SLC module, reset digital core
+  - 14: TG0WDT_SYS_RESET       Timer Group0 Watch dog reset digital core
+  - 15: TG1WDT_SYS_RESET       Timer Group1 Watch dog reset digital core
+  - 16: RTCWDT_SYS_RESET       RTC Watch dog Reset digital core
+  - 17: INTRUSION_RESET        Instrusion tested to reset CPU
+  - 18: TGWDT_CPU_RESET        Time Group reset CPU
+  - 19: SW_CPU_RESET           Software reset (from node.restart() or lua PANIC)
+  - 20: RTCWDT_CPU_RESET       RTC Watch dog Reset CPU
+  - 21: EXT_CPU_RESET          for APP CPU, reseted by PRO CPU
+  - 22: RTCWDT_BROWN_OUT_RESET Reset when the vdd voltage is not stable
+  - 23: RTCWDT_RTC_RESET       RTC Watch dog reset digital core and rtc module
+
+
 In general, the extended reset cause supercedes the raw code. The raw code is kept for backwards compatibility only. For new applications it is highly recommended to use the extended reset cause instead.
 
 In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EXCCAUSE, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
+
+In case of extended reset cause 19 (SW_CPU_RESET), an additional value is returned containing the number of consecutive Lua panics. If the reset was caused by a call to node.restart() this value is 0; after the first panic the value is 1; if a panic reoccurs the value increments upto 15.
+
 
 #### Syntax
 `node.bootreason()`

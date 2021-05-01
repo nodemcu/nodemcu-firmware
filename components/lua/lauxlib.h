@@ -184,4 +184,7 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
 #endif
 
-
+#ifndef LUA_CROSS_COMPILER
+int panic_get_nvval();
+void panic_clear_nvval();
+#endif

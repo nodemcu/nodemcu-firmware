@@ -15,6 +15,9 @@ What the tmr module is *not* however, is a time keeping module. While all timeou
 
 Creates a dynamic timer object.
 
+#### Syntax
+`tmr.create()`
+
 #### Parameters
 none
 
