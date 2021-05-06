@@ -168,7 +168,7 @@ Lists all files in the file system.
 `file.list([pattern])`
 
 #### Parameters
-none
+- `pattern` only files matching the Lua pattern will be returned
 
 #### Returns
 a Lua table which contains all {file name: file size} pairs, if no pattern

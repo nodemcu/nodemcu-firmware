@@ -54,6 +54,7 @@ pages:
     - 'ds3231': 'lua-modules/ds3231.md'
     - 'fifo' : 'lua-modules/fifo.md'
     - 'fifosock' : 'lua-modules/fifosock.md'
+    - 'file_lfs': 'lua-modules/file_lfs.md'
     - 'ftpserver': 'lua-modules/ftpserver.md'
     - 'gossip': 'lua-modules/gossip.md'
     - 'hdc1000': 'lua-modules/hdc1000.md'
