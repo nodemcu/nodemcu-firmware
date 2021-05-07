@@ -832,11 +832,19 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   state->success = 0;
   state->lastStationStatus = 0;
 
+
   char *name_str = strstr(data, "wifi_ssid=");
   char *pwd_str = strstr(data, "wifi_password=");
-  if (name_str == NULL || pwd_str == NULL)
+
+  // in case we dont get a passwd (for open networks)
+  if (pwd_str == NULL) {
+    pwd_str="wifi_password=";
+    ENDUSER_SETUP_DEBUG("No passord provided. Assuming open network");
+  }
+
+  if (name_str == NULL)
   {
-    ENDUSER_SETUP_DEBUG("Password or SSID string not found");
+    ENDUSER_SETUP_DEBUG("SSID string not found");
     return 1;
   }
 
