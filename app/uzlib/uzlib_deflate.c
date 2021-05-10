@@ -11,7 +11,7 @@
  * under the standard NodeMCU MIT licence, but is available to the other
  * contributors to this source under any permissive licence.
  *
- * My primary algorthmic reference is RFC 1951: "DEFLATE Compressed Data
+ * My primary algorithmic reference is RFC 1951: "DEFLATE Compressed Data
  * Format Specification version 1.3", dated May 1996.
  *
  * Also because the code in this module is drawn from different sources,
@@ -161,7 +161,7 @@ struct outputBuf {
  * Set up the constant tables used to drive the compression
  *
  * Constants are stored in flash memory on the ESP8266 NodeMCU firmware
- * builds, but only word aligned data access are supported in hardare so
+ * builds, but only word aligned data access are supported in hardware so
  * short and byte accesses are handled by a S/W exception handler and are
  * SLOW.  RAM is also at premium, so these short routines are driven by
  * byte vectors copied into RAM and then used to generate temporary RAM
