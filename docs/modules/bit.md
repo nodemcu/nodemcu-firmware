@@ -9,166 +9,166 @@ Bit manipulation support, on 32bit integers.
 ## bit.arshift()
 Arithmetic right shift a number equivalent to `value >> shift` in C.
 
-####Syntax
+#### Syntax
 `bit.arshift(value, shift)`
 
-####Parameters
+#### Parameters
 - `value` the value to shift
 - `shift` positions to shift
 
-####Returns
+#### Returns
 the number shifted right (arithmetically)
 
 ## bit.band()
 
 Bitwise AND, equivalent to `val1 & val2 & ... & valn` in C.
 
-####Syntax
+#### Syntax
 `bit.band(val1, val2 [, ... valn])`
 
-####Parameters
+#### Parameters
  - `val1` first AND argument
  - `val2` second AND argument
  - `...valn` ...nth AND argument
 
-####Returns
+#### Returns
 the bitwise AND of all the arguments (number)
 
 ## bit.bit()
 
 Generate a number with a 1 bit (used for mask generation). Equivalent to `1 << position` in C.
 
-####Syntax
+#### Syntax
 `bit.bit(position)`
 
-####Parameters
+#### Parameters
 `position` position of the bit that will be set to 1
 
-####Returns
+#### Returns
 a number with only one 1 bit at position (the rest are set to 0)
 
 ## bit.bnot()
 
 Bitwise negation, equivalent to `~value in C.
 
-####Syntax
+#### Syntax
 `bit.bnot(value)`
 
-####Parameters
+#### Parameters
 `value` the number to negate
 
-####Returns
+#### Returns
 the bitwise negated value of the number
 
 ## bit.bor()
 Bitwise OR, equivalent to `val1 | val2 | ... | valn` in C.
 
-####Syntax
+#### Syntax
 `bit.bor(val1, val2 [, ... valn])`
 
-####Parameters
+#### Parameters
 - `val1` first OR argument.
 - `val2` second OR argument.
 - `...valn` ...nth OR argument
 
-####Returns
+#### Returns
 the bitwise OR of all the arguments (number)
 
 ## bit.bxor()
 
 Bitwise XOR, equivalent to `val1 ^ val2 ^ ... ^ valn` in C.
 
-####Syntax
+#### Syntax
 `bit.bxor(val1, val2 [, ... valn])`
 
-####Parameters
+#### Parameters
 - `val1` first XOR argument
 - `val2` second XOR argument
 - `...valn` ...nth XOR argument
 
-####Returns
+#### Returns
 the bitwise XOR of all the arguments (number)
 
 ## bit.clear()
 Clear bits in a number.
 
-####Syntax
+#### Syntax
 `bit.clear(value, pos1 [, ... posn])`
 
-####Parameters
+#### Parameters
 - `value` the base number
 - `pos1` position of the first bit to clear
 - `...posn` position of thet nth bit to clear
 
-####Returns
+#### Returns
 the number with the bit(s) cleared in the given position(s)
 
 ## bit.isclear()
 
 Test if a given bit is cleared.
 
-####Syntax
+#### Syntax
 `bit.isclear(value, position)`
 
-####Parameters
+#### Parameters
 - `value` the value to test
 - `position` bit position to test
 
-####Returns
-true if the bit at the given position is 0, false othewise
+#### Returns
+`true` if the bit at the given position is 0, `false` othewise
 
 ## bit.isset()
 
 Test if a given bit is set.
 
-####Syntax
+#### Syntax
 `bit.isset(value, position)`
 
-####Parameters
+#### Parameters
 - `value` the value to test
 - `position` bit position to test
 
-####Returns
-true if the bit at the given position is 1, false otherwise
+#### Returns
+`true` if the bit at the given position is 1, `false` otherwise
 
 ## bit.lshift()
 Left-shift a number, equivalent to `value << shift` in C.
 
-####Syntax
+#### Syntax
 `bit.lshift(value, shift)`
 
-####Parameters
+#### Parameters
 - `value` the value to shift
 - `shift` positions to shift
 
-####Returns
+#### Returns
 the number shifted left
 
 ## bit.rshift()
 
 Logical right shift a number, equivalent to `( unsigned )value >> shift` in C.
 
-####Syntax
+#### Syntax
 `bit.rshift(value, shift)`
 
-####Parameters
+#### Parameters
 - `value` the value to shift.
 - `shift` positions to shift.
 
-####Returns
+#### Returns
 the number shifted right (logically)
 
 ## bit.set()
 
 Set bits in a number.
 
-####Syntax
+#### Syntax
 `bit.set(value, pos1 [, ... posn ])`
 
-####Parameters
+#### Parameters
 - `value` the base number.
 - `pos1` position of the first bit to set.
 - `...posn` position of the nth bit to set.
 
-####Returns
+#### Returns
 the number with the bit(s) set in the given position(s)

@@ -18,13 +18,32 @@ Send a frame.
 - `data` CAN data, up to 8 bytes
   
 #### Returns
-nil
+`nil`
 
 
 ## can.setup()
 Configuration CAN controller.
 
 #### Syntax
+`can.setup(config, callback)`
+
+#### Parameters
+- `config` table.
+    - `speed` kbps. One of following value: `1000`, `800`, `500`, `250`, `100`.
+    - `tx` Pin num for TX.
+    - `rx` Pin num for RX.
+    - `dual_filter` `true` dual filter mode, `false` single filter mode (default)
+    - `code` 4-bytes integer. Use this with mask to filter CAN frame. Default: `0`. See [SJA1000](http://www.nxp.com/documents/data_sheet/SJA1000.pdf)
+    - `mask` 4-bytes integer. Default: `0xffffffff`
+- `callback` function to be called when CAN data received.
+    - `format` Frame format. `can.STANDARD_FRAME` or `can.EXTENDED_FRAME`
+    - `msg_id` CAN Message ID
+    - `data` CAN data, up to 8 bytes
+  
+#### Returns
+`nil`
+
+#### Example
 ```lua
 can.setup({
   speed = 1000,
@@ -36,23 +55,6 @@ can.setup({
 }, function(format, msg_id, data) end)
 ```
 
-#### Parameters
-- `config`
-  - `speed` kbps. One of following value: `1000`, `800`, `500`, `250`, `100`.
-  - `tx` Pin num for TX.
-  - `rx` Pin num for RX.
-  - `dual_filter` `true` dual filter mode, `false` single filter mode (default)
-  - `code` 4-bytes integer. Use this with mask to filter CAN frame. Default: `0`. See [SJA1000](http://www.nxp.com/documents/data_sheet/SJA1000.pdf)
-  - `mask` 4-bytes integer. Default: `0xffffffff`
-- `callback` function to be called when CAN data received.
-  - `format` Frame format. `can.STANDARD_FRAME` or `can.EXTENDED_FRAME`
-  - `msg_id` CAN Messge ID
-  - `data` CAN data, up to 8 bytes
-  
-#### Returns
-nil
-
-
 ## can.start()
 Start CAN controller.
 
@@ -60,9 +62,10 @@ Start CAN controller.
 `can.start()`
 
 #### Parameters
+none
 
 #### Returns
-nil
+`nil`
 
 
 ## can.stop()
@@ -72,6 +75,7 @@ Stop CAN controller.
 `can.stop()`
 
 #### Parameters
+none
 
 #### Returns
-nil
+`nil`
