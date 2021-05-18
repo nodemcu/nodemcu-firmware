@@ -1,0 +1,289 @@
+menu "Global Configuration Parameters"
+
+choice NODEMCU_FLASH_SIZE # {{{
+  default NODEMCU_FLASH_SIZE_AUTO
+  prompt "Flash Size (bytes)"
+  help
+    The firmware supports a range of Flash sizes, though 4 Mbyte seems to be
+    the most common currently.  NodeMCU builds include a discovery function
+    which is enabled by FLASH_AUTOSIZE, but you can override this by commenting
+    this out and enabling the explicitly size.
+
+  config NODEMCU_FLASH_SIZE_512K
+    bool "512K"
+  
+  config NODEMCU_FLASH_SIZE_1M
+    bool "1M"
+  
+  config NODEMCU_FLASH_SIZE_2M
+    bool "2M"
+  
+  config NODEMCU_FLASH_SIZE_4M
+    bool "4M"
+  
+  config NODEMCU_FLASH_SIZE_8M
+    bool "8M"
+  
+  config NODEMCU_FLASH_SIZE_16M
+    bool "16M"
+  
+  config NODEMCU_FLASH_SIZE_AUTO
+    bool "Auto-detect"
+
+endchoice # }}}
+choice NODEMCU_DEFAULT_BAUD_RATE # {{{
+  default NODEMCU_DEFAULT_BAUD_RATE_115200
+  help
+    The firmware now selects a baudrate of 115,200 by default, which can be
+    changed here. The driver also includes automatic baud rate detection at
+    start-up.
+
+    The options 368640, 921600, and 1843200 are not recommended as they are
+    unreliable.  460800 seems to work well with most USB-serial interfaces.
+
+  config NODEMCU_DEFAULT_BAUD_RATE_300
+    bool "300"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_600
+    bool "600"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_1200
+    bool "1200"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_2400
+    bool "2400"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_4800
+    bool "4800"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_9600
+    bool "9600"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_19200
+    bool "19200"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_31250
+    bool "31250"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_38400
+    bool "38400"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_57600
+    bool "57600"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_74880
+    bool "74880"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_115200
+    bool "115200"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_230400
+    bool "230400"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_256000
+    bool "256000"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_368640
+    bool "368640"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_460800
+    bool "460800"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_921600
+    bool "921600"
+
+  config NODEMCU_DEFAULT_BAUD_RATE_1843200
+    bool "1843200"
+
+endchoice # }}}
+
+config NODEMCU_STARTUP_BANNER
+  bool "Enable startup banner"
+  default "y"
+  help
+    At start-up firmware details like:
+    
+      NodeMCU 3.0.1.0
+              branch:
+              commit:
+              release:
+              release DTS:
+              SSL: false
+              build type: integer
+              LFS: 0x0
+              modules: file,gpio,net,node,rtctime,sntp,tmr,uart,wifi
+       build 2020-01-27 17:39 powered by Lua 5.1.4 on SDK 3.0.2(824dc80)
+    
+    will be printed to serial console.  While it is mandatory for bug reports
+    and good for development, it may be unwanted for non-interactive serial
+    devices.
+
+config LUA_NUMBER_INTEGRAL
+  bool "Use 32-bit ints for Lua numbers, rather than 64-bit floats"
+  default "n"
+
+config LUA_DWORD_ALIGNED_TVALUES
+  depends on !LUA_NUMBER_INTEGRAL
+  bool "Pad floating TValues to 16, not 12, bytes"
+  default "n"
+
+config LUA_FLASH_STORE
+  hex "Lua Flash Store default partition size (bytes)"
+  default 0
+  help
+    The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
+    the Lua VMS will execute this code directly from flash without needing any
+    RAM overhead.  You can now configure LFS directly in the System Partition
+    Table insted of at compile time. However for backwards compatibility setting
+    LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
+    tool is not used.
+
+config LUA_INIT_STRING
+  string "Lua initialization string"
+  default "@init.lua"
+  help
+    By default Lua executes the file init.lua at start up.  This option allows
+    you to replace this with an alternative startup.  For example, this string
+    executes the LFS module "_init" at startup or falls back to the interactive
+    prompt:
+
+      pcall(function() node.flashindex'_init'() end)
+
+    Warning: you must protect this execution otherwise you will enter a panic
+    loop; the simplest way is to wrap the action in a function invoked by a
+    pcall as shown.
+
+menuconfig NODEMCU_SPIFFS
+  bool "Enable SPIFFS support"
+  default "y"
+if NODEMCU_SPIFFS
+
+  config NODEMCU_SPIFFS_CACHE
+    bool "Enable SPIFFS caching"
+    default "y"
+
+  config NODEMCU_SPIFFS_DEFAULT_SIZE
+    hex "Default SPIFFS partition size (0xFFFFFFFF = all remaining FLASH)"
+    default 0xFFFFFFFF
+    help
+      You can now configure SPIFFS size and position directly in the System
+      Partition Table.  However for backwards compatibility
+      SPIFFS_MAX_FILESYSTEM_SIZE can be set and this defines the default SPIFFS
+      partition size if the NodeMCU partition tool is not used. The value
+      0xFFFFFFFF means the maximum size remaining.
+
+  config NODEMCU_SPIFFS_MAX_OPEN_FILES
+    int "Maximum number of open SPIFFS files"
+    default 4
+
+endif
+
+config NODEMCU_FATFS
+  bool "Enable FATFS support"
+  default "n"
+
+config NODEMCU_FS_OBJ_NAME_LEN
+  int "Maximum length of a filename (bytes)"
+  depends on NODEMCU_SPIFFS || NODEMCU_FATFS
+  default 31
+
+menuconfig NODEMCU_TLS_ENABLE
+  bool "Enable TLS support"
+  default "n"
+if NODEMCU_TLS_ENABLE
+
+  config NODEMCU_SHA2_ENABLE
+    bool "Enable the SHA2 family of hash functions"
+    default "y"
+
+  config NODEMCU_TLS_BUFFER_SIZE
+    int "Maximum TLS buffer size"
+    default 4096
+
+  choice NODEMCU_TLS_MAX_FRAGMENT_SIZE
+    prompt "Advertize a maximum fragment size for TLS connections (bytes)"
+    default NODEMCU_TLS_MAX_FRAGMENT_SIZE_4096
+
+    config NODEMCU_TLS_MAX_FRAGMENT_SIZE_NONE
+      bool "No"
+
+    config NODEMCU_TLS_MAX_FRAGMENT_SIZE_512
+      bool "512"
+
+    config NODEMCU_TLS_MAX_FRAGMENT_SIZE_1024
+      bool "1024"
+
+    config NODEMCU_TLS_MAX_FRAGMENT_SIZE_2048
+      bool "2048"
+
+    config NODEMCU_TLS_MAX_FRAGMENT_SIZE_4096
+      bool "4096"
+
+  endchoice
+
+endif
+
+config NODEMCU_GPIO_INTERRUPT
+  bool "Support GPIO interrupts"
+  default "y"
+  help
+    Necessary if your application uses the gpio.trig() or related GPIO
+    interrupt service routine code.  Disabling this may remove some runtime
+    overhead.
+
+config NODEMCU_GPIO_INTERRUPT_HOOK
+  bool "Support GPIO interrupt hooks"
+  depends on NODEMCU_GPIO_INTERRUPT
+  default "y"
+  help
+    Augment GPIO interrupt support with hook functionality; required for a few
+    modules such as rotary
+
+config NODEMCU_TIMER_SUSPEND
+  bool "Enable suspending timers"
+  default "n"
+
+config NODEMCU_PMSLEEP
+  bool "Enable power-management sleep"
+  default "n"
+
+menu "Development and Debugging Options" # {{{
+
+config NODEMCU_DEVELOPMENT_TOOLS
+  bool "Enable asserts in firmware, extras in node module"
+  default "n"
+  help
+    Adds the asserts in LUA and also some useful extras to the node module.
+    These are silent in normal operation and so can be enabled without any harm
+    (except for the code size increase and slight slowdown).
+
+config NODEMCU_DEVELOPMENT_GDB
+  bool "Use GDB to catch breaks and failed assertions"
+  depends on NODEMCU_DEVELOPMENT_TOOLS
+  default "n"
+  help 
+    Enable if you want to use the remote GDB to handle breaks and failed
+    assertions.
+
+config NODEMCU_DEVELOPMENT_GDB_GPIO
+  bool "Break on startup conditioned on GPIO"
+  depends on NODEMCU_DEVELOPMENT_GDB
+  default "n"
+  help
+    Allows specification of a GPIO pin, which if pulled low at start-up will
+    immediately initiate a GDB session.
+
+config NODEMCU_DEVELOPMENT_GDB_GPIO_PIN
+  int "GPIO pin for to initiate GDB session on startup"
+  depends on NODEMCU_DEVELOPMENT_GDB_GPIO
+  default 1
+
+config NODEMCU_DEVELOP_VERSION
+  bool "Globally enable debugging spew"
+  default "n"
+  help
+    Enables lots of debug output; normally only used by hardcore developers.
+
+endmenu # }}}
+
+endmenu
