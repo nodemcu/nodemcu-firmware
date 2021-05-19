@@ -27,9 +27,9 @@ Bitwise AND, equivalent to `val1 & val2 & ... & valn` in C.
 `bit.band(val1, val2 [, ... valn])`
 
 #### Parameters
- - `val1` first AND argument
- - `val2` second AND argument
- - `...valn` ...nth AND argument
+- `val1` first AND argument
+- `val2` second AND argument
+- `...valn` ...nth AND argument
 
 #### Returns
 the bitwise AND of all the arguments (number)
