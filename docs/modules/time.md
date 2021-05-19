@@ -43,7 +43,7 @@ time.set(timestamp)
 Converts timestamp in Unix epoch to calendar format
 
 #### Syntax
-`time.epoch2cal(time)
+`time.epoch2cal(time)`
 
 #### Parameters
 - `time` number of seconds since the Epoch
@@ -76,7 +76,7 @@ print(string.format("%04d-%02d-%02d %02d:%02d:%02d DST:%d", time["year"], time["
 Returns current system time in the Unix epoch (seconds from midnight 1970/01/01).
 
 #### Syntax
-time.get()
+`time.get()`
 
 #### Parameters
 none
@@ -100,7 +100,7 @@ sec, usec = time.get()
 Returns current system time adjusted for the locale in calendar format.
 
 #### Syntax
-time.getlocal()
+`time.getlocal()`
 
 #### Parameters
 none
@@ -155,7 +155,7 @@ Checks if NTP client is enabled.
 none
 
 #### Returns
-`true' if NTP client is enabled.
+`true` if NTP client is enabled.
 
 
 ## time.ntpstop()
