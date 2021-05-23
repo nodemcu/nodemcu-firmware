@@ -14,18 +14,18 @@ a control GPIO for ignoring or decrementing pulses when the control signal is hi
 
 Create the pulse counter object.
 
-### Syntax
-`pulsecnt.create(unit, callbackOnEvents)`
+#### Syntax
+`pulsecnt.create(unit, callbackOnEvents [, isDebug])`
 
-### Parameters
+#### Parameters
 - `unit` Required. ESP32 has 0 thru 7 units to count pulses on.
 - `callbackOnEvents` Optional. Your Lua method to call on event. myfunction(unit, isThr0, isThr1, isLLim, isHLim, isZero) will be called. Event will be PCNT_EVT_THRES_0 (Threshold 0 hit), PCNT_EVT_THRES_1 (Threshold 1 hit), PCNT_EVT_L_LIM (Minimum counter value), PCNT_EVT_H_LIM (Maximum counter value), or PCNT_EVT_ZERO (counter value zero event)
 - `isDebug` Optional. Turn on extra logging by passing in true.
 
-### Returns
-`pulsecnt` object
+#### Returns
+`pulsecntObj` pulsecnt object
 
-### Example
+#### Example
 ```lua
 -- Example Pulse Counter for 1 channel with polling of pulse count
 
@@ -54,7 +54,7 @@ pcnt:clear()
 print("Current pulse counter val:" .. pcnt:getCnt())
 ```
 
-### Example
+#### Example
 ```lua
 -- Example Pulse Counter for 1 channel with callback
 
@@ -104,7 +104,7 @@ pcnt:setThres(thr0, thr1)
 print("Current pulse counter val:" .. pcnt:getCnt())
 ```
 
-### Example
+#### Example
 ```lua
 -- Example Pulse Counter for 2 push buttons
 -- Button 1 increments the counter (chan0)
@@ -184,67 +184,67 @@ pcnt:setThres(thr0, thr1)
 
 Configure channel 0 of the pulse counter object you created from the create() method.
 
-### Syntax
+#### Syntax
 `pulsecntObj:chan0Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)`
 
-### Parameters
+#### Parameters
 - `pulse_gpio_num` Required. Any GPIO pin can be used.
 - `ctrl_gpio_num` Required (although you can specify pulsecnt.PIN_NOT_USED to ignore). Any GPIO pin can be used. If you are trying to use a pin you use as gpio.OUT in other parts of your code, you can instead configure the pin as gpio.IN_OUT and write high or low to it to achieve your gpio.OUT task while still enabling the pulse counter to successfully read the pin state. 
 - `pos_mode` Required. Positive rising edge count mode, i.e. count the pulse when the rising edge occurs.
-  -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
-  -    pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
-  -    pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
+    - pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
+    - pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
+    - pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
 - `neg_mode` Required. Negative falling edge count mode, i.e. count the pulse when the falling edge occurs.
-  -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
-  -    pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
-  -    pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
+    - pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
+    - pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
+    - pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
 - `lctrl_mode` Required. When `ctrl_gpio_num` is low how should the counter be influenced.
-  -    pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
-  -    pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
-  -    pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
+    - pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
+    - pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
+    - pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
 - `hctrl_mode` Required. When `ctrl_gpio_num` is high how should the counter be influenced.
-  -    pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
-  -    pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
-  -    pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
+    - pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
+    - pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
+    - pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
 - `counter_l_lim` Required. Range -32768 to 32767. The lower limit counter. You get a callback at this count and the counter is reset to zero after this lower limit is hit.
 - `counter_h_lim` Required. Range -32768 to 32767. The high limit counter. You get a callback at this count and the counter is reset to zero after this high limit is hit.
 
-### Returns
+#### Returns
 `nil`
 
 ## pulsecntObj:chan1Config()
 
 Configure channel 1 of the pulse counter object you created from the create() method.
 
-### Syntax
+#### Syntax
 `pulsecntObj:chan1Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)`
 
-### Parameters
+#### Parameters
 - `pulse_gpio_num` Required. Any GPIO pin can be used.
 - `ctrl_gpio_num` Required (although you can specify pulsecnt.PIN_NOT_USED to ignore). Any GPIO pin can be used. If you are trying to use a pin you use as gpio.OUT in other parts of your code, you can instead configure the pin as gpio.IN and toggle gpio.PULL_UP or gpio.PULL_DOWN to achieve your gpio.OUT task while still enabling the pulse counter to successfully read the pin state.
 - `pos_mode` Required. Positive rising edge count mode, i.e. count the pulse when the rising edge occurs.
-  -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
-  -    pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
-  -    pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
+    - pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
+    - pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
+    - pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
 - `neg_mode` Required. Negative falling edge count mode, i.e. count the pulse when the falling edge occurs.
-  -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
-  -    pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
-  -    pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
+    - pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
+    - pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
+    - pulsecnt.PCNT_COUNT_DEC = 2 Counter mode: Decrease counter value.
 - `lctrl_mode` Required. When `ctrl_gpio_num` is low how should the counter be influenced.
-  -    pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
-  -    pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
-  -    pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
+    - pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
+    - pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
+    - pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
 - `hctrl_mode` Required. When `ctrl_gpio_num` is high how should the counter be influenced.
-  -    pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
-  -    pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
-  -    pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
+    - pulsecnt.PCNT_MODE_KEEP = 0 Control mode: will not change counter mode. 
+    - pulsecnt.PCNT_MODE_REVERSE = 1 Control mode: invert counter mode (increase -> decrease, decrease -> increase). 
+    - pulsecnt.PCNT_MODE_DISABLE = 2 Control mode: Inhibit counter (counter value will not change in this condition).
 - `counter_l_lim` Required. Range -32768 to 32767. The lower limit counter. You get a callback at this count and the counter is reset to zero after this lower limit is hit.
 - `counter_h_lim` Required. Range -32768 to 32767. The high limit counter. You get a callback at this count and the counter is reset to zero after this high limit is hit.
 
-### Returns
+#### Returns
 `nil`
 
-### Example
+#### Example
 ```lua
 -- Button 1 increment counter
 pcnt:chan0Config(
@@ -275,17 +275,17 @@ pcnt:chan1Config(
 
 Set the threshold values to establish watchpoints for getting callbacks on.
 
-### Syntax
+#### Syntax
 `pulsecntObj:setThres(thr0, thr1)`
 
-### Parameters
+#### Parameters
 - `thr0` Required. Threshold 0 value. Range -32768 to 32767. This is a watchpoint value to get a callback with isThr0 set to true on this count being reached. 
 - `thr1` Required. Threshold 1 value. Range -32768 to 32767. This is a watchpoint value to get a callback with isThr1 set to true on this count being reached.
 
-### Returns
+#### Returns
 `nil`
 
-### Example
+#### Example
 ```lua
 pcnt:setThres(-2000, 2000) -- get callbacks when counter is -2000 or 2000
 ```
@@ -297,16 +297,16 @@ pcnt:setThres(500, 10000) -- get callbacks when counter is 500 or 10000
 
 Set a filter to ignore pulses on the `pulse_gpio_num` pin and the `ctrl_gpio_num` to avoid short glitches. Any pulses lasting shorter than this will be ignored.
 
-### Syntax
+#### Syntax
 `pulsecntObj:setFilter(clkCycleCnt)`
 
-### Parameters
+#### Parameters
 - `clkCycleCnt` Required. 0 to 1023 allowd. Any pulses lasting shorter than this will be ignored. A pulse needs to be high or low for longer than this filter clock cycle. Clock is 80Mhz APB clock, so one cycle is 1000/80,000,000 = 0.0000125 ms. The longest value of 1023 cycles = 0.0127875 ms.
 
-### Returns
+#### Returns
 `nil`
 
-### Example
+#### Example
 ```lua
 pcnt:setFilter(1023) -- set max filter clock cylce count to ignore pulses shorter than 12.7us
 ```
@@ -315,16 +315,16 @@ pcnt:setFilter(1023) -- set max filter clock cylce count to ignore pulses shorte
 
 Clear the counter. Sets it back to zero.
 
-### Syntax
+#### Syntax
 `pulsecntObj:clear()`
 
-### Parameters
+#### Parameters
 None
 
-### Returns
+#### Returns
 `nil`
 
-### Example
+#### Example
 ```lua
 pcnt:clear() -- set counter back to zero
 ```
@@ -333,16 +333,16 @@ pcnt:clear() -- set counter back to zero
 
 Get the current pulse counter.
 
-### Syntax
+#### Syntax
 `pulsecntObj:getCnt()`
 
-### Parameters
+#### Parameters
 None
 
-### Returns
+#### Returns
 `integer`
 
-### Example
+#### Example
 ```lua
 val = pcnt:getCnt() -- get counter
 print("Pulse counter:", val)

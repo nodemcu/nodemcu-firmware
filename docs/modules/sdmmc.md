@@ -69,7 +69,7 @@ Initialize the SDMMC and probe the attached SD card.
 - `slot` SDMMC slot, one of `sdmmc.HS1` or `sdmmc.HS2`
 - `cfg` optional table containing slot configuration:
     - `cd_pin` card detect pin, none if omitted
-    - `wp_pin` write-protcet pin, none if omitted
+    - `wp_pin` write-protect pin, none if omitted
     - `fmax` maximum communication frequency, defaults to 20&nbsp; if omitted
     - `width` bis width, defaults to `sdmmc.W1BIT` if omitted, one of:
         - `sdmmc.W1BIT`
@@ -84,7 +84,7 @@ Initialize the SDMMC and probe the attached SD card.
     - `miso_pin`, SPI MISO pin, mandatory
     - `cs_pin`, SPI CS pin, mandatory
     - `cd_pin` card detect pin, none if omitted
-    - `wp_pin` write-protcet pin, none if omitted
+    - `wp_pin` write-protect pin, none if omitted
     - `fmax` maximum communication frequency, defaults to 20&nbsp; if omitted
 
 #### Returns
