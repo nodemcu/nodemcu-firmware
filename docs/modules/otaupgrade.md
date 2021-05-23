@@ -54,36 +54,40 @@ marking a new firmware as valid is to ensure the upgrade server can be
 reached, on the basis that as long as the firmware can be remotely
 upgraded, it's "good enough" to accept.
 
-# otaupgrade.info()
+## otaupgrade.info()
 
 The boot info and application state and version info can be queried with
 this function. Typically it will be used to check the version of the
 running application, to compare against a "desired" version in order
 to decide whether an upgrade is required.
 
+#### Syntax
+`otaupgrade.info()`
+
 #### Parameters
 None.
 
 #### Returns
 A list of three values:
+
 - the name of the partition of the running application
 - the name of the partition currently marked for boot next (typically the
   same as the running application, but after `otaupgrade.complete()` it
   may point to a new application partition.
 - a table whose keys are the names of OTA partitions and corresponding
   values are tables containing:
-  - `state` one of `new`, `testing`, `valid`, `invalid`, `aborted` or
+    - `state` one of `new`, `testing`, `valid`, `invalid`, `aborted` or
     possibly `undefined`. The values `invalid` and `aborted` largely
     mean the same things. See the IDF documentation for specifics.
     A partition in `testing` state needs to call `otaupgrade.accept()`
     if it wishes to become `valid`.
-  - `name` the application name, typically "NodeMCU"
-  - `date` the build date
-  - `time` the build time
-  - `version` the build version, as set by the *PROJECT_VER* variable
+    - `name` the application name, typically "NodeMCU"
+    - `date` the build date
+    - `time` the build time
+    - `version` the build version, as set by the *PROJECT_VER* variable
     during build
-  - `secure_version` the secure version number, if secure boot is enabled
-  - `idf_version` the IDF version
+    - `secure_version` the secure version number, if secure boot is enabled
+    - `idf_version` the IDF version
 
 #### Example
 ```lua
@@ -99,7 +103,7 @@ end
 print("Running version: "..info[boot_part].version)
 ```
 
-# otaupgrade.commence()
+## otaupgrade.commence()
 
 Wipes the spare application partition and prepares to receive the new
 application firmware.
@@ -121,7 +125,7 @@ A Lua error may be raised if the OTA upgrade cannot be commenced for some
 reason (such as due to incorrect partition setup).
 
 
-# otaupgrade.write(data)
+## otaupgrade.write(data)
 
 Write a chunk of application firmware data to the correct partition and
 location. Data must be streamed sequentially, the IDF does not support
@@ -141,7 +145,7 @@ data not being a valid OTA image (the IDF performs some checks in this
 regard).
 
 
-# otaupgrade.complete(reboot)
+## otaupgrade.complete(reboot)
 
 Finalises the upgrade, and optionally reboots into the new application
 firmware right away.
@@ -192,7 +196,7 @@ end)
 
 ```
 
-# otaupgrade.accept()
+## otaupgrade.accept()
 
 When the installed boot loader is built with rollback support, a new
 application image is by default only booted once. During this "test run"
@@ -211,7 +215,7 @@ None.
 `nil`
 
 
-# otaupgrade.rollback()
+## otaupgrade.rollback()
 
 A new firmware may decide that it is not performing as expected, and
 request an explicit rollback to the previous version. If the call to this

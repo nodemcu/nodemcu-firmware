@@ -49,7 +49,7 @@ List of configuration tables:
 - `duty` Channel duty, the duty range is [0, (2**bit_num) - 1]. Example: if ledc.TIMER_13_BIT is used maximum value is 4096 x 2 -1 = 8091
 
 #### Returns
-`ledc.channel`
+`channel` ledc.channel
 
 #### Example
 ```lua
@@ -79,7 +79,7 @@ Disable LEDC output, and set idle level.
     - `ledc.IDLE_HIGH`
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -96,7 +96,7 @@ Set channel frequency (Hz)
 - `frequency` What frequency should be set
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -133,7 +133,7 @@ Set channel duty
 - `duty` What duty should be set
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -170,7 +170,7 @@ Resets the timer
 None
 
 #### Returns
-nil
+`nil`
 
 
 #### Example
@@ -189,7 +189,7 @@ Pauses the timer
 None
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -207,7 +207,7 @@ Resumes a paused timer
 None
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -229,7 +229,7 @@ Set LEDC fade function, with a limited time.
     - `ledc.FADE_WAIT_DONE`
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -252,7 +252,7 @@ Set LEDC fade function, with step.
     - `ledc.FADE_WAIT_DONE`
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
@@ -269,8 +269,8 @@ Set LEDC fade function.
 #### Parameters
 - `duty` Set the start of the gradient duty.
 - `direction` Set the direction of the gradient.
-  - `ledc.FADE_DECREASE`
-  - `ledc.FADE_INCREASE`
+    - `ledc.FADE_DECREASE`
+    - `ledc.FADE_INCREASE`
 - `scale` Set gradient change amplitude.
 - `cycleNum` Set how many LEDC tick each time the gradient lasts.
 - `stepNum` Set the number of the gradient.
@@ -279,7 +279,7 @@ Set LEDC fade function.
     - `ledc.FADE_WAIT_DONE`
 
 #### Returns
-nil
+`nil`
 
 #### Example
 ```lua
