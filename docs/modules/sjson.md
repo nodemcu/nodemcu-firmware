@@ -29,29 +29,29 @@ When encoding a Lua object, if a function is found, then it is invoked (with no 
 
 This creates an encoder object that can convert a Lua object into a JSON encoded string.
 
-####Syntax
+#### Syntax
 `sjson.encoder(table [, opts])`
 
-####Parameters
+#### Parameters
 - `table` data to encode
 - `opts` an optional table of options. The possible entries are:
    - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
    - `null` the string value to treat as null.
 
-####Returns
+#### Returns
 A `sjson.encoder` object.
 
-## sjson.encoder:read
+## sjson.encoder:read()
 
 This gets a chunk of JSON encoded data.
 
-####Syntax
+#### Syntax
 `encoder:read([size])`
 
-####Parameters
+#### Parameters
 - `size` an optional value for the number of bytes to return. The default is 1024.
 
-####Returns
+#### Returns
 A string of up to `size` bytes, or `nil` if the encoding is complete and all data has been returned.
 
 #### Example
@@ -82,19 +82,19 @@ end
 
 Encode a Lua table to a JSON string. This is a convenience method provided for backwards compatibility with `cjson`.
 
-####Syntax
+#### Syntax
 `sjson.encode(table [, opts])`
 
-####Parameters
+#### Parameters
 - `table` data to encode
 - `opts` an optional table of options. The possible entries are:
     - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
     - `null` the string value to treat as null.
 
-####Returns
+#### Returns
 JSON string
 
-####Example
+#### Example
 ```lua
 ok, json = pcall(sjson.encode, {key="value"})
 if ok then
@@ -109,7 +109,7 @@ end
 This makes a decoder object that can parse a JSON encoded string into a Lua object. A metatable can be specified for all the newly created Lua tables. This allows
 you to handle each value as it is inserted into each table (by implementing the `__newindex` method).
 
-####Syntax
+#### Syntax
 `sjson.decoder([opts])`
 
 #### Parameters
@@ -121,7 +121,7 @@ you to handle each value as it is inserted into each table (by implementing the 
 #### Returns
 A `sjson.decoder` object
 
-####Metatable
+#### Metatable
 
 There are two principal methods that are invoked in the metatable (if it is present).
 
@@ -152,36 +152,39 @@ The reason for being able to filter is that it enables processing of very large 
 which would exceed the memory budget of the platform. For example, `https://api.github.com/repos/nodemcu/nodemcu-firmware/contents` is over 13kB, and yet, if 
 you only need the `download_url` keys, then the total size is around 600B. This can be handled with a simple `__newindex` method. 
 
-## sjson.decoder:write
+## sjson.decoder:write()
 
 This provides more data to be parsed into the Lua object.
 
-####Syntax
+#### Syntax
 `decoder:write(string)`
 
-####Parameters
+#### Parameters
 
 - `string` the next piece of JSON encoded data
 
-####Returns
+#### Returns
 The constructed Lua object or `nil` if the decode is not yet complete.
 
-####Errors
+#### Errors
 If a parse error occurrs during this decode, then an error is thrown and the parse is aborted. The object cannot be used again.
 
 
-## sjson.decoder:result
+## sjson.decoder:result()
 
 This gets the decoded Lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the 
 same object each time.
 
-####Syntax
+#### Syntax
 `decoder:result()`
 
-####Errors
+#### Parameters
+none
+
+#### Errors
 If the decode is not complete, then an error is thrown.
 
-####Example
+#### Example
 ```
 local decoder = sjson.decoder()
 
@@ -211,29 +214,29 @@ decoder:write('[1, 2, {"foo":"bar"}]')
 
 Decode a JSON string to a Lua table. This is a convenience method provided for backwards compatibility with `cjson`.
 
-####Syntax
+#### Syntax
 `sjson.decode(str[, opts])`
 
-####Parameters
+#### Parameters
 - `str` JSON string to decode
 - `opts` an optional table of options. The possible entries are:
     - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
     - `null` the string value to treat as null.
     - `metatable` a table to use as the metatable for all the new tables in the returned object. See the metatable section in the description of `sjson.decoder()` above.
 
-####Returns
+#### Returns
 Lua table representation of the JSON data
 
-####Errors
+#### Errors
 If the string is not valid JSON, then an error is thrown.
 
-####Example
+#### Example
 ```lua
 t = sjson.decode('{"key":"value"}')
 for k,v in pairs(t) do print(k,v) end
 ```
 
-##Constants
+## Constants
 
 There is one constant, `sjson.NULL`, which is used in Lua structures to represent the presence of a JSON null.
 

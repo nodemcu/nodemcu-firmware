@@ -30,7 +30,7 @@ Creates a connection object which can be configured and then executed. Note this
     - `timeout` Network timeout, in milliseconds. If not specified, the default is `10000` (10 seconds).
 
 #### Returns
-The connection object.
+`connection` The connection object.
 
 #### Example
 ```lua

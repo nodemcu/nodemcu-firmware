@@ -11,7 +11,7 @@ Advertisements are an easy way of publishing sensor data to e.g. a
 smartphone app.
 
 
-# bthci.rawhci(hcibytes, callback)
+## bthci.rawhci(hcibytes, callback)
 
 Sends a raw HCI command to the BlueTooth controller.
 
@@ -63,7 +63,7 @@ bthci.reset(function(err) print(err or "Ok!") end)
 ```
 
 
-# bthci.adv.enable(onoff, callback)
+## bthci.adv.enable(onoff, callback)
 
 Enables or disables BlueTooth LE advertisements.
 
@@ -86,7 +86,7 @@ bthci.adv.enable(1, function(err) print(err or "Ok!") end)
 ```
 
 
-# bthci.adv.setdata(advbytes, callback)
+## bthci.adv.setdata(advbytes, callback)
 
 Configures the data to advertise.
 
@@ -109,7 +109,7 @@ bthci.adv.setdata(encoder.fromHex("080861626364656667"), function(err) print(err
 ```
 
 
-# bthci.adv.setparams(paramtable, callback)
+## bthci.adv.setparams(paramtable, callback)
 
 Configures advertisement parameters.
 
@@ -118,21 +118,19 @@ Configures advertisement parameters.
 
 #### Parameters
 - `paramtable` a table with zero or more of the following fields:
-  - `interval_min` value in units of 0.625ms. Default 0x0400 (0.64s).
-  - `interval_max` value in units of 0.625ms. Default 0x0800 (1.28s).
-  - `type` advertising type, one of following constants:
-    - `bthci.adv.CONN_UNDIR`, the default (ADV_IND in BT spec)
-    - `bthci.adv.CONN_DIR_HI` (ADV_DIRECT_IND, high duty cycle in the BT spec)
-    - `bthci.adv.SCAN_UNDIR` (ADV_SCAN_IND in the BT spec)
-    - `bthci.adv.NONCONN_UNDIR` (ADV_NONCONN_IND in the BT spec)
-    - `bthci.adv.CONN_DIR_LO` (ADV_DIRECT_IND, low duty cycle in the BT spec)
-  - `own_addr_type` own address type. Default 0 (public address).
-  - `peer_addr_type` peer address type. Default 0 (public address).
-  - `peer_addr` TODO, not yet implemented
-  - `channel_map` which channels to advertise on. The constants
-    `bthci.adv.CHAN_37`, `bthci.adv.CHAN_38`, `bthci.adv.CHAN_39` or
-    `bthci.adv.CHAN_ALL` may be used. Default is all channels.
-  - `filter_policy` filter policy, default 0 (no filtering).
+    - `interval_min` value in units of 0.625ms. Default 0x0400 (0.64s).
+    - `interval_max` value in units of 0.625ms. Default 0x0800 (1.28s).
+    - `type` advertising type, one of following constants:
+        - `bthci.adv.CONN_UNDIR`, the default (ADV_IND in BT spec)
+        - `bthci.adv.CONN_DIR_HI` (ADV_DIRECT_IND, high duty cycle in the BT spec)
+        - `bthci.adv.SCAN_UNDIR` (ADV_SCAN_IND in the BT spec)
+        - `bthci.adv.NONCONN_UNDIR` (ADV_NONCONN_IND in the BT spec)
+        - `bthci.adv.CONN_DIR_LO` (ADV_DIRECT_IND, low duty cycle in the BT spec)
+    - `own_addr_type` own address type. Default 0 (public address).
+    - `peer_addr_type` peer address type. Default 0 (public address).
+    - `peer_addr` TODO, not yet implemented
+    - `channel_map` which channels to advertise on. The constants `bthci.adv.CHAN_37`, `bthci.adv.CHAN_38`, `bthci.adv.CHAN_39` or `bthci.adv.CHAN_ALL` may be used. Default is all channels.
+    - `filter_policy` filter policy, default 0 (no filtering).
 - `callback` optional function to be invoked when the reset completes. Its
   only argument is the HCI error code, or `nil` on success.
 
@@ -145,7 +143,7 @@ bthci.adv.setparams({type=bthci.adv.NONCONN_UNDIR}, function(err) print(err or "
 ```
 
 
-# bthci.scan.enable(onoff, callback)
+## bthci.scan.enable(onoff, callback)
 
 Enables or disable scanning for advertisements from other BlueTooth devices.
 
@@ -166,7 +164,7 @@ bthci.scan.enable(1, function(err) print(err or "Ok!") end)
 ```
 
 
-# bthci.scan.setparams(paramstable, callback)
+## bthci.scan.setparams(paramstable, callback)
 
 Configures scan parameters.
 
@@ -178,11 +176,11 @@ this will fully occupy the radio and no other activity takes place.
 
 #### Parameters
 - `paramstable` a table with zero or more of the following fields:
-  - `mode` scanning mode, 0 for passive, 1 for active. Default 0.
-  - `interval` scanning interval in units of 0.625ms. Default 0x0010.
-  - `window` length of scanning window in units of 0.625ms. Default 0x0010.
-  - `own_addr_type` own address type. Default 0 (public).
-  - `filter_policy` filtering policy. Default 0 (no filtering).
+    - `mode` scanning mode, 0 for passive, 1 for active. Default 0.
+    - `interval` scanning interval in units of 0.625ms. Default 0x0010.
+    - `window` length of scanning window in units of 0.625ms. Default 0x0010.
+    - `own_addr_type` own address type. Default 0 (public).
+    - `filter_policy` filtering policy. Default 0 (no filtering).
 - `callback` optional function to be invoked when the reset completes. Its
   only argument is the HCI error code, or `nil` on success.
 
@@ -194,7 +192,7 @@ this will fully occupy the radio and no other activity takes place.
 bthci.scan.setparams({mode=1,interval=40,window=20},function(err) print(err or "Ok!") end)
 ```
 
-# bthci.scan.on(event, callback)
+## bthci.scan.on(event, callback)
 
 Registers the callback to be passed any received advertisements.
 

@@ -46,7 +46,7 @@ Connection speed in Mbit/s, or error if not connected.
 ## eth.init()
 Initialize the PHY chip and set up its tcpip adapter.
 
-#### Synatx
+#### Syntax
 ```lua
 eth.init(cfg)
 ```

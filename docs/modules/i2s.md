@@ -16,7 +16,7 @@ The I2S module provides access to the in-built two I2S controllers.
 Mute the I2S channel. The hardware buffer is instantly filled with silence.
 
 #### Syntax
-`i2s.mute(i2s_num)
+`i2s.mute(i2s_num)`
 
 #### Parameters
 - `i2s_num` I2S peripheral 0 or 1
