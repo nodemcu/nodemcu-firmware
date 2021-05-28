@@ -47,6 +47,9 @@ Returns the side length in pixels of the given QR Code. The result is in the ran
 ## qrcodegen.getPixel(qrcode, x, y)
 Get the color of the pixel at the given coordinates of the QR Code. `x` and `y` must be between `0` and the value returned by `qrcodegen.getSize()`.
 
+#### Syntax
+`qrcodegen.getPixel(qrcode, x, y)`
+
 #### Parameters
 - `qrcode` a QR Code string, as returned by `qrcodegen.encodeText()`.
 - `x`

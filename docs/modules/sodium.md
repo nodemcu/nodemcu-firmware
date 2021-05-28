@@ -56,6 +56,9 @@ The keys created by `crypto_box.keypair()` can be used the `crypto_box.seal*()` 
 ## sodium.crypto_box.keypair()
 Generates a new keypair. Wifi must be started, by calling `wifi.start()`, before calling this function.
 
+#### Syntax
+`sodium.crypto_box.keypair()`
+
 #### Parameters
 None
 
@@ -88,7 +91,7 @@ The encrypted message, as a string. Errors if `public_key` is not a valid public
 ciphertext = sodium.crypto_box.seal(message, public_key)
 ```
 
-## sodium.crypto_box.seal_open
+## sodium.crypto_box.seal_open()
 Decrypts a message encrypted with [`crypto_box.seal()`](#sodiumcryptoboxseal).
 
 #### Syntax

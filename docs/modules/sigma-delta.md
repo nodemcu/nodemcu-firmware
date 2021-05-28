@@ -23,7 +23,7 @@ Reenables GPIO functionality at the related pin.
 Sets the prescale value.
 
 #### Syntax
-`sigma_delta.setprescale(channel, value)
+`sigma_delta.setprescale(channel, value)`
 
 #### Parameters
 - `channel` 0~7, sigma-delta channel index

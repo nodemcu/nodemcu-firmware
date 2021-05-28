@@ -203,7 +203,7 @@ Publishes a message.
 
 #### Parameters
 - `topic` the topic to publish to ([topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices))
-- `message` the message to publish, (buffer or string)
+- `payload` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
 - `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.

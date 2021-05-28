@@ -15,7 +15,7 @@ Provides a Base64 representation of a (binary) Lua string.
 #### Parameters
 `binary` input string to Base64 encode
 
-#### Return
+#### Returns
 A Base64 encoded string.
 
 #### Example
@@ -34,7 +34,7 @@ thrown if the string is not a valid base64 encoding.
 #### Parameters
 `b64` Base64 encoded input string 
 
-#### Return
+#### Returns
 The decoded Lua (binary) string.
 
 #### Example
