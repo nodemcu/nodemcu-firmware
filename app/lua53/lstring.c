@@ -38,7 +38,8 @@
 */
 int luaS_eqlngstr (TString *a, TString *b) {
   size_t len = a->u.lnglen;
-  lua_assert(gettt(a) == LUA_TLNGSTR && gettt(b) == LUA_TLNGSTR);
+  lua_assert(gettt((struct GCObject *)a) == LUA_TLNGSTR
+    && gettt((struct GCObject *)b) == LUA_TLNGSTR);
   return (a == b) ||  /* same instance or... */
     ((len == b->u.lnglen) &&  /* equal length and ... */
      (memcmp(getstr(a), getstr(b), len) == 0));  /* equal contents */
@@ -55,8 +56,8 @@ unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
 
 
 unsigned int luaS_hashlongstr (TString *ts) {
-  lua_assert(ts->tt == LUA_TLNGSTR);
-  if (getextra(ts) == 0) {  /* no hash? */
+  lua_assert(gettt((struct GCObject *)ts) == LUA_TLNGSTR);
+  if (getstrextra(ts) == 0) {  /* no hash? */
     ts->hash = luaS_hash(getstr(ts), ts->u.lnglen, ts->hash);
     ts->extra = 1;  /* now it has its hash */
   }
@@ -162,7 +163,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
   TString **list = &g->strt.hash[lmod(h, g->strt.size)];
   lua_assert(str != NULL);  /* otherwise 'memcmp'/'memcpy' are undefined */
   for (ts = *list; ts != NULL; ts = ts->u.hnext) {
-    if (l == getshrlen(ts) &&
+    if (l == getstrshrlen(ts) &&
         (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
       /* found! */
       if (isdead(g, ts))  /* dead (but not collected yet)? */
@@ -178,7 +179,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
     for (ts = g->ROstrt.hash[lmod(h, g->ROstrt.size)];
          ts != NULL;
          ts = ts->u.hnext)     {
-      if (l == getshrlen(ts) &&
+      if (l == getstrshrlen(ts) &&
           memcmp(str, getstr(ts), l * sizeof(char)) == 0) {
       /* found in ROstrt! */
         return ts;

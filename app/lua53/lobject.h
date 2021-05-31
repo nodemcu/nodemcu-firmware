@@ -71,27 +71,6 @@
 #define ctb(t)			((t) | BIT_ISCOLLECTABLE)
 
 /*
-** Byte field access macro.  On ESP targets this causes the compiler to emit
-** a l32i + extui instruction pair instead of a single l8ui avoiding a call
-** the S/W unaligned exception handler.  This is used to force aligned access
-** to commonly accessed fields in Flash-based record structures.  It is not
-** needed for RAM-only structures.
-**
-** wo is the offset of aligned word in bytes 0,4,8,..
-** bo is the field within the word in bits 0..31
-*/
-#ifdef LUA_USE_ESP
-#define GET_BYTE_FN(name,t,wo,bo) \
-static inline lu_int32 get ## name(const void *o) { \
-  lu_int32 res;  /* extract named field */ \
-  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
-  return res; }
-#else
-#define GET_BYTE_FN(name,t,wo,bo) \
-static inline lu_byte get ## name(const void *o) { return (cast(const t *,o))->name; }
-#endif
-
-/*
 ** Common type for all collectable objects
 */
 typedef struct GCObject GCObject;
@@ -110,8 +89,8 @@ typedef struct GCObject GCObject;
 struct GCObject {
   CommonHeader;
 };
-GET_BYTE_FN(tt,GCObject,4,0)
-GET_BYTE_FN(marked,GCObject,4,8)
+LUA_LOAD_BYTE_FN(gettt, struct GCObject, tt);
+LUA_LOAD_BYTE_FN(getmarked, struct GCObject, marked);
 
 
 /*
@@ -258,7 +237,7 @@ typedef struct lua_TValue {
 
 #define setsvalue(L,obj,x) \
   { TValue *io = (obj); TString *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x_))); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt((struct GCObject *)x_))); \
     checkliveness(L,io); }
 
 #define setuvalue(L,obj,x) \
@@ -283,7 +262,7 @@ typedef struct lua_TValue {
 
 #define sethvalue(L,obj,x) \
   { TValue *io = (obj); Table *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x_))); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt((struct GCObject *)x_))); \
     checkliveness(L,io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
@@ -344,8 +323,8 @@ typedef struct TString {
     struct TString *hnext;  /* linked list for hash table */
   } u;
 } TString;
-GET_BYTE_FN(extra,TString,4,16)
-GET_BYTE_FN(shrlen,TString,4,24)
+LUA_LOAD_BYTE_FN(getstrextra, TString, extra)
+LUA_LOAD_BYTE_FN(getstrshrlen, TString, shrlen)
 
 
 /*
@@ -369,7 +348,8 @@ typedef union UTString {
 #define svalue(o)       getstr(tsvalue(o))
 
 /* get string length from 'TString *s' */
-#define tsslen(s)	(gettt(s) == LUA_TSHRSTR ? getshrlen(s) : (s)->u.lnglen)
+#define tsslen(s) \
+  (gettt((struct GCObject *)s) == LUA_TSHRSTR ? getstrshrlen(s) : (s)->u.lnglen)
 
 /* get string length from 'TValue *o' */
 #define vslen(o)	tsslen(tsvalue(o))
@@ -463,9 +443,9 @@ typedef struct Proto {
   GCObject *gclist;
 } Proto;
 
-GET_BYTE_FN(numparams,Proto,4,16)
-GET_BYTE_FN(is_vararg,Proto,4,24)
-GET_BYTE_FN(maxstacksize,Proto,8,0)
+LUA_LOAD_BYTE_FN(getnumparams,Proto,numparams)
+LUA_LOAD_BYTE_FN(getis_vararg,Proto,is_vararg)
+LUA_LOAD_BYTE_FN(getmaxstacksize,Proto,maxstacksize)
 
 
 /*
@@ -555,8 +535,8 @@ typedef struct Table {
   GCObject *gclist;
 } Table;
 
-GET_BYTE_FN(flags,Table,4,16)
-GET_BYTE_FN(lsizenode,Table,4,24)
+LUA_LOAD_BYTE_FN(gettblflags,Table,flags)
+LUA_LOAD_BYTE_FN(gettbllsizenode,Table,lsizenode)
 
 
 typedef const struct ROTable_entry {

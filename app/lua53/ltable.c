@@ -554,7 +554,7 @@ const TValue *luaH_getshortstr (Table *t, TString *key) {
   if (isrotable(t))
     return rotable_findentry((ROTable*) t, key, NULL);
   n = hashstr(t, key);
-  lua_assert(gettt(key) == LUA_TSHRSTR);
+  lua_assert(gettt((struct GCObject *)key) == LUA_TSHRSTR);
   for (;;) {  /* check whether 'key' is somewhere in the chain */
     const TValue *k = gkey(n);
     if (ttisshrstring(k) && eqshrstr(tsvalue(k), key))
@@ -592,7 +592,7 @@ static const TValue *getgeneric (Table *t, const TValue *key) {
 
 
 const TValue *luaH_getstr (Table *t, TString *key) {
-  if (gettt(key) == LUA_TSHRSTR)
+  if (gettt((struct GCObject *)key) == LUA_TSHRSTR)
     return luaH_getshortstr(t, key);
   else {  /* for long strings, use generic case */
     TValue ko;
@@ -736,16 +736,16 @@ int luaH_isdummy (const Table *t) { return isdummy(t); }
  */
 static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos) {
   const ROTable_entry *e = cast(const ROTable_entry *, t->entry);
-  const int tl = getlsizenode(t);
+  const int tl = gettbllsizenode((struct Table *)t);
   const char *strkey = getstr(key);
   const int hash = HASH(t, key);
   KeyCache *cl = luaE_getcache(hash);
   int i, j = 1, l;
 
-  if (!e || gettt(key) != LUA_TSHRSTR)
+  if (!e || gettt((struct GCObject *)key) != LUA_TSHRSTR)
     return luaO_nilobject;
 
-  l = getshrlen(key);
+  l = getstrshrlen(key);
   /* scan the ROTable key cache and return if hit found */
   for (i = 0; i < KEYCACHE_M; i++) {
     int cl_ndx = cl[i] >> NDX_SHFT;
@@ -804,7 +804,7 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
 static void rotable_next_helper(lua_State *L, ROTable *t, int pos,
                              TValue *key, TValue *val) {
   const ROTable_entry *e = cast(const ROTable_entry *, t->entry);
-  if (pos < getlsizenode(t)) {
+  if (pos < gettbllsizenode((Table *)t)) {
     /* Found an entry */
     setsvalue(L, key, luaS_new(L, e[pos].key));
     setobj2s(L, val, &e[pos].value);
@@ -817,7 +817,7 @@ static void rotable_next_helper(lua_State *L, ROTable *t, int pos,
 
 /* next (used for iteration) */
 static void rotable_next(lua_State *L, ROTable *t, TValue *key, TValue *val) {
-  unsigned keypos = getlsizenode(t);
+  unsigned keypos = gettbllsizenode((struct Table *)t);
 
   /* Special case: if key is nil, return the first element of the rotable */
   if (ttisnil(key))
