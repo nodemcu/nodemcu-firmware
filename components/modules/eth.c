@@ -193,6 +193,58 @@ static int leth_get_mac( lua_State *L )
   return 1;
 }
 
+static int leth_set_ip(lua_State *L )
+{
+  tcpip_adapter_ip_info_t ipInfo;
+  tcpip_adapter_dns_info_t dnsinfo;
+  size_t len;
+  const char *str;
+
+  ip_addr_t ipAddr;
+  ipAddr.type = IPADDR_TYPE_V4;
+
+  luaL_checkanytable (L, 1);
+
+  //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
+
+  lua_getfield (L, 1, "ip");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse IP address, aborting");
+  }
+  ipInfo.ip = ipAddr.u_addr.ip4;
+
+  lua_getfield (L, 1, "netmask");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse Netmask, aborting");
+  }
+  ipInfo.netmask = ipAddr.u_addr.ip4;
+
+  lua_getfield (L, 1, "gateway");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse Gateway address, aborting");
+  }
+  ipInfo.gw = ipAddr.u_addr.ip4;
+
+  lua_getfield (L, 1, "dns");
+  str = luaL_optlstring(L, -1, str, &len);
+  if(!ipaddr_aton(str, &dnsinfo.ip))
+  {
+    return luaL_error(L, "Could not parse DNS address, aborting");
+  }
+
+  ESP_ERROR_CHECK(tcpip_adapter_dhcpc_stop(ESP_IF_ETH));
+  tcpip_adapter_set_ip_info(ESP_IF_ETH, &ipInfo);
+  tcpip_adapter_set_dns_info(ESP_IF_ETH, TCPIP_ADAPTER_DNS_MAIN, &dnsinfo);
+
+  return 0;
+}
+
 static int leth_get_speed( lua_State *L )
 {
   eth_speed_mode_t speed = esp_eth_get_speed();
@@ -293,6 +345,7 @@ LROT_BEGIN(eth)
   LROT_FUNCENTRY( get_speed,  leth_get_speed )
   LROT_FUNCENTRY( get_mac,    leth_get_mac )
   LROT_FUNCENTRY( set_mac,    leth_set_mac )
+  LROT_FUNCENTRY( set_ip,     leth_set_ip )
 
   LROT_NUMENTRY( PHY_LAN8720, ETH_PHY_LAN8720 )
   LROT_NUMENTRY( PHY_TLK110,  ETH_PHY_TLK110 )

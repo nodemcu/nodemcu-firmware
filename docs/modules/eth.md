@@ -154,3 +154,33 @@ eth.set_mac(mac)
 `nil`
 
 An error is thrown in case of invalid parameters or if the ethernet driver failed.
+
+
+## eth.set_ip()
+
+Sets IP address, netmask, gateway, dns address of the ethernet.
+
+Options set by this function are not saved to flash.
+
+#### Syntax
+`eth.set_ip(cfg)`
+
+#### Parameters
+- `cfg` table to hold configuration:
+    - `ip` device ip address.
+    - `netmask` network netmask.
+    - `gateway` gateway address.
+    - `dns` name server address.
+
+#### Returns 
+`nil`
+
+#### Example
+```lua
+  cfg={}
+  cfg.ip=192.168.0.10
+  cfg.netmask=255.255.255.0
+  cfg.gateway=192.168.0.1
+  cfg.dns=8.8.8.8
+  eth.set_ip(cfg)
+```
