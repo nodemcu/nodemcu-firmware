@@ -1,4 +1,4 @@
-local gpio, bit = gpio, bit --luacheck: read globals gpio bit
+local gpio, bit = gpio, bit
 
 return function(bus_args)
    local rs = bus_args.rs or 0

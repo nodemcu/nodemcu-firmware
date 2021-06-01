@@ -104,7 +104,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,7 +123,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,7 +167,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\app\lua;$(ProjectDir)\..\..\app\libc;$(ProjectDir)\..\..\app\include;$(ProjectDir)\..\..\app\uzlib;$(ProjectDir)\..\..\app</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -212,6 +212,12 @@
     <ClCompile Include="..\..\app\lua\lundump.c" />
     <ClCompile Include="..\..\app\lua\lvm.c" />
     <ClCompile Include="..\..\app\lua\lzio.c" />
+    <ClCompile Include="..\..\app\modules\bit.c" />
+    <ClCompile Include="..\..\app\modules\color_utils.c" />
+    <ClCompile Include="..\..\app\modules\sjson.c" />
+    <ClCompile Include="..\..\app\modules\pipe.c" />
+    <ClCompile Include="..\..\app\modules\struct.c" />
+    <ClCompile Include="..\..\app\sjson\jsonsl.c" />
     <ClCompile Include="..\..\app\uzlib\crc32.c" />
     <ClCompile Include="..\..\app\uzlib\uzlib_deflate.c" />
   </ItemGroup>
@@ -246,6 +252,9 @@
     <ClInclude Include="..\..\app\lua\lundump.h" />
     <ClInclude Include="..\..\app\lua\lvm.h" />
     <ClInclude Include="..\..\app\lua\lzio.h" />
+    <ClInclude Include="..\..\app\sjson\jsonsl.h" />
+    <ClInclude Include="..\..\app\sjson\json_config.h" />
+    <ClInclude Include="..\..\app\sjson\memcompat.h" />
     <ClInclude Include="..\..\app\uzlib\uzlib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

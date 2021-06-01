@@ -17,7 +17,9 @@ tools/toolchains/
 .cproject
 .project
 .settings/
-.vscode
+
+#ignore Visual Studio (Code) files
+.vscode/
 .vs
 
 #ignore temp file for build infos

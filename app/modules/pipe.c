@@ -51,7 +51,6 @@
 #include "module.h"
 #include "lauxlib.h"
 #include <string.h>
-#include "platform.h"
 
 #define INVALID_LEN ((unsigned)-1)
 
@@ -226,11 +225,11 @@ int pipe_create(lua_State *L) {
   if (!lua_isnil(L, 1)) {
     luaL_checktype(L, 1, LUA_TFUNCTION);   /* non-nil arg1 must be a function */
     if (lua_isnil(L, 2)) {
-      prio = PLATFORM_TASK_PRIORITY_MEDIUM;
+      prio = LUA_TASK_MEDIUM;
     } else {
       prio = (int) lua_tointeger(L, 2);
-      luaL_argcheck(L, prio >= PLATFORM_TASK_PRIORITY_LOW &&
-                       prio <= PLATFORM_TASK_PRIORITY_HIGH, 2,
+      luaL_argcheck(L, prio >= LUA_TASK_LOW &&
+                       prio <= LUA_TASK_HIGH, 2,
                        "invalid priority");
     }
   }

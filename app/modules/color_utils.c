@@ -1,12 +1,9 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
-#include "platform.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "user_interface.h"
-#include "osapi.h"
 
 #include "color_utils.h"
 
