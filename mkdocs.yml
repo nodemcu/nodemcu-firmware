@@ -95,6 +95,7 @@ pages:
     - 'hmc5883l': 'modules/hmc5883l.md'
     - 'http': 'modules/http.md'
     - 'hx711' : 'modules/hx711.md'
+    - 'htu21': 'modules/htu21.md'
     - 'i2c' : 'modules/i2c.md'
     - 'l3g4200d' : 'modules/l3g4200d.md'
     - 'mcp4725': 'modules/mcp4725.md'
