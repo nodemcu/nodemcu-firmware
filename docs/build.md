@@ -23,8 +23,6 @@ NodeMCU firmware developers commit or contribute to the project on GitHub and mi
 sudo apt-get install -y gperf python-pip python-dev flex bison build-essential libssl-dev libffi-dev libncurses5-dev libncursesw5-dev libreadline-dev
 ```
 
-
-
 #### Setting up the repository
 
 Run the following command for a new checkout from scratch. This will fetch the nodemcu repo, checkout the `dev-esp32` branch and finally pull all submodules:
@@ -33,7 +31,12 @@ Run the following command for a new checkout from scratch. This will fetch the n
 git clone --branch dev-esp32 --recurse-submodules https://github.com/nodemcu/nodemcu-firmware.git nodemcu-firmware-esp32
 ```
 
-The `make` command initiates the build process, which will start with the configuration menu to set the build options.
+To install the prerequisites for the ESP32 SDK and NodeMCU components, run:
+```
+./install.sh
+```
+
+The `make menuconfig` command initiates the build process, which will start with the configuration menu to set the build options.
 
 !!! important
 
