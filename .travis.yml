@@ -9,11 +9,13 @@ addons:
 # we can use the system python and python-serial, rather than messing around
 # with pip all over the place
 install:
-  - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:/bin:/usr/bin:/sbin:/usr/sbin
-  - /usr/bin/python -m pip install --user -r $PWD/sdk/esp32-esp-idf/requirements.txt
+  - export PATH=/bin:/usr/bin:/sbin:/usr/sbin
+  - ./install.sh
 script:
 - export BUILD_DATE=$(date +%Y%m%d)
-- env BUILD_DIR_BASE=`pwd`/build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
-- env BUILD_DIR_BASE=`pwd`/build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
+- cp sdkconfig.defaults sdkconfig
+- make IDFPY_ARGS="-B build/float"
+- echo CONFIG_LUA_NUMBER_INTEGRAL=y >> sdkconfig
+- make IDFPY_ARGS="-B build/integer"
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
 #- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi

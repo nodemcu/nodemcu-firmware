@@ -274,19 +274,8 @@ none
 
 ## net.socket:hold()
 
-Throttle data reception by placing a request to block the TCP receive function. This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
-
-#### Syntax
-`hold()`
-
-#### Parameters
-none
-
-#### Returns
-`nil`
-
-#### See also
-[`net.socket:unhold()`](#netsocketunhold)
+This call is no longer available, as the underlying functionality was
+removed upstream.
 
 ## net.socket:on()
 
@@ -337,13 +326,11 @@ srv:on("receive", function(sck, c)
     buffer = buffer .. c
   end
 end)
--- throttling could be implemented using socket:hold()
 -- example: https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/pcm/play_network.lua#L83
 ```    
 
 #### See also
 - [`net.createServer()`](#netcreateserver)
-- [`net.socket:hold()`](#netsockethold)
 
 ## net.socket:send()
 
@@ -418,19 +405,8 @@ end)
 
 ## net.socket:unhold()
 
-Unblock TCP receiving data by revocation of a preceding `hold()`.
-
-#### Syntax
-`unhold()`
-
-#### Parameters
-none
-
-#### Returns
-`nil`
-
-#### See also
-[`net.socket:hold()`](#netsockethold)
+This call is no longer available as the underlying functionality was
+removed upstream.
 
 # net.udpsocket Module
 

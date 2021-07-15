@@ -32,7 +32,6 @@
  */
 
 #include "driver/console.h"
-#include "esp_intr.h"
 #include "esp_intr_alloc.h"
 #include "soc/soc.h"
 #include "soc/uart_reg.h"
@@ -41,7 +40,7 @@
 #include "freertos/queue.h"
 
 #include <unistd.h>
-#include "rom/libc_stubs.h"
+#include "esp32/rom/libc_stubs.h"
 #include "sys/reent.h"
 
 #define UART_INPUT_QUEUE_SZ 0x100

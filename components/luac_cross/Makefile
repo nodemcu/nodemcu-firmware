@@ -1,10 +1,19 @@
 all: build
 
-ifeq ($V,)
- Q:=@
+HOSTCC?=$(PYTHON) -m ziglang cc
+
+# zig cc (0.8.0 at least) seems to get itself all confused with its cache
+# when we're running a separate path for dependencies, so we skip them for
+# now as for most people they're not needed anyway.
+ifeq ($(findstring zig,$(HOSTCC)),zig)
+  WITHOUT_DEPS:=1
 endif
 
-LUAC_CFLAGS:= -I$(COMPONENT_PATH)/../uzlib -I$(COMPONENT_PATH)/../lua -I$(BUILD_DIR_BASE)/include -I$(COMPONENT_PATH)/../base_nodemcu/include -O2 -g -Wall -Wextra
+ifeq ($V,)
+  Q:=@
+endif
+
+LUAC_CFLAGS:= -I$(COMPONENT_PATH)/../uzlib -I$(COMPONENT_PATH)/../lua -I$(BUILD_DIR_BASE)/config -I$(COMPONENT_PATH)/../base_nodemcu/include -O2 -g -Wall -Wextra
 LUAC_LDFLAGS:= -ldl -lm
 
 LUAC_DEFINES += -DLUA_CROSS_COMPILER -DLUA_USE_STDIO
@@ -41,14 +50,16 @@ LUAC_OBJS+=$(LUAC_UZSRC:$(COMPONENT_PATH)/../uzlib/%.c=$(LUAC_BUILD_DIR)/%.o)
 LUAC_OBJS+=$(LUAC_NODEMCUSRC:$(COMPONENT_PATH)/../base_nodemcu/%.c=$(LUAC_BUILD_DIR)/%.o)
 
 
+ifneq ($(WITHOUT_DEPS),1)
 LUAC_DEPS:=$(LUAC_OBJS:%.o=%.d)
+endif
 
 LUAC_CROSS:=$(LUAC_BUILD_DIR)/luac.cross
 
 $(LUAC_BUILD_DIR):
 	@mkdir -p "$@"
 
-$(LUAC_BUILD_DIR)/%.o: | $(LUAC_BUILD_DIR)
+$(LUAC_BUILD_DIR)/%.o: %.c | $(LUAC_BUILD_DIR)
 	@echo '[hostcc] $(notdir $@)'
 	$Q$(HOSTCC) $(LUAC_DEFINES) $(LUAC_CFLAGS) "$<" -c -o "$@"
 

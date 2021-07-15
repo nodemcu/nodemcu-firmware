@@ -81,7 +81,7 @@ struct OUTPUT {
 } *out;
 
 
-#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
+#ifdef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
   extern const char lua_flash_store_reserved[0];
 #endif
 
@@ -110,7 +110,7 @@ LUA_API void dumpStrings(lua_State *L) {
 }
 #endif
 
-#ifndef CONFIG_LUA_EMBEDDED_FLASH_STORE
+#ifndef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
 /* =====================================================================================
  * The next 4 functions: flashPosition, flashSetPosition, flashBlock and flashErase
  * wrap writing to flash. The last two are platform dependent.  Also note that any
@@ -155,8 +155,8 @@ static int procFirstPass (void);
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
-  flashSize = CONFIG_LUA_EMBEDDED_FLASH_STORE;
+#ifdef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
+  flashSize = CONFIG_NODEMCU_EMBEDDED_LFS_SIZE;
   flashAddr = lua_flash_store_reserved;
   flashAddrPhys = spi_flash_cache2phys(lua_flash_store_reserved);
   if (flashAddrPhys == SPI_FLASH_CACHE2PHYS_FAIL) {
@@ -226,7 +226,7 @@ LUAI_FUNC void luaN_init (lua_State *L) {
  * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
-#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
+#ifdef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
   // Updating the LFS section is disabled for now because any changes to the
   // image requires updating its checksum to prevent boot failure.
   lua_pushstring(L, "Not allowed to write to LFS section");
@@ -291,7 +291,7 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
 
   esp_restart();
   return 0;
-#endif // CONFIG_LUA_EMBEDDED_FLASH_STORE
+#endif // CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
 }
 
 
@@ -346,7 +346,7 @@ LUAI_FUNC int luaN_index (lua_State *L) {
   return 5;
 }
 
-#ifndef CONFIG_LUA_EMBEDDED_FLASH_STORE
+#ifndef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
 /* =====================================================================================
  * The following routines use my uzlib which was based on pfalcon's inflate and
  * deflate routines.  The standard NodeMCU make also makes two host tools uz_zip

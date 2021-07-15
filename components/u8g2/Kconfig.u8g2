@@ -1,0 +1,637 @@
+menu "Displays"
+    depends on NODEMCU_CMODULE_U8G2
+
+    menuconfig U8G2_COMM_I2C
+        bool "I2C"
+        select NODEMCU_CMODULE_I2C
+        default "y"
+
+    config U8G2_I2C_LD7032_60X32
+        depends on U8G2_COMM_I2C
+        bool "ld7032_i2c_60x32"
+        default "n"
+
+    config U8G2_I2C_SH1106_128X64_NONAME
+        depends on U8G2_COMM_I2C
+        bool "sh1106_i2c_128x64_noname"
+        default "n"
+
+    config U8G2_I2C_SH1106_128X64_VCOMH0
+        depends on U8G2_COMM_I2C
+        bool "sh1106_i2c_128x64_vcomh0"
+        default "n"
+
+    config U8G2_I2C_SH1107_64X128
+        depends on U8G2_COMM_I2C
+        bool "sh1107_i2c_64x128"
+        default "n"
+
+    config U8G2_I2C_SH1107_SEEED_96X96
+        depends on U8G2_COMM_I2C
+        bool "sh1107_i2c_seeed_96x96"
+        default "n"
+
+    config U8G2_I2C_SH1107_128X128
+        depends on U8G2_COMM_I2C
+        bool "sh1107_i2c_128x128"
+        default "n"
+
+    config U8G2_I2C_SH1108_160X160
+        depends on U8G2_COMM_I2C
+        bool "sh1108_i2c_160x160"
+        default "n"
+
+    config U8G2_I2C_SSD0323_OS128064
+        depends on U8G2_COMM_I2C
+        bool "ssd0323_i2c_os128064"
+        default "n"
+
+    config U8G2_I2C_SSD1305_128X32_NONAME
+        depends on U8G2_COMM_I2C
+        bool "ssd1305_i2c_128x32_noname"
+        default "n"
+
+    config U8G2_I2C_SSD1306_64X48_ER
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_64x48_er"
+        default "n"
+
+    config U8G2_I2C_SSD1306_96X16_ER
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_96x16_er"
+        default "n"
+
+    config U8G2_I2C_SSD1306_128X32_UNIVISION
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_128x32_univision"
+        default "n"
+
+    config U8G2_I2C_SSD1306_128X64_NONAME
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_128x64_noname"
+        default "y"
+
+    config U8G2_I2C_SSD1306_128X64_VCOMH0
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_128x64_vcomh0"
+        default "n"
+
+    config U8G2_I2C_SSD1306_128X64_ALT0
+        depends on U8G2_COMM_I2C
+        bool "ssd1306_i2c_128x64_alt0"
+        default "n"
+
+    config U8G2_I2C_SSD1309_128X64_NONAME0
+        depends on U8G2_COMM_I2C
+        bool "ssd1309_i2c_128x64_noname0"
+        default "n"
+
+    config U8G2_I2C_SSD1309_128X64_NONAME2
+        depends on U8G2_COMM_I2C
+        bool "ssd1309_i2c_128x64_noname2"
+        default "n"
+
+    config U8G2_I2C_SSD1318_128X96
+        depends on U8G2_COMM_I2C
+        bool "ssd1318_i2c_128x96"
+        default "n"
+
+    config U8G2_I2C_SSD1318_128X96_XCP
+        depends on U8G2_COMM_I2C
+        bool "ssd1318_i2c_128x96_xcp"
+        default "n"
+
+    config U8G2_I2C_SSD1325_NHD_128X64
+        depends on U8G2_COMM_I2C
+        bool "ssd1325_i2c_nhd_128x64"
+        default "n"
+
+    config U8G2_I2C_SSD1326_ER_256X32
+        depends on U8G2_COMM_I2C
+        bool "ssd1326_i2c_er_256x32"
+        default "n"
+
+    config U8G2_I2C_SSD1327_MIDAS_128X128
+        depends on U8G2_COMM_I2C
+        bool "ssd1327_i2c_midas_128x128"
+        default "n"
+
+    config U8G2_I2C_SSD1327_EA_W128128
+        depends on U8G2_COMM_I2C
+        bool "ssd1327_i2c_ea_w128128"
+        default "n"
+
+    config U8G2_I2C_SSD1327_SEEED_96X96
+        depends on U8G2_COMM_I2C
+        bool "ssd1327_i2c_seeed_96x96"
+        default "n"
+
+    config U8G2_I2C_ST7567_64X32
+        depends on U8G2_COMM_I2C
+        bool "st7567_i2c_64x32"
+        default "n"
+
+    config U8G2_I2C_ST7588_JLX12864
+        depends on U8G2_COMM_I2C
+        bool "st7588_i2c_jlx12864"
+        default "n"
+
+    config U8G2_I2C_ST75256_JLX256128
+        depends on U8G2_COMM_I2C
+        bool "st75256_i2c_jlx256128"
+        default "n"
+
+    config U8G2_I2C_ST75256_JLX256160
+        depends on U8G2_COMM_I2C
+        bool "st75256_i2c_jlx256160"
+        default "n"
+
+    config U8G2_I2C_ST75256_JLX240160
+        depends on U8G2_COMM_I2C
+        bool "st75256_i2c_jlx240160"
+        default "n"
+
+    config U8G2_I2C_ST75256_JLX25664
+        depends on U8G2_COMM_I2C
+        bool "st75256_i2c_jlx25664"
+        default "n"
+
+    config U8G2_I2C_ST75256_JLX172104
+        depends on U8G2_COMM_I2C
+        bool "st75256_i2c_jlx172104"
+        default "n"
+
+    config U8G2_I2C_UC1601_128X32
+        depends on U8G2_COMM_I2C
+        bool "uc1601_i2c_128X32"
+        default "n"
+
+    config U8G2_I2C_UC1604_JLX19264
+        depends on U8G2_COMM_I2C
+        bool "uc1604_i2c_jlx19264"
+        default "n"
+
+    config U8G2_I2C_UC1608_ERC24064
+        depends on U8G2_COMM_I2C
+        bool "uc1608_i2c_erc24064"
+        default "n"
+
+    config U8G2_I2C_UC1608_240X128
+        depends on U8G2_COMM_I2C
+        bool "uc1608_i2c_240x128"
+        default "n"
+
+    config U8G2_I2C_UC1610_EA_DOGXL160
+        depends on U8G2_COMM_I2C
+        bool "uc1610_i2c_ea_dogxl160"
+        default "n"
+
+    config U8G2_I2C_UC1611_EA_DOGM240
+        depends on U8G2_COMM_I2C
+        bool "uc1611_i2c_ea_dogm240"
+        default "n"
+
+    config U8G2_I2C_UC1611_EA_DOGXL240
+        depends on U8G2_COMM_I2C
+        bool "uc1611_i2c_ea_dogxl240"
+        default "n"
+
+    config U8G2_I2C_UC1611_EW50850
+        depends on U8G2_COMM_I2C
+        bool "uc1611_i2c_ew50850"
+        default "n"
+
+
+    menuconfig U8G2_COMM_SPI
+        bool "SPI"
+        select NODEMCU_CMODULE_SPI
+        default "y"
+
+    config U8G2_SPI_HX1230_96X68
+        depends on U8G2_COMM_SPI
+        bool "hx1230_96x68"
+        default "n"
+
+    config U8G2_SPI_IL3820_V2_296X128
+        depends on U8G2_COMM_SPI
+        bool "il3820_v2_296x128"
+        default "n"
+
+    config U8G2_SPI_IST3020_ERC19264
+        depends on U8G2_COMM_SPI
+        bool "ist3020_erc19264"
+        default "n"
+
+    config U8G2_SPI_LC7981_160X80
+        depends on U8G2_COMM_SPI
+        bool "lc7981_160x80"
+        default "n"
+
+    config U8G2_SPI_LC7981_160X160
+        depends on U8G2_COMM_SPI
+        bool "lc7981_160x160"
+        default "n"
+
+    config U8G2_SPI_LC7981_240X128
+        depends on U8G2_COMM_SPI
+        bool "lc7981_240x128"
+        default "n"
+
+    config U8G2_SPI_LC7981_240X64
+        depends on U8G2_COMM_SPI
+        bool "lc7981_240x64"
+        default "n"
+
+    config U8G2_SPI_LD7032_60X32
+        depends on U8G2_COMM_SPI
+        bool "ld7032_60x32"
+        default "n"
+
+    config U8G2_SPI_LS013B7DH03_128X128
+        depends on U8G2_COMM_SPI
+        bool "ls013b7dh03_128x128"
+        default "n"
+
+    config U8G2_SPI_MAX7219_32X8
+        depends on U8G2_COMM_SPI
+        bool "max7219_32x8"
+        default "n"
+
+    config U8G2_SPI_NT7534_TG12864R
+        depends on U8G2_COMM_SPI
+        bool "nt7534_tg12864r"
+        default "n"
+
+    config U8G2_SPI_PCD8544_84X48
+        depends on U8G2_COMM_SPI
+        bool "pcd8544_84x48"
+        default "n"
+
+    config U8G2_SPI_PCF8812_96X65
+        depends on U8G2_COMM_SPI
+        bool "pcf8812_96x65"
+        default "n"
+
+    config U8G2_SPI_SED1520_122x32
+        depends on U8G2_COMM_SPI
+        bool "sed1520_122x32"
+        default "n"
+
+    config U8G2_SPI_SH1106_128X64_NONAME
+        depends on U8G2_COMM_SPI
+        bool "sh1106_128x64_noname"
+        default "n"
+
+    config U8G2_SPI_SH1106_128X64_VCOMH0
+        depends on U8G2_COMM_SPI
+        bool "sh1106_128x64_vcomh0"
+        default "n"
+
+    config U8G2_SPI_SH1107_64X128
+        depends on U8G2_COMM_SPI
+        bool "sh1107_64x128"
+        default "n"
+
+    config U8G2_SPI_SH1107_SEEED_96X96
+        depends on U8G2_COMM_SPI
+        bool "sh1107_seeed_96x96"
+        default "n"
+
+    config U8G2_SPI_SH1107_128X128
+        depends on U8G2_COMM_SPI
+        bool "sh1107_128x128"
+        default "n"
+
+    config U8G2_SPI_SH1108_160X160
+        depends on U8G2_COMM_SPI
+        bool "sh1108_160x160"
+        default "n"
+
+    config U8G2_SPI_SH1122_256X64
+        depends on U8G2_COMM_SPI
+        bool "sh1122_256x64"
+        default "n"
+
+    config U8G2_SPI_SSD0323_OS128064
+        depends on U8G2_COMM_SPI
+        bool "ssd0323_os128064"
+        default "n"
+
+    config U8G2_SPI_SSD1305_128X32_NONAME
+        depends on U8G2_COMM_SPI
+        bool "ssd1305_128x32_noname"
+        default "n"
+
+    config U8G2_SPI_SSD1306_128X32_UNIVISION
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_128x32_univision"
+        default "n"
+
+    config U8G2_SPI_SSD1306_128X64_NONAME
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_128x64_noname"
+        default "y"
+
+    config U8G2_SPI_SSD1306_128X64_VCOMH0
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_128x64_vcomh0"
+        default "n"
+
+    config U8G2_SPI_SSD1306_128X64_ALT0
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_128x64_alt0"
+        default "n"
+
+    config U8G2_SPI_SSD1306_64X48_ER
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_64x48_er"
+        default "n"
+
+    config U8G2_SPI_SSD1306_96X16_ER
+        depends on U8G2_COMM_SPI
+        bool "ssd1306_96x16_er"
+        default "n"
+
+    config U8G2_SPI_SSD1309_128X64_NONAME0
+        depends on U8G2_COMM_SPI
+        bool "ssd1309_128x64_noname0"
+        default "n"
+
+    config U8G2_SPI_SSD1309_128X64_NONAME2
+        depends on U8G2_COMM_SPI
+        bool "ssd1309_128x64_noname2"
+        default "n"
+
+    config U8G2_SPI_SSD1318_128X96
+        depends on U8G2_COMM_SPI
+        bool "ssd1318_128x96"
+        default "n"
+
+    config U8G2_SPI_SSD1318_128X96_XCP
+        depends on U8G2_COMM_SPI
+        bool "ssd1318_128x96_xcp"
+        default "n"
+
+    config U8G2_SPI_SSD1322_NHD_128X64
+        depends on U8G2_COMM_SPI
+        bool "ssd1322_nhd_128x64"
+        default "n"
+
+    config U8G2_SPI_SSD1322_NHD_256X64
+        depends on U8G2_COMM_SPI
+        bool "ssd1322_nhd_256x64"
+        default "n"
+
+    config U8G2_SPI_SSD1325_NHD_128X64
+        depends on U8G2_COMM_SPI
+        bool "ssd1325_nhd_128x64"
+        default "n"
+
+    config U8G2_SPI_SSD1326_ER_256X32
+        depends on U8G2_COMM_SPI
+        bool "ssd1326_er_256x32"
+        default "n"
+
+    config U8G2_SPI_SSD1327_EA_W128128
+        depends on U8G2_COMM_SPI
+        bool "ssd1327_ea_w128128"
+        default "n"
+
+    config U8G2_SPI_SSD1327_MIDAS_128X128
+        depends on U8G2_COMM_SPI
+        bool "ssd1327_midas_128x128"
+        default "n"
+
+    config U8G2_SPI_SSD1327_SEEED_96X96
+        depends on U8G2_COMM_SPI
+        bool "ssd1327_seeed_96x96"
+        default "n"
+
+    config U8G2_SPI_SSD1329_128X96_NONAME
+        depends on U8G2_COMM_SPI
+        bool "ssd1329_128x96_noname"
+        default "n"
+
+    config U8G2_SPI_SSD1606_172X72
+        depends on U8G2_COMM_SPI
+        bool "ssd1606_172x72"
+        default "n"
+
+    config U8G2_SPI_SSD1607_200X200
+        depends on U8G2_COMM_SPI
+        bool "ssd1607_200x200"
+        default "n"
+
+    config U8G2_SPI_SSD1607_GD_200X200
+        depends on U8G2_COMM_SPI
+        bool "ssd1607_gd_200x200"
+        default "n"
+
+    config U8G2_SPI_SSD1607_WS_200X200
+        depends on U8G2_COMM_SPI
+        bool "ssd1607_ws_200x200"
+        default "n"
+
+    config U8G2_SPI_ST7565_64128N
+        depends on U8G2_COMM_SPI
+        bool "st7565_64128n"
+        default "n"
+
+    config U8G2_SPI_ST7565_EA_DOGM128
+        depends on U8G2_COMM_SPI
+        bool "st7565_ea_dogm128"
+        default "n"
+
+    config U8G2_SPI_ST7565_EA_DOGM132
+        depends on U8G2_COMM_SPI
+        bool "st7565_ea_dogm132"
+        default "n"
+
+    config U8G2_SPI_ST7565_ERC12864
+        depends on U8G2_COMM_SPI
+        bool "st7565_erc12864"
+        default "n"
+
+    config U8G2_SPI_ST7565_ERC12864_ALT
+        depends on U8G2_COMM_SPI
+        bool "st7565_erc12864_alt"
+        default "n"
+
+    config U8G2_SPI_ST7565_LM6059
+        depends on U8G2_COMM_SPI
+        bool "st7565_lm6059"
+        default "n"
+
+    config U8G2_SPI_ST7565_NHD_C12832
+        depends on U8G2_COMM_SPI
+        bool "st7565_nhd_c12832"
+        default "n"
+
+    config U8G2_SPI_ST7565_NHD_C12864
+        depends on U8G2_COMM_SPI
+        bool "st7565_nhd_c12864"
+        default "n"
+
+    config U8G2_SPI_ST7565_ZOLEN_128X64
+        depends on U8G2_COMM_SPI
+        bool "st7565_zolen_128x64"
+        default "n"
+
+    config U8G2_SPI_ST7567_64X32
+        depends on U8G2_COMM_SPI
+        bool "st7567_64x32"
+        default "n"
+
+    config U8G2_SPI_ST7567_ENH_DG128064I
+        depends on U8G2_COMM_SPI
+        bool "st7567_enh_dg128064i"
+        default "n"
+
+    config U8G2_SPI_ST7567_JLX12864
+        depends on U8G2_COMM_SPI
+        bool "st7567_jxl12864"
+        default "n"
+
+    config U8G2_SPI_ST7567_PI_132X64
+        depends on U8G2_COMM_SPI
+        bool "st7567_pi_132x64"
+        default "n"
+
+    config U8G2_SPI_ST7586S_S028HN118A
+        depends on U8G2_COMM_SPI
+        bool "st7586s_s028hn118a"
+        default "n"
+
+    config U8G2_SPI_ST7586S_ERC240160
+        depends on U8G2_COMM_SPI
+        bool "st7586s_erc240160"
+        default "n"
+
+    config U8G2_SPI_ST7588_JLX12864
+        depends on U8G2_COMM_SPI
+        bool "st7588_jlx12864"
+        default "n"
+
+    config U8G2_SPI_ST7920_S_128X64
+        depends on U8G2_COMM_SPI
+        bool "st7920_s_128x64"
+        default "n"
+
+    config U8G2_SPI_ST7920_S_192X32
+        depends on U8G2_COMM_SPI
+        bool "st7920_s_192x32"
+        default "n"
+
+    config U8G2_SPI_ST75256_JLX25664
+        depends on U8G2_COMM_SPI
+        bool "st75256_jlx25664"
+        default "n"
+
+    config U8G2_SPI_ST75256_JLX172104
+        depends on U8G2_COMM_SPI
+        bool "st75256_jlx172104"
+        default "n"
+
+    config U8G2_SPI_ST75256_JLX240160
+        depends on U8G2_COMM_SPI
+        bool "st75256_jlx240160"
+        default "n"
+
+    config U8G2_SPI_ST75256_JLX256128
+        depends on U8G2_COMM_SPI
+        bool "st75256_jlx256128"
+        default "n"
+
+    config U8G2_SPI_ST75256_JLX256160
+        depends on U8G2_COMM_SPI
+        bool "st75256_jlx256160"
+        default "n"
+
+    config U8G2_SPI_T6963_240X128
+        depends on U8G2_COMM_SPI
+        bool "t6963_240x128"
+        default "n"
+
+    config U8G2_SPI_T6963_240X64
+        depends on U8G2_COMM_SPI
+        bool "t6963_240x64"
+        default "n"
+
+    config U8G2_SPI_T6963_256X64
+        depends on U8G2_COMM_SPI
+        bool "t6963_256x64"
+        default "n"
+
+    config U8G2_SPI_T6963_128X64
+        depends on U8G2_COMM_SPI
+        bool "t6963_128x64"
+        default "n"
+
+    config U8G2_SPI_T6963_160X80
+        depends on U8G2_COMM_SPI
+        bool "t6963_160x80"
+        default "n"
+
+    config U8G2_SPI_UC1601_128X32
+        depends on U8G2_COMM_SPI
+        bool "uc1601_128X32"
+        default "n"
+
+    config U8G2_SPI_UC1604_JLX19264
+        depends on U8G2_COMM_SPI
+        bool "uc1604_jlx19264"
+        default "n"
+
+    config U8G2_SPI_UC1608_240X128
+        depends on U8G2_COMM_SPI
+        bool "uc1608_240x128"
+        default "n"
+
+    config U8G2_SPI_UC1608_ERC24064
+        depends on U8G2_COMM_SPI
+        bool "uc1608_erc24064"
+        default "n"
+
+    config U8G2_SPI_UC1610_EA_DOGXL160
+        depends on U8G2_COMM_SPI
+        bool "uc1610_ea_dogxl160"
+        default "n"
+
+    config U8G2_SPI_UC1611_EA_DOGM240
+        depends on U8G2_COMM_SPI
+        bool "uc1611_ea_dogm240"
+        default "n"
+
+    config U8G2_SPI_UC1611_EA_DOGXL240
+        depends on U8G2_COMM_SPI
+        bool "uc1611_ea_dogxl240"
+        default "n"
+
+    config U8G2_SPI_UC1611_EW50850
+        depends on U8G2_COMM_SPI
+        bool "uc1611_ew50850"
+        default "n"
+
+    config U8G2_SPI_UC1701_EA_DOGS102
+        depends on U8G2_COMM_SPI
+        bool "uc1701_ea_dogs102"
+        default "n"
+
+    config U8G2_SPI_UC1701_MINI12864
+        depends on U8G2_COMM_SPI
+        bool "uc1701_mini12864"
+        default "n"
+
+endmenu
+
+menu "Fonts"
+    depends on NODEMCU_CMODULE_U8G2
+
+    config U8G2_FONT_SELECTION
+        depends on NODEMCU_CMODULE_U8G2
+        string  "Font list"
+        default "font_6x10_tf,font_unifont_t_symbols"
+        help
+            Enter a comma-separated list of fonts.
+
+endmenu

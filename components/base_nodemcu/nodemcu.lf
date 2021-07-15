@@ -1,0 +1,29 @@
+[sections:lua_libs]
+entries:
+    .lua_libs
+
+[sections:lua_rotable]
+entries:
+    .lua_rotable
+
+[sections:lua_esp_event_cb_table]
+entries:
+    .lua_esp_event_cb_table
+
+[scheme:nodemcu_arrays]
+entries:
+    lua_libs -> flash_text
+    lua_rotable -> flash_text
+    lua_esp_event_cb_table -> flash_text
+
+
+# Important: don't change the alignments below without also updating the
+# _Static_assert over in linit.c and/or nodemcu_esp_event.h!
+
+[mapping:nodemcu]
+archive: *
+entries:
+    * (nodemcu_arrays);
+        lua_libs -> flash_text KEEP() ALIGN(8) SURROUND(lua_libs_map),
+        lua_rotable -> flash_text KEEP() ALIGN(8) SURROUND(lua_rotables_map),
+        lua_esp_event_cb_table -> flash_text KEEP() ALIGN(4) SURROUND(esp_event_cb_table)

@@ -35,7 +35,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "esp_flash_data_types.h"
 #include "esp_flash_partitions.h"
 #include "esp_spi_flash.h"
 

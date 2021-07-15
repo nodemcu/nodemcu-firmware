@@ -27,7 +27,7 @@ CONDITIONS OF ANY KIND, either express or implied.
 #include "esp_log.h"
 #include "lextra.h"
 #include "soc/rtc_periph.h"
-#include "soc/touch_channel.h"
+#include "soc/touch_sensor_periph.h"
 
 #include <string.h>
 

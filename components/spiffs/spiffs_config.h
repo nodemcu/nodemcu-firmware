@@ -96,7 +96,7 @@
 // zero-termination character, meaning maximum string of characters
 // can at most be CONFIG_SPIFFS_OBJ_NAME_LEN - 1.
 #ifndef SPIFFS_OBJ_NAME_LEN
-#define SPIFFS_OBJ_NAME_LEN             (CONFIG_FS_OBJ_NAME_LEN+1)
+#define SPIFFS_OBJ_NAME_LEN             (CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1)
 #endif
 
 // Size of buffer allocated on stack used when copying data.

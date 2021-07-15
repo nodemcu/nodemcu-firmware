@@ -65,7 +65,8 @@ typedef struct {
   nodemcu_esp_event_cb callback;
 } nodemcu_esp_event_reg_t;
 
-extern nodemcu_esp_event_reg_t esp_event_cb_table;
+extern nodemcu_esp_event_reg_t _esp_event_cb_table_start;
+extern nodemcu_esp_event_reg_t _esp_event_cb_table_end;
 
 #define NODEMCU_ESP_EVENT(evcode, func) \
   static const LOCK_IN_SECTION(esp_event_cb_table) \

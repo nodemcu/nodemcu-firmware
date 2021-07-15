@@ -1,144 +1,145 @@
-menu "Platform config"
+menu "NodeMCU platform config"
 
-choice CONSOLE_BIT_RATE
-  prompt "UART console default bit rate"
-  default CONSOLE_BIT_RATE_115200
-  help
-      Configure the default bit rate for the UART console.
+    choice NODEMCU_CONSOLE_BIT_RATE
+        prompt "UART console default bit rate"
+        default NODEMCU_CONSOLE_BIT_RATE_115200
+        help
+            Configure the default bit rate for the UART console.
 
-      The resulting UART setting will be xxx-8N1, where xxx represents the
-      chosen bit rate.
-config CONSOLE_BIT_RATE_300
-  bool "300"
-config CONSOLE_BIT_RATE_600
-  bool "600"
-config CONSOLE_BIT_RATE_1200
-  bool "1200"
-config CONSOLE_BIT_RATE_2400
-  bool "2400"
-config CONSOLE_BIT_RATE_4800
-  bool "4800"
-config CONSOLE_BIT_RATE_9600
-  bool "9600"
-config CONSOLE_BIT_RATE_19200
-  bool "19200"
-config CONSOLE_BIT_RATE_38400
-  bool "38400"
-config CONSOLE_BIT_RATE_57600
-  bool "57600"
-config CONSOLE_BIT_RATE_74880
-  bool "74880"
-config CONSOLE_BIT_RATE_115200
-  bool "115200"
-config CONSOLE_BIT_RATE_230400
-  bool "230400"
-config CONSOLE_BIT_RATE_460800
-  bool "460800"
-config CONSOLE_BIT_RATE_921600
-  bool "921600"
-config CONSOLE_BIT_RATE_1843200
-  bool "1843200"
-config CONSOLE_BIT_RATE_3683400
-  bool "3683400"
-endchoice
+            The resulting UART setting will be xxx-8N1, where xxx represents
+            the chosen bit rate.
+        config NODEMCU_CONSOLE_BIT_RATE_300
+            bool "300"
+        config NODEMCU_CONSOLE_BIT_RATE_600
+            bool "600"
+        config NODEMCU_CONSOLE_BIT_RATE_1200
+            bool "1200"
+        config NODEMCU_CONSOLE_BIT_RATE_2400
+            bool "2400"
+        config NODEMCU_CONSOLE_BIT_RATE_4800
+            bool "4800"
+        config NODEMCU_CONSOLE_BIT_RATE_9600
+            bool "9600"
+        config NODEMCU_CONSOLE_BIT_RATE_19200
+            bool "19200"
+        config NODEMCU_CONSOLE_BIT_RATE_38400
+            bool "38400"
+        config NODEMCU_CONSOLE_BIT_RATE_57600
+            bool "57600"
+        config NODEMCU_CONSOLE_BIT_RATE_74880
+            bool "74880"
+        config NODEMCU_CONSOLE_BIT_RATE_115200
+            bool "115200"
+        config NODEMCU_CONSOLE_BIT_RATE_230400
+            bool "230400"
+        config NODEMCU_CONSOLE_BIT_RATE_460800
+            bool "460800"
+        config NODEMCU_CONSOLE_BIT_RATE_921600
+            bool "921600"
+        config NODEMCU_CONSOLE_BIT_RATE_1843200
+            bool "1843200"
+        config NODEMCU_CONSOLE_BIT_RATE_3683400
+            bool "3683400"
+    endchoice
 
-config CONSOLE_BIT_RATE
-  int
-  default     300 if CONSOLE_BIT_RATE_300
-  default     600 if CONSOLE_BIT_RATE_600
-  default    1200 if CONSOLE_BIT_RATE_1200
-  default    2400 if CONSOLE_BIT_RATE_2400
-  default    4800 if CONSOLE_BIT_RATE_4800
-  default    9600 if CONSOLE_BIT_RATE_9600
-  default   19200 if CONSOLE_BIT_RATE_19200
-  default   38400 if CONSOLE_BIT_RATE_38400
-  default   57600 if CONSOLE_BIT_RATE_57600
-  default   74880 if CONSOLE_BIT_RATE_74880
-  default  115200 if CONSOLE_BIT_RATE_115200
-  default  230400 if CONSOLE_BIT_RATE_230400
-  default  460800 if CONSOLE_BIT_RATE_460800
-  default  921600 if CONSOLE_BIT_RATE_921600
-  default 1843200 if CONSOLE_BIT_RATE_1843200
-  default 3683400 if CONSOLE_BIT_RATE_3683400
+    config NODEMCU_CONSOLE_BIT_RATE
+        int
+        default     300 if NODEMCU_CONSOLE_BIT_RATE_300
+        default     600 if NODEMCU_CONSOLE_BIT_RATE_600
+        default    1200 if NODEMCU_CONSOLE_BIT_RATE_1200
+        default    2400 if NODEMCU_CONSOLE_BIT_RATE_2400
+        default    4800 if NODEMCU_CONSOLE_BIT_RATE_4800
+        default    9600 if NODEMCU_CONSOLE_BIT_RATE_9600
+        default   19200 if NODEMCU_CONSOLE_BIT_RATE_19200
+        default   38400 if NODEMCU_CONSOLE_BIT_RATE_38400
+        default   57600 if NODEMCU_CONSOLE_BIT_RATE_57600
+        default   74880 if NODEMCU_CONSOLE_BIT_RATE_74880
+        default  115200 if NODEMCU_CONSOLE_BIT_RATE_115200
+        default  230400 if NODEMCU_CONSOLE_BIT_RATE_230400
+        default  460800 if NODEMCU_CONSOLE_BIT_RATE_460800
+        default  921600 if NODEMCU_CONSOLE_BIT_RATE_921600
+        default 1843200 if NODEMCU_CONSOLE_BIT_RATE_1843200
+        default 3683400 if NODEMCU_CONSOLE_BIT_RATE_3683400
 
-config CONSOLE_BIT_RATE_AUTO
-  bool "UART console auto-baud detection"
-  default "y"
-  help
-      Enables auto-baud detection for the UART console.
+    config NODEMCU_CONSOLE_BIT_RATE_AUTO
+        bool "UART console auto-baud detection"
+        default "y"
+        help
+            Enables auto-baud detection for the UART console.
 
-      By typing a few characters into the console shortly after boot,
-      NodeMCU can automatically detect your terminal settings and
-      adjust accordingly.
+            By typing a few characters into the console shortly after boot,
+            NodeMCU can automatically detect your terminal settings and
+            adjust accordingly.
 
-      If you are doing advanced things with the console, you may want
-      to disable this feature.
+            If you are doing advanced things with the console, you may want
+            to disable this feature.
 
-config NODE_DEBUG
-  bool "Enable NODE_DBG() output"
-  default "n"
-  help
-      Enable debugging output via NODE_DBG(). This is VERY chatty.
-      For development/debugging use only.
+    config NODEMCU_NODE_DEBUG
+        bool "Enable NODE_DBG() output"
+        default "n"
+        help
+            Enable debugging output via NODE_DBG(). This is VERY chatty.
+            For development/debugging use only.
 
-config NODE_ERR
-  bool "Enable NODE_ERR() output"
-  default "y"
-  help
-      Enable error reporting via NODE_ERR().
+    config NODEMCU_NODE_ERR
+        bool "Enable NODE_ERR() output"
+        default "y"
+        help
+            Enable error reporting via NODE_ERR().
 
-      It is recommended to leave this enabled - if it ever produces output,
-      something has gone seriously wrong and you probably want to know about
-      it.
+            It is recommended to leave this enabled - if it ever produces
+            output, something has gone seriously wrong and you probably want
+            to know about it.
 
-config FS_OBJ_NAME_LEN
-  int "Make filesystem object name length"
-  default 31
-  help
-    Maximum name of filesystem objects (files, directories).
+    config NODEMCU_FS_OBJ_NAME_LEN
+        int "Make filesystem object name length"
+        default 31
+        help
+            Maximum name of filesystem objects (files, directories).
 
-config SPIFFS_MAX_OPEN_FILES
-  int "Maximum number of open files for SPIFFS"
-  default 4
-  help
-    Maximum number of open files for SPIFFS
+    config NODEMCU_SPIFFS_MAX_OPEN_FILES
+        int "Maximum number of open files for SPIFFS"
+        default 4
+        help
+            Maximum number of open files for SPIFFS
 
-# I don't think we can deal without SPIFFS at this point, so always on for now
-config BUILD_SPIFFS
-  bool
-  default "y"
+    config NODEMCU_BUILD_SPIFFS
+        bool
+        default "y"
+        # I don't think we can deal without SPIFFS at this point, so always on for now
 
-config LUA_EMBED_LFS
-  bool "Embed LFS as part of the NodeMCU firmware"
-  default "n"
-  help
-    The LFS (Lua Flash Store) normally has its own partition entry, and can
-    can be replaced at will. Optionally, the LFS can instead be permanently
-    embedded into the NodeMCU firmware image itself. This can be useful for
-    scenarios where over-the-air firmware upgrades are needed to also
-    bundle Lua code. The major downside is that once embedded, the LFS can
-    no longer be changed, as doing so would break the firmware checksums
-    and signatures and leave the system unable to boot.
+    config NODEMCU_BUILD_FATFS
+        bool "Support for FAT filesystems"
+        default "n"
+        select NODEMCU_CMODULE_SDMMC
+        help
+            Include support for accessing FAT filesystems on SD cards.
 
-    The default option is to not embed the LFS, in which case LFS is
-    looked for in a partition of type 0xC2 and subtype 0x01.
+    config NODEMCU_EMBED_LFS
+        bool "Embed LFS as part of the NodeMCU firmware"
+        default "n"
+        help
+            The LFS (Lua Flash Store) normally has its own partition entry,
+            and can can be replaced at will. Optionally, the LFS can instead
+            be permanently embedded into the NodeMCU firmware image itself.
+            This can be useful for scenarios where over-the-air firmware
+            upgrades are needed to also bundle Lua code. The major downside
+            is that once embedded, the LFS can no longer be changed, as
+            doing so would break the firmware checksums and signatures and
+            leave the system unable to boot.
 
-    To embed LFS data into firmware, use:
-      ./tools/embed_lfs.sh /path/to/file1.lua /path/to/file2.lua ...
+            The default option is to not embed the LFS, in which case LFS is
+            looked for in a partition of type 0xC2 and subtype 0x01.
 
-config LUA_EMBEDDED_FLASH_STORE
-  hex "Embedded LUA Flash Store size"
-  default 0x0
-  depends on LUA_EMBED_LFS
-  help
-    Embedded LUA Flash Store size. Set to zero to use an LFS partition instead
-    of embedding the LFS within the NodeMCU firmware itself.
+            To embed LFS data into firmware, use:
+              ./tools/embed_lfs.sh /path/to/file1.lua /path/to/file2.lua ...
 
-config BUILD_FATFS
-  bool "Support for FAT filesystems"
-  default "n"
-  select NODEMCU_CMODULE_SDMMC
-  help
-      Include support for accessing FAT filesystems on SD cards.
+    config NODEMCU_EMBEDDED_LFS_SIZE
+        hex "Embedded LUA Flash Store size"
+        default 0x0
+        depends on NODEMCU_EMBED_LFS
+        help
+            Embedded LUA Flash Store size. Set to zero to use an LFS partition
+            instead of embedding the LFS within the NodeMCU firmware itself.
 
 endmenu

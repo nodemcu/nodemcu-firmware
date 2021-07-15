@@ -1,22 +1,22 @@
 menu "NodeMCU task slot configuration"
 
-config NODEMCU_TASK_SLOT_MEMORY
-  int "Task slot buffer size"
-  default 2000
-  range 80 16000
-  help
-      NodeMCU uses a fixed size RTOS queue for messaging between internal
-      LVM tasks as well as from other RTOS tasks. If this queue is too
-      small, events and data will go missing. On the other hand, if the
-      queue is too big, some memory will go unused.
+    config NODEMCU_TASK_SLOT_MEMORY
+        int "Task slot buffer size"
+        default 2000
+        range 80 16000
+        help
+            NodeMCU uses a fixed size RTOS queue for messaging between internal
+            LVM tasks as well as from other RTOS tasks. If this queue is too
+            small, events and data will go missing. On the other hand, if the
+            queue is too big, some memory will go unused.
 
-      The default value is chosen to be on the safe side for most use
-      cases. Lowering this value will yield more available RAM for use
-      in Lua, but at the increased risk of data loss. Conversely,
-      increasing this value can help resolve aforementioned data loss
-      issues, if encountered.
+            The default value is chosen to be on the safe side for most use
+            cases. Lowering this value will yield more available RAM for use
+            in Lua, but at the increased risk of data loss. Conversely,
+            increasing this value can help resolve aforementioned data loss
+            issues, if encountered.
 
-      The assigned memory size here gets partitioned to the different
-      task priorities; some rounding down may take place as a result.
+            The assigned memory size here gets partitioned to the different
+            task priorities; some rounding down may take place as a result.
 
 endmenu

@@ -31,12 +31,12 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
-#include "rom/uart.h"
+#include "esp32/rom/uart.h"
 #include "task/task.h"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define CONSOLE_UART CONFIG_CONSOLE_UART_NUM
+#define CONSOLE_UART CONFIG_ESP_CONSOLE_UART_NUM
 
 typedef enum
 {

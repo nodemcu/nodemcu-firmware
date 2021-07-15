@@ -15,7 +15,7 @@ static spiffs fs;
 #define MIN_BLOCKS_FS		4
   
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
-static u8_t spiffs_fds[sizeof(spiffs_fd) * CONFIG_SPIFFS_MAX_OPEN_FILES];
+static u8_t spiffs_fds[sizeof(spiffs_fd) * CONFIG_NODEMCU_SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
 static u8_t myspiffs_cache[(LOG_PAGE_SIZE+32)*2];
 #endif
@@ -290,8 +290,8 @@ static int32_t myspiffs_vfs_readdir( const struct vfs_dir *dd, struct vfs_stat *
     memset( buf, 0, sizeof( struct vfs_stat ) );
     // copy entries to  item
     // fill in supported stat entries
-    strncpy( buf->name, (char *)dirent.name, CONFIG_FS_OBJ_NAME_LEN+1 );
-    buf->name[CONFIG_FS_OBJ_NAME_LEN] = '\0';
+    strncpy( buf->name, (char *)dirent.name, CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1 );
+    buf->name[CONFIG_NODEMCU_FS_OBJ_NAME_LEN] = '\0';
     buf->size = dirent.size;
     return VFS_RES_OK;
   }
@@ -453,8 +453,8 @@ static int32_t myspiffs_vfs_stat( const char *name, struct vfs_stat *buf ) {
     memset( buf, 0, sizeof( struct vfs_stat ) );
 
     // fill in supported stat entries
-    strncpy( buf->name, (char *)stat.name, CONFIG_FS_OBJ_NAME_LEN+1 );
-    buf->name[CONFIG_FS_OBJ_NAME_LEN] = '\0';
+    strncpy( buf->name, (char *)stat.name, CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1 );
+    buf->name[CONFIG_NODEMCU_FS_OBJ_NAME_LEN] = '\0';
     buf->size = stat.size;
     return VFS_RES_OK;
   } else {

@@ -248,10 +248,10 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     }
     uart_param_config(id, &cfg);
     uart_set_pin(id, pins->tx_pin, pins->rx_pin, pins->rts_pin, pins->cts_pin);
-    uart_set_line_inverse(id, (pins->tx_inverse? UART_INVERSE_TXD : UART_INVERSE_DISABLE)
-                                | (pins->rx_inverse? UART_INVERSE_RXD : UART_INVERSE_DISABLE)
-                                | (pins->rts_inverse? UART_INVERSE_RTS : UART_INVERSE_DISABLE)
-                                | (pins->cts_inverse? UART_INVERSE_CTS : UART_INVERSE_DISABLE)
+    uart_set_line_inverse(id, (pins->tx_inverse? UART_TXD_INV_M : 0)
+                                | (pins->rx_inverse? UART_RXD_INV_M : 0)
+                                | (pins->rts_inverse? UART_RTS_INV_M : 0)
+                                | (pins->cts_inverse? UART_CTS_INV_M : 0)
                         );
 
     if(uart_event_task_id == 0) uart_event_task_id = task_get_id( uart_event_task );

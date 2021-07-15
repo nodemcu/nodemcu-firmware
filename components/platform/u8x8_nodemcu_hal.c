@@ -1,7 +1,7 @@
 
 #include <string.h>
 
-#include "rom/ets_sys.h"
+#include "esp32/rom/ets_sys.h"
 
 #include "driver/gpio.h"
 #include "driver/i2c.h"

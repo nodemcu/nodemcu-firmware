@@ -76,13 +76,13 @@ vfs_vol *vfs_mount( const char *name, int num )
   const char *normname = normalize_path( name );
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return fs_fns->mount( outname, num );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     vfs_vol *r = fs_fns->mount( outname, num );
     free( outname );
@@ -99,13 +99,13 @@ int vfs_open( const char *name, const char *mode )
   const char *normname = normalize_path( name );
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return (int)fs_fns->open( outname, mode );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     int r = (int)fs_fns->open( outname, mode );
     free( outname );
@@ -122,13 +122,13 @@ vfs_dir *vfs_opendir( const char *name )
   const char *normname = normalize_path( name );
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return fs_fns->opendir( outname );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     vfs_dir *r = fs_fns->opendir( outname );
     free( outname );
@@ -145,13 +145,13 @@ int32_t vfs_stat( const char *name, struct vfs_stat *buf )
   const char *normname = normalize_path( name );
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
        return fs_fns->stat( outname, buf );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
        int32_t r = fs_fns->stat( outname, buf );
     free( outname );
@@ -168,13 +168,13 @@ int32_t vfs_remove( const char *name )
   const char *normname = normalize_path( name );
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return fs_fns->remove( outname );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     int32_t r = fs_fns->remove( outname );
     free( outname );
@@ -192,7 +192,7 @@ int32_t vfs_rename( const char *oldname, const char *newname )
   const char *normnewname = normalize_path( newname );
   char *oldoutname, *newoutname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if (myspiffs_realm( normoldname, &oldoutname, false )) {
     if ((fs_fns = myspiffs_realm( normnewname, &newoutname, false ))) {
       return fs_fns->rename( oldoutname, newoutname );
@@ -200,7 +200,7 @@ int32_t vfs_rename( const char *oldname, const char *newname )
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if (myfatfs_realm( normoldname, &oldoutname, false )) {
     if ((fs_fns = myfatfs_realm( normnewname, &newoutname, false ))) {
       int32_t r = fs_fns->rename( oldoutname, newoutname );
@@ -219,12 +219,12 @@ int32_t vfs_mkdir( const char *name )
 {
   vfs_fs_fns *fs_fns;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   // not supported
   (void)fs_fns;
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   const char *normname = normalize_path( name );
   char *outname;
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
@@ -246,13 +246,13 @@ int32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
 
   const char *normname = normalize_path( name );
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return fs_fns->fsinfo( total, used );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     free( outname );
     return fs_fns->fsinfo( total, used );
@@ -267,13 +267,13 @@ int32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size)
   vfs_fs_fns *fs_fns;
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( "/FLASH", &outname, false ))) {
     return fs_fns->fscfg( phys_addr, phys_size );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   // not supported
 #endif
 
@@ -286,13 +286,13 @@ int32_t vfs_format( void )
   vfs_fs_fns *fs_fns;
   char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( "/FLASH", &outname, false ))) {
     return fs_fns->format();
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   // not supported
 #endif
 
@@ -326,7 +326,7 @@ int32_t vfs_chdir( const char *path )
   }
 #endif
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normpath, &outname, true ))) {
     // our SPIFFS integration doesn't support directories
     if (strlen( outname ) == 0) {
@@ -335,7 +335,7 @@ int32_t vfs_chdir( const char *path )
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normpath, &outname, true ))) {
     if (strchr( outname, ':' )) {
       // need to set FatFS' default drive
@@ -361,13 +361,13 @@ int32_t vfs_errno( const char *name )
 
   if (!name) name = "";  // current drive
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     return fs_fns->ferrno( );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     int32_t r = fs_fns->ferrno( );
     free( outname );
@@ -389,13 +389,13 @@ int32_t vfs_ferrno( int fd )
     const char *name = "";  // current drive
     char *outname;
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
     if ((fs_fns = myspiffs_realm( name, &outname, false ))) {
       return fs_fns->ferrno( );
     }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
     if ((fs_fns = myfatfs_realm( name, &outname, false ))) {
       int32_t r = fs_fns->ferrno( );
       free( outname );
@@ -416,13 +416,13 @@ void vfs_clearerr( const char *name )
 
   const char *normname = normalize_path( name );
 
-#ifdef CONFIG_BUILD_SPIFFS
+#ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
     fs_fns->clearerr( );
   }
 #endif
 
-#ifdef CONFIG_BUILD_FATFS
+#ifdef CONFIG_NODEMCU_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     fs_fns->clearerr( );
     free( outname );

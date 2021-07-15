@@ -301,8 +301,8 @@ static void myfatfs_fill_stat( const FILINFO *fno, struct vfs_stat *buf )
   memset( buf, 0, sizeof( struct vfs_stat ) );
 
   // fill in supported stat entries
-  strncpy( buf->name, fno->fname, CONFIG_FS_OBJ_NAME_LEN+1 );
-  buf->name[CONFIG_FS_OBJ_NAME_LEN] = '\0';
+  strncpy( buf->name, fno->fname, CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1 );
+  buf->name[CONFIG_NODEMCU_FS_OBJ_NAME_LEN] = '\0';
   buf->size = fno->fsize;
   buf->is_dir = fno->fattrib & AM_DIR ? 1 : 0;
   buf->is_rdonly = fno->fattrib & AM_RDO ? 1 : 0;

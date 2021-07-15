@@ -100,7 +100,7 @@
 
 
 #define FF_USE_LFN		3
-#define FF_MAX_LFN		(CONFIG_FS_OBJ_NAME_LEN+1+1)
+#define FF_MAX_LFN		(CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1+1)
 /* The FF_USE_LFN switches the support for LFN (long file name).
 /
 /   0: Disable LFN. FF_MAX_LFN has no effect.

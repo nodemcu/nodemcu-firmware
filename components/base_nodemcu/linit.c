@@ -63,11 +63,21 @@ const LOCK_IN_SECTION(zzzzzzzz) char _ro_end[1] = {0};
 #endif
 
 LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables)
+#ifdef CONFIG_LUA_BUILTIN_STRING
   LROT_TABENTRY( string, strlib )
+#endif
+#ifdef CONFIG_LUA_BUILTIN_TABLE
   LROT_TABENTRY( table, tab_funcs )
-  LROT_TABENTRY( debug, dblib)
+#endif
+#ifdef CONFIG_LUA_BUILTIN_COROUTINE
   LROT_TABENTRY( coroutine, co_funcs )
+#endif
+#ifdef CONFIG_LUA_BUILTIN_DEBUG
+  LROT_TABENTRY( debug, dblib)
+#endif
+#ifdef CONFIG_LUA_BUILTIN_MATH
   LROT_TABENTRY( math, math )
+#endif
   LROT_TABENTRY( ROM, lua_rotables )
 #ifdef LUA_CROSS_COMPILER
   LROT_TABENTRY( os, oslib )
@@ -80,9 +90,15 @@ LROT_BREAK(lua_rotables)
 LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(libs) lua_libs)
   LROT_FUNCENTRY( _, luaopen_base )
   LROT_FUNCENTRY( package, luaopen_package )
+#ifdef CONFIG_LUA_BUILTIN_STRING
   LROT_FUNCENTRY( string, luaopen_string )
+#endif
+#ifdef CONFIG_LUA_BUILTIN_TABLE
   LROT_FUNCENTRY( table, luaopen_table )
+#endif
+#ifdef CONFIG_LUA_BUILTIN_DEBUG
   LROT_FUNCENTRY( debug, luaopen_debug )
+#endif
 #ifndef LUA_CROSS_COMPILER
 LROT_BREAK(lua_rotables)
 #else

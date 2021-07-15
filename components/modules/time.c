@@ -13,7 +13,7 @@
   lua_pushinteger (L, val);      \
   lua_setfield (L, -2, key);
   
-void inline time_tmToTable(lua_State *L, struct tm *date)
+static void inline time_tmToTable(lua_State *L, struct tm *date)
 { 
   lua_createtable (L, 0, 9);
   

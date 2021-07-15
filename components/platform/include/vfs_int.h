@@ -50,7 +50,7 @@ typedef const struct vfs_file vfs_file;
 // stat data
 struct vfs_stat {
   uint32_t size;
-  char name[CONFIG_FS_OBJ_NAME_LEN+1];
+  char name[CONFIG_NODEMCU_FS_OBJ_NAME_LEN+1];
   struct vfs_time tm;
   uint8_t tm_valid;
   uint8_t is_dir;

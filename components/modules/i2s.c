@@ -198,8 +198,8 @@ static int node_i2s_start( lua_State *L )
 
   if (i2s_config.mode & I2S_MODE_TX) {
     // prepare TX task
-    char pcName[8];
-    snprintf( pcName, 8, "I2S_tx_%d", i2s_id );
+    char pcName[20];
+    snprintf( pcName, sizeof(pcName), "I2S_tx_%d", i2s_id );
     pcName[7] = '\0';
     if ((is->tx.queue = xQueueCreate( 2, sizeof( i2s_tx_data_t ) )) == NULL)
       return luaL_error( L, "cannot create queue" );
@@ -208,8 +208,8 @@ static int node_i2s_start( lua_State *L )
 
   if (i2s_config.mode & I2S_MODE_RX) {
     // prepare RX task
-    char pcName[8];
-    snprintf( pcName, 8, "I2S_rx_%d", i2s_id );
+    char pcName[20];
+    snprintf( pcName, sizeof(pcName), "I2S_rx_%d", i2s_id );
     pcName[7] = '\0';
     xTaskCreate(task_I2S_rx, pcName, 1024, (void *)i2s_id, ESP_TASK_MAIN_PRIO + 1, &is->rx.taskHandle);
   }

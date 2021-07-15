@@ -1,7 +1,7 @@
 #ifndef __I2C_SW_MASTER_H__
 #define __I2C_SW_MASTER_H__
 
-#include "rom/ets_sys.h"
+#include "esp32/rom/ets_sys.h"
 
 #define I2C_NUM_MAX 1
 

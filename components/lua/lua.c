@@ -266,7 +266,7 @@ static int runargs (lua_State *L, char **argv, int n) {
 static int handle_luainit (lua_State *L) {
   const char *init = LUA_INIT_STRING;
   if (init[0] == '@') {
-  #if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+  #if CONFIG_NODEMCU_EMBEDDED_LFS_SIZE > 0
     int status = dolfsfile(L, init+1);
     if (status == 0)
       return status;

@@ -1,18 +1,32 @@
-# set custom partition table for 1.5MB firmware
-CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="components/platform/partitions.csv"
-CONFIG_PARTITION_TABLE_FILENAME="components/platform/partitions.csv"
-CONFIG_PARTITION_TABLE_SINGLE_APP=n
-CONFIG_PARTITION_TABLE_TWO_OTA=n
-CONFIG_PARTITION_TABLE_CUSTOM=y
-
 # Default to 4MB for builds
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 
-# Don't warn about undefined variables
-CONFIG_MAKE_WARN_UNDEFINED_VARIABLES=n
+# Set custom partition table for 1.5MB firmware
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="components/platform/partitions.csv"
+CONFIG_PARTITION_TABLE_SINGLE_APP=n
+CONFIG_PARTITION_TABLE_TWO_OTA=n
+
+# Squeeze in as much code as we can manage
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 
 # Empirical value to prevent a firmware crash due to stack overflow.
-CONFIG_MAIN_TASK_STACK_SIZE=8192
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Enable panic handler for task wdt to reset the firmware upon wdt timeout
+CONFIG_ESP_TASK_WDT_PANIC=y
+
+# Disable advanced features by default
+CONFIG_MQTT_TRANSPORT_SSL=n
+CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
+CONFIG_MQTT_USE_CUSTOM_CONFIG=n
+
+# Allow writing to dangerous regions to avoid boot loops when creating filesystem
+# Symptom:
+#   Mounting flash filesystem...
+#   No filesystem partition found, attempting to create it...
+#   abort() was called at PC 0x400ecddd on core 0
+CONFIG_SPI_FLASH_DANGEROUS_WRITE_ALLOWED=y
 
 # Enable address reuse for sockets in TIME_WAIT
 # see https://github.com/nodemcu/nodemcu-firmware/pull/1838
@@ -22,24 +36,6 @@ CONFIG_LWIP_SO_REUSE=y
 # see https://github.com/nodemcu/nodemcu-firmware/issues/1836
 CONFIG_TCP_MSL=5000
 
-# Allow writing to dangerous regions to avoid boot loops when creating filesystem
-# Symptom:
-#   Mounting flash filesystem...
-#   No filesystem partition found, attempting to create it...
-#   abort() was called at PC 0x400ecddd on core 0
-CONFIG_SPI_FLASH_WRITING_DANGEROUS_REGIONS_ALLOWED=y
-
-# Enable panic handler for task wdt to reset the firmware upon wdt timeout
-CONFIG_TASK_WDT_PANIC=y
-
-# Disable advanced features by default
-CONFIG_MQTT_TRANSPORT_SSL=n
-CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
-CONFIG_MQTT_USE_CUSTOM_CONFIG=n
-
 # Disable esp-idf's bluetooth component by default.
 # The bthci module is also disabled and will enable bt when selected
 CONFIG_BT_ENABLED=n
-
-# Set "Release" code optimization level for -Os
-CONFIG_OPTIMIZATION_LEVEL_RELEASE=y

@@ -1,274 +1,229 @@
 menu "NodeMCU modules"
 
-menu "Core Lua modules"
+    config NODEMCU_CMODULE_ADC
+        bool "ADC module"
+        default "n"
+        help
+            Includes the adc module. This module provides access to the
+            adc1 hardware.
 
-config LUA_BUILTIN_STRING
-  bool "String module"
-  default "y"
-  help
-    Includes the string module (recommended).
+    config NODEMCU_CMODULE_BIT
+        bool "Bit module"
+        default "n"
+        help
+            Includes the bit module. This module provide bit manipulation
+            functions on Lua numbers.
 
-config LUA_BUILTIN_TABLE
-  bool "Table module"
-  default "y"
-  help
-    Includes the table module (recommended).
+    config NODEMCU_CMODULE_BTHCI
+        bool "BlueTooth HCI interface module"
+        default "n"
+        select BT_ENABLED
+        help
+            Includes the simple BlueTooth HCI module.
 
-config LUA_BUILTIN_COROUTINE
-  bool "Coroutine module"
-  default "y"
-  help
-    Includes the coroutine module (recommended).
+    config NODEMCU_CMODULE_CAN
+        bool "CAN module"
+        default "n"
+        help
+            Includes the can module.
 
-config LUA_BUILTIN_MATH
-  bool "Math module"
-  default "y"
-  help
-    Includes the math module (recommended).
+    config NODEMCU_CMODULE_CRYPTO
+        bool "Crypto module"
+        default "n"
+        help
+            Includes the crypto module.
 
-config LUA_BUILTIN_DEBUG
-  bool "Debug module"
-  default "n"
-  help
-    Includes the debug module.
+    config NODEMCU_CMODULE_DAC
+        bool "DAC module"
+        default "n"
+        help
+            Includes the dac module.
 
-config LUA_BUILTIN_DEBUG_EXTENDED
-depends on LUA_BUILTIN_DEBUG
-  bool "Extended debug support"
-  default "n"
-  help
-    Includes the full debug module, rather than just getregistry and traceback.
+    config NODEMCU_CMODULE_DHT
+        bool "DHT11/21/22/AM2301/AM2302 module"
+        default "n"
+        help
+            Includes the dht module.
 
-config LUA_BUILTIN_DEBUG_MINIMAL
-depends on LUA_BUILTIN_DEBUG
-  bool
-  default !LUA_BUILTIN_DEBUG_EXTENDED
+    config NODEMCU_CMODULE_ENCODER
+        bool "Encoder module"
+        default "n"
+        help
+            Includes the encoder module. This provides hex and base64 encoding
+            and decoding functionality.
 
-endmenu
+    config NODEMCU_CMODULE_ETH
+        bool "Ethernet module"
+        default "n"
+        help
+            Includes the ethernet module.
 
+    config NODEMCU_CMODULE_FILE
+        bool "File module"
+        default "y"
+        help
+            Includes the file module (recommended).
 
-config NODEMCU_CMODULE_ADC
-  bool "ADC module"
-  default "n"
-  help
-      Includes the adc module. This module provides access to the
-      adc1 hardware.
+    config NODEMCU_CMODULE_GPIO
+        bool "GPIO module"
+        default "y"
+        help
+            Includes the GPIO module (recommended).
 
-config NODEMCU_CMODULE_BIT
-  bool "Bit module"
-  default "n"
-  help
-      Includes the bit module. This module provide bit manipulation functions
-      on Lua numbers.
+    config NODEMCU_CMODULE_HTTP
+        bool "HTTP module"
+        default "y"
+        help
+            Includes the HTTP module (recommended).
 
-config NODEMCU_CMODULE_BTHCI
-  bool "BlueTooth HCI interface module"
-  default "n"
-  select BT_ENABLED
-  help
-      Includes the simple BlueTooth HCI module.
+    config NODEMCU_CMODULE_I2C
+        bool "I2C module"
+        default "y"
+        help
+            Includes the I2C module (recommended).
 
-config NODEMCU_CMODULE_CAN
-  bool "CAN module"
-  default "n"
-  help
-      Includes the can module.
+    config NODEMCU_CMODULE_I2S
+        bool "I2S module"
+        default "n"
+        help
+            Includes the I2S module.
 
-config NODEMCU_CMODULE_CRYPTO
-  bool "Crypto module"
-  default "n"
-  help
-      Includes the crypto module.
+    config NODEMCU_CMODULE_LEDC
+        bool "LEDC module"
+        default "n"
+        help
+            Includes the LEDC module.
 
-config NODEMCU_CMODULE_DAC
-  bool "DAC module"
-  default "n"
-  help
-      Includes the dac module.
+    config NODEMCU_CMODULE_MQTT
+        bool "MQTT module"
+        default "n"
+        help
+            Includes the MQTT module.
 
-config NODEMCU_CMODULE_DHT
-  bool "DHT11/21/22/AM2301/AM2302 module"
-  default "n"
-  help
-      Includes the dht module.
+    config NODEMCU_CMODULE_NET
+        bool "Net module"
+        default "y"
+        help
+            Includes the net module (recommended).
 
-config NODEMCU_CMODULE_ENCODER
-  bool "Encoder module"
-  default "n"
-  help
-      Includes the encoder module. This provides hex and base64 encoding and
-      decoding functionality.
+    config NODEMCU_CMODULE_NODE
+        bool "Node module"
+        default "y"
+        help
+            Includes the node module (recommended).
 
-config NODEMCU_CMODULE_ETH
-  bool "Ethernet module"
-  default "n"
-  help
-      Includes the ethernet module.
+    config NODEMCU_CMODULE_OW
+        bool "1-Wire module"
+        default "y"
+        help
+            Includes the 1-Wire (ow) module (recommended).
 
-config NODEMCU_CMODULE_FILE
-  bool "File module"
-  default "y"
-  help
-      Includes the file module (recommended).
+    config NODEMCU_CMODULE_OTAUPGRADE
+        bool "Over-The-Air upgrade module"
+        default "n"
+        help
+            Includes the over-the-air firmware upgrade module. Use of this
+            requires a partition table with at least two OTA partitions, plus
+            the OTA data partition. See the IDF documentation for details.
 
-config NODEMCU_CMODULE_GPIO
-  bool "GPIO module"
-  default "y"
-  help
-      Includes the GPIO module (recommended).
+    config NODEMCU_CMODULE_PULSECNT
+        bool "Pulse counter module"
+        default "n"
+        help
+            Includes the pulse counter module to use ESP32's built-in pulse
+            counting hardware.
 
-config NODEMCU_CMODULE_HTTP
-  bool "HTTP module"
-  default "y"
-  help
-      Includes the HTTP module (recommended).
+    config NODEMCU_CMODULE_QRCODEGEN
+        bool "QR Code Generator module"
+        default "n"
+        help
+            Includes the QR Code Generator from
+            https://www.nayuki.io/page/qr-code-generator-library
 
-config NODEMCU_CMODULE_I2C
-  bool "I2C module"
-  default "y"
-  help
-      Includes the I2C module (recommended).
+    config NODEMCU_CMODULE_SDMMC
+        bool "SD-MMC module"
+        default "n"
+        help
+            Includes the sdmmc module.
 
-config NODEMCU_CMODULE_I2S
-  bool "I2S module"
-  default "n"
-  help
-      Includes the I2S module.
+    config NODEMCU_CMODULE_SIGMA_DELTA
+        bool "Sigma-Delta module"
+        default "n"
+        help
+            Includes the sigma_delta module. This module provides access to
+            the sigma-delta hardware.
 
-config NODEMCU_CMODULE_LEDC
-  bool "LEDC module"
-  default "n"
-  help
-      Includes the LEDC module.
+    config NODEMCU_CMODULE_SJSON
+        bool "SJSON module"
+        default "n"
+        help
+            Includes the sjson module.
 
-config NODEMCU_CMODULE_MQTT
-  bool "MQTT module"
-  default "n"
-  help
-      Includes the MQTT module.
+    config NODEMCU_CMODULE_SODIUM
+        bool "Sodium module"
+        default "n"
+        help
+            Includes the libsodium crypto module.
 
-config NODEMCU_CMODULE_NET
-  bool "Net module"
-  default "y"
-  help
-      Includes the net module (recommended).
+    config NODEMCU_CMODULE_SPI
+        bool "SPI module"
+        default "n"
+        help
+            Includes the spi module.
 
-config NODEMCU_CMODULE_NODE
-  bool "Node module"
-  default "y"
-  help
-      Includes the node module (recommended).
+    config NODEMCU_CMODULE_STRUCT
+        bool "Struct module"
+        default "n"
+        help
+            Includes the struct module. This module provides [un]packing of
+            raw byte strings into Lua values and vice versa.
 
-config NODEMCU_CMODULE_OW
-  bool "1-Wire module"
-  default "y"
-  help
-      Includes the 1-Wire (ow) module (recommended).
+    config NODEMCU_CMODULE_TMR
+        bool "Timer module"
+        default "y"
+        help
+            Includes the timer module (recommended).
 
-config NODEMCU_CMODULE_OTAUPGRADE
-  bool "Over-The-Air upgrade module"
-  default "n"
-  help
-      Includes the over-the-air firmware upgrade module. Use of this requires
-      a partition table with at least two OTA partitions, plus the OTA data
-      partition. See the IDF documentation for details.
+    config NODEMCU_CMODULE_TOUCH
+        bool "Touch module"
+        default "n"
+        help
+            Includes the touch module to use ESP32's built-in touch sensor
+            hardware.
 
-config NODEMCU_CMODULE_PULSECNT
-  bool "Pulse counter module"
-  default "n"
-  help
-      Includes the pulse counter module to use ESP32's built-in pulse counting hardware.
+    config NODEMCU_CMODULE_U8G2
+        bool "U8G2 module"
+        default "n"
+        help
+            Includes the u8g2 module.
 
-config NODEMCU_CMODULE_QRCODEGEN
-  bool "QR Code Generator module"
-  default "n"
-  help
-      Includes the QR Code Generator from
-      https://www.nayuki.io/page/qr-code-generator-library
+    rsource "../u8g2/Kconfig.u8g2"
 
-config NODEMCU_CMODULE_SDMMC
-  bool "SD-MMC module"
-  default "n"
-  help
-      Includes the sdmmc module.
+    config NODEMCU_CMODULE_UCG
+        bool "UCG module"
+        default "n"
+        select NODEMCU_CMODULE_SPI
+        help
+            Includes the ucg module.
 
-config NODEMCU_CMODULE_SIGMA_DELTA
-  bool "Sigma-Delta module"
-  default "n"
-  help
-      Includes the sigma_delta module. This module provides access to the
-      sigma-delta hardware.
-	  
-config NODEMCU_CMODULE_SJSON
-  bool "SJSON module"
-  default "n"
-  help
-      Includes the sjson module.
+    rsource "../ucg/Kconfig.ucg"
 
-config NODEMCU_CMODULE_SODIUM
-  bool "Sodium module"
-  default "n"
-  help
-      Includes the libsodium crypto module.
+    config NODEMCU_CMODULE_WIFI
+        bool "WiFi module"
+        default "y"
+        help
+            Includes the WiFi module (recommended).
 
-config NODEMCU_CMODULE_SPI
-  bool "SPI module"
-  default "n"
-  help
-      Includes the spi module.
+    config NODEMCU_CMODULE_WS2812
+        bool "WS2812 module"
+        default "n"
+        help
+            Includes the ws2812 module.
 
-config NODEMCU_CMODULE_STRUCT
-  bool "Struct module"
-  default "n"
-  help
-      Includes the struct module. This module provides [un]packing of raw
-      byte strings into Lua values and vice versa.
-
-config NODEMCU_CMODULE_TMR
-  bool "Timer module"
-  default "y"
-  help
-      Includes the timer module (recommended).
-
-config NODEMCU_CMODULE_TOUCH
-  bool "Touch module"
-  default "n"
-  help
-      Includes the touch module to use ESP32's built-in touch sensor hardware.
-
-config NODEMCU_CMODULE_U8G2
-  bool "U8G2 module"
-  default "n"
-  help
-      Includes the u8g2 module.
-
-source "$PROJECT_PATH/components/u8g2/u8g2.kconfig"
-
-config NODEMCU_CMODULE_UCG
-  bool "UCG module"
-  default "n"
-  select NODEMCU_CMODULE_SPI
-  help
-      Includes the ucg module.
-
-source "$PROJECT_PATH/components/ucg/ucg.kconfig"
-
-config NODEMCU_CMODULE_WIFI
-  bool "WiFi module"
-  default "y"
-  help
-      Includes the WiFi module (recommended).
-
-config NODEMCU_CMODULE_WS2812
-  bool "WS2812 module"
-  default "n"
-  help
-      Includes the ws2812 module.
-	  
-config NODEMCU_CMODULE_TIME
-  bool "Time module"
-  default "n"
-  help
-      Includes the time module.
+    config NODEMCU_CMODULE_TIME
+        bool "Time module"
+        default "n"
+        help
+            Includes the time module.
 
 endmenu

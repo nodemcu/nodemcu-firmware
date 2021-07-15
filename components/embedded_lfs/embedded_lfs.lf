@@ -1,0 +1,13 @@
+[sections:rodata_embedded]
+entries:
+    .rodata.embedded
+
+[scheme:embedded_lfs]
+entries:
+    rodata_embedded -> flash_text
+
+[mapping:embedded_lfs]
+archive: libembedded_lfs.a
+entries:
+    * (default);
+        rodata -> flash_rodata KEEP() ALIGN(4096)

@@ -2,7 +2,7 @@
 
 LUA_APP_SRC="$@"
 
-MAP_FILE=build/NodeMCU.map
+MAP_FILE=build/nodemcu.map
 LUAC_OUTPUT=build/luac.out
 LUAC_CROSS=build/luac_cross/luac.cross
 
@@ -15,18 +15,19 @@ if [ ! -f "${LUAC_CROSS}" ]; then
 	exit 1
 fi
 
-LFS_ADDR_SIZE=`grep -E "\.lfs\.reserved[ ]+0x[0-9a-f]+[ ]+0x[0-9a-z]+" ${MAP_FILE} | tr -s ' '`
+LFS_ADDR_SIZE=$(grep -E "0x[0-9a-f]+[ ]+0x[0-9a-f]+[ ]+esp-idf/embedded_lfs/libembedded_lfs.a\(lua.flash.store.reserved.S.obj\)" "${MAP_FILE}" | grep -v -w 0x0 | tr -s ' ')
 if [ -z "${LFS_ADDR_SIZE}" ]; then
 	echo "Error: LFS segment not found. Use 'make clean; make' perhaps?"
 	exit 1
 fi
 
-LFS_ADDR=`echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 3`
+LFS_ADDR=$(echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 2)
 if [ -z "${LFS_ADDR}" ]; then
 	echo "Error: LFS segment address not found"
 	exit 1
 fi
-LFS_SIZE=`echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 4`
+# The reported size is +4 due to the length field added by the IDF
+LFS_SIZE=$(( $(echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 3) - 4 ))
 if [ -z "${LFS_SIZE}" ]; then
 	echo "Error: LFS segment size not found"
 	exit 1
@@ -39,5 +40,7 @@ if [ $? != 0 ]; then
 	echo "Error: luac.cross failed"
 	exit 1
 fi
+# cmake depencies don't seem to pick up the change to luac.out?
+rm -f build/lua.flash.store.reserved
 
 make

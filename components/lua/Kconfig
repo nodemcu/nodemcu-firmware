@@ -1,0 +1,81 @@
+menu "Lua configuration"
+
+    config LUA_NUMBER_INTEGRAL
+      bool "Integer-only build"
+      default "n"
+      help
+          Build Lua without support for floating point numbers.
+          Not generally recommended, but can save on code size.
+
+    menu "Core Lua modules"
+
+        config LUA_BUILTIN_STRING
+            bool "String module"
+            default "y"
+            help
+                Includes the string module (recommended).
+
+        config LUA_BUILTIN_TABLE
+            bool "Table module"
+            default "y"
+            help
+                Includes the table module (recommended).
+
+        config LUA_BUILTIN_COROUTINE
+            bool "Coroutine module"
+            default "y"
+            help
+                Includes the coroutine module (recommended).
+
+        config LUA_BUILTIN_MATH
+            bool "Math module"
+            default "y"
+            help
+                Includes the math module (recommended).
+
+        config LUA_BUILTIN_DEBUG
+            bool "Debug module"
+            default "n"
+            help
+                Includes the debug module.
+
+        config LUA_BUILTIN_DEBUG_EXTENDED
+            depends on LUA_BUILTIN_DEBUG
+            bool "Extended debug support"
+            default "n"
+            help
+                Includes the full debug module, rather than just getregistry
+                and traceback.
+
+        config LUA_BUILTIN_DEBUG_MINIMAL
+            depends on LUA_BUILTIN_DEBUG
+            bool
+            default !LUA_BUILTIN_DEBUG_EXTENDED
+
+    endmenu
+
+    menu "Lua compilation"
+
+        choice LUA_OPTIMIZE_DEBUG_LEVEL
+            prompt "Discard debug info in compiled Lua"
+            default LUA_OPTIMIZE_DEBUG_NONE
+            help
+                Discard debug information in compiled Lua code to save memory.
+
+            config LUA_OPTIMIZE_DEBUG_NONE
+                bool "No (keep full debug info)"
+            config LUA_OPTIMIZE_DEBUG_LOCAL_UPVAL
+                bool "Some (discard local & upvalue debug info)"
+            config LUA_OPTIMIZE_DEBUG_LOCAL_UPVAL_LINENO
+                bool "All (discard local, upvalue & line number info)"
+        endchoice
+
+        config LUA_OPTIMIZE_DEBUG
+            int
+            default 1 if LUA_OPTIMIZE_DEBUG_NONE
+            default 2 if LUA_OPTIMIZE_DEBUG_LOCAL_UPVAL
+            default 3 if LUA_OPTIMIZE_DEBUG_LOCAL_UPVAL_LINENO
+
+    endmenu
+
+endmenu

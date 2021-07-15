@@ -23,13 +23,13 @@ enum
 };
 
 
-#if CONFIG_NODE_DEBUG
+#if CONFIG_NODEMCU_NODE_DEBUG
 # define NODE_DBG printf
 #else
 # define NODE_DBG(...) do{}while(0)
 #endif
 
-#if CONFIG_NODE_ERR
+#if CONFIG_NODEMCU_NODE_ERR
 # define NODE_ERR printf
 #else
 # define NODE_ERR(...) do{}while(0)

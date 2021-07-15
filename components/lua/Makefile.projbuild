@@ -1,7 +1,0 @@
--include $(PROJECT_PATH)/build/include/config/auto.conf
-
-CFLAGS+=\
-	-DLUA_OPTIMIZE_MEMORY=2 \
-	-DMIN_OPT_LEVEL=2 \
-	-DLUA_OPTIMIZE_DEBUG=$(CONFIG_LUA_OPTIMIZE_DEBUG) \
-
