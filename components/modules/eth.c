@@ -1,3 +1,5 @@
+#if 0
+// FIXME - IDFv3 API no longer available; this needs a major rewrite :(
 
 #include <string.h>
 
@@ -305,3 +307,4 @@ LROT_BEGIN(eth)
 LROT_END(eth, NULL, 0)
 
 NODEMCU_MODULE(ETH, "eth", eth, NULL);
+#endif

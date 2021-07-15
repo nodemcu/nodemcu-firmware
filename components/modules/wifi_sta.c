@@ -1,3 +1,6 @@
+#if 0
+// FIXME - tcpip_adapter deprecated/removed - need to rewrite for esp_netif
+
 /*
  * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
  *
@@ -470,3 +473,4 @@ LROT_END(wifi_sta, NULL, 0)
 NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_START, do_connect);
 NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_DISCONNECTED, do_connect);
 NODEMCU_ESP_EVENT(SYSTEM_EVENT_SCAN_DONE, on_scan_done);
+#endif
