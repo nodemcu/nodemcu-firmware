@@ -4,28 +4,21 @@
 
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-# SDK base version, as released by Espressif depends on the RELEASE flag
+# SDK base version, as released by Espressif depends on the SDK_RELEASE flag
 #
-# RELEASE = lastest pulls the latest V3.0.0 branch version as at the issue of this make
-# otherwise it pulls the labelled version in the SDK version's release directory
+# SDK_RELEASE = master pulls the latest changes from the NONOS_SDK master
+# branch (contains all work-in-progress commits)
 #
-ifeq ("$(RELEASE)","latest-3.0")
-  SDK_VER        := 3.0.0
-  SDK_FILE_SHA1  := NA
-  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-release-v$(SDK_VER)
-  SDK_FILE_VER   := release/v$(SDK_VER)
-else ifeq ("$(RELEASE)","master")
+ifeq ("$(SDK_RELEASE)","master")
   SDK_VER        := master
   SDK_FILE_SHA1  := NA
   SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_VER)
   SDK_FILE_VER   := $(SDK_VER)
 else
-# SDK_VER        := 3.0
-# SDK_FILE_VER   := v$(SDK_VER)
-  SDK_FILE_VER   := e4434aa730e78c63040ace360493aef420ec267c
-  SDK_VER        := 3.0-e4434aa
-  SDK_FILE_SHA1  := ac6528a6a206d3d4c220e4035ced423eb314cfbf
-  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_FILE_VER)
+  SDK_VER        := 3.0.4
+  SDK_FILE_SHA1  := 24c702348ee5b9ae3ae640c1aead60c97768c881
+  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_VER)
+  SDK_FILE_VER   := v$(SDK_VER)
 endif
 SDK_REL_DIR      := sdk/esp_iot_sdk_v$(SDK_VER)
 SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
