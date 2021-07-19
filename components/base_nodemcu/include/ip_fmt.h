@@ -36,6 +36,7 @@
 
 #include <stdint.h>
 #include "lwip/ip_addr.h"
+#include "esp_netif_ip_addr.h"
 
 // String buffer for a formatted MAC/BSSID
 #define MAC_STR_SZ (6*2+5+1)
@@ -46,5 +47,9 @@ void macstr (char *out, const uint8_t *mac);
 void ipstr (char *out, const ip_addr_t *ip);
 void ip4str (char *out, const ip4_addr_t *ip);
 void ip6str (char *out, const ip6_addr_t *ip);
+
+void ipstr_esp (char *out, const esp_ip_addr_t *ip);
+void ip4str_esp (char *out, const esp_ip4_addr_t *ip);
+void ip6str_esp (char *out, const esp_ip6_addr_t *ip);
 
 #endif

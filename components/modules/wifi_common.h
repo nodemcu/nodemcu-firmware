@@ -35,6 +35,7 @@
 
 #include <stdint.h>
 #include "esp_wifi.h"
+#include "esp_event.h"
 #include "lua.h"
 
 // Shared sta/ap macros
@@ -51,18 +52,19 @@
 
 // Shared event handling support
 
-typedef void (*fill_cb_arg_fn) (lua_State *L, const system_event_t *evt);
+typedef void (*fill_cb_arg_fn) (lua_State *L, const void *data);
 typedef struct
 {
   const char *name;
-  system_event_id_t event_id;
+  esp_event_base_t *event_base_ptr;
+  int32_t  event_id;
   fill_cb_arg_fn fill_cb_arg;
 } event_desc_t;
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
 int wifi_event_idx_by_name (const event_desc_t *table, unsigned n, const char *name);
-int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, system_event_id_t id);
+int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, esp_event_base_t base, int32_t id);
 
 int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb);
 

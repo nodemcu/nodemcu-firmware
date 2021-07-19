@@ -31,9 +31,7 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 #include "ip_fmt.h"
-#include "lwip/sockets.h"
-#include "lwip/ip_addr.h"
-#include "lwip/ip4_addr.h"
+#include "esp_netif.h"
 #include <stdio.h>
 
 void macstr (char *str, const uint8_t *mac)
@@ -54,11 +52,32 @@ void ipstr (char *out, const ip_addr_t *ip)
 
 void ip4str (char *out, const ip4_addr_t *ip)
 {
-  ip4addr_ntoa_r (ip, out, IP_STR_SZ);
+  ip4addr_ntoa_r(ip, out, IP_STR_SZ);
 }
 
 
 void ip6str (char *out, const ip6_addr_t *ip)
 {
-  ip6addr_ntoa_r (ip, out, IP_STR_SZ);
+  ip6addr_ntoa_r(ip, out, IP_STR_SZ);
+}
+
+
+void ipstr_esp (char *out, const esp_ip_addr_t *ip)
+{
+  if (ip->type == ESP_IPADDR_TYPE_V4)
+    ip4str (out, &ip->u_addr.ip4);
+  else if (ip->type == ESP_IPADDR_TYPE_V6)
+    ip6str (out, &ip->u_addr.ip6);
+}
+
+
+void ip4str_esp (char *out, const esp_ip4_addr_t *ip)
+{
+  esp_ip4addr_ntoa(ip, out, IP_STR_SZ);
+}
+
+
+void ip6str_esp (char *out, const esp_ip6_addr_t *ip)
+{
+  ip6addr_ntoa_r((ip6_addr_t *)ip, out, IP_STR_SZ);
 }

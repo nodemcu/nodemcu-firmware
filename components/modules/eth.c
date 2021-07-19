@@ -72,35 +72,36 @@ static void eth_gpio_config_rmii( void )
 
 // --- Event handling -----------------------------------------------------
 
-typedef void (*fill_cb_arg_fn) (lua_State *L, const system_event_t *evt);
+typedef void (*fill_cb_arg_fn) (lua_State *L, const void *data);
 typedef struct
 {
   const char *name;
-  system_event_id_t event_id;
+  esp_event_base_t event_base_ptr;
+  int32_t event_id;
   fill_cb_arg_fn fill_cb_arg;
 } event_desc_t;
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
-static void eth_got_ip (lua_State *L, const system_event_t *evt);
-static void empty_arg (lua_State *L, const system_event_t *evt) {}
+static void eth_got_ip (lua_State *L, const void *data);
+static void empty_arg (lua_State *L, const void *data) {}
 
 static const event_desc_t events[] =
 {
-  { "start",            SYSTEM_EVENT_ETH_START,           empty_arg     },
-  { "stop",             SYSTEM_EVENT_ETH_STOP,            empty_arg     },
-  { "connected",        SYSTEM_EVENT_ETH_CONNECTED,       empty_arg     },
-  { "disconnected",     SYSTEM_EVENT_ETH_DISCONNECTED,    empty_arg     },
-  { "got_ip",           SYSTEM_EVENT_ETH_GOT_IP,          eth_got_ip    },
+  { "start",        &ETHERNET_EVENT, ETHERNET_EVENT_START,        empty_arg   },
+  { "stop",         &ETHERNET_EVENT, ETHERNET_EVENT_STOP,         empty_arg   },
+  { "connected",    &ETHERNET_EVENT, ETHERNET_EVENT_CONNECTED,    empty_arg   },
+  { "disconnected", &ETHERNET_EVENT, ETHERNET_EVENT_DISCONNECTED, empty_arg   },
+  { "got_ip",       &IP_EVENT,       IP_EVENT_GOT_IP,             eth_got_ip  },
 };
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 static int event_cb[ARRAY_LEN(events)];
 
-static int eth_event_idx_by_id( system_event_id_t id )
+static int eth_event_idx_by_id( esp_event_base_t base, int32_t id )
 {
   for (unsigned i = 0; i < ARRAY_LEN(events); ++i)
-    if (events[i].event_id == id)
+    if (*events[i].event_base_ptr == base && events[i].event_id == id)
       return i;
   return -1;
 }
@@ -114,9 +115,9 @@ static int eth_event_idx_by_name( const char *name )
 }
 
 
-static void eth_got_ip( lua_State *L, const system_event_t *evt )
+static void eth_got_ip( lua_State *L, const void *data )
 {
-  (void)evt;
+  (void)data;
   tcpip_adapter_ip_info_t ip_info;
 
   memset(&ip_info, 0, sizeof(tcpip_adapter_ip_info_t));
@@ -140,9 +141,9 @@ static void eth_got_ip( lua_State *L, const system_event_t *evt )
   lua_setfield( L, -2, "gw" );
 }
 
-static void on_event( const system_event_t *evt )
+static void on_event(esp_event_base_t base, int32_t id, const void *data)
 {
-  int idx = eth_event_idx_by_id( evt->event_id );
+  int idx = eth_event_idx_by_id( base, id );
   if (idx < 0 || event_cb[idx] == LUA_NOREF)
     return;
 
@@ -151,18 +152,17 @@ static void on_event( const system_event_t *evt )
   lua_rawgeti( L, LUA_REGISTRYINDEX, event_cb[idx] );
   lua_pushstring( L, events[idx].name );
   lua_createtable( L, 0, 5 );
-  events[idx].fill_cb_arg( L, evt );
+  events[idx].fill_cb_arg( L, data );
   lua_pcall( L, 2, 0, 0 );
 
   lua_settop( L, top );
 }
 
-NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_START,           on_event);
-NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_STOP,            on_event);
-NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_CONNECTED,       on_event);
-NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_DISCONNECTED,    on_event);
-NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_GOT_IP,          on_event);
-
+NODEMCU_ESP_EVENT(ETHERNET_EVENT, ETHERNET_EVENT_START,           on_event);
+NODEMCU_ESP_EVENT(ETHERNET_EVENT, ETHERNET_EVENT_STOP,            on_event);
+NODEMCU_ESP_EVENT(ETHERNET_EVENT, ETHERNET_EVENT_CONNECTED,       on_event);
+NODEMCU_ESP_EVENT(ETHERNET_EVENT, ETHERNET_EVENT_DISCONNECTED,    on_event);
+NODEMCU_ESP_EVENT(IP_EVENT,       IP_EVENT_ETH_GOT_IP,            on_event);
 
 
 // Lua API

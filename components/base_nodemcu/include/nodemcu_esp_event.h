@@ -49,30 +49,33 @@
  * Registering is as simple as including this header file, then adding a
  * line for each event the module wishes to be notified about, e.g.:
  *
- *  NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_GOT_IP, do_stuff_when_got_ip);
- *  NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_DISCONNECTED, do_stuff_when_discon);
+ *  NODEMCU_ESP_EVENT(IP_EVENT, IP_EVENT_STA_GOT_IP, do_stuff_when_got_ip);
+ *  NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, do_stuff_when_discon);
  *
  * These registrations are done at link-time, and consume no additional RAM.
  * The event IDs are located in esp_event.h in the IDF.
  */
 
 // Event callback prototype
-typedef void (*nodemcu_esp_event_cb) (const system_event_t *event);
+typedef void (*nodemcu_esp_event_cb) (esp_event_base_t event_base, int32_t event_id, const void *event_data);
 
 // Internal definitions
 typedef struct {
-  system_event_id_t    event_id;
+  esp_event_base_t    *event_base_ptr;
+  int32_t              event_id;
   nodemcu_esp_event_cb callback;
 } nodemcu_esp_event_reg_t;
 
 extern nodemcu_esp_event_reg_t _esp_event_cb_table_start;
 extern nodemcu_esp_event_reg_t _esp_event_cb_table_end;
 
-#define NODEMCU_ESP_EVENT(evcode, func) \
+#define NODEMCU_ESP_EVENT(evbase, evcode, func) \
   static const LOCK_IN_SECTION(esp_event_cb_table) \
-    nodemcu_esp_event_reg_t MODULE_PASTE_(func,evcode) = { evcode, func };
+    nodemcu_esp_event_reg_t MODULE_PASTE_(func,evbase##evcode) = { \
+      .event_base_ptr = &evbase, \
+      .event_id = evcode, \
+      .callback = func };
 
 _Static_assert(_Alignof(nodemcu_esp_event_reg_t) == 4, "Unexpected alignment of event registration - update linker script snippets to match!");
-_Static_assert(sizeof(nodemcu_esp_event_reg_t) == 8, "Unexpected size of array member - update the linker script snippets to match!");
 
 #endif

@@ -51,10 +51,10 @@ int wifi_event_idx_by_name (const event_desc_t *table, unsigned n, const char *n
   return -1;
 }
 
-int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, system_event_id_t id)
+int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, esp_event_base_t base, int32_t id)
 {
   for (unsigned i = 0; i < n; ++i)
-    if (table[i].event_id == id)
+    if (*table[i].event_base_ptr == base && table[i].event_id == id)
       return i;
   return -1;
 }

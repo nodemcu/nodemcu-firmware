@@ -31,51 +31,62 @@
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
 
+// We don't get argument size data from the esp_event dispatch, so it's
+// not possible to copy and forward events from the default event queue
+// to one running within our task context. To cope with this, we instead
+// have to effectively make a blocking inter-task call, by having our
+// default loop handler post a nodemcu task event with a pointer to the
+// event data, and then *block* until that task event has been processed.
+// This is less elegant than I would like, but trying to run the entire
+// LVM in the context of the system default event loop RTOS task is an
+// even worse idea, so here we are.
+typedef struct {
+  esp_event_base_t  event_base;
+  int32_t           event_id;
+  void             *event_data;
+} relayed_event_t;
+static task_handle_t     relayed_event_task;
+static SemaphoreHandle_t relayed_event_handled;
 
-static task_handle_t esp_event_task;
-static QueueHandle_t esp_event_queue;
 
-
-// The callback happens in the wrong task context, so we bounce the event
-// into our own queue so they all get handled in the same context as the
-// LVM, making life as easy as possible for us.
-esp_err_t bounce_events(void *ignored_ctx, system_event_t *event)
+// This function runs in the context of the system default event loop RTOS task
+static void relay_default_loop_events(
+  void *arg, esp_event_base_t base, int32_t id, void *data)
 {
-  if (!event)
-    return ESP_ERR_INVALID_ARG;
-
-  if (!esp_event_task || !esp_event_queue)
-    return ESP_ERR_INVALID_STATE; // too early!
-
-  portBASE_TYPE ret = xQueueSendToBack (esp_event_queue, event, 0);
-  if (ret != pdPASS)
-  {
-    NODE_ERR("failed to queue esp event %d", event->event_id);
-    return ESP_FAIL;
-  }
-
-  // If the task_post() fails, it only means the event gets delayed, hence
-  // we claim OK regardless.
-  task_post_medium (esp_event_task, 0);
-  return ESP_OK;
+  (void)arg;
+  relayed_event_t event = {
+    .event_base = base,
+    .event_id = id,
+    .event_data = data,
+  };
+  _Static_assert(sizeof(&event) >= sizeof(task_param_t), "pointer-vs-int");
+  // Only block if we actually posted the request, otherwise we'll deadlock!
+  if (task_post_medium(relayed_event_task, (intptr_t)&event))
+    xSemaphoreTake(relayed_event_handled, portMAX_DELAY);
+  else
+    printf("ERROR: failed to forward esp event %s/%d", base, id);
 }
 
 
-static void handle_esp_event (task_param_t param, task_prio_t prio)
+static void handle_default_loop_event(task_param_t param, task_prio_t prio)
 {
-  (void)param;
   (void)prio;
+  const relayed_event_t *event = (const relayed_event_t *)param;
 
-  system_event_t evt;
-  while (xQueueReceive (esp_event_queue, &evt, 0) == pdPASS)
+  nodemcu_esp_event_reg_t *evregs = &_esp_event_cb_table_start;
+  for (; evregs < &_esp_event_cb_table_end; ++evregs)
   {
-    nodemcu_esp_event_reg_t *evregs = &_esp_event_cb_table_start;
-    for (; evregs < &_esp_event_cb_table_end; ++evregs)
-    {
-      if (evregs->event_id == evt.event_id)
-        evregs->callback (&evt);
-    }
+    bool event_base_match =
+      (evregs->event_base_ptr == NULL) || // ESP_EVENT_ANY_BASE marker
+      (*evregs->event_base_ptr == event->event_base);
+    bool event_id_match =
+      (evregs->event_id == event->event_id) ||
+      (evregs->event_id == ESP_EVENT_ANY_ID);
+
+    if (event_base_match && event_id_match)
+      evregs->callback(event->event_base, event->event_id, event->event_data);
   }
+  xSemaphoreGive(relayed_event_handled);
 }
 
 
@@ -141,17 +152,21 @@ void nodemcu_init(void)
 }
 
 
-void app_main (void)
+void __attribute__((noreturn)) app_main(void)
 {
   task_init();
 
-  esp_event_queue =
-    xQueueCreate (CONFIG_SYSTEM_EVENT_QUEUE_SIZE, sizeof (system_event_t));
-  esp_event_task = task_get_id (handle_esp_event);
-
   input_task = task_get_id (handle_input);
 
-  esp_event_loop_init(bounce_events, NULL);
+  relayed_event_handled = xSemaphoreCreateBinary();
+  relayed_event_task = task_get_id(handle_default_loop_event);
+
+  esp_event_loop_create_default();
+  esp_event_handler_register(
+    ESP_EVENT_ANY_BASE,
+    ESP_EVENT_ANY_ID,
+    relay_default_loop_events,
+    NULL);
 
   ConsoleSetup_t cfg;
   cfg.bit_rate  = CONFIG_NODEMCU_CONSOLE_BIT_RATE;
