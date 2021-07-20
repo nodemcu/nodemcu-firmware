@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
+ * Copyright 2016-2021 Dius Computing Pty Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,12 +38,14 @@
 #include "nodemcu_esp_event.h"
 #include <string.h>
 #include "dhcpserver/dhcpserver_options.h"
-
+#include "esp_netif.h"
 
 // Note: these are documented in wifi.md, update there too if changed here!
 #define DEFAULT_AP_CHANNEL 11
 #define DEFAULT_AP_MAXCONNS 4
 #define DEFAULT_AP_BEACON 100
+
+static esp_netif_t *wifi_ap = NULL;
 
 // --- Event handling ----------------------------------------------------
 static void ap_staconn (lua_State *L, const void *data);
@@ -124,6 +126,8 @@ NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_AP_PROBEREQRECVED,   on_event);
 
 void wifi_ap_init (void)
 {
+  wifi_ap = esp_netif_create_default_wifi_ap();
+
   for (unsigned i = 0; i < ARRAY_LEN(event_cb); ++i)
     event_cb[i] = LUA_NOREF;
 }
@@ -132,57 +136,50 @@ void wifi_ap_init (void)
 
 static int wifi_ap_setip(lua_State *L)
 {
-  tcpip_adapter_ip_info_t ipInfo;
-  ip_addr_t  dns;
-  uint8_t opt;
-  size_t len;
-  const char *str;
-
-  ip_addr_t ipAddr;
-  ipAddr.type = IPADDR_TYPE_V4;
-
   luaL_checkanytable (L, 1);
 
-  //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
+  size_t len = 0;
+  const char *str = NULL;
+  esp_netif_ip_info_t ip_info = { 0, };
 
   lua_getfield (L, 1, "ip");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.ip) != ESP_OK)
   {
     return luaL_error(L, "Could not parse IP address, aborting");
   }
-  ipInfo.ip = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "gateway");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.gw) != ESP_OK)
   {
     return luaL_error(L, "Could not parse Gateway address, aborting");
   }
-  ipInfo.gw = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "netmask");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.netmask) != ESP_OK)
   {
     return luaL_error(L, "Could not parse Netmask, aborting");
   }
-  ipInfo.netmask = ipAddr.u_addr.ip4;
 
-  ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
+  ESP_ERROR_CHECK(esp_netif_dhcps_stop(wifi_ap));
 
-  tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
+  esp_netif_set_ip_info(wifi_ap, &ip_info);
 
+  esp_netif_dns_info_t dns = { .ip = { .type = ESP_IPADDR_TYPE_V4  } };
   lua_getfield (L, 1, "dns");
   str = luaL_optlstring(L, -1, "", &len);
-  if(ipaddr_aton(str, &dns))
+  if (*str)
   {
-    opt = 1;
-    dhcps_dns_setserver(&dns);
-    tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, DOMAIN_NAME_SERVER, &opt, sizeof(opt));
+    if (esp_netif_str_to_ip4(str, &dns.ip.u_addr.ip4) != ESP_OK)
+    {
+      return luaL_error(L, "Could not parse Dns, aborting");
+    }
+    esp_netif_set_dns_info(wifi_ap, ESP_NETIF_DNS_MAIN, &dns);
   }
 
-  ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
+  ESP_ERROR_CHECK(esp_netif_dhcps_start(wifi_ap));
 
   return 0;
 }

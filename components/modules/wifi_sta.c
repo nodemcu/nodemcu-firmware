@@ -1,8 +1,5 @@
-#if 0
-// FIXME - tcpip_adapter deprecated/removed - need to rewrite for esp_netif
-
 /*
- * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
+ * Copyright 2016-2021 Dius Computing Pty Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +39,9 @@
 #include "ip_fmt.h"
 #include "nodemcu_esp_event.h"
 #include <string.h>
+#include "esp_netif.h"
 
+static esp_netif_t *wifi_sta = NULL;
 static int scan_cb_ref = LUA_NOREF;
 
 // --- Event handling -----------------------------------------------------
@@ -154,6 +153,8 @@ NODEMCU_ESP_EVENT(IP_EVENT,   IP_EVENT_STA_GOT_IP,            on_event);
 
 void wifi_sta_init (void)
 {
+  wifi_sta = esp_netif_create_default_wifi_sta();
+
   for (unsigned i = 0; i < ARRAY_LEN(event_cb); ++i)
     event_cb[i] = LUA_NOREF;
 }
@@ -172,52 +173,45 @@ static void do_connect (esp_event_base_t base, int32_t id, const void *data)
 // --- Lua API functions ----------------------------------------------------
 static int wifi_sta_setip(lua_State *L)
 {
-  tcpip_adapter_ip_info_t ipInfo;
-  tcpip_adapter_dns_info_t dnsinfo;
-  size_t len;
-  const char *str;
-
-  ip_addr_t ipAddr;
-  ipAddr.type = IPADDR_TYPE_V4;
-
   luaL_checkanytable (L, 1);
 
-  //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
+  size_t len = 0;
+  const char *str = NULL;
+  esp_netif_ip_info_t ip_info = { 0, };
 
   lua_getfield (L, 1, "ip");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.ip) != ESP_OK)
   {
     return luaL_error(L, "Could not parse IP address, aborting");
   }
-  ipInfo.ip = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "netmask");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.netmask) != ESP_OK)
   {
     return luaL_error(L, "Could not parse Netmask, aborting");
   }
-  ipInfo.netmask = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "gateway");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipAddr))
+  if (esp_netif_str_to_ip4(str, &ip_info.gw) != ESP_OK)
   {
     return luaL_error(L, "Could not parse Gateway address, aborting");
   }
-  ipInfo.gw = ipAddr.u_addr.ip4;
 
+  esp_netif_dns_info_t dns_info = { .ip = { .type = ESP_IPADDR_TYPE_V4 } };
   lua_getfield (L, 1, "dns");
-  str = luaL_optlstring(L, -1, str, &len);
-  if(!ipaddr_aton(str, &dnsinfo.ip))
+  str = luaL_optlstring(L, -1, str, &len); // default to gateway
+  if (esp_netif_str_to_ip4(str, &dns_info.ip.u_addr.ip4) != ESP_OK)
   {
     return luaL_error(L, "Could not parse DNS address, aborting");
   }
 
-  ESP_ERROR_CHECK(tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA));
-  tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
-  tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN, &dnsinfo);
+  ESP_ERROR_CHECK(esp_netif_dhcpc_stop(wifi_sta));
+
+  esp_netif_set_ip_info(wifi_sta, &ip_info);
+  esp_netif_set_dns_info(wifi_sta, ESP_NETIF_DNS_MAIN, &dns_info);
 
   return 0;
 }
@@ -225,10 +219,9 @@ static int wifi_sta_setip(lua_State *L)
 static int wifi_sta_sethostname(lua_State *L)
 {
   size_t l;
-  esp_err_t err;
   const char *hostname = luaL_checklstring(L, 1, &l);
 
-  err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
+  esp_err_t err = esp_netif_set_hostname(wifi_sta, hostname);
 
   if (err != ESP_OK)
     return luaL_error (L, "failed to set hostname, code %d", err);
@@ -286,22 +279,12 @@ static int wifi_sta_config (lua_State *L)
       return luaL_error (L, "invalid BSSID: %s", bssid);
   }
 
-  lua_getfield (L, 1, "auto");
-  bool auto_conn = luaL_optbool (L, -1, true);
-
   SET_SAVE_MODE(save);
-  esp_err_t err = esp_wifi_set_auto_connect (auto_conn);
-  if (err != ESP_OK)
-    return luaL_error (L, "failed to set wifi auto-connect, code %d", err);
-
-  err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
+  esp_err_t err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
   if (err != ESP_OK)
     return luaL_error (L, "failed to set wifi config, code %d", err);
 
-  if (auto_conn)
-    err = esp_wifi_connect ();
-  return (err == ESP_OK) ?
-    0 : luaL_error (L, "failed to begin connect, code %d", err);
+  return 0;
 }
 
 
@@ -342,14 +325,6 @@ static int wifi_sta_getconfig (lua_State *L)
     lua_pushstring (L, bssid_str);
     lua_setfield (L, -2, "bssid");
   }
-
-  bool auto_conn;
-  err = esp_wifi_get_auto_connect (&auto_conn);
-  if (err != ESP_OK)
-    return luaL_error (L, "failed to get auto-connect, code %d", err);
-
-  lua_pushboolean (L, auto_conn);
-  lua_setfield (L, -2, "auto");
 
   return 1;
 }
@@ -477,4 +452,3 @@ LROT_END(wifi_sta, NULL, 0)
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_START, do_connect);
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, do_connect);
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, on_scan_done);
-#endif

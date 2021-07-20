@@ -99,7 +99,7 @@ extern void wifi_sta_init (void);
 static int wifi_init (lua_State *L)
 {
   wifi_ap_init ();
-  // FIXME wifi_sta_init ();
+  wifi_sta_init ();
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   esp_err_t err = esp_wifi_init (&cfg);
@@ -108,7 +108,7 @@ static int wifi_init (lua_State *L)
 }
 
 
-//LROT_EXTERN(wifi_sta); FIXME
+LROT_EXTERN(wifi_sta);
 LROT_EXTERN(wifi_ap);
 
 LROT_BEGIN(wifi)
@@ -118,7 +118,7 @@ LROT_BEGIN(wifi)
   LROT_FUNCENTRY( start,                      wifi_start )
   LROT_FUNCENTRY( stop,                       wifi_stop )
 
-//  LROT_TABENTRY ( sta,                        wifi_sta ) FIXME
+  LROT_TABENTRY ( sta,                        wifi_sta )
   LROT_TABENTRY ( ap,                         wifi_ap )
 
 

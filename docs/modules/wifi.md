@@ -89,9 +89,6 @@ not running. This is to enable users to choose whether to expend the power
 necessary for radio comms. A sensor device running on battery might only
 want to enable WiFi every 10th boot for example.
 
-If station mode is configured with `auto` set to true, the chip will attempt
-to join the configured network at this point.
-
 #### Syntax
 `wifi.start()`
 
@@ -131,6 +128,10 @@ Sets the WiFi station configuration.
 The WiFi mode must be set to `wifi.STATION` or `wifi.STATIONAP` before this
 function can be used.
 
+Note that the earlier auto-connect feature is no longer available due to
+being removed in the SDK/IDF. After start-up it is necessary to call
+[`wifi.stat.connect()`](#wifistaconnect) manually.
+
 #### Syntax
 `wifi.sta.config(station_config, save)`
 
@@ -138,9 +139,6 @@ function can be used.
 - `station_config` table containing configuration data for station
     - `ssid` string which is less than 32 bytes.
     - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
-    - `auto` defaults to true
-        - `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
-        - `false` to disable auto connect and remain disconnected from access point
     - `bssid` string that contains the MAC address of the access point (optional)
         - You can set BSSID if you have multiple access points with the same SSID.
         - Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
@@ -179,13 +177,6 @@ station_cfg.pwd="password"
 station_cfg.bssid="AA:BB:CC:DD:EE:FF"
 wifi.sta.config(station_cfg)
 
---configure station but don't connect to Access point
-station_cfg={}
-station_cfg.ssid="NODE-AABBCC"
-station_cfg.pwd="password"
-station_cfg.auto=false
-wifi.sta.config(station_cfg)
-
 ```
 
 #### See also
@@ -194,7 +185,9 @@ wifi.sta.config(station_cfg)
 
 ## wifi.sta.connect()
 
-Connects to the configured AP in station mode. You only ever need to call this if auto-connect was disabled in [`wifi.sta.config()`](#wifistaconfig).
+Connects to the configured AP in station mode. You will want to call this
+on start-up after [`wifi.start()`](#wifistart), and probably also in
+response to getting `disconnected` events in order to reconnect.
 
 #### Syntax
 `wifi.sta.connect()`

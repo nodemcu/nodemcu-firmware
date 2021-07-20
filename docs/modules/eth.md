@@ -44,7 +44,14 @@ Connection speed in Mbit/s, or error if not connected.
 
 
 ## eth.init()
-Initialize the PHY chip and set up its tcpip adapter.
+Initialize the internal ethernet interface by configuring the MAC and PHY
+and starting the interface.
+
+Note that while the PHY model and some GPIO pins are configured at runtime,
+the clock configuration has been moved into the menuconfig and is no
+longer available at runtime. Please refer to the settings available
+under `Component config -> Ethernet -> Support ESP32 internal EMAC controller`.
+
 
 #### Syntax
 ```lua
@@ -52,32 +59,30 @@ eth.init(cfg)
 ```
 
 #### Parameters
-- `cfg` table containing configuration data. All entries are mandatory:
-    - `addr` PHY address, 0 to 31
-    - `clock_mode` external/internal clock mode selection, one of
-        - `eth.CLOCK_GPIO0_IN`
-        - `eth.CLOCK_GPIO0_OUT`
-        - `eth.CLOCK_GPIO16_OUT`
-        - `eth.CLOCK_GPIO17_OUT`
+- `cfg` table containing configuration data. Unless otherwise noted,
+  the entries are mandatory:
+    - `addr` PHY address, 0 to 31, optional (default will attempt auto-detect)
     - `mdc` MDC pin number
     - `mdio` MDIO pin number
     - `phy` PHY chip model, one of
-        - `eth.PHY_IP101`
-        - `eth.PHY_LAN8720`
-        - `eth.PHY_TLK110`
+        - `PHY_DP83848`
+        - `PHY_IP101`
+        - `PHY_KSZ8041`
+        - `PHY_KSZ8081`
+        - `PHY_LAN8720`
+        - `PHY_RTL8201`
     - `power` power enable pin, optional
 
 #### Returns
 `nil`
 
-An error is thrown in case of invalid parameters or if the ethernet driver failed.
+An error is thrown in case of invalid parameters, MAC/PHY setup errors, or if the ethernet interface has already been successfully configured.
 
 #### Example
 ```lua
 -- Initialize ESP32-GATEWAY
 eth.init({phy  = eth.PHY_LAN8720,
           addr = 0,
-          clock_mode = eth.CLOCK_GPIO17_OUT,
           power = 5,
           mdc   = 23,
           mdio  = 18})
@@ -85,7 +90,6 @@ eth.init({phy  = eth.PHY_LAN8720,
 -- Initialize wESP32
 eth.init({phy  = eth.PHY_LAN8720,
           addr = 0,
-          clock_mode = eth.CLOCK_GPIO0_IN,
           mdc   = 16,
           mdio  = 17})
 ```
