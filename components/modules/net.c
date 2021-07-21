@@ -249,6 +249,7 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
       ud->client.cb_reconnect_ref = LUA_NOREF;
       ud->client.cb_disconnect_ref = LUA_NOREF;
       ud->client.connecting = false;
+      // fall-through
     case TYPE_UDP_SOCKET:
       ud->client.wait_dns = 0;
       ud->client.cb_dns_ref = LUA_NOREF;
@@ -572,6 +573,7 @@ static int net_on( lua_State *L ) {
         { refptr = &ud->client.cb_disconnect_ref; break; }
       if (strcmp("reconnection",name)==0)
         { refptr = &ud->client.cb_reconnect_ref; break; }
+      // fall-through
     case TYPE_UDP_SOCKET:
       if (strcmp("dns",name)==0)
         { refptr = &ud->client.cb_dns_ref; break; }
@@ -804,6 +806,7 @@ static int net_delete( lua_State *L ) {
       ud->client.cb_disconnect_ref = LUA_NOREF;
       luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_reconnect_ref);
       ud->client.cb_reconnect_ref = LUA_NOREF;
+      // fall-through
     case TYPE_UDP_SOCKET:
       luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_dns_ref);
       ud->client.cb_dns_ref = LUA_NOREF;

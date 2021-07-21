@@ -190,7 +190,7 @@ static int wifi_ap_sethostname(lua_State *L)
   esp_err_t err;
   const char *hostname = luaL_checklstring(L, 1, &l);
 
-  err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
+  err = esp_netif_set_hostname(wifi_ap,  hostname);
 
   if (err != ESP_OK)
     return luaL_error (L, "failed to set hostname, code %d", err);
