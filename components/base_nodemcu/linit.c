@@ -16,6 +16,7 @@
 #include "luaconf.h"
 #include "module.h"
 #include "lstate.h"
+#include "lrotable.h"
 #include <assert.h>
 #include <stdalign.h>
 
@@ -62,7 +63,27 @@ const LOCK_IN_SECTION(A) char _ro_start[1] = {0};
 const LOCK_IN_SECTION(zzzzzzzz) char _ro_end[1] = {0};
 #endif
 
+#if defined(LUA_CROSS_COMPILER)
+
 LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables)
+  LROT_TABENTRY( string, strlib )
+  LROT_TABENTRY( table, tab_funcs )
+  LROT_TABENTRY( coroutine, co_funcs )
+  LROT_TABENTRY( debug, dblib)
+  LROT_TABENTRY( math, math )
+  LROT_TABENTRY( ROM, lua_rotables )
+  LROT_TABENTRY( os, oslib )
+  //LROT_TABENTRY( io, iolib )
+LROT_END(lua_rotables, NULL, 0)
+
+#else
+
+// Due to limitations in the IDF linker fragment generation, we have to
+// play with link-time symbol generation/aliasing to set up the rotables
+// properly. As part of that, we need to use a different name for the
+// table here.
+
+LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables_part)
 #ifdef CONFIG_LUA_BUILTIN_STRING
   LROT_TABENTRY( string, strlib )
 #endif
@@ -78,14 +99,11 @@ LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables)
 #ifdef CONFIG_LUA_BUILTIN_MATH
   LROT_TABENTRY( math, math )
 #endif
-  LROT_TABENTRY( ROM, lua_rotables )
-#ifdef LUA_CROSS_COMPILER
-  LROT_TABENTRY( os, oslib )
-  //LROT_TABENTRY( io, iolib )
-LROT_END(lua_rotables, NULL, 0)
-#else
-LROT_BREAK(lua_rotables)
+  LROT_TABENTRY( ROM, lua_rotables_part )
+LROT_BREAK(lua_rotables_part)
+
 #endif
+
 
 LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(libs) lua_libs)
   LROT_FUNCENTRY( _, luaopen_base )
@@ -100,7 +118,7 @@ LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(libs) lua_libs)
   LROT_FUNCENTRY( debug, luaopen_debug )
 #endif
 #ifndef LUA_CROSS_COMPILER
-LROT_BREAK(lua_rotables)
+LROT_BREAK(lua_libs)
 #else
   LROT_FUNCENTRY( io, luaopen_io )
 LROT_END( lua_libs, NULL, 0)
@@ -110,8 +128,16 @@ LROT_END( lua_libs, NULL, 0)
 extern void luaL_dbgbreak(void);
 #endif
 
-void luaL_openlibs (lua_State *L) {
+/* Historically the linker script took care of zero terminating both the
+ * lua_libs and lua_rotable arrays, but the IDF currently does not
+ * support injecting LONG(0) entries. To compensate, we have explicit
+ * end markers here which the linker fragment then place appropriately
+ * to terminate aforementioned arrays.
+ */
+const luaR_entry LOCK_IN_SECTION(libs_end_marker) libs_end_marker= { 0, };
+const luaR_entry LOCK_IN_SECTION(rotable_end_marker) rotable_end_marker = { 0, };
 
+void luaL_openlibs (lua_State *L) {
   lua_pushrotable(L, LROT_TABLEREF(lua_libs));
   lua_pushnil(L);  /* first key */
   /* loop round and open libraries */

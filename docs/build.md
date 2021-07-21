@@ -20,7 +20,7 @@ NodeMCU firmware developers commit or contribute to the project on GitHub and mi
 #### Ubuntu:
 
 ```bash
-sudo apt-get install -y gperf python-pip python-dev flex bison build-essential libssl-dev libffi-dev libncurses5-dev libncursesw5-dev libreadline-dev
+sudo apt-get install -y gperf python-pip python-dev flex bison build-essential libssl-dev libffi-dev libncurses5-dev libncursesw5-dev libreadline-dev cmake
 ```
 
 #### Setting up the repository

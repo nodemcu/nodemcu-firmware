@@ -2,9 +2,17 @@
 entries:
     .lua_libs
 
+[sections:lua_libs_end_marker]
+entries:
+    .lua_libs_end_marker
+
 [sections:lua_rotable]
 entries:
     .lua_rotable
+
+[sections:lua_rotable_end_marker]
+entries:
+    .lua_rotable_end_marker
 
 [sections:lua_esp_event_cb_table]
 entries:
@@ -12,9 +20,11 @@ entries:
 
 [scheme:nodemcu_arrays]
 entries:
-    lua_libs -> flash_text
-    lua_rotable -> flash_text
-    lua_esp_event_cb_table -> flash_text
+    lua_libs -> flash_rodata
+    lua_libs_end_marker -> flash_rodata
+    lua_rotable -> flash_rodata
+    lua_rotable_end_marker -> flash_rodata
+    lua_esp_event_cb_table -> flash_rodata
 
 
 # Important: don't change the alignments below without also updating the
@@ -24,6 +34,8 @@ entries:
 archive: *
 entries:
     * (nodemcu_arrays);
-        lua_libs -> flash_text KEEP() ALIGN(8) SURROUND(lua_libs_map),
-        lua_rotable -> flash_text KEEP() ALIGN(8) SURROUND(lua_rotables_map),
-        lua_esp_event_cb_table -> flash_text KEEP() ALIGN(4) SURROUND(esp_event_cb_table)
+        lua_libs -> flash_rodata KEEP() ALIGN(8) SURROUND(lua_libs_map),
+        lua_libs_end_marker -> flash_rodata KEEP(),
+        lua_rotable -> flash_rodata ALIGN(8) SURROUND(lua_rotables_map),
+        lua_rotable_end_marker -> flash_rodata KEEP(),
+        lua_esp_event_cb_table -> flash_rodata KEEP() ALIGN(4) SURROUND(esp_event_cb_table)
