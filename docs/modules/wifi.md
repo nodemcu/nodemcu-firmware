@@ -186,8 +186,10 @@ wifi.sta.config(station_cfg)
 ## wifi.sta.connect()
 
 Connects to the configured AP in station mode. You will want to call this
-on start-up after [`wifi.start()`](#wifistart), and probably also in
-response to getting `disconnected` events in order to reconnect.
+on start-up after [`wifi.start()`](#wifistart). The system will attempt
+to connect until it succeeds or [`wifi.sta.disconnect()`](#wifistadisconnect)
+is called. Each failed connect attempt will fire the `disconnected`
+event.
 
 #### Syntax
 `wifi.sta.connect()`

@@ -220,7 +220,7 @@ static int leth_init( lua_State *L )
 
   eth_phy_config_t phy_cfg = ETH_PHY_DEFAULT_CONFIG();
 
-  phy_cfg.phy_addr = opt_checkint_range( L, "addr", -1, 0, 31 );
+  phy_cfg.phy_addr = opt_checkint_range( L, "addr", -1, -1, 31 );
   phy_cfg.reset_gpio_num =
     opt_checkint_range( L, "power", -1, -1, GPIO_NUM_MAX-1 ); // optional
 
@@ -240,7 +240,7 @@ static int leth_init( lua_State *L )
   esp_netif_config_t netif_cfg = ESP_NETIF_DEFAULT_ETH();
   esp_netif_t *new_eth = esp_netif_new(&netif_cfg);
 
-  err = esp_eth_set_default_handlers(eth);
+  err = esp_eth_set_default_handlers(new_eth);
   if (err != ESP_OK)
     goto cleanup_netif;
 
