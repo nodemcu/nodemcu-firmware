@@ -96,7 +96,7 @@ static void IRAM_ATTR pulsecnt_intr_handler(void *arg)
             // on lua_open we set pulsecnt_task_id as a method which gets called
             // by Lua after task_post_high with reference to this self object and then we can steal the 
             // callback_ref and then it gets called by lua_call where we get to add our args
-            task_post_high(pulsecnt_task_id, (evt.status << 8) | evt.unit );
+            task_post_isr_high(pulsecnt_task_id, (evt.status << 8) | evt.unit );
         }
     }
 }

@@ -55,16 +55,33 @@ task_handle_t task_get_id(task_callback_t t) {
 }
 
 
-bool IRAM_ATTR task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
+bool IRAM_ATTR task_post(task_prio_t priority, task_handle_t handle, task_param_t param)
 {
   if (priority >= TASK_PRIORITY_COUNT ||
       (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
     return false;
 
   task_event_t ev = { handle, param };
-  bool res = pdPASS == xQueueSendToBackFromISR (task_Q[priority], &ev, NULL);
+  bool res = (pdPASS == xQueueSendToBack(task_Q[priority], &ev, 0));
 
-  xSemaphoreGiveFromISR (pending, NULL);
+  xSemaphoreGive(pending);
+
+  return res;
+}
+
+
+bool IRAM_ATTR task_post_isr(task_prio_t priority, task_handle_t handle, task_param_t param)
+{
+  if (priority >= TASK_PRIORITY_COUNT ||
+      (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
+    return false;
+
+  task_event_t ev = { handle, param };
+  bool res = (pdPASS == xQueueSendToBackFromISR (task_Q[priority], &ev, NULL));
+
+  BaseType_t woken = pdFALSE;
+  xSemaphoreGiveFromISR (pending, &woken);
+  portYIELD_FROM_ISR(woken);
 
   return res;
 }

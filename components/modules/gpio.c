@@ -62,7 +62,7 @@ static void single_pin_isr (void *p)
 {
   gpio_num_t gpio_num = (gpio_num_t)p;
   gpio_intr_disable (gpio_num);
-  task_post_low (cb_task, (gpio_num) | (gpio_get_level (gpio_num) << 8));
+  task_post_isr_low (cb_task, (gpio_num) | (gpio_get_level (gpio_num) << 8));
 }
 
 

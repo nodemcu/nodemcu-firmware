@@ -131,7 +131,7 @@ static void uart0_rx_intr_handler (void *arg)
     status = READ_PERI_REG(UART_INT_ST_REG(CONSOLE_UART));
   }
   if (received && input_task)
-    task_post_low (input_task, false);
+    task_post_isr_low (input_task, false);
 }
 
 
