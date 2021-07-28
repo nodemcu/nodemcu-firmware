@@ -46,10 +46,13 @@ void macstr (char *out, const uint8_t *mac);
 #define IP_STR_SZ (8*4+7+1)
 void ipstr (char *out, const ip_addr_t *ip);
 void ip4str (char *out, const ip4_addr_t *ip);
-void ip6str (char *out, const ip6_addr_t *ip);
 
 void ipstr_esp (char *out, const esp_ip_addr_t *ip);
 void ip4str_esp (char *out, const esp_ip4_addr_t *ip);
+
+#ifdef CONFIG_LWIP_IPV6
+void ip6str (char *out, const ip6_addr_t *ip);
 void ip6str_esp (char *out, const esp_ip6_addr_t *ip);
+#endif
 
 #endif

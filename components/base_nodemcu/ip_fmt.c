@@ -41,6 +41,22 @@ void macstr (char *str, const uint8_t *mac)
 }
 
 
+
+void ip4str (char *out, const ip4_addr_t *ip)
+{
+  ip4addr_ntoa_r(ip, out, IP_STR_SZ);
+}
+
+
+
+void ip4str_esp (char *out, const esp_ip4_addr_t *ip)
+{
+  esp_ip4addr_ntoa(ip, out, IP_STR_SZ);
+}
+
+
+#ifdef CONFIG_LWIP_IPV6
+
 void ipstr (char *out, const ip_addr_t *ip)
 {
   if (ip->type == IPADDR_TYPE_V4)
@@ -49,18 +65,10 @@ void ipstr (char *out, const ip_addr_t *ip)
     ip6str (out, &ip->u_addr.ip6);
 }
 
-
-void ip4str (char *out, const ip4_addr_t *ip)
-{
-  ip4addr_ntoa_r(ip, out, IP_STR_SZ);
-}
-
-
 void ip6str (char *out, const ip6_addr_t *ip)
 {
   ip6addr_ntoa_r(ip, out, IP_STR_SZ);
 }
-
 
 void ipstr_esp (char *out, const esp_ip_addr_t *ip)
 {
@@ -70,14 +78,21 @@ void ipstr_esp (char *out, const esp_ip_addr_t *ip)
     ip6str (out, &ip->u_addr.ip6);
 }
 
-
-void ip4str_esp (char *out, const esp_ip4_addr_t *ip)
-{
-  esp_ip4addr_ntoa(ip, out, IP_STR_SZ);
-}
-
-
 void ip6str_esp (char *out, const esp_ip6_addr_t *ip)
 {
   ip6addr_ntoa_r((ip6_addr_t *)ip, out, IP_STR_SZ);
 }
+
+#else
+
+void ipstr (char *out, const ip_addr_t *ip)
+{
+  ip4str(out, ip);
+}
+
+void ipstr_esp(char *out, const esp_ip_addr_t *ip)
+{
+  ip4str_esp(out, ip);
+}
+
+#endif
