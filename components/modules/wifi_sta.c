@@ -112,8 +112,9 @@ static void sta_authmode (lua_State *L, const void *data)
 
 static void sta_got_ip (lua_State *L, const void *data)
 {
-  const esp_netif_ip_info_t *ip_info =
-    (const esp_netif_ip_info_t *)data;
+  const ip_event_got_ip_t *got_ip_info =
+    (const ip_event_got_ip_t *)data;
+  const esp_netif_ip_info_t *ip_info = &got_ip_info->ip_info;
 
   char ipstr[IP_STR_SZ] = { 0 };
   ip4str_esp (ipstr, &ip_info->ip);
