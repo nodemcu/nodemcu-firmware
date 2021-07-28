@@ -147,6 +147,13 @@ being removed in the SDK/IDF. After start-up it is necessary to call
             - "AC-1D-1C-B1-0B-22"
             - "DE AD BE EF 7A C0"
         - "AcDc0123c0DE"
+    - `pmf` an optional setting to control whether Protected Management Frames
+      are supported and/or required. One of:
+          - `wifi.sta.PMF_OFF`
+          - `wifi.sta.PMF_AVAILABLE`
+          - `wifi.sta.PMF_REQUIRED`.
+      Defaults to `wifi.sta.PMF_AVAILABLE`. PMF is required when joining to
+      WPA3-Personal access points.
 
 - `save` Save station configuration to flash. 
     - `true` configuration **will** be retained through power cycle. 
@@ -186,10 +193,8 @@ wifi.sta.config(station_cfg)
 ## wifi.sta.connect()
 
 Connects to the configured AP in station mode. You will want to call this
-on start-up after [`wifi.start()`](#wifistart). The system will attempt
-to connect until it succeeds or [`wifi.sta.disconnect()`](#wifistadisconnect)
-is called. Each failed connect attempt will fire the `disconnected`
-event.
+on start-up after [`wifi.start()`](#wifistart), and quite possibly also
+in response to `disconnected` events.
 
 #### Syntax
 `wifi.sta.connect()`
@@ -203,6 +208,7 @@ event.
 #### See also
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
 - [`wifi.sta.config()`](#wifistaconfig)
+- [`wifi.sta.on()`](#wifistaon)
 
 ## wifi.sta.disconnect()
 
@@ -255,7 +261,7 @@ Event information provided for each event is as follows:
     - `ssid`: the SSID of the network
     - `bssid`: the BSSID of the AP
     - `channel`: the primary channel of the network
-    - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
+    - `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.WPA_WPA2_PSK`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
 - `disconnected`: information about the network/AP that was disconnected from:
     - `ssid`: the SSID of the network
     - `bssid`: the BSSID of the AP
@@ -347,7 +353,7 @@ The following fields are provided for each scanned AP:
 - `bssid`: the BSSID of the AP
 - `channel`: primary WiFi channel of the AP
 - `rssi`: Received Signal Strength Indicator value
-- `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
+- `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
 - `bandwidth`: one of the following constants:
     - `wifi.HT20`
     - `wifi.HT40_ABOVE`

@@ -280,6 +280,18 @@ static int wifi_sta_config (lua_State *L)
       return luaL_error (L, "invalid BSSID: %s", bssid);
   }
 
+  lua_getfield(L, 1, "pmf");
+  if (lua_isnumber(L, -1))
+  {
+    int pmf_mode = lua_tointeger(L, -1);
+    if (pmf_mode)
+      cfg.sta.pmf_cfg.capable = true;
+    if (pmf_mode == 2)
+      cfg.sta.pmf_cfg.required = true;
+  }
+  else
+    cfg.sta.pmf_cfg.capable = true;
+
   SET_SAVE_MODE(save);
   esp_err_t err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
   if (err != ESP_OK)
@@ -446,10 +458,10 @@ LROT_PUBLIC_BEGIN(wifi_sta)
   LROT_FUNCENTRY( getmac,      wifi_sta_getmac )
   LROT_FUNCENTRY( on,          wifi_sta_on )
   LROT_FUNCENTRY( scan,        wifi_sta_scan )
+
+  LROT_NUMENTRY(  PMF_OFF,       0 )
+  LROT_NUMENTRY(  PMF_AVAILABLE, 1 )
+  LROT_NUMENTRY(  PMF_REQUIRED,  2 )
 LROT_END(wifi_sta, NULL, 0)
 
-
-// Currently no auto-connect, so do that in response to events
-NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_START, do_connect);
-NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, do_connect);
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, on_scan_done);
