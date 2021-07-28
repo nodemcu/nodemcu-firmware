@@ -7,6 +7,7 @@ The firmware was initially developed as is a companion project to the popular ES
 → [Getting Started](getting-started.md)
 
 ## Programming Model
+
 The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](https://github.com/nodemcu/nodemcu-firmware/tree/release/lua_examples) folder in the repository on GitHub.
 
 ```lua
@@ -50,13 +51,15 @@ print(gpio.read(pin))
 → [Getting Started](getting-started.md)
 
 ## Lua Flash Store (LFS)
+
 In September 2018 support for a [Lua Flash Store (LFS)](lfs.md) was introduced. LFS allows Lua code and its associated constant data to be executed directly out of flash-memory; just as the firmware itself is executed. This now enables NodeMCU developers to create Lua applications with up to 256Kb Lua code and read-only constants executing out of flash. All of the RAM is available for read-write data!
 
 ## Releases
 
 This project uses two main branches, `release` and `dev`. `dev` is actively worked on and it's also where PRs should be created against. `release` thus can be considered "stable" even though there are no automated regression tests. The goal is to merge back to `release` roughly every 2 months. Depending on the current "heat" (issues, PRs) we accept changes to `dev` for 5-6 weeks and then hold back for 2-3 weeks before the next snap is completed.
 
-A new tag is created every time `dev` is merged back to `release` branch. They are listed in the [releases section on GitHub](https://github.com/nodemcu/nodemcu-firmware/releases). Tag names follow the `<SDK-version>-release_yyyymmdd` pattern.
+A new tag is created every time `dev` is merged back to `release` branch. They are listed in the [releases](https://github.com/nodemcu/nodemcu-firmware/releases)  section on GitHub. Tag names follow the `<SDK-version>-release_yyyymmdd` pattern.
 
 ## Up-To-Date Documentation
+
 At the moment the only up-to-date documentation maintained by the current NodeMCU team is in English. It is part of the source code repository (`/docs` subfolder) and kept in sync with the code.
