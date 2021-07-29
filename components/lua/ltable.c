@@ -621,6 +621,7 @@ const TValue *luaH_get (Table *t, const TValue *key) {
         return luaH_getnum(t, k);  /* use specialized version */
       /* else go through */
     }
+    /* fall-through */
     default: {
       Node *n = mainposition(t, key);
       do {  /* check whether `key' is somewhere in the chain */
@@ -646,6 +647,7 @@ const TValue *luaH_get_ro (void *t, const TValue *key) {
         return luaH_getnum_ro(t, k);  /* use specialized version */
       /* else go through */
     }
+    /* fall-through */
     default: {
       return luaO_nilobject;
     }

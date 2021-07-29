@@ -206,8 +206,8 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     // attach RMT channels to new gpio pin
     // ATTENTION: set pin for rx first since gpio_output_disable() will
     //            remove rmt output signal in matrix!
-    rmt_set_pin( ow_rmt.rx, RMT_MODE_RX, gpio_num );
-    rmt_set_pin( ow_rmt.tx, RMT_MODE_TX, gpio_num );
+    rmt_set_gpio( ow_rmt.rx, RMT_MODE_RX, gpio_num, false );
+    rmt_set_gpio( ow_rmt.tx, RMT_MODE_TX, gpio_num, false );
     // force pin direction to input to enable path to RX channel
     PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
 

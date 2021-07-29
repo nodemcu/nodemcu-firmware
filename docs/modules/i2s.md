@@ -71,11 +71,9 @@ i2s.start(i2s_num, cfg, cb)
         - `i2s.CHANNEL_ONLY_LEFT`
         - `i2s.CHANNEL_ALL_RIGHT`
         - `i2s.CHANNEL_ONLY_RIGHT`
-    - `format` communication format. Optional, defaults to `i2s.FORMAT_I2S + i2s.FORMAT_I2S_MSB` when omitted.
-        - `i2s.FORMAT_I2S`
+    - `format` communication format. Optional, defaults to `i2s.FORMAT_I2S_STANDARD` when omitted.
+        - `i2s.FORMAT_I2S_STANDARD`
         - `i2s.FORMAT_I2S_MSB`
-        - `i2s.FORMAT_I2S_LSB`
-        - `i2s.FORMAT_PCM`
         - `i2s.FORMAT_PCM_SHORT`
         - `i2s.FORMAT_PCM_LONG`
     - `buffer_count` number of dma buffers. Optional, defaults to 2 when omitted.

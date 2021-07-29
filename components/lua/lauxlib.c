@@ -849,7 +849,8 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
     lf.f = vfs_open(filename, "r");  /* reopen in binary mode */
     if (!lf.f) return errfsfile(L, "reopen", fnameindex);
     /* skip eventual `#!...' */
-   while ((c = vfs_getc(lf.f)) != VFS_EOF && c != LUA_SIGNATURE[0]) ;
+   while ((c = vfs_getc(lf.f)) != VFS_EOF && c != LUA_SIGNATURE[0])
+     ;
     lf.extraline = 0;
   }
   vfs_ungetc(c, lf.f);

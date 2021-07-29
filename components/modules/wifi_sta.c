@@ -161,16 +161,6 @@ void wifi_sta_init (void)
 }
 
 
-// --- Helper functions -----------------------------------------------------
-
-
-static void do_connect (esp_event_base_t base, int32_t id, const void *data)
-{
-  (void)base; (void)id; (void)data;
-  esp_wifi_connect ();
-}
-
-
 // --- Lua API functions ----------------------------------------------------
 static int wifi_sta_setip(lua_State *L)
 {

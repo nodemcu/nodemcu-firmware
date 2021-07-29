@@ -96,6 +96,7 @@ static void print_version (lua_State *L) {
 }
 
 
+#if 0
 static int getargs (lua_State *L, char **argv, int n) {
   int narg;
   int i;
@@ -112,6 +113,7 @@ static int getargs (lua_State *L, char **argv, int n) {
   }
   return narg;
 }
+#endif
 
 static int dofsfile (lua_State *L, const char *name) {
   int status = luaL_loadfsfile(L, name) || docall(L, 0, 1);
@@ -200,14 +202,14 @@ static int collectargs (char **argv, int *pi, int *pv, int *pe) {
         return i;
       case 'i':
         notail(argv[i]);
-        *pi = 1;  /* go through */
+        *pi = 1;  /* fall-through */
       case 'v':
         notail(argv[i]);
         *pv = 1;
         break;
       case 'e':
-        *pe = 1;  /* go through */
-      case 'm':   /* go through */
+        *pe = 1;  /* fall-through */
+      case 'm':   /* fall-through */
       case 'l':
         if (argv[i][2] == '\0') {
           i++;
@@ -371,7 +373,7 @@ void donejob(lua_Load *load){
 }
 
 static void dojob(lua_Load *load){
-  size_t l, rs;
+  size_t l;
   int status;
   char *b = load->line;
   lua_State *L = load->L;

@@ -49,8 +49,8 @@ static int check_err (lua_State *L, esp_err_t err)
 {
   switch (err)
   {
-    case ESP_ERR_INVALID_ARG: luaL_error (L, "invalid argument");
-    case ESP_ERR_INVALID_STATE: luaL_error (L, "internal logic error");
+    case ESP_ERR_INVALID_ARG: return luaL_error (L, "invalid argument");
+    case ESP_ERR_INVALID_STATE: return luaL_error (L, "internal logic error");
     case ESP_OK: break;
   }
   return 0;

@@ -73,9 +73,9 @@ void ip6str (char *out, const ip6_addr_t *ip)
 void ipstr_esp (char *out, const esp_ip_addr_t *ip)
 {
   if (ip->type == ESP_IPADDR_TYPE_V4)
-    ip4str (out, &ip->u_addr.ip4);
+    ip4str_esp (out, &ip->u_addr.ip4);
   else if (ip->type == ESP_IPADDR_TYPE_V6)
-    ip6str (out, &ip->u_addr.ip6);
+    ip6str_esp (out, &ip->u_addr.ip6);
 }
 
 void ip6str_esp (char *out, const esp_ip6_addr_t *ip)
@@ -92,7 +92,7 @@ void ipstr (char *out, const ip_addr_t *ip)
 
 void ipstr_esp(char *out, const esp_ip_addr_t *ip)
 {
-  ip4str_esp(out, ip);
+  ip4str_esp(out, &ip->u_addr.ip4);
 }
 
 #endif

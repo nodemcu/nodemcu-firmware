@@ -151,7 +151,7 @@ static int node_i2s_start( lua_State *L )
   i2s_config.bits_per_sample = is->i2s_bits_per_sample;
   //
   i2s_config.channel_format = opt_checkint(L, "channel", I2S_CHANNEL_FMT_RIGHT_LEFT);
-  i2s_config.communication_format = opt_checkint(L, "format", I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
+  i2s_config.communication_format = opt_checkint(L, "format", I2S_COMM_FORMAT_STAND_I2S);
   i2s_config.dma_buf_count = opt_checkint_range(L, "buffer_count", 2, 2, 128);
   i2s_config.dma_buf_len = opt_checkint_range(L, "buffer_len", i2s_config.sample_rate / 100, 8, 1024);
   i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
@@ -316,12 +316,10 @@ LROT_BEGIN(i2s)
   LROT_FUNCENTRY( write, node_i2s_write )
   LROT_FUNCENTRY( mute,  node_i2s_mute )
 
-  LROT_NUMENTRY( FORMAT_I2S,       I2S_COMM_FORMAT_I2S  )
-  LROT_NUMENTRY( FORMAT_I2S_MSB,   I2S_COMM_FORMAT_I2S_MSB )
-  LROT_NUMENTRY( FORMAT_I2S_LSB,   I2S_COMM_FORMAT_I2S_LSB )
-  LROT_NUMENTRY( FORMAT_PCM,       I2S_COMM_FORMAT_PCM )
-  LROT_NUMENTRY( FORMAT_PCM_SHORT, I2S_COMM_FORMAT_PCM_SHORT )
-  LROT_NUMENTRY( FORMAT_PCM_LONG,  I2S_COMM_FORMAT_PCM_LONG )
+  LROT_NUMENTRY( FORMAT_I2S_STAND, I2S_COMM_FORMAT_STAND_I2S )
+  LROT_NUMENTRY( FORMAT_I2S_MSB,   I2S_COMM_FORMAT_STAND_MSB )
+  LROT_NUMENTRY( FORMAT_PCM_SHORT, I2S_COMM_FORMAT_STAND_PCM_SHORT )
+  LROT_NUMENTRY( FORMAT_PCM_LONG,  I2S_COMM_FORMAT_STAND_PCM_LONG )
 
   LROT_NUMENTRY( CHANNEL_RIGHT_LEFT, I2S_CHANNEL_FMT_RIGHT_LEFT )
   LROT_NUMENTRY( CHANNEL_ALL_LEFT,   I2S_CHANNEL_FMT_ALL_LEFT )

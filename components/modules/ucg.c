@@ -3,14 +3,9 @@
 #include "module.h"
 #include "lauxlib.h"
 
-
-#define USE_PIN_LIST
 #include "ucg.h"
 #include "ucg_nodemcu_hal.h"
-
-
 #include "ucg_config.h"
-
 
 #ifdef ESP_PLATFORM
 // ESP32
@@ -23,7 +18,6 @@
 // ignore unused functions if ucg module will be skipped anyhow
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
-
 
 
 typedef struct

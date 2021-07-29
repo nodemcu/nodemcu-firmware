@@ -1452,6 +1452,7 @@ static const unsigned short Special_Table[0x80] = {
         /* 0x74 */ JSONSL_SPECIALf_TRUE /* <t> */ /* 0x74 */
 };
 
+#if 0
 // Bit tables are order such that the MSB is bit 0.
 //
 /**
@@ -1486,6 +1487,7 @@ static const char Special_Endings[0x100] = {
         /* 0xde */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xfd */
         /* 0xfe */ 0 /* 0xfe */
 };
+#endif
 static const uint32_t Special_Endings_bits[0x80 / 32] = {
         0b00000000011001000000000000000000,
         0b10100000000010000000000000100000,
@@ -1493,6 +1495,7 @@ static const uint32_t Special_Endings_bits[0x80 / 32] = {
         0b00000000000000000000000000010100
 };
 
+#if 0
 /**
  * This table contains entries for the allowed whitespace as per RFC 4627
  */
@@ -1512,8 +1515,10 @@ static const char Allowed_Whitespace[0x100] = {
         /* 0xc1 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xe0 */
         /* 0xe1 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* 0xfe */
 };
+#endif
 static const uint32_t Allowed_Whitespace_bits = 0b00000000011001000000000000000000;
 
+#if 0
 static const char String_No_Passthrough[0x100] = {
         /* 0x00 */ 1 /* <NUL> */, /* 0x00 */
         /* 0x01 */ 1 /* <SOH> */, /* 0x01 */
@@ -1577,6 +1582,7 @@ static const char Allowed_Escapes[0x100] = {
         /* 0xd6 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xf5 */
         /* 0xf6 */ 0,0,0,0,0,0,0,0,0, /* 0xfe */
 };
+#endif
 static const uint32_t Allowed_Escapes_bits[0x80 / 32] = {
         0b00000000000000000000000000000000,
         0b00100000000000010000000000000000,
@@ -1584,6 +1590,7 @@ static const uint32_t Allowed_Escapes_bits[0x80 / 32] = {
         0b00100010000000100010110000000000
 };
 
+#if 0
 /**
  * This table contains the _values_ for a given (single) escaped character.
  */
@@ -1607,6 +1614,7 @@ static unsigned char Escape_Equivs[0x100] = {
         /* 0xd5 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xf4 */
         /* 0xf5 */ 0,0,0,0,0,0,0,0,0,0 /* 0xfe */
 };
+#endif
 
 /* Definitions of above-declared static functions */
 static char get_escape_equiv(unsigned c) {

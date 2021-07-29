@@ -4,8 +4,6 @@
 #include "module.h"
 #include "lauxlib.h"
 
-#define U8X8_USE_PINS
-#define U8X8_WITH_USER_PTR
 #include "u8g2.h"
 #include "u8x8_nodemcu_hal.h"
 

@@ -8,6 +8,3 @@ idf_component_register(
   REQUIRES "platform" "uzlib" "driver_console"
   PRIV_REQUIRES "base_nodemcu" "embedded_lfs"
 )
-target_compile_options(${COMPONENT_LIB} PRIVATE
-  -Wno-error=misleading-indentation
-)
