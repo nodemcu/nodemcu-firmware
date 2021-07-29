@@ -1,0 +1,51 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        lua_ver: ['5.1']
+        numbers: ['float']
+        include:
+          - lua_ver: '5.1'
+            numbers: 'integral'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Prepare cache key
+        run: git rev-parse HEAD:sdk/esp32-esp-idf > idf.rev
+        shell: bash
+      - name: Cache Espressif tools
+        uses: actions/cache@v2
+        with:
+          path: ~/.espressif
+          key: ${{ runner.os }}-espressif-tools-${{ hashFiles('idf.rev') }}
+      - name: Install dependencies
+        run: ./install.sh
+        shell: bash
+      - name: Build firmware (Lua 5.1)
+        if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'float' }}
+        run: |
+          cp sdkconfig.defaults sdkconfig
+          make SHELL=/bin/bash
+        shell: bash
+      - name: Build firmware (Lua 5.1, integer-only)
+        if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'integral' }}
+        run: |
+          cp sdkconfig.defaults sdkconfig
+          echo CONFIG_LUA_NUMBER_INTEGRAL=y >> sdkconfig
+          make SHELL=/bin/bash
+        shell: bash
+      - name: Upload luac.cross
+        uses: actions/upload-artifact@v2
+        if: ${{ success() }}
+        with:
+          name: luac.cross-${{ matrix.lua_ver }}-${{ matrix.numbers }}
+          path: build/luac_cross/luac.cross
