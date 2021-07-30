@@ -73,6 +73,4 @@ See [https://nodemcu.readthedocs.io/en/release/support/](https://nodemcu.readthe
 
 ## License
 
-Licensed under [MIT](/LICENSE) © [zeroday](https://github.com/NodeMCU)/[nodemcu.com](http://nodemcu.com/index_en.html)
-
-[NodeMCU documentation]: https://nodemcu.readthedocs.io
+[MIT](/LICENSE) © [zeroday](https://github.com/NodeMCU)/[nodemcu.com](http://nodemcu.com/index_en.html)
