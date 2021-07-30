@@ -2,7 +2,7 @@
 > Lua-based firmware for ESP8266 WiFi SOC
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/nodemcu/nodemcu-firmware.svg)](https://travis-ci.com/github/nodemcu/nodemcu-firmware)
+[![CI](https://github.com/nodemcu/nodemcu-firmware/workflows/CI/badge.svg)](https://github.com/nodemcu/nodemcu-firmware/actions?query=workflow:"CI")
 [![Documentation Status](https://img.shields.io/badge/docs-release-yellow.svg?style=flat)](http://nodemcu.readthedocs.io/en/release/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](#license)
 
