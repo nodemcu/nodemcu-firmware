@@ -1,4 +1,4 @@
-# NodeMCU Firmware 3.0.0
+# NodeMCU 3.0.0
 > Lua-based firmware for ESP8266 WiFi SOC
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
