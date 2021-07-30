@@ -17,7 +17,7 @@ The firmware was initially developed as is a companion project to the popular ES
 - Asynchronous event-driven programming model
 - More than **70 built-in C modules** and **close to 20 Lua modules**
 - Firmware available with or without floating point support (integer-only uses less memory)
-- Up-to-date documentation at [NodeMCU documentation]
+- Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
 ### LFS support
 
@@ -25,7 +25,7 @@ In July 2018 support for a Lua Flash Store (LFS) was introduced. LFS  allows Lua
 
 ## Programming Model
 
-The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [lua_examples](/lua_examples/) directory.
+The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](/lua_examples/) folder in the repository on GitHub.
 
 ```lua
 -- a simple HTTP server
@@ -46,9 +46,10 @@ wifi.sta.config{ssid="SSID", pwd="password"}
 
 ## Documentation
 
-The entire [NodeMCU documentation] is maintained right in this repository in [docs](/docs/). The fact that the API documentation is maintained in the same repository as the code that _provides_ the API ensures consistency between the two. 
+The entire [NodeMCU documentation](https://nodemcu.readthedocs.io) is maintained right in this repository at [/docs](/docs/). The fact that the API documentation is maintained in the same repository as the code that _provides_ the API ensures consistency between the two.
 
-With every commit, the documentation is rebuilt by _Read the Docs_ and thus transformed from terse Markdown into a convenient HTML site hosted here - [NodeMCU documentation].
+With every commit the documentation is rebuilt by Read the Docs and thus transformed from terse Markdown into a nicely browsable HTML site at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io).
+
 
 Pages:
 
@@ -70,7 +71,7 @@ Tag names follow the `<SDK-version>-release_yyyymmdd` pattern.
 
 ## Support
 
-See the [Support](https://nodemcu.readthedocs.io/en/release/support/) doc.
+See [https://nodemcu.readthedocs.io/en/release/support/](https://nodemcu.readthedocs.io/en/release/support/).
 
 ## License
 
