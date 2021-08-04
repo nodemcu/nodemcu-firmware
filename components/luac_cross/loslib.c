@@ -246,6 +246,7 @@ LROT_END(oslib, NULL, 0)
 
 
 LUALIB_API int luaopen_os (lua_State *L) {
+  (void)L;
   //LREGISTER(L, LUA_OSLIBNAME, oslib); // <------------- ???
   return 0;
 }

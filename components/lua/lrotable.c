@@ -10,9 +10,9 @@
 #include "lapi.h"
 
 #ifdef _MSC_VER
-#define ALIGNED_STRING (__declspec( align( 4 ) ) char*)
+#define ALIGNED_STRING __declspec( align( 4 ) ) char
 #else
-#define ALIGNED_STRING (__attribute__((aligned(4))) char *)
+#define ALIGNED_STRING __attribute__((aligned(4))) char
 #endif
 #define LA_LINES 32
 #define LA_SLOTS 4
@@ -82,7 +82,8 @@ static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
  */
 const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
   const luaR_entry *pentry = rotable;
-  const char *strkey = key ? getstr(key) : ALIGNED_STRING "__metatable" ;
+  static const ALIGNED_STRING metatablestr[] = "__metatable";
+  const char *strkey = key ? getstr(key) : metatablestr;
   unsigned   hash    = HASH(rotable, key);
 
   unsigned    i      = 0;
@@ -148,9 +149,7 @@ void luaR_next(lua_State *L, ROTable *rotable, TValue *key, TValue *val) {
     luaR_next_helper(L, rotable, 0, key, val);
   else if (ttisstring(key)) {
     /* Find the previous key again */
-    if (ttisstring(key)) {
-      luaR_findentry(rotable, rawtsvalue(key), &keypos);
-    }
+    luaR_findentry(rotable, rawtsvalue(key), &keypos);
     /* Advance to next key */
     keypos ++;
     luaR_next_helper(L, rotable, keypos, key, val);

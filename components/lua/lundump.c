@@ -146,7 +146,7 @@ static lua_Number LoadNumber(LoadState* S)
     LoadVar(S,y);
     x = (lua_Number)y;
    } break;
-   default: lua_assert(0);
+   default: lua_assert(0); __builtin_unreachable();
   }
  }
  else

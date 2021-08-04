@@ -125,6 +125,7 @@ extern void __attribute__((noreturn)) fatal(const char* message);
  *  Serial allocator.  Throw a luac-style out of memory error is allocaiton fails.
  */
 static void *flashAlloc(lua_State* L, size_t n) {
+  (void)L;
   void *p = (void *)(flashImage + curOffset);
   curOffset += ALIGN(n)>>WORDSHIFT;
   if (curOffset > LUA_MAX_FLASH_SIZE) {
@@ -140,6 +141,7 @@ static void *flashAlloc(lua_State* L, size_t n) {
  */
 #define toFlashAddr(l, pd, s) _toFlashAddr(l, &(pd), s)
 static void _toFlashAddr(lua_State* L, FlashAddr *a, void *p) {
+  (void)L;
   uint doffset = cast(char *, a) - cast(char *,flashImage);
   lua_assert(!(doffset & (WORDSIZE-1)));  // check word aligned
   doffset >>= WORDSHIFT;                  // and convert to a word offset
@@ -399,9 +401,10 @@ static void *functionToFlash(lua_State* L, const Proto* orig) {
 uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w,
                        void* data, int strip,
                        lu_int32 address, lu_int32 maxSize) {
+  (void)strip;
 // parameter strip is ignored for now
   FlashHeader *fh = cast(FlashHeader *, flashAlloc(L, sizeof(FlashHeader)));
-  int i, status;
+  int status;
   lua_newtable(L);
   scanProtoStrings(L, main);
   createROstrt(L,  fh);
@@ -413,7 +416,7 @@ uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w,
     fatal ("The image is too large for specfied LFS size");
   }
   if (address) {  /* in absolute mode convert addresses to mapped address */
-    for (i = 0 ; i < curOffset; i++)
+    for (uint i = 0 ; i < curOffset; i++)
       if (getFlashAddrTag(i))
         flashImage[i] = 4*flashImage[i] + address;
     lua_unlock(L);

@@ -82,6 +82,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 
 static int lua_is_ptr_in_ro_area(const char *p) {
 #ifdef LUA_CROSS_COMPILER
+  (void)p;
   return 0;         // TStrings are never in RO in luac.cross
 #else
   return IN_RODATA_AREA(p);
