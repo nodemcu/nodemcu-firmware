@@ -9,9 +9,17 @@ app/
 components/*/.output/
 tools/toolchains
 extmods.ini
+.ccache
+bin
 
 #ignore Eclipse project files
 .cproject
 .project
 .settings/
+
+# ignore VS Code files
 .vscode/**
+
+# ignore IDEA files
+.idea
+*.iml
