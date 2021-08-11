@@ -81,7 +81,8 @@ bool IRAM_ATTR task_post_isr(task_prio_t priority, task_handle_t handle, task_pa
 
   BaseType_t woken = pdFALSE;
   xSemaphoreGiveFromISR (pending, &woken);
-  portYIELD_FROM_ISR(woken);
+  if (woken == pdTRUE)
+    portYIELD_FROM_ISR();
 
   return res;
 }

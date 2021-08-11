@@ -29,7 +29,7 @@
 #include "driver/rmt.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-
+#include "soc/periph_defs.h"
 
 #undef WS2812_DEBUG
 
@@ -104,7 +104,11 @@ static void ws2812_isr(void *arg)
       RMT.int_clr.val = BIT(channel+24);
 
       ws2812_chain_t *chain = &(ws2812_chains[channel]);
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+      uint32_t data_sub_len = RMT.tx_lim[channel].limit/8;
+#else
       uint32_t data_sub_len = RMT.tx_lim_ch[channel].limit/8;
+#endif
 
       if (chain->len >= data_sub_len) {
         ws2812_fill_memory_encoded( channel, chain->data, data_sub_len, chain->tx_offset );

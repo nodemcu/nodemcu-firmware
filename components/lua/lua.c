@@ -266,6 +266,7 @@ static int runargs (lua_State *L, char **argv, int n) {
 #endif
 
 static int handle_luainit (lua_State *L) {
+  (void)dolfsfile; // silence warning about potentially unused function
   const char *init = LUA_INIT_STRING;
   if (init[0] == '@') {
   #if CONFIG_NODEMCU_EMBEDDED_LFS_SIZE > 0

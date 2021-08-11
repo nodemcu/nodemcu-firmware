@@ -1,16 +1,11 @@
-
-#include <string.h>
-
-#include "esp32/rom/ets_sys.h"
-
+#include "u8x8_nodemcu_hal.h"
+#include "platform.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
-#include "platform.h"
-
-#include "u8x8_nodemcu_hal.h"
-
+#include "rom/ets_sys.h"
 #include "esp_heap_caps.h"
+#include <string.h>
 
 
 uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)

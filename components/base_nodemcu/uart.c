@@ -264,7 +264,7 @@ static int uart_wakeup (lua_State *L)
   uint32_t id = luaL_checkinteger(L, 1);
   MOD_CHECK_ID(uart, id);
   int threshold = luaL_checkinteger(L, 2);
-  esp_err_t err = uart_set_wakeup_threshold(id, threshold);
+  int err = platform_uart_set_wakeup_threshold(id, threshold);
   if (err) {
     return luaL_error(L, "Error %d from uart_set_wakeup_threshold()", err);
   }
@@ -275,7 +275,7 @@ static int luart_tx_flush (lua_State *L)
 {
   uint32_t id = luaL_checkinteger(L, 1);
   MOD_CHECK_ID(uart, id);
-  uart_tx_flush(id);
+  platform_uart_flush(id);
   return 0;
 }
 

@@ -10,9 +10,14 @@
 LROT_BEGIN(lspi)
   LROT_FUNCENTRY( master, lspi_master )
 //  LROT_FUNCENTRY( slave,  lspi_slave )
+#if defined(CONFIG_IDF_TARGET_ESP32)
   LROT_NUMENTRY( SPI,    SPI_HOST )
   LROT_NUMENTRY( HSPI,   HSPI_HOST )
   LROT_NUMENTRY( VSPI,   VSPI_HOST )
+#endif
+  LROT_NUMENTRY( SPI1,   SPI1_HOST )
+  LROT_NUMENTRY( SPI2,   SPI2_HOST )
+  LROT_NUMENTRY( SPI3,   SPI3_HOST )
 LROT_END(lspi, NULL, 0)
 
 int luaopen_spi( lua_State *L ) {

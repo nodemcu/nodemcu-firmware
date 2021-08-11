@@ -8,10 +8,8 @@ jobs:
     strategy:
       matrix:
         lua_ver: ['5.1']
-        numbers: ['float']
-        include:
-          - lua_ver: '5.1'
-            numbers: 'integral'
+        numbers: ['float','integral']
+        target: ['esp32','esp32c3']
 
     runs-on: ubuntu-latest
 
@@ -34,18 +32,18 @@ jobs:
         if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'float' }}
         run: |
           cp sdkconfig.defaults sdkconfig
-          make SHELL=/bin/bash
+          make IDF_TARGET=${{ matrix.target }}
         shell: bash
       - name: Build firmware (Lua 5.1, integer-only)
         if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'integral' }}
         run: |
           cp sdkconfig.defaults sdkconfig
           echo CONFIG_LUA_NUMBER_INTEGRAL=y >> sdkconfig
-          make SHELL=/bin/bash
+          make IDF_TARGET=${{ matrix.target }}
         shell: bash
       - name: Upload luac.cross
         uses: actions/upload-artifact@v2
         if: ${{ success() }}
         with:
-          name: luac.cross-${{ matrix.lua_ver }}-${{ matrix.numbers }}
+          name: luac.cross-${{ matrix.lua_ver }}-${{ matrix.numbers }}-${{ matrix.target }}
           path: build/luac_cross/luac.cross

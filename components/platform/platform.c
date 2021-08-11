@@ -3,11 +3,12 @@
 #include "driver/sigmadelta.h"
 #include "driver/adc.h"
 #include "driver/uart.h"
+#include "soc/uart_reg.h"
 #include <stdio.h>
 #include <string.h>
 #include <freertos/semphr.h>
 #include "lua.h"
-
+#include "rom/uart.h"
 #include "esp_log.h"
 
 int platform_init (void)
@@ -72,7 +73,7 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
     }
     free(post->data);
   } else {
-    char *err;
+    const char *err;
     switch(post->type) {
       case PLATFORM_UART_EVENT_OOM:
         err = "out_of_memory";
@@ -305,6 +306,8 @@ void platform_uart_flush( unsigned id )
 {
   if (id == CONSOLE_UART)
     fflush (stdout);
+  else
+    uart_tx_flush(id);
 }
 
 
@@ -360,7 +363,7 @@ int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, 
     if (err != ESP_OK) return -1;
     *baudp &= 0xFFFFFFFE; // round down
 
-    uint32_t databits;
+    uart_word_length_t databits;
     err = uart_get_word_length(id, &databits);
     if (err != ESP_OK) return -1;
 
@@ -381,13 +384,32 @@ int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, 
             return -1;
     }
 
-    err = uart_get_parity(id, parityp);
+    uart_parity_t parity;
+    err = uart_get_parity(id, &parity);
     if (err != ESP_OK) return -1;
+    switch(parity) {
+      case UART_PARITY_DISABLE: *parityp = PLATFORM_UART_PARITY_NONE; break;
+      case UART_PARITY_EVEN:    *parityp = PLATFORM_UART_PARITY_EVEN; break;
+      case UART_PARITY_ODD:     *parityp = PLATFORM_UART_PARITY_ODD; break;
+    }
 
-    err = uart_get_stop_bits(id, stopbitsp);
+    uart_stop_bits_t stopbits;
+    err = uart_get_stop_bits(id, &stopbits);
     if (err != ESP_OK) return -1;
+    switch(stopbits) {
+      case UART_STOP_BITS_1:   *stopbitsp = PLATFORM_UART_STOPBITS_1; break;
+      case UART_STOP_BITS_1_5: *stopbitsp = PLATFORM_UART_STOPBITS_1_5; break;
+      case UART_STOP_BITS_2:   *stopbitsp = PLATFORM_UART_STOPBITS_2; break;
+      case UART_STOP_BITS_MAX: break;
+    }
 
     return 0;
+}
+
+int platform_uart_set_wakeup_threshold(unsigned id, unsigned threshold)
+{
+  esp_err_t err = uart_set_wakeup_threshold(id, threshold);
+  return (err == ESP_OK) ? 0 : -1;
 }
 
 // *****************************************************************************
@@ -478,9 +500,16 @@ int platform_adc_channel_exists( uint8_t adc, uint8_t channel ) {
 }
 
 uint8_t platform_adc_set_width( uint8_t adc, int bits ) {
+  (void)adc;
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+  if (bits != SOC_ADC_MAX_BITWIDTH)
+    return 0;
+  bits = SOC_ADC_MAX_BITWIDTH;
+#else
   bits = bits - 9;
   if (bits < ADC_WIDTH_9Bit || bits > ADC_WIDTH_12Bit)
     return 0;
+#endif
   if (ESP_OK != adc1_config_width( bits ))
     return 0;
 
@@ -501,8 +530,12 @@ int platform_adc_read( uint8_t adc, uint8_t channel ) {
 }
 
 int platform_adc_read_hall_sensor( ) {
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
   int value = hall_sensor_read( );
   return value;
+#else
+  return -1;
+#endif
 }
 // *****************************************************************************
 // I2C platform interface

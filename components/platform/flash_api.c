@@ -7,10 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "esp32/rom/spi_flash.h"
-
+#include "rom/spi_flash.h"
 #include "platform_wdt.h"
-
 #include "esp_image_format.h"
 #include "esp_flash_partitions.h"
 

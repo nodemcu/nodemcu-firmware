@@ -1,0 +1,49 @@
+menu "NodeMCU modules (ESP32/ESP32-S specific)"
+depends on IDF_TARGET != "ESP32C3"
+
+    config NODEMCU_CMODULE_CAN
+        bool "CAN module"
+        default "n"
+        help
+            Includes the can module.
+
+    config NODEMCU_CMODULE_DAC
+        bool "DAC module"
+        default "n"
+        help
+            Includes the dac module.
+
+    config NODEMCU_CMODULE_ETH
+        select ETH_USE_ESP32_EMAC
+        bool "Ethernet module"
+        default "n"
+        help
+            Includes the ethernet module.
+
+    config NODEMCU_CMODULE_I2S
+        bool "I2S module"
+        default "n"
+        help
+            Includes the I2S module.
+
+    config NODEMCU_CMODULE_PULSECNT
+        bool "Pulse counter module"
+        default "n"
+        help
+            Includes the pulse counter module to use ESP32's built-in pulse
+            counting hardware.
+
+    config NODEMCU_CMODULE_SDMMC
+        bool "SD-MMC module"
+        default "n"
+        help
+            Includes the sdmmc module.
+
+    config NODEMCU_CMODULE_TOUCH
+        bool "Touch module"
+        default "n"
+        help
+            Includes the touch module to use ESP32's built-in touch sensor
+            hardware.
+
+endmenu

@@ -124,18 +124,6 @@ void nodemcu_init(void)
         return;
     }
 
-    if (flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
-        NODE_ERR("Incorrect flash size reported, adjusting...\n");
-        // Fit hardware real flash size.
-        flash_rom_set_size_byte(flash_safe_get_size_byte());
-
-        // Reboot to get SDK to use (or write) init data at new location
-        esp_restart ();
-
-        // Don't post the start_lua task, we're about to reboot...
-        return;
-    }
-
 #if defined ( CONFIG_NODEMCU_BUILD_SPIFFS )
     // This can take a while, so be nice and provide some feedback while waiting
     printf ("Mounting flash filesystem...\n");

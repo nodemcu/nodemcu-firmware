@@ -20,71 +20,87 @@
 // Lua: node.bootreason()
 static int node_bootreason( lua_State *L)
 {
-	int panicval = panic_get_nvval();
-	RESET_REASON rr0 = rtc_get_reset_reason(0);
-	unsigned rawinfo = 3;
-	// rawinfo can take these values as defined in docs/modules/node.md
-	//
-	// 1, power-on
-	// 2, reset (software?)
-	// 3, hardware reset via reset pin or unknown reason
-	// 4, WDT reset (watchdog timeout)
-	//
-	// extendedinfo can take these values as definded in docs/modules/node.md
-	//
-	// 0, power-on
-	// 1, hardware watchdog reset
-	// 2, exception reset
-	// 3, software watchdog reset
-	// 4, software restart
-	// 5, wake from deep sleep
-	// 6, external reset
-	// added values from rom/rtc.h with offset 7
-        // 7: NO_MEAN                =  0,
-        // 8: POWERON_RESET          =  1,    /**<1, Vbat power on reset*/
-	// 9: 
-        // 10: SW_RESET               =  3,    /**<3, Software reset digital core*/
-        // 11: OWDT_RESET             =  4,    /**<4, Legacy watch dog reset digital core*/
-        // 12: DEEPSLEEP_RESET        =  5,    /**<3, Deep Sleep reset digital core*/
-        // 13: SDIO_RESET             =  6,    /**<6, Reset by SLC module, reset digital core*/
-        // 14: TG0WDT_SYS_RESET       =  7,    /**<7, Timer Group0 Watch dog reset digital core*/
-        // 15: TG1WDT_SYS_RESET       =  8,    /**<8, Timer Group1 Watch dog reset digital core*/
-        // 16: RTCWDT_SYS_RESET       =  9,    /**<9, RTC Watch dog Reset digital core*/
-        // 17: INTRUSION_RESET        = 10,    /**<10, Instrusion tested to reset CPU*/
-        // 18: TGWDT_CPU_RESET        = 11,    /**<11, Time Group reset CPU*/
-        // 19: SW_CPU_RESET           = 12,    /**<12, Software reset CPU*/
-        // 20: RTCWDT_CPU_RESET       = 13,    /**<13, RTC Watch dog Reset CPU*/
-        // 21: EXT_CPU_RESET          = 14,    /**<14, for APP CPU, reseted by PRO CPU*/
-        // 22: RTCWDT_BROWN_OUT_RESET = 15,    /**<15, Reset when the vdd voltage is not stable*/
-        // 23: RTCWDT_RTC_RESET       = 16     /**<16, RTC Watch dog reset digital core and rtc module*/`
-	switch (rr0) {
-		case NO_MEAN:   	rawinfo = 3; break;
-		case POWERON_RESET: 	rawinfo = 1; break;
-		case SW_RESET:		rawinfo = 2; break;
-		case OWDT_RESET:	rawinfo = 4; break;
-		case DEEPSLEEP_RESET:
-		case SDIO_RESET:
-		case TG0WDT_SYS_RESET:
-		case TG1WDT_SYS_RESET:
-					rawinfo = 3; break;
-		case RTCWDT_SYS_RESET:	rawinfo = 4; break;
-		case INTRUSION_RESET:	rawinfo = 3; break;
-		case TGWDT_CPU_RESET:	rawinfo = 4; break;
-		case SW_CPU_RESET:	rawinfo = 2; break;
-		case RTCWDT_CPU_RESET:	rawinfo = 4; break;
-		case EXT_CPU_RESET:
-		case RTCWDT_BROWN_OUT_RESET:	rawinfo = 3; break;
-		case RTCWDT_RTC_RESET:	rawinfo = 3; break;
-	}
-	lua_pushinteger(L, (lua_Integer)rawinfo);
-	lua_pushinteger(L, (lua_Integer)rr0+7);
-	if (rr0 == SW_CPU_RESET) {
-		lua_pushinteger(L, (lua_Integer)panicval);
-		return 3;
-	}
-	return 2;
+  int panicval = panic_get_nvval();
+  RESET_REASON rr0 = rtc_get_reset_reason(0);
+  unsigned rawinfo = 3;
+  // rawinfo can take these values as defined in docs/modules/node.md
+  //
+  // 1, power-on
+  // 2, reset (software?)
+  // 3, hardware reset via reset pin or unknown reason
+  // 4, WDT reset (watchdog timeout)
+  //
+  // extendedinfo can take these values as definded in docs/modules/node.md
+  //
+  // 0, power-on
+  // 1, hardware watchdog reset
+  // 2, exception reset
+  // 3, software watchdog reset
+  // 4, software restart
+  // 5, wake from deep sleep
+  // 6, external reset
+  // added values from rom/rtc.h with offset 7
+  // 7: NO_MEAN                =  0,
+  // 8: POWERON_RESET          =  1,    /**<1, Vbat power on reset*/
+  // 9:
+  // 10: SW_RESET               =  3,    /**<3, Software reset digital core*/
+  // 11: OWDT_RESET             =  4,    /**<4, Legacy watch dog reset digital core*/
+  // 12: DEEPSLEEP_RESET        =  5,    /**<3, Deep Sleep reset digital core*/
+  // 13: SDIO_RESET             =  6,    /**<6, Reset by SLC module, reset digital core*/
+  // 14: TG0WDT_SYS_RESET       =  7,    /**<7, Timer Group0 Watch dog reset digital core*/
+  // 15: TG1WDT_SYS_RESET       =  8,    /**<8, Timer Group1 Watch dog reset digital core*/
+  // 16: RTCWDT_SYS_RESET       =  9,    /**<9, RTC Watch dog Reset digital core*/
+  // 17: INTRUSION_RESET        = 10,    /**<10, Instrusion tested to reset CPU*/
+  // 18: TGWDT_CPU_RESET        = 11,    /**<11, Time Group reset CPU*/
+  // 19: SW_CPU_RESET           = 12,    /**<12, Software reset CPU*/
+  // 20: RTCWDT_CPU_RESET       = 13,    /**<13, RTC Watch dog Reset CPU*/
+  // 21: EXT_CPU_RESET          = 14,    /**<14, for APP CPU, reseted by PRO CPU*/
+  // 22: RTCWDT_BROWN_OUT_RESET = 15,    /**<15, Reset when the vdd voltage is not stable*/
+  // 23: RTCWDT_RTC_RESET       = 16     /**<16, RTC Watch dog reset digital core and rtc module*/`
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+# define SW_CPU_RESET   RTC_SW_CPU_RESET
+# define SW_RESET       RTC_SW_SYS_RESET
+#endif
+  switch (rr0) {
+    case POWERON_RESET:
+      rawinfo = 1; break;
+    case SW_CPU_RESET:
+    case SW_RESET:
+      rawinfo = 2; break;
+    case NO_MEAN:
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+    case EXT_CPU_RESET:
+#endif
+    case DEEPSLEEP_RESET:
+    case SDIO_RESET:
+    case TG0WDT_SYS_RESET:
+    case TG1WDT_SYS_RESET:
+    case INTRUSION_RESET:
+    case RTCWDT_BROWN_OUT_RESET:
+    case RTCWDT_RTC_RESET:
+      rawinfo = 3; break;
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+    case TG0WDT_CPU_RESET:
+    case TG1WDT_CPU_RESET:
+    case SUPER_WDT_RESET:
+#else
+    case OWDT_RESET:
+    case TGWDT_CPU_RESET:
+#endif
+    case RTCWDT_CPU_RESET:
+    case RTCWDT_SYS_RESET:
+      rawinfo = 4; break;
+  }
+  lua_pushinteger(L, (lua_Integer)rawinfo);
+  lua_pushinteger(L, (lua_Integer)rr0+7);
+  if (rr0 == SW_CPU_RESET) {
+    lua_pushinteger(L, (lua_Integer)panicval);
+    return 3;
+  }
+  return 2;
 }
 
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
 {
@@ -101,7 +117,7 @@ static int node_chipid( lua_State *L )
   lua_pushstring(L, chipid);
   return 1;
 }
-
+#endif
 
 // Lua: node.heap()
 static int node_heap( lua_State* L )
@@ -200,6 +216,7 @@ static int node_sleep (lua_State *L)
     esp_sleep_enable_timer_wakeup(usecs);
   }
 
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
   // touch option: boolean
   if (opt_checkbool(L, "touch", false)) {
     int err = esp_sleep_enable_touchpad_wakeup();
@@ -215,6 +232,7 @@ static int node_sleep (lua_State *L)
       return luaL_error(L, "Error %d returned from esp_sleep_enable_ulp_wakeup()", err);
     }
   }
+#endif
 
   int err = esp_light_sleep_start();
   if (err == ESP_ERR_INVALID_STATE) {
@@ -271,10 +289,8 @@ static int node_dsleep (lua_State *L)
       }
     }
 
-    int level = opt_checkint_range(L, "level", 1, 0, 1);
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
     bool pull = opt_checkbool(L, "pull", false);
-    bool touch = opt_checkbool(L, "touch", false);
-
     if (opt_get(L, "isolate", LUA_TTABLE)) {
       for (int i = 1; ; i++) {
         lua_rawgeti(L, -1, i);
@@ -297,6 +313,7 @@ static int node_dsleep (lua_State *L)
         esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     }
 
+    int level = opt_checkint_range(L, "level", 1, 0, 1);
     if (pin_mask) {
       esp_sleep_ext1_wakeup_mode_t mode = (level == 1) ?
         ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW;
@@ -306,9 +323,11 @@ static int node_dsleep (lua_State *L)
       }
     }
 
+    bool touch = opt_checkbool(L, "touch", false);
     if (touch) {
       esp_sleep_enable_touchpad_wakeup();
     }
+#endif
 
   } else {
     luaL_argerror(L, 1, "Expected integer or table");
@@ -708,7 +727,9 @@ LROT_END(node_wakeup, NULL, 0)
 
 LROT_BEGIN(node)
   LROT_FUNCENTRY( bootreason, node_bootreason )
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
   LROT_FUNCENTRY( chipid,     node_chipid )
+#endif
   LROT_FUNCENTRY( compile,    node_compile )
   LROT_FUNCENTRY( dsleep,     node_dsleep )
   LROT_TABENTRY ( egc,        node_egc )

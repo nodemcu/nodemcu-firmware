@@ -193,12 +193,16 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     return PLATFORM_ERR;
 
   if (gpio_num != ow_rmt.gpio) {
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
     // attach GPIO to previous pin
     if (gpio_num < 32) {
       GPIO.enable_w1ts = (0x1 << gpio_num);
     } else {
       GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
     }
+#else
+    GPIO.enable_w1ts.val = (0x1 << gpio_num);
+#endif
     if (ow_rmt.gpio >= 0) {
       gpio_matrix_out( ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0 );
     }

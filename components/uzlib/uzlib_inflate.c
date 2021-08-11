@@ -61,29 +61,25 @@ int debugCounts[20];
 jmp_buf unwindAddr;
 int dbg_break(void) {return 1;}
 
-typedef uint8_t  uchar;
-typedef uint16_t ushort;
-typedef uint32_t uint;
-
 /* data structures */
 
 typedef struct {
-   ushort table[16];  /* table of code length counts */
-   ushort trans[288]; /* code -> symbol translation table */
+   uint16_t table[16];  /* table of code length counts */
+   uint16_t trans[288]; /* code -> symbol translation table */
 } UZLIB_TREE;
 
 struct uzlib_data {
  /*
   * extra bits and base tables for length and distance codes
   */
-  uchar  lengthBits[30];
-  ushort lengthBase[30];
-  uchar  distBits[30];
-  ushort distBase[30];
+  uint8_t  lengthBits[30];
+  uint16_t lengthBase[30];
+  uint8_t  distBits[30];
+  uint16_t distBase[30];
  /*
   * special ordering of code length codes
   */
-  uchar  clcidx[19];
+  uint8_t  clcidx[19];
  /*
   * dynamic length/symbol and distance trees
   */
@@ -92,20 +88,20 @@ struct uzlib_data {
  /*
   * methods encapsulate handling of the input and output streams
   */
-  uchar (*get_byte)(void);
-  void (*put_byte)(uchar b);
-  uchar (*recall_byte)(uint offset);
+  uint8_t (*get_byte)(void);
+  void (*put_byte)(uint8_t b);
+  uint8_t (*recall_byte)(uint32_t offset);
  /*
   * Other state values
   */
-  uint destSize;
-  uint tag;
-  uint bitcount;
-  uint lzOffs;
+  uint32_t destSize;
+  uint32_t tag;
+  uint32_t bitcount;
+  uint32_t lzOffs;
   int  bType;
   int  bFinal;
-  uint curLen;
-  uint checksum;
+  uint32_t curLen;
+  uint32_t checksum;
 };
 
 /*
@@ -134,14 +130,14 @@ static uint16_t get_uint16(UZLIB_DATA *d) {
   return v | (d->get_byte() << 8);
 }
 
-static uint get_le_uint32 (UZLIB_DATA *d) {
-  uint v = get_uint16(d);
-  return  v | ((uint) get_uint16(d) << 16);
+static uint32_t get_le_uint32 (UZLIB_DATA *d) {
+  uint32_t v = get_uint16(d);
+  return  v | ((uint32_t) get_uint16(d) << 16);
 }
 
 /* get one bit from source stream */
 static int getbit (UZLIB_DATA *d) {
-  uint bit;
+  uint32_t bit;
 
   /* check if tag is empty */
   if (!d->bitcount--) {
@@ -158,14 +154,14 @@ static int getbit (UZLIB_DATA *d) {
 }
 
 /* read a num bit value from a stream and add base */
-static uint read_bits (UZLIB_DATA *d, int num, int base) {
+static uint32_t read_bits (UZLIB_DATA *d, int num, int base) {
  /* This is an optimised version which doesn't call getbit num times */
   if (!num)
     return base;
 
-  uint i, n = (((uint)-1)<<num);
+  uint32_t i, n = (((uint32_t)-1)<<num);
   for (i = d->bitcount; i < num; i +=8)
-    d->tag |= ((uint)d->get_byte()) << i;
+    d->tag |= ((uint32_t)d->get_byte()) << i;
 
   n = d->tag & ~n;
   d->tag >>= num;
@@ -198,7 +194,7 @@ static uint read_bits (UZLIB_DATA *d, int num, int base) {
  * ----------------------- */
 
 /* build extra bits and base tables */
-static void build_bits_base (uchar *bits, ushort *base,
+static void build_bits_base (uint8_t *bits, uint16_t *base,
                              int delta, int first) {
   int i, sum;
 
@@ -237,9 +233,9 @@ static void build_fixed_trees (UZLIB_TREE *lt, UZLIB_TREE *dt) {
 }
 
 /* given an array of code lengths, build a tree */
-static void build_tree (UZLIB_TREE *t, const uchar *lengths, uint num) {
-  ushort offs[16];
-  uint i, sum;
+static void build_tree (UZLIB_TREE *t, const uint8_t *lengths, uint32_t num) {
+  uint16_t offs[16];
+  uint32_t i, sum;
 
   /* clear code length count table */
   for (i = 0; i < 16; ++i)
@@ -292,9 +288,9 @@ static int decode_symbol (UZLIB_DATA *d, UZLIB_TREE *t) {
 
 /* given a data stream, decode dynamic trees from it */
 static int decode_trees (UZLIB_DATA *d, UZLIB_TREE *lt, UZLIB_TREE *dt) {
-  uchar lengths[288+32];
-  uint hlit, hdist, hclen, hlimit;
-  uint i, num, length;
+  uint8_t lengths[288+32];
+  uint32_t hlit, hdist, hclen, hlimit;
+  uint32_t i, num, length;
 
   /* get 5 bits HLIT (257-286) */
   hlit = read_bits(d, 5, 257);
@@ -310,7 +306,7 @@ static int decode_trees (UZLIB_DATA *d, UZLIB_TREE *lt, UZLIB_TREE *dt) {
   /* read code lengths for code length alphabet */
   for (i = 0; i < hclen; ++i) {
     /* get 3 bits code length (0-7) */
-    uint clen = read_bits(d, 3, 0);
+    uint32_t clen = read_bits(d, 3, 0);
     lengths[d->clcidx[i]] = clen;
   }
 
@@ -321,7 +317,7 @@ static int decode_trees (UZLIB_DATA *d, UZLIB_TREE *lt, UZLIB_TREE *dt) {
   hlimit = hlit + hdist;
   for (num = 0; num < hlimit; ) {
     int sym = decode_symbol(d, lt);
-    uchar fill_value = 0;
+    uint8_t fill_value = 0;
     int lbits, lbase = 3;
 
     /* error decoding */
@@ -398,7 +394,7 @@ static int inflate_block_data (UZLIB_DATA *d, UZLIB_TREE *lt, UZLIB_TREE *dt) {
   }
 
   /* copy next byte from dict substring */
-  uchar b = d->recall_byte(d->lzOffs);
+  uint8_t b = d->recall_byte(d->lzOffs);
   DBG_PRINT("huff dict byte(%u): -%u -  %02x   %c\n\n",
           d->curLen, d->lzOffs, b, b);
   d->put_byte(b);
@@ -409,8 +405,8 @@ static int inflate_block_data (UZLIB_DATA *d, UZLIB_TREE *lt, UZLIB_TREE *dt) {
 /* inflate an uncompressed block of data */
 static int inflate_uncompressed_block (UZLIB_DATA *d) {
   if (d->curLen == 0) {
-    uint length    = get_uint16(d);
-    uint invlength = get_uint16(d);
+    uint32_t length    = get_uint16(d);
+    uint32_t invlength = get_uint16(d);
 
     /* check length */
     if (length != (~invlength & 0x0000ffff))
@@ -445,7 +441,7 @@ static int parse_gzip_header(UZLIB_DATA *d) {
   if (d->get_byte() != 8) /* check method is deflate */
     return UZLIB_DATA_ERROR;
 
-  uchar flg = d->get_byte();/* get flag byte */
+  uint8_t flg = d->get_byte();/* get flag byte */
 
   if (flg & 0xe0)/* check that reserved bits are zero */
     return UZLIB_DATA_ERROR;
@@ -537,18 +533,18 @@ static int uncompress_stream (UZLIB_DATA *d) {
  * three support routines to handle the streaming:
  *
  *   void get_byte(void)
- *   void put_byte(uchar b)
- *   uchar recall_byte(uint offset)
+ *   void put_byte(uint8_t b)
+ *   uint8_t recall_byte(uint32_t offset)
  *
  * This last must be able to recall an output byte with an offet up to
  * the maximum dictionary size.
  */
 
 int uzlib_inflate (
-     uchar (*get_byte)(void),
-     void (*put_byte)(uchar v),
-     uchar (*recall_byte)(uint offset),
-     uint len, uint *crc, void **state) {
+     uint8_t (*get_byte)(void),
+     void (*put_byte)(uint8_t v),
+     uint8_t (*recall_byte)(uint32_t offset),
+     uint32_t len, uint32_t *crc, void **state) {
   int res;
 
   /* initialize decompression structure */

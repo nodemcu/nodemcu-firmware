@@ -22,6 +22,8 @@
  *
  * -  I have replaced the various mix of char, unsigned char and uchar
  *    by the single uchar type; ditto for ushort and uint.
+ *    [Addendum: this was later switch to standard uintX_t types in order
+ *     to not conflict with RISCV system headers, which also defined uint]
  *
  * -  All internal (non-exported) functions and data are static
  *
@@ -109,15 +111,11 @@ jmp_buf unwindAddr;
 
 #define SIZE(a) (sizeof(a)/sizeof(*a)) /* no of elements in array */
 #ifdef __XTENSA__
-#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uchar *c = alloca(sl); memcpy(c,s,(sl))
+#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uint8_t *c = alloca(sl); memcpy(c,s,(sl))
 #else
-#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uchar *c = s;
+#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uint8_t *c = s;
 #endif
 #define FREE(v) if (v) uz_free(v)
-
-typedef uint8_t  uchar;
-typedef uint16_t ushort;
-typedef uint32_t uint;
 
 #ifdef DEBUG_COUNTS
 #define DBG_PRINT(...) printf(__VA_ARGS__)
@@ -133,27 +131,27 @@ int debugCounts[20];
 int dbg_break(void) {return 1;}
 
 typedef struct {
-  ushort code, extraBits, min, max;
+  uint16_t code, extraBits, min, max;
 } codeRecord;
 
 struct dynTables {
-  ushort *hashChain;
-  ushort *hashTable;
-  ushort hashMask;
-  ushort hashSlots;
-  ushort hashBits;
-  ushort dictLen;
-  const uchar bitrevNibble[16];
+  uint16_t *hashChain;
+  uint16_t *hashTable;
+  uint16_t hashMask;
+  uint16_t hashSlots;
+  uint16_t hashBits;
+  uint16_t dictLen;
+  const uint8_t bitrevNibble[16];
   const codeRecord lenCodes[285-257+1];
   const codeRecord distCodes[29-0+1];
 } *dynamicTables;
 
 struct outputBuf {
-  uchar *buffer;
-  uint len, size;
-  uint inLen, inNdx;
-  uint bits, nBits;
-  uint compDisabled;
+  uint8_t *buffer;
+  uint32_t len, size;
+  uint32_t inLen, inNdx;
+  uint32_t bits, nBits;
+  uint32_t compDisabled;
 } *oBuf;
 
 
@@ -190,12 +188,12 @@ struct outputBuf {
 #define distCodes_LEN 30
 #define BITREV16 "\x0\x8\x4\xc\x2\xa\x6\xe\x1\x9\x5\xd\x3\xb\x7\xf"
 
-static void genCodeRecs (const codeRecord *rec, ushort len,
-                    char *init, int initLen,
-                    ushort start, ushort m0) {
+static void genCodeRecs (const codeRecord *rec, uint16_t len,
+                    const char *init, int initLen,
+                    uint16_t start, uint16_t m0) {
   DBG_COUNT(0);
   int       i, b=0, m=0, last=m0;
-  RAM_COPY_BYTE_ARRAY(c, (uchar *)init,initLen);
+  RAM_COPY_BYTE_ARRAY(c, (uint8_t *)init,initLen);
   codeRecord *p = (codeRecord *) rec;
 
   for (i = start; i < start+len; i++, c++) {
@@ -206,12 +204,12 @@ static void genCodeRecs (const codeRecord *rec, ushort len,
   }
 }
 
-static void initTables (uint chainLen, uint hashSlots) {
+static void initTables (uint32_t chainLen, uint32_t hashSlots) {
   DBG_COUNT(1);
-  uint dynamicSize = sizeof(struct dynTables) +
+  uint32_t dynamicSize = sizeof(struct dynTables) +
                      sizeof(struct outputBuf) +
-                     chainLen * sizeof(ushort) +
-                     hashSlots * sizeof(ushort);
+                     chainLen * sizeof(uint16_t) +
+                     hashSlots * sizeof(uint16_t);
   struct dynTables *dt = uz_malloc(dynamicSize);
   memset(dt, 0, dynamicSize);
   dynamicTables = dt;
@@ -220,17 +218,17 @@ static void initTables (uint chainLen, uint hashSlots) {
   if(!dt )
     UZLIB_THROW(UZLIB_MEMORY_ERROR);
 
-  memcpy((uchar*)dt->bitrevNibble, BITREV16, 16);
+  memcpy((uint8_t*)dt->bitrevNibble, BITREV16, 16);
   oBuf          = (struct outputBuf *)(dt+1);
-  dt->hashTable = (ushort *)(oBuf+1);
+  dt->hashTable = (uint16_t *)(oBuf+1);
   dt->hashChain = dt->hashTable + hashSlots;
   dt->hashSlots = hashSlots;
   dt->hashMask = hashSlots - 1;
 
   /* As these are offset rather than pointer, 0 is a valid offset */
   /* (unlike NULL), so 0xFFFF is used to denote an unset value */
-  memset(dt->hashTable, -1, sizeof(ushort)*hashSlots);
-  memset(dt->hashChain, -1, sizeof(ushort)*chainLen);
+  memset(dt->hashTable, -1, sizeof(uint16_t)*hashSlots);
+  memset(dt->hashChain, -1, sizeof(uint16_t)*chainLen);
 
   /* Generate the code recors for the lenth and distance code tables */
   genCodeRecs(dt->lenCodes, SIZE(dt->lenCodes),
@@ -247,7 +245,7 @@ static void initTables (uint chainLen, uint hashSlots) {
  * Routines to output bit streams and byte streams to the output buffer
  */
 void resizeBuffer(void) {
-  uchar *nb;
+  uint8_t *nb;
   DBG_COUNT(2);
   /* The outbuf is given an initial size estimate but if we are running */
   /* out of space then extropolate size using current compression */
@@ -258,7 +256,7 @@ void resizeBuffer(void) {
   oBuf->buffer = nb;
 }
 
-void outBits(ushort bits, int nBits) {
+void outBits(uint16_t bits, int nBits) {
   DBG_COUNT(3);
   oBuf->bits  |= bits << oBuf->nBits;
   oBuf->nBits += nBits;
@@ -274,10 +272,10 @@ void outBits(ushort bits, int nBits) {
   }
 }
 
-void outBitsRev(uchar bits, int nBits) {
+void outBitsRev(uint8_t bits, int nBits) {
   DBG_COUNT(4);
   /* Note that bit reversal only operates on an 8-bit bits field */
-  uchar bitsRev = (dynamicTables->bitrevNibble[bits & 0x0f]<<4) |
+  uint8_t bitsRev = (dynamicTables->bitrevNibble[bits & 0x0f]<<4) |
                   dynamicTables->bitrevNibble[bits>>4];
   outBits(bitsRev, nBits);
 }
@@ -292,15 +290,15 @@ void outBytes(void *bytes, int nBytes) {
   /* flush this first, if necessary */
   oBuf->nBits = oBuf->bits  = 0;
   for (i = 0; i < nBytes; i++) {
-    DBG_PRINT("%02x-", *((uchar*)bytes+i));
-    oBuf->buffer[oBuf->len++] = *((uchar*)bytes+i);
+    DBG_PRINT("%02x-", *((uint8_t*)bytes+i));
+    oBuf->buffer[oBuf->len++] = *((uint8_t*)bytes+i);
   }
 }
 
 /*
  * Output an literal byte as an 8 or 9 bit code
  */
-void literal (uchar c) {
+void literal (uint8_t c) {
   DBG_COUNT(6);
   DBG_PRINT("sym: %02x   %c\n", c, c);
   if (oBuf->compDisabled) {
@@ -414,19 +412,19 @@ void copy (int distance, int len) {
  * constraints of the ESP8266), the chainList is 16K slots long, and the
  * hashTable is 4K slots long, so a typical chain will have 4 links.
  *
- * These two tables use 16-bit ushort offsets rather than pointers to
+ * These two tables use 16-bit uint16_t offsets rather than pointers to
  * save memory (essential on the ESP8266).
  *
  * As per RFC 1951 sec 4, we also implement a "lazy match" procedure
  */
 
-void uzlibCompressBlock(const uchar *src, uint srcLen) {
+void uzlibCompressBlock(const uint8_t *src, uint32_t srcLen) {
   int i, j, k, l;
-  uint hashMask     = dynamicTables->hashMask;
-  ushort *hashChain = dynamicTables->hashChain;
-  ushort *hashTable = dynamicTables->hashTable;
-  uint hashShift    = 24 - dynamicTables->hashBits;
-  uint lastOffset   = 0, lastLen = 0;
+  uint32_t hashMask     = dynamicTables->hashMask;
+  uint16_t *hashChain = dynamicTables->hashChain;
+  uint16_t *hashTable = dynamicTables->hashTable;
+  uint32_t hashShift    = 24 - dynamicTables->hashBits;
+  uint32_t lastOffset   = 0, lastLen = 0;
   oBuf->inLen       = srcLen;          /* used for output buffer resizing */
   DBG_COUNT(9);
 
@@ -438,22 +436,22 @@ void uzlibCompressBlock(const uchar *src, uint srcLen) {
     *
     * Note that using 16-bit offsets requires a little manipulation to
     * handle wrap-around and recover the correct offset, but all other
-    * working uses uint offsets simply because the compiler generates
+    * working uses uint32_t offsets simply because the compiler generates
     * faster (and smaller in the case of the ESP8266) code.
     *
     * Also note that this code also works for any tail 2 literals; the
     * hash will access beyond the array and will be incorrect, but
     * these can't match and will flush the last cache.
     */
-    const uchar *this = src + i, *comp;
-    uint base        = i & ~OFFSET16_MASK;
-    uint iOffset     = i - base;
-    uint maxLen      = srcLen - i;
-    uint matchLen    = MIN_MATCH - 1;
-    uint matchOffset = 0;
-    uint v          = (this[0] << 16) | (this[1] << 8) | this[2];
-    uint hash       = ((v >> hashShift) - v) & hashMask;
-    uint nextOffset = hashTable[hash];
+    const uint8_t *this = src + i, *comp;
+    uint32_t base        = i & ~OFFSET16_MASK;
+    uint32_t iOffset     = i - base;
+    uint32_t maxLen      = srcLen - i;
+    uint32_t matchLen    = MIN_MATCH - 1;
+    uint32_t matchOffset = 0;
+    uint32_t v          = (this[0] << 16) | (this[1] << 8) | this[2];
+    uint32_t hash       = ((v >> hashShift) - v) & hashMask;
+    uint32_t nextOffset = hashTable[hash];
     oBuf->inNdx = i;                   /* used for output buffer resizing */
     DBG_COUNT(10);
 
@@ -525,14 +523,14 @@ void uzlibCompressBlock(const uchar *src, uint srcLen) {
  * This compress wrapper treats the input stream as a single block for
  * compression using the default Static huffman block encoding
  */
-int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) {
-  uint crc = ~uzlib_crc32(src, srcLen, ~0);
-  uint chainLen = srcLen < MAX_OFFSET ? srcLen : MAX_OFFSET;
-  uint hashSlots, i, j;
+int uzlib_compress (uint8_t **dest, uint32_t *destLen, const uint8_t *src, uint32_t srcLen) {
+  uint32_t crc = ~uzlib_crc32(src, srcLen, ~0);
+  uint32_t chainLen = srcLen < MAX_OFFSET ? srcLen : MAX_OFFSET;
+  uint32_t hashSlots, i, j;
   int status;
 
-  uint FLG_MTIME[] = {0x00088b1f, 0};
-  ushort XFL_OS = 0x0304;
+  uint32_t FLG_MTIME[] = {0x00088b1f, 0};
+  uint16_t XFL_OS = 0x0304;
 
   /* The hash table has 4K slots for a 16K chain and scaling down */
   /* accordingly, for an average chain length of 4 links or thereabouts */
@@ -571,7 +569,7 @@ int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) 
   for (i=0; i<20;i++) DBG_PRINT("count %u = %u\n",i,debugCounts[i]);
 
   if (status == UZLIB_OK) {
-    uchar *trimBuf = realloc(oBuf->buffer, oBuf->len);
+    uint8_t *trimBuf = realloc(oBuf->buffer, oBuf->len);
     *dest = trimBuf ? trimBuf : oBuf->buffer;
     *destLen = oBuf->len;
   } else {

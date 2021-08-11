@@ -31,7 +31,7 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
-#include "esp32/rom/uart.h"
+#include "esp_rom_uart.h"
 #include "task/task.h"
 #include <stdint.h>
 #include <stdbool.h>

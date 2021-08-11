@@ -219,7 +219,7 @@ int lspi_master( lua_State *L )
 
   int host = luaL_checkint( L, ++stack );
   luaL_argcheck( L,
-                 host == SPI_HOST || host == HSPI_HOST || host == VSPI_HOST,
+                 host == SPI1_HOST || host == SPI2_HOST || host == SPI2_HOST,
                  stack,
                  "invalid host" );
 
