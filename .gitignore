@@ -1,24 +1,37 @@
+sdk/
+cache/
+user_config.h
+server-ca.crt
+sdkconfig
+sdkconfig.old*
+build/
+components/*/.output/
+tools/toolchains
+extmods.ini
+.ccache
+bin
+
 .gdb_history
 app/lua/.std
 app/lua53/.std
 sdk/
-cache/
-.ccache/
 local/
-user_config.h
-server-ca.crt
 luac.cross
 luac.cross.int
 uz_unzip
 uz_zip
-tools/toolchains/
 
 #ignore Eclipse project files
 .cproject
 .project
 .settings/
-.vscode
-.vs
+
+# ignore VS Code files
+.vscode/**
+
+# ignore IDEA files
+.idea
+*.iml
 
 #ignore temp file for build infos
 buildinfo.h
