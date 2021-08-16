@@ -4,69 +4,70 @@ repo_url: https://github.com/nodemcu/nodemcu-firmware/
 
 theme:
   name: "readthedocs"
+  hljs_languages:
+    - lua
 strict: false
 
 markdown_extensions:
-#http://pythonhosted.org/Markdown/extensions/admonition.html
-- admonition:
-- toc:
-    permalink: True
+  #http://pythonhosted.org/Markdown/extensions/admonition.html
+  - admonition:
+  - toc:
+      permalink: True
 
-#requird due to https://github.com/rtfd/readthedocs.org/issues/1313
 #see http://mkdocs.readthedocs.org/en/latest/user-guide/styling-your-docs/#customising-a-theme
 extra_css:
-- css/extra.css
+  - css/extra.css
 extra_javascript:
-- js/extra.js
+  - js/extra.js
 
 pages:
-- Overview: 'index.md'
-- Basics:
-    - Building the firmware: 'build.md'
-    - Flashing the firmware: 'flash.md'
-    - Uploading code: 'upload.md'
-    - JTAG debugging: 'debug.md'
-    - Support: 'support.md'
-- FAQs:
-    - Lua Developer FAQ: 'lua-developer-faq.md'
-    - Extension Developer FAQ: 'extn-developer-faq.md'
-- Whitepapers:
-    - Filesystem on SD card: 'sdcard.md'
-    - Writing external C modules: 'modules/extmods.md'
-- C Modules:
-    - 'adc':          'modules/adc.md'
-    - 'bit':          'modules/bit.md'
-    - 'bthci':        'modules/bthci.md'
-    - 'can':          'modules/can.md'
-    - 'crypto':       'modules/crypto.md'
-    - 'dac':          'modules/dac.md'
-    - 'dht':          'modules/dht.md'
-    - 'encoder':      'modules/encoder.md'
-    - 'eth':          'modules/eth.md'
-    - 'file':         'modules/file.md'
-    - 'gpio':         'modules/gpio.md'
-    - 'http':         'modules/http.md'
-    - 'i2c':          'modules/i2c.md'
-    - 'i2s':          'modules/i2s.md'
-    - 'ledc':         'modules/ledc.md'
-    - 'mqtt':         'modules/mqtt.md'
-    - 'net':          'modules/net.md'
-    - 'node':         'modules/node.md'
-    - 'ota':          'modules/otaupgrade.md'
-    - 'ow (1-Wire)':  'modules/ow.md'
-    - 'pulsecnt':     'modules/pulsecnt.md'
-    - 'qrcodegen':    'modules/qrcodegen.md'
-    - 'sdmmc':        'modules/sdmmc.md'
-    - 'sigma delta':  'modules/sigma-delta.md'
-    - 'sjson':        'modules/sjson.md'
-    - 'sodium':       'modules/sodium.md'
-    - 'spi':          'modules/spi.md'
-    - 'struct':       'modules/struct.md'
-    - 'time':         'modules/time.md'
-    - 'tmr':          'modules/tmr.md'
-    - 'touch':        'modules/touch.md'
-    - 'u8g2':         'modules/u8g2.md'
-    - 'uart':         'modules/uart.md'
-    - 'ucg':          'modules/ucg.md'
-    - 'wifi':         'modules/wifi.md'
-    - 'ws2812':       'modules/ws2812.md'
+  - Overview: 'index.md'
+  - Basics:
+      - Building the firmware: 'build.md'
+      - Flashing the firmware: 'flash.md'
+      - Uploading code: 'upload.md'
+      - JTAG debugging: 'debug.md'
+      - Support: 'support.md'
+  - FAQs:
+      - Lua Developer FAQ: 'lua-developer-faq.md'
+      - Extension Developer FAQ: 'extn-developer-faq.md'
+  - Whitepapers:
+      - Filesystem on SD card: 'sdcard.md'
+      - Writing external C modules: 'modules/extmods.md'
+  - C Modules:
+      - 'adc': 'modules/adc.md'
+      - 'bit': 'modules/bit.md'
+      - 'bthci': 'modules/bthci.md'
+      - 'can': 'modules/can.md'
+      - 'crypto': 'modules/crypto.md'
+      - 'dac': 'modules/dac.md'
+      - 'dht': 'modules/dht.md'
+      - 'encoder': 'modules/encoder.md'
+      - 'eth': 'modules/eth.md'
+      - 'file': 'modules/file.md'
+      - 'gpio': 'modules/gpio.md'
+      - 'http': 'modules/http.md'
+      - 'i2c': 'modules/i2c.md'
+      - 'i2s': 'modules/i2s.md'
+      - 'ledc': 'modules/ledc.md'
+      - 'mqtt': 'modules/mqtt.md'
+      - 'net': 'modules/net.md'
+      - 'node': 'modules/node.md'
+      - 'ota': 'modules/otaupgrade.md'
+      - 'ow (1-Wire)': 'modules/ow.md'
+      - 'pulsecnt': 'modules/pulsecnt.md'
+      - 'qrcodegen': 'modules/qrcodegen.md'
+      - 'sdmmc': 'modules/sdmmc.md'
+      - 'sigma delta': 'modules/sigma-delta.md'
+      - 'sjson': 'modules/sjson.md'
+      - 'sodium': 'modules/sodium.md'
+      - 'spi': 'modules/spi.md'
+      - 'struct': 'modules/struct.md'
+      - 'time': 'modules/time.md'
+      - 'tmr': 'modules/tmr.md'
+      - 'touch': 'modules/touch.md'
+      - 'u8g2': 'modules/u8g2.md'
+      - 'uart': 'modules/uart.md'
+      - 'ucg': 'modules/ucg.md'
+      - 'wifi': 'modules/wifi.md'
+      - 'ws2812': 'modules/ws2812.md'
