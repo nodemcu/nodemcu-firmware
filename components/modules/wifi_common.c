@@ -63,7 +63,7 @@ int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb)
 {
   const char *event_name = luaL_checkstring (L, 1);
   if (!lua_isnoneornil (L, 2))
-    luaL_checkanyfunction (L, 2);
+    luaL_checkfunction (L, 2);
   lua_settop (L, 2);
 
   int idx = wifi_event_idx_by_name (table, n, event_name);

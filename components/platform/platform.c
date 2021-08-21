@@ -682,3 +682,10 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 #endif
 
 int platform_i2c_exists( unsigned id ) { return id < I2C_NUM_MAX; }
+
+
+void platform_print_deprecation_note( const char *msg, const char *time_frame)
+{
+  printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+}
+

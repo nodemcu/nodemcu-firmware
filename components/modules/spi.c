@@ -7,7 +7,7 @@
 #include "driver/spi_common.h"
 
 
-LROT_BEGIN(lspi)
+LROT_BEGIN(lspi, NULL, 0)
   LROT_FUNCENTRY( master, lspi_master )
 //  LROT_FUNCENTRY( slave,  lspi_slave )
 #if defined(CONFIG_IDF_TARGET_ESP32)

@@ -164,7 +164,7 @@ void wifi_sta_init (void)
 // --- Lua API functions ----------------------------------------------------
 static int wifi_sta_setip(lua_State *L)
 {
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
   size_t len = 0;
   const char *str = NULL;
@@ -224,7 +224,7 @@ static int wifi_sta_sethostname(lua_State *L)
 
 static int wifi_sta_config (lua_State *L)
 {
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
   bool save = luaL_optbool (L, 2, DEFAULT_SAVE);
   lua_settop (L, 1);
 
@@ -405,9 +405,9 @@ static int wifi_sta_scan (lua_State *L)
   if (scan_cb_ref != LUA_NOREF)
     return luaL_error (L, "scan already in progress");
 
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
-  luaL_checkanyfunction (L, 2);
+  luaL_checkfunction (L, 2);
   lua_settop (L, 2);
   scan_cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
 
@@ -438,7 +438,7 @@ static int wifi_sta_scan (lua_State *L)
 }
 
 
-LROT_PUBLIC_BEGIN(wifi_sta)
+LROT_BEGIN(wifi_sta, NULL, 0)
   LROT_FUNCENTRY( setip,       wifi_sta_setip )
   LROT_FUNCENTRY( sethostname, wifi_sta_sethostname )
   LROT_FUNCENTRY( config,      wifi_sta_config )

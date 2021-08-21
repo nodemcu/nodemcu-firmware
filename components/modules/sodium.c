@@ -129,19 +129,19 @@ static int l_crypto_box_seal_open(lua_State *L)
   return 1;
 }
 
-LROT_BEGIN(random)
+LROT_BEGIN(random, NULL, 0)
   LROT_FUNCENTRY(random,  l_randombytes_random)
   LROT_FUNCENTRY(uniform, l_randombytes_uniform)
   LROT_FUNCENTRY(buf,     l_randombytes_buf)
 LROT_END(random, NULL, 0)
 
-LROT_BEGIN(crypto_box)
+LROT_BEGIN(crypto_box, NULL, 0)
   LROT_FUNCENTRY(keypair,   l_crypto_box_keypair)
   LROT_FUNCENTRY(seal,      l_crypto_box_seal)
   LROT_FUNCENTRY(seal_open, l_crypto_box_seal_open)
 LROT_END(crypto_box, NULL, 0)
 
-LROT_BEGIN(sodium)
+LROT_BEGIN(sodium, NULL, 0)
   LROT_TABENTRY(random,     random)
   LROT_TABENTRY(crypto_box, crypto_box)
 LROT_END(sodium, NULL, 0)

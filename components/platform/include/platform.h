@@ -266,14 +266,6 @@ typedef struct {
  */
 bool platform_partition_info (uint8_t idx, platform_partition_t *info);
 
-/**
- * Appends a partition entry to the partition table, if possible.
- * Intended for auto-creation of a SPIFFS partition.
- * @param info The partition definition to append.
- * @returns True if the partition could be added, false if not.
- */
-bool platform_partition_add (const platform_partition_t *info);
-
 
 // *****************************************************************************
 // Helper macros
@@ -292,5 +284,7 @@ bool platform_partition_add (const platform_partition_t *info);
     return luaL_error( L, #resmod" %d not valid with " #mod " %d", ( unsigned )resid, ( unsigned )id )
 
 
+
+void platform_print_deprecation_note( const char *msg, const char *time_frame);
 
 #endif

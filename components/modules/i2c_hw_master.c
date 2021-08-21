@@ -319,7 +319,7 @@ int li2c_hw_master_transfer( lua_State *L )
     luaL_error( L, "no commands scheduled" );
 
   stack++;
-  if (lua_isfunction( L, stack ) || lua_islightfunction( L, stack )) {
+  if (lua_isfunction( L, stack )) {
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, job->cb_ref );
     job->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);

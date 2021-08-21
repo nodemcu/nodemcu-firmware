@@ -52,7 +52,7 @@ static int ldac_write( lua_State *L )
 
 
 // Module function map
-LROT_BEGIN(dac)
+LROT_BEGIN(dac, NULL, 0)
   LROT_FUNCENTRY( enable,    ldac_enable )
   LROT_FUNCENTRY( disable,   ldac_disable )
   LROT_FUNCENTRY( write,     ldac_write )

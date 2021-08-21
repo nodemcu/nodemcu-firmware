@@ -2,6 +2,9 @@
 #define modules_common_h
 
 #include "lua.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 /* Some common code shared between modules */
 

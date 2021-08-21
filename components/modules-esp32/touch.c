@@ -179,7 +179,7 @@ static int touch_create( lua_State *L ) {
   touch_t tp = &tpObj;
 
   // const int top = lua_gettop(L);
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
   tp->is_debug = opt_checkbool(L, "isDebug", false);
   tp->filterMs = opt_checkint(L, "filterMs", 0);
@@ -227,8 +227,8 @@ static int touch_create( lua_State *L ) {
     isCallback = false;
     if (tp->is_debug) ESP_LOGI(TAG, "No callback provided. Not turning on interrupt." );
   } else {
-    luaL_argcheck(L, lua_type(L, -1) == LUA_TFUNCTION || lua_type(L, -1) == LUA_TLIGHTFUNCTION, -1, "Cb must be function");
-    
+    luaL_checkfunction(L, -1);
+
     //get the lua function reference
     luaL_unref(L, LUA_REGISTRYINDEX, tp->cb_ref);
     lua_pushvalue(L, -1);
@@ -589,7 +589,7 @@ static int touch_unregister(lua_State* L) {
   return 0;
 }
 
-LROT_BEGIN(touch_dyn)
+LROT_BEGIN(touch_dyn, NULL, 0)
   LROT_FUNCENTRY( read,           touch_read )
   LROT_FUNCENTRY( intrEnable,     touch_intrEnable )
   LROT_FUNCENTRY( intrDisable,    touch_intrDisable )
@@ -601,7 +601,7 @@ LROT_BEGIN(touch_dyn)
   LROT_TABENTRY ( __index,        touch_dyn )
 LROT_END(touch_dyn, NULL, 0)
 
-LROT_BEGIN(touch)
+LROT_BEGIN(touch, NULL, 0)
   LROT_FUNCENTRY( create,            touch_create )
   LROT_NUMENTRY ( TOUCH_HVOLT_KEEP,    TOUCH_HVOLT_KEEP )
   LROT_NUMENTRY ( TOUCH_HVOLT_2V4,    TOUCH_HVOLT_2V4 )
@@ -626,7 +626,7 @@ LROT_END(touch, NULL, 0)
 
 int luaopen_touch(lua_State *L) {
 
-  luaL_rometatable(L, "touch.pctr", (void *)touch_dyn_map);
+  luaL_rometatable(L, "touch.pctr", LROT_TABLEREF(touch_dyn));
 
   touch_task_id = task_get_id(touch_task);
 

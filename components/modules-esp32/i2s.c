@@ -134,7 +134,7 @@ static int node_i2s_start( lua_State *L )
 
   int top = lua_gettop( L );
 
-  luaL_checkanytable (L, 2);
+  luaL_checktable (L, 2);
 
   i2s_config_t i2s_config;
   memset( &i2s_config, 0, sizeof( i2s_config ) );
@@ -309,7 +309,7 @@ static int node_i2s_mute( lua_State *L )
 
 
 // Module function map
-LROT_BEGIN(i2s)
+LROT_BEGIN(i2s, NULL, 0)
   LROT_FUNCENTRY( start, node_i2s_start )
   LROT_FUNCENTRY( stop,  node_i2s_stop )
   LROT_FUNCENTRY( read,  node_i2s_read )

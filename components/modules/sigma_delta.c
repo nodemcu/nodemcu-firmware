@@ -77,7 +77,7 @@ static int sigma_delta_setduty( lua_State *L )
 
 
 // Module function map
-LROT_BEGIN(sigma_delta)
+LROT_BEGIN(sigma_delta, NULL, 0)
   LROT_FUNCENTRY( setup,       sigma_delta_setup )
   LROT_FUNCENTRY( close,       sigma_delta_close )
   //LROT_FUNCENTRY( setpwmduty,  sigma_delta_setpwmduty )

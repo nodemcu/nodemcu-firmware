@@ -635,7 +635,7 @@ static int mqtt_new(lua_State* L) {
 }
 
 // map client methods to functions:
-LROT_BEGIN(mqtt_metatable)
+LROT_BEGIN(mqtt_metatable, NULL, 0)
   LROT_FUNCENTRY(connect, mqtt_connect)
   LROT_FUNCENTRY(close, mqtt_close)
   LROT_FUNCENTRY(lwt, mqtt_lwt)
@@ -648,12 +648,12 @@ LROT_BEGIN(mqtt_metatable)
 LROT_END(mqtt_metatable, NULL, 0)
 
 // Module function map
-LROT_BEGIN(mqtt)
+LROT_BEGIN(mqtt, NULL, 0)
   LROT_FUNCENTRY(Client, mqtt_new)
 LROT_END(mqtt, NULL, 0)
 
 int luaopen_mqtt(lua_State* L) {
-    luaL_rometatable(L, MQTT_METATABLE, (void*)mqtt_metatable_map);  // create metatable for mqtt
+    luaL_rometatable(L, MQTT_METATABLE, LROT_TABLEREF(mqtt_metatable));  // create metatable for mqtt
     return 0;
 }
 

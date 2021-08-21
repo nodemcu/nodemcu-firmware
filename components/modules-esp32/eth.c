@@ -184,7 +184,7 @@ static int leth_on( lua_State *L )
 {
   const char *event_name = luaL_checkstring( L, 1 );
   if (!lua_isnoneornil( L, 2 )) {
-    luaL_checkanyfunction( L, 2 );
+    luaL_checkfunction( L, 2 );
   }
   lua_settop( L, 2 );
 
@@ -274,7 +274,7 @@ cleanup_mac_phy:
 }
 
 
-LROT_BEGIN(eth)
+LROT_BEGIN(eth, NULL, 0)
   LROT_FUNCENTRY( init,       leth_init )
   LROT_FUNCENTRY( on,         leth_on )
   LROT_FUNCENTRY( get_speed,  leth_get_speed )

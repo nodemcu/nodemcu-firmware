@@ -29,7 +29,7 @@ int li2c_hw_master_transfer( lua_State *L );
 // ***************************************************************************
 // Hardware slave prototypes
 //
-LROT_EXTERN(li2c_slave);
+extern LROT_TABLE(li2c_slave);
 void li2c_hw_slave_init( lua_State *L );
 
 

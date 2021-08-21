@@ -539,12 +539,12 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
 
 // Lua: pc:chan0Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)
 // Example: pc:chan0Config(2, 4, pulsecnt.PCNT_COUNT_INC, pulsecnt.PCNT_COUNT_DIS, pulsecnt.PCNT_MODE_REVERSE, pulsecnt.PCNT_MODE_KEEP, -100, 100)
-static int pulsecnt_channel0_config( lua_State *L, uint8_t channel ) {
+static int pulsecnt_channel0_config( lua_State *L ) {
   return pulsecnt_channel_config(L, 0);
 }
 // Lua: pc:chan1Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)
 // Example: pc:chan1Config(2, 4, pulsecnt.PCNT_COUNT_INC, pulsecnt.PCNT_COUNT_DIS, pulsecnt.PCNT_MODE_REVERSE, pulsecnt.PCNT_MODE_KEEP, -100, 100)
-static int pulsecnt_channel1_config( lua_State *L, uint8_t channel ) {
+static int pulsecnt_channel1_config( lua_State *L ) {
   return pulsecnt_channel_config(L, 1);
 }
 
@@ -565,7 +565,7 @@ static int pulsecnt_create( lua_State *L ) {
     // user did not provide a callback. that's ok. just don't give them one.
     isCallback = false;
   } else {
-    luaL_argcheck(L, lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION, stack, "Must be function");
+    luaL_checkfunction(L, stack);
   }
 
   // ok, we have our unit number which is required. good. now create our object 
@@ -678,7 +678,7 @@ static int pulsecnt_unregister(lua_State* L){
   return 0;
 }
 
-LROT_BEGIN(pulsecnt_dyn)
+LROT_BEGIN(pulsecnt_dyn, NULL, 0)
   LROT_FUNCENTRY( getCnt,         pulsecnt_getCnt )
   LROT_FUNCENTRY( clear,          pulsecnt_clear )
   LROT_FUNCENTRY( testCb,         pulsecnt_testCb )
@@ -696,7 +696,7 @@ LROT_BEGIN(pulsecnt_dyn)
   LROT_TABENTRY ( __index,        pulsecnt_dyn )
 LROT_END(pulsecnt_dyn, NULL, 0)
 
-LROT_BEGIN(pulsecnt)
+LROT_BEGIN(pulsecnt, NULL, 0)
   LROT_FUNCENTRY( create,            pulsecnt_create )
   LROT_NUMENTRY ( PCNT_MODE_KEEP,    0 ) /*pcnt_ctrl_mode_t.PCNT_MODE_KEEP*/
   LROT_NUMENTRY ( PCNT_MODE_REVERSE, 1 ) /*pcnt_ctrl_mode_t.PCNT_MODE_REVERSE*/
@@ -717,7 +717,7 @@ LROT_END(pulsecnt, NULL, 0)
 
 int luaopen_pulsecnt(lua_State *L) {
 
-  luaL_rometatable(L, "pulsecnt.pctr", (void *)pulsecnt_dyn_map);
+  luaL_rometatable(L, "pulsecnt.pctr", LROT_TABLEREF(pulsecnt_dyn));
 
   pulsecnt_task_id = task_get_id(pulsecnt_task);
 

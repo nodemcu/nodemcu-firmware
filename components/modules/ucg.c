@@ -678,7 +678,9 @@ UCG_DISPLAY_TABLE
 
 
 // Module function map
-LROT_BEGIN(lucg_display)
+LROT_BEGIN(lucg_display, NULL, 0)
+  LROT_FUNCENTRY( __gc,   lucg_close_display )
+  LROT_TABENTRY( __index, lucg_display )
   LROT_FUNCENTRY( begin,              lucg_begin )
   LROT_FUNCENTRY( clearScreen,        lucg_clearScreen )
   LROT_FUNCENTRY( draw90Line,         lucg_draw90Line )
@@ -722,11 +724,10 @@ LROT_BEGIN(lucg_display)
   LROT_FUNCENTRY( undoClipRange,      lucg_setMaxClipRange )
   LROT_FUNCENTRY( undoRotate,         lucg_undoRotate )
   LROT_FUNCENTRY( undoScale,          lucg_undoScale )
-  LROT_FUNCENTRY( __gc,   lucg_close_display )
-  LROT_TABENTRY( __index, lucg_display )
 LROT_END(lucg_display, NULL, 0)
 
-LROT_BEGIN(lucg)
+LROT_BEGIN(lucg, NULL, 0)
+  LROT_TABENTRY( __metatable, lucg )
 #undef UCG_DISPLAY_TABLE_ENTRY
 #define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) LROT_FUNCENTRY( binding, l ## binding )
   UCG_DISPLAY_TABLE
@@ -746,13 +747,11 @@ LROT_BEGIN(lucg)
   LROT_NUMENTRY( DRAW_LOWER_RIGHT, UCG_DRAW_LOWER_RIGHT )
   LROT_NUMENTRY( DRAW_LOWER_LEFT,  UCG_DRAW_LOWER_LEFT )
   LROT_NUMENTRY( DRAW_ALL,         UCG_DRAW_ALL )
-
-  LROT_TABENTRY( __metatable, lucg )
 LROT_END(lucg, NULL, 0)
 
 int luaopen_ucg( lua_State *L )
 {
-    luaL_rometatable(L, "ucg.display", (void *)lucg_display_map);  // create metatable
+    luaL_rometatable(L, "ucg.display", LROT_TABLEREF(lucg_display));  // create metatable
     return 0;
 }
 

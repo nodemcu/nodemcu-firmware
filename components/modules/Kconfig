@@ -102,6 +102,12 @@ menu "NodeMCU modules"
             requires a partition table with at least two OTA partitions, plus
             the OTA data partition. See the IDF documentation for details.
 
+    config NODEMCU_CMODULE_PIPE
+        bool "Pipe module"
+        default "y"
+        help
+            Includes the pipe module (required by our Lua VM).
+
     config NODEMCU_CMODULE_QRCODEGEN
         bool "QR Code Generator module"
         default "n"
@@ -181,5 +187,11 @@ menu "NodeMCU modules"
         default "n"
         help
             Includes the time module.
+
+    config NODEMCU_CMODULE_UART
+        bool "UART module"
+        default y
+        help
+            Includes the UART module (required by our Lua VM).
 
 endmenu

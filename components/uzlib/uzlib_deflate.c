@@ -113,7 +113,7 @@ jmp_buf unwindAddr;
 #ifdef __XTENSA__
 #define RAM_COPY_BYTE_ARRAY(c,s,sl)  uint8_t *c = alloca(sl); memcpy(c,s,(sl))
 #else
-#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uint8_t *c = s;
+#define RAM_COPY_BYTE_ARRAY(c,s,sl)  uint8_t *c = s; (void)sl
 #endif
 #define FREE(v) if (v) uz_free(v)
 
@@ -200,7 +200,8 @@ static void genCodeRecs (const codeRecord *rec, uint16_t len,
     if (*c == 0xFF)
       b++, c++;
     m += (*c & 0x80) ? 2 << (*c & 0x1F) : *c;
-    *p++ = (codeRecord) {i, b, last + 1, (last = m)};
+    *p++ = (codeRecord) {i, b, last + 1,  m};
+    last = m;
   }
 }
 

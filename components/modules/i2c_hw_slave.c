@@ -173,7 +173,7 @@ static int li2c_slave_setup( lua_State *L )
   ud->port = port;
   int stack = 1;
 
-  luaL_checkanytable( L, ++stack );
+  luaL_checktable( L, ++stack );
   lua_settop( L, stack );
 
   i2c_config_t cfg;
@@ -305,7 +305,7 @@ static int li2c_slave_on( lua_State *L )
     luaL_unref( L, LUA_REGISTRYINDEX, ud->receivedcb_ref );
 
     ++stack;
-    if (lua_isfunction( L, stack ) || lua_islightfunction( L, stack )) {
+    if (lua_isfunction( L, stack )) {
       lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
       ud->receivedcb_ref = luaL_ref( L, LUA_REGISTRYINDEX );
     }
@@ -318,7 +318,7 @@ static int li2c_slave_on( lua_State *L )
 }
 
 
-LROT_PUBLIC_BEGIN(li2c_slave)
+LROT_BEGIN(li2c_slave, NULL, 0)
   LROT_FUNCENTRY( on,    li2c_slave_on )
   LROT_FUNCENTRY( setup, li2c_slave_setup )
   LROT_FUNCENTRY( send,  li2c_slave_send )

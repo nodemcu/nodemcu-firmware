@@ -9,6 +9,7 @@
  *     2014/1/1, v1.0 create this file.
 *******************************************************************************/
 #include "lua.h"
+#include "linput.h"
 #include "platform.h"
 #include <string.h>
 #include <stdlib.h>
@@ -93,14 +94,13 @@ static void handle_default_loop_event(task_param_t param, task_prio_t prio)
 // +================== New task interface ==================+
 static void start_lua ()
 {
-  char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
-  lua_main( 2, lua_argv );
+  lua_main();
 }
 
 static void handle_input(task_param_t flag, task_prio_t priority) {
-  (void)priority;
-  lua_handle_input (flag);
+  (void)flag; (void)priority;
+  lua_handle_input();
 }
 
 static task_handle_t input_task;

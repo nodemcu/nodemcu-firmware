@@ -21,13 +21,6 @@ CONFIG_MQTT_TRANSPORT_SSL=n
 CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
 CONFIG_MQTT_USE_CUSTOM_CONFIG=n
 
-# Allow writing to dangerous regions to avoid boot loops when creating filesystem
-# Symptom:
-#   Mounting flash filesystem...
-#   No filesystem partition found, attempting to create it...
-#   abort() was called at PC 0x400ecddd on core 0
-CONFIG_SPI_FLASH_DANGEROUS_WRITE_ALLOWED=y
-
 # Enable address reuse for sockets in TIME_WAIT
 # see https://github.com/nodemcu/nodemcu-firmware/pull/1838
 CONFIG_LWIP_SO_REUSE=y

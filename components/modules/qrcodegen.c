@@ -56,7 +56,7 @@ static int getPixel(lua_State *L)
   return 1;
 }
 
-LROT_BEGIN(qrcodegen)
+LROT_BEGIN(qrcodegen, NULL, 0)
   LROT_FUNCENTRY(encodeText, encodeText)
   LROT_FUNCENTRY(getSize,    getSize)
   LROT_FUNCENTRY(getPixel,   getPixel)

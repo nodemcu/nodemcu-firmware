@@ -79,7 +79,7 @@ static int lgpio_config (lua_State *L)
   luaL_checkstack (L, 5, "out of mem");
   for (int i = 1; i <= n; ++i)
   {
-    luaL_checkanytable (L, i);
+    luaL_checktable (L, i);
     gpio_config_t cfg;
     cfg.intr_type = GPIO_INTR_DISABLE;
 
@@ -141,7 +141,7 @@ static int lgpio_trig (lua_State *L)
   int gpio = luaL_checkint (L, 1);
   int intr_type = luaL_optint (L, 2, GPIO_INTR_DISABLE);
   if (!lua_isnoneornil (L, 3))
-    luaL_checkanyfunction (L, 3);
+    luaL_checkfunction (L, 3);
 
   lua_settop (L, 3);
 
@@ -250,7 +250,7 @@ static int nodemcu_gpio_init (lua_State *L)
 }
 
 
-LROT_BEGIN(lgpio)
+LROT_BEGIN(lgpio, NULL, 0)
   LROT_FUNCENTRY( config,       lgpio_config )
   LROT_FUNCENTRY( read,         lgpio_read )
   LROT_FUNCENTRY( trig,         lgpio_trig )

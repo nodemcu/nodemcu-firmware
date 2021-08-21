@@ -77,9 +77,9 @@ static int can_setup( lua_State *L )
 {
   if(xCanTaskHandle != NULL)
     luaL_error( L, "Stop CAN before setup" );
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
-  luaL_checkanyfunction (L, 2);
+  luaL_checkfunction (L, 2);
   lua_settop (L, 2);
   if(can_on_received != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, can_on_received);
   can_on_received = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -148,7 +148,7 @@ static int can_send( lua_State *L )
 }
 
 // Module function map
-LROT_BEGIN(can)
+LROT_BEGIN(can, NULL, 0)
   LROT_FUNCENTRY( setup,          can_setup )
   LROT_FUNCENTRY( start,          can_start )
   LROT_FUNCENTRY( stop,           can_stop )

@@ -210,7 +210,7 @@ static int i2c_read( lua_State *L )
   }
 }
 
-LROT_BEGIN(i2c)
+LROT_BEGIN(i2c, NULL, 0)
   LROT_FUNCENTRY( setup,       i2c_setup )
   LROT_FUNCENTRY( start,       i2c_start )
   LROT_FUNCENTRY( stop,        i2c_stop )

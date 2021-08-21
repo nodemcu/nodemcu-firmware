@@ -1,7 +1,6 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "common.h"
-#include "legc.h"
 #include "lundump.h"
 #include "platform.h"
 #include "task/task.h"
@@ -14,7 +13,7 @@
 #include "ldebug.h"
 #include "esp_vfs.h"
 #include "lnodeaux.h"
-#include "lflash.h"
+#include "lpanic.h"
 #include "rom/rtc.h"
 
 // Lua: node.bootreason()
@@ -169,7 +168,7 @@ static void node_sleep_disable_wakeup_sources (lua_State *L)
 static int node_sleep (lua_State *L)
 {
   lua_settop(L, 1);
-  luaL_checkanytable(L, 1);
+  luaL_checktable(L, 1);
   node_sleep_disable_wakeup_sources(L);
 
   // uart options: uart = num|{num, num, ...}
@@ -342,24 +341,13 @@ static int node_dsleep (lua_State *L)
 }
 
 
-extern lua_Load gLoad;
-extern bool user_process_input(bool force);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
   size_t l = 0;
   const char *s = luaL_checklstring(L, 1, &l);
-  if (s != NULL && l > 0 && l < LUA_MAXINPUT - 1)
-  {
-    lua_Load *load = &gLoad;
-    if (load->line_position == 0) {
-      memcpy(load->line, s, l);
-      load->line[l + 1] = '\0';
-      load->line_position = strlen(load->line) + 1;
-      load->done = 1;
-      user_process_input(true);
-    }
-  }
+  if (l > 0 && l < LUA_MAXINPUT - 1)
+    lua_input_string(s, l);
   return 0;
 }
 
@@ -395,7 +383,7 @@ int redir_open(const char *path, int flags, int mode) {
 
 // Lua: node.output(func, serial_debug)
 static int node_output(lua_State *L) {
-    if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+    if (lua_isfunction(L, 1)) {
         if (output_redir == LUA_NOREF) {
             // create an instance of a virtual filesystem so we can use fopen
             esp_vfs_t redir_fs = {
@@ -459,7 +447,7 @@ int redir_vprintf(const char *fmt, va_list ap)
 
 // Lua: node.output(func, serial_debug)
 static int node_osoutput(lua_State *L) {
-    if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+    if (lua_isfunction(L, 1)) {
         if (os_output_redir == LUA_NOREF) {
             // register our log redirect first time this is invoked
             oldvprintf = esp_log_set_vprintf(redir_vprintf);
@@ -477,6 +465,7 @@ static int node_osoutput(lua_State *L) {
     return 0;
 }
 
+
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
  *           2 discard Local and Upvalue debug info
@@ -487,58 +476,38 @@ static int node_osoutput(lua_State *L) {
  * The function returns an estimated integer count of the bytes stripped.
  */
 static int node_stripdebug (lua_State *L) {
-  int level;
 
-  if (L->top == L->base) {
-    lua_pushlightuserdata(L, &luaG_stripdebug );
-    lua_gettable(L, LUA_REGISTRYINDEX);
-    if (lua_isnil(L, -1)) {
-      lua_pop(L, 1);
-      lua_pushinteger(L, CONFIG_LUA_OPTIMIZE_DEBUG);
-    }
-    return 1;
+  int n = lua_gettop(L);
+  int strip = 0;
+
+  lua_settop(L, 2);
+  if (!lua_isnil(L, 1)) {
+    strip = lua_tointeger(L, 1);
+    luaL_argcheck(L, strip > 0 && strip < 4, 1, "Invalid strip level");
   }
 
-  level = luaL_checkint(L, 1);
-  if ((level <= 0) || (level > 3)) luaL_argerror(L, 1, "must in range 1-3");
-
-  if (L->top == L->base + 1) {
-    /* Store the default level in the registry if no function parameter */
-    lua_pushlightuserdata(L, &luaG_stripdebug);
-    lua_pushinteger(L, level);
-    lua_settable(L, LUA_REGISTRYINDEX);
-    lua_settop(L,0);
-    return 0;
-  }
-
-  if (level == 1) {
-    lua_settop(L,0);
-    lua_pushinteger(L, 0);
-    return 1;
-  }
-
-  if (!lua_isfunction(L, 2)) {
-    int scope = luaL_checkint(L, 2);
+  if (lua_isnumber(L, 2)) {
+    /* Use debug interface to replace stack level by corresponding function */
+    int scope = luaL_checkinteger(L, 2);
     if (scope > 0) {
-      /* if the function parameter is a +ve integer then climb to find function */
       lua_Debug ar;
-      lua_pop(L, 1); /* pop level as getinfo will replace it by the function */
+      lua_pop(L, 1);
       if (lua_getstack(L, scope, &ar)) {
-        lua_getinfo(L, "f", &ar);
+        lua_getinfo(L, "f", &ar);  /* put function at [2] (ToS) */
       }
     }
   }
 
-  if(!lua_isfunction(L, 2) || lua_iscfunction(L, -1)) luaL_argerror(L, 2, "must be a Lua Function");
-  // lua_lock(L);
-  Proto *f = clvalue(L->base + 1)->l.p;
-  // lua_unlock(L);
-  lua_settop(L,0);
-  lua_pushinteger(L, luaG_stripdebug(L, f, level, 1));
+  int isfunc = lua_isfunction(L, 2);
+  luaL_argcheck(L, n < 2 || isfunc, 2, "not a valid function");
+
+  /* return result of lua_stripdebug, adding 1 if this is get/set level) */
+  lua_pushinteger(L, lua_stripdebug(L, strip - 1) + (isfunc ? 0 : 1));
   return 1;
 }
 
 
+#if defined(CONFIG_LUA_VERSION_51)
 // Lua: node.egc.setmode( mode, [param])
 // where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE,
 // ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
@@ -550,9 +519,10 @@ static int node_egc_setmode(lua_State* L) {
   luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
   luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
 
-  legc_set_mode( L, mode, limit );
+  lua_setegcmode( L, mode, limit );
   return 0;
 }
+#endif
 
 
 static int writer(lua_State* L, const void* p, size_t size, void* u)
@@ -593,7 +563,7 @@ static int node_compile( lua_State* L )
   output[strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
-  if (luaL_loadfsfile(L, fname) != 0) {
+  if (luaL_loadfile(L, fname) != 0) {
     luaM_free( L, output );
     return luaL_error(L, lua_tostring(L, -1));
   }
@@ -656,7 +626,7 @@ static int node_task_post( lua_State* L )
     luaL_argcheck(L, priority <= TASK_PRIORITY_HIGH, 1, "invalid  priority");
     Ltype = lua_type(L, ++n);
   }
-  luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
+  luaL_argcheck(L, Ltype == LUA_TFUNCTION, n, "invalid function");
   lua_pushvalue(L, n);
 
   int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -699,16 +669,102 @@ static int node_uptime(lua_State *L)
 }
 
 
-LROT_BEGIN(node_egc)
+// Lua: n = node.LFS.reload(lfsimage)
+static int node_lfsreload (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_lfsreload(L);
+  return 1;
+}
+
+// Lua: n = node.flashreload(lfsimage)
+static int node_lfsreload_deprecated (lua_State *L) {
+  platform_print_deprecation_note("node.flashreload", "soon. Use node.LFS interface instead");
+  return node_lfsreload (L);
+}
+
+// Lua: n = node.flashindex(module)
+// Lua: n = node.LFS.get(module)
+static int node_lfsindex (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodule(L);
+  return 1;
+}
+
+// Lua: n = node.LFS.list([option])
+// Note that option is ignored in this release
+static int node_lfslist (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodules(L);
+  if (lua_istable(L, -1) && lua_getglobal(L, "table") == LUA_TTABLE) {
+    lua_getfield(L, -1, "sort");
+    lua_remove(L, -2);       /* remove table table */
+    lua_pushvalue(L, -2);    /* dup array of modules ref to ToS */
+    lua_call(L, 1, 0);
+  }
+  return 1;
+}
+
+
+//== node.LFS Table emulator ==============================================//
+
+
+static void add_int_field( lua_State* L, lua_Integer i, const char *name){
+  lua_pushinteger(L, i);
+  lua_setfield(L, -2, name);
+}
+
+static void get_lfs_config ( lua_State* L ){
+    int config[5];
+    lua_getlfsconfig(L, config);
+    lua_createtable(L, 0, 4);
+    add_int_field(L, config[0], "lfs_mapped");
+    add_int_field(L, config[1], "lfs_base");
+    add_int_field(L, config[2], "lfs_size");
+    add_int_field(L, config[3], "lfs_used");
+}
+
+static int node_lfs_func (lua_State* L) {      /*T[1] = LFS, T[2] = fieldname */
+  lua_remove(L, 1);
+  lua_settop(L, 1);
+  const char *name = lua_tostring(L, 1);
+  if (!name) {
+    lua_pushnil(L);
+  } else if (!strcmp(name, "config")) {
+    get_lfs_config(L);
+  } else if (!strcmp(name, "time")) {
+    luaL_pushlfsdts(L);
+  } else {
+    luaL_pushlfsmodule(L);
+  }
+  return 1;
+}
+
+LROT_BEGIN(node_lfs_meta, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __index, node_lfs_func)
+LROT_END(node_lfs_meta, NULL, LROT_MASK_INDEX)
+
+LROT_BEGIN(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
+  LROT_FUNCENTRY( list, node_lfslist)
+  LROT_FUNCENTRY( get, node_lfsindex)
+  LROT_FUNCENTRY( reload, node_lfsreload )
+LROT_END(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
+
+
+
+
+
+#if defined(CONFIG_LUA_VERSION_51)
+LROT_BEGIN(node_egc, NULL, 0)
   LROT_FUNCENTRY( setmode,           node_egc_setmode )
   LROT_NUMENTRY ( NOT_ACTIVE,        EGC_NOT_ACTIVE )
   LROT_NUMENTRY ( ON_ALLOC_FAILURE,  EGC_ON_ALLOC_FAILURE )
   LROT_NUMENTRY ( ON_MEM_LIMIT,      EGC_ON_MEM_LIMIT )
   LROT_NUMENTRY ( ALWAYS,            EGC_ALWAYS )
 LROT_END(node_egc, NULL, 0)
+#endif
 
 
-LROT_BEGIN(node_task)
+LROT_BEGIN(node_task, NULL, 0)
   LROT_FUNCENTRY( post,            node_task_post )
   LROT_NUMENTRY ( LOW_PRIORITY,    TASK_PRIORITY_LOW )
   LROT_NUMENTRY ( MEDIUM_PRIORITY, TASK_PRIORITY_MEDIUM )
@@ -717,7 +773,7 @@ LROT_END(node_task, NULL, 0)
 
 
 // Wakup reasons
-LROT_BEGIN(node_wakeup)
+LROT_BEGIN(node_wakeup, NULL, 0)
   LROT_NUMENTRY ( GPIO,     ESP_SLEEP_WAKEUP_GPIO )
   LROT_NUMENTRY ( TIMER,    ESP_SLEEP_WAKEUP_TIMER )
   LROT_NUMENTRY ( TOUCHPAD, ESP_SLEEP_WAKEUP_TOUCHPAD )
@@ -725,16 +781,19 @@ LROT_BEGIN(node_wakeup)
   LROT_NUMENTRY ( ULP,      ESP_SLEEP_WAKEUP_ULP )
 LROT_END(node_wakeup, NULL, 0)
 
-LROT_BEGIN(node)
+LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( bootreason, node_bootreason )
 #if !defined(CONFIG_IDF_TARGET_ESP32C3)
   LROT_FUNCENTRY( chipid,     node_chipid )
 #endif
   LROT_FUNCENTRY( compile,    node_compile )
   LROT_FUNCENTRY( dsleep,     node_dsleep )
+#if defined(CONFIG_LUA_VERSION_51)
   LROT_TABENTRY ( egc,        node_egc )
-  LROT_FUNCENTRY( flashreload,luaN_reload_reboot )
-  LROT_FUNCENTRY( flashindex, luaN_index )
+#endif
+  LROT_FUNCENTRY( flashreload,node_lfsreload_deprecated )
+  LROT_FUNCENTRY( flashindex, node_lfsindex )
+  LROT_TABENTRY(  LFS,        node_lfs )
   LROT_FUNCENTRY( heap,       node_heap )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )

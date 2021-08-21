@@ -91,7 +91,7 @@ static int ldht_read2x( lua_State *L )
 }
 
 
-LROT_BEGIN(dht)
+LROT_BEGIN(dht, NULL, 0)
   LROT_FUNCENTRY( read11,         ldht_read11 )
   LROT_FUNCENTRY( read2x,         ldht_read2x )
   LROT_NUMENTRY ( OK,             LDHT_OK )

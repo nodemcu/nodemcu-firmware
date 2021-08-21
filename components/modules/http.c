@@ -778,7 +778,7 @@ static int http_lapi_post(lua_State *L)
   return make_oneshot_request(L, 4); // 4 = callback idx
 }
 
-LROT_BEGIN(http)
+LROT_BEGIN(http, NULL, 0)
   LROT_FUNCENTRY(createConnection, http_lapi_createConnection)
   LROT_NUMENTRY (GET,              HTTP_METHOD_GET)
   LROT_NUMENTRY (POST,             HTTP_METHOD_POST)
@@ -790,7 +790,7 @@ LROT_BEGIN(http)
   LROT_FUNCENTRY(post,             http_lapi_post)
 LROT_END(http, NULL, 0)
 
-LROT_BEGIN(http_context)
+LROT_BEGIN(http_context, NULL, 0)
   LROT_FUNCENTRY(on,          http_lapi_on)
   LROT_FUNCENTRY(request,     http_lapi_request)
   LROT_FUNCENTRY(setmethod,   http_lapi_setmethod)
@@ -805,7 +805,7 @@ LROT_END(http_context, NULL, 0)
 
 static int luaopen_http(lua_State *L)
 {
-  luaL_rometatable(L, http_context_mt, (void *)http_context_map);
+  luaL_rometatable(L, http_context_mt, LROT_TABLEREF(http_context));
   lhttp_request_task_id = task_get_id(lhttp_request_task);
   lhttp_event_task_id = task_get_id(lhttp_event_task);
   return 0;

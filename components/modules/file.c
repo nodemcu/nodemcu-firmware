@@ -86,8 +86,7 @@ static int file_on(lua_State *L)
   case ON_RTC:
     luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
 
-    if ((lua_type(L, 2) == LUA_TFUNCTION) ||
-        (lua_type(L, 2) == LUA_TLIGHTFUNCTION)) {
+    if (lua_isfunction(L, 2)) {
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       vfs_register_rtc_cb(file_rtc_cb);
@@ -430,7 +429,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
   }
 
   if (heap_mem) {
-    luaM_freearray(L, heap_mem, bufsize, char);
+    luaN_freearray(L, heap_mem, bufsize);
   }
 
   if (err){
@@ -550,7 +549,7 @@ static int file_chdir( lua_State *L )
 }
 #endif
 
-LROT_BEGIN(file_obj)
+LROT_BEGIN(file_obj, NULL, 0)
   LROT_FUNCENTRY( close,     file_close )
   LROT_FUNCENTRY( read,      file_read )
   LROT_FUNCENTRY( readline,  file_readline )
@@ -563,7 +562,7 @@ LROT_BEGIN(file_obj)
 LROT_END(file_obj, NULL, 0)
 
 // Module function map
-LROT_BEGIN(file)
+LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( list,      file_list )
   LROT_FUNCENTRY( open,      file_open )
   LROT_FUNCENTRY( close,     file_close )
@@ -589,7 +588,7 @@ LROT_BEGIN(file)
 LROT_END(file, NULL, 0)
 
 int luaopen_file( lua_State *L ) {
-  luaL_rometatable( L, "file.obj",  (void *)file_obj_map );
+  luaL_rometatable( L, "file.obj",  LROT_TABLEREF(file_obj));
   return 0;
 }
 

@@ -187,7 +187,7 @@ static int lsdmmc_read( lua_State * L)
     luaL_addlstring( &b, rbuf, num_sec * 512 );
     luaL_pushresult( &b );
 
-    luaM_freearray( L, rbuf, rbuf_size, uint8_t );
+    luaN_freearray( L, rbuf, rbuf_size );
 
     // all ok
     return 1;
@@ -195,7 +195,7 @@ static int lsdmmc_read( lua_State * L)
   } else
     err_msg = "card access failed";
 
-  luaM_freearray( L, rbuf, rbuf_size, uint8_t );
+  luaN_freearray( L, rbuf, rbuf_size );
   return luaL_error( L, err_msg );
 }
 
@@ -327,7 +327,7 @@ static int lsdmmc_umount( lua_State *L )
   return luaL_error( L, err_msg );
 }
 
-LROT_BEGIN(sdmmc_card)
+LROT_BEGIN(sdmmc_card, NULL, 0)
   LROT_FUNCENTRY( read,     lsdmmc_read )
   LROT_FUNCENTRY( write,    lsdmmc_write )
   LROT_FUNCENTRY( get_info, lsdmmc_get_info )
@@ -336,7 +336,7 @@ LROT_BEGIN(sdmmc_card)
   LROT_TABENTRY( __index,   sdmmc_card )
 LROT_END(sdmmc_card, NULL, 0)
 
-LROT_BEGIN(sdmmc)
+LROT_BEGIN(sdmmc, NULL, 0)
   LROT_FUNCENTRY( init,  lsdmmc_init )
   LROT_NUMENTRY(  HS1,   SDMMC_HOST_SLOT_0 )
   LROT_NUMENTRY(  HS2,   SDMMC_HOST_SLOT_1 )
@@ -352,7 +352,7 @@ LROT_END(sdmmc, NULL, 0)
 
 static int luaopen_sdmmc( lua_State *L )
 {
-  luaL_rometatable(L, "sdmmc.card", (void *)sdmmc_card_map);
+  luaL_rometatable(L, "sdmmc.card", LROT_TABLEREF(sdmmc_card));
 
   // initialize cards
   for (int i = 0; i < NUM_CARDS; i++ ) {

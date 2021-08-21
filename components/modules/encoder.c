@@ -116,7 +116,7 @@ static uint8_t *fromHex ( lua_State* L, const uint8_t *msg, size_t *len){
      } else if (*p >= 'A' && *p <= 'F') {
        b = *p++ - ('A' - 10);
      } else {
-       luaM_freearray(L, out, *len, uint8_t);
+       luaN_freearray(L, out, *len);
        luaL_error (L, "Invalid hex string");
        __builtin_unreachable ();
      }
@@ -140,7 +140,7 @@ static int do_func (lua_State *L, uint8_t * (*conv_func)(lua_State *, const uint
   
   if (output) {
     lua_pushlstring(L, (char *)output, len);
-    luaM_freearray(L, output, len, uint8_t);
+    luaN_freearray(L, output, len);
   } else {
     lua_pushstring(L, "");
   }
@@ -156,7 +156,7 @@ static int do_func (lua_State *L, uint8_t * (*conv_func)(lua_State *, const uint
   DECLARE_FUNCTION(toHex);
 
 // Module function map
-LROT_BEGIN(encoder)
+LROT_BEGIN(encoder, NULL, 0)
   LROT_FUNCENTRY(fromBase64, encoder_fromBase64)
   LROT_FUNCENTRY(toBase64,   encoder_toBase64)
   LROT_FUNCENTRY(fromHex,    encoder_fromHex)
