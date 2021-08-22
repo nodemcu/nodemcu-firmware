@@ -61,19 +61,6 @@ menu "NodeMCU platform config"
         default 1843200 if NODEMCU_CONSOLE_BIT_RATE_1843200
         default 3683400 if NODEMCU_CONSOLE_BIT_RATE_3683400
 
-    config NODEMCU_CONSOLE_BIT_RATE_AUTO
-        bool "UART console auto-baud detection"
-        default "y"
-        help
-            Enables auto-baud detection for the UART console.
-
-            By typing a few characters into the console shortly after boot,
-            NodeMCU can automatically detect your terminal settings and
-            adjust accordingly.
-
-            If you are doing advanced things with the console, you may want
-            to disable this feature.
-
     config NODEMCU_NODE_DEBUG
         bool "Enable NODE_DBG() output"
         default "n"

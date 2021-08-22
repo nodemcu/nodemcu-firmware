@@ -4,6 +4,7 @@
 #include "lmem.h"
 #include "driver/i2c.h"
 #include "soc/i2c_reg.h"
+#include "hal/i2c_ll.h"
 
 #include "i2c_common.h"
 
@@ -219,7 +220,7 @@ int li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl,
   int timeoutcycles;
   i2c_lua_checkerr( L, i2c_get_timeout( port, &timeoutcycles) );
   timeoutcycles = timeoutcycles * stretchfactor;
-  luaL_argcheck( L, timeoutcycles * stretchfactor <= I2C_TIME_OUT_REG_V, 5, "excessive stretch factor" );
+  luaL_argcheck( L, timeoutcycles * stretchfactor <= I2C_LL_MAX_TIMEOUT, 5, "excessive stretch factor" );
   i2c_lua_checkerr( L, i2c_set_timeout( port, timeoutcycles) );
  
   i2c_lua_checkerr( L, i2c_driver_install( port, cfg.mode, 0, 0, 0 ));

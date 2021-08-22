@@ -44,18 +44,22 @@
 #include "rom/libc_stubs.h"
 #include "rom/uart.h"
 
+#if defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(syscall_table_ptr)
+// The ESP32S2 libc_stubs.h is missing this compatibility def it seems
+# define syscall_table_ptr syscall_table_ptr_pro
+#endif
+
 #define UART_INPUT_QUEUE_SZ 0x100
 
 // These used to be available in soc/uart_register.h:
 #define UART_GET_RXFIFO_RD_BYTE(i)  GET_PERI_REG_BITS2(UART_FIFO_REG(i) , UART_RXFIFO_RD_BYTE_V, UART_RXFIFO_RD_BYTE_S)
 #define UART_GET_RXFIFO_CNT(i)  GET_PERI_REG_BITS2(UART_STATUS_REG(i) , UART_RXFIFO_CNT_V, UART_RXFIFO_CNT_S)
-#define UART_SET_AUTOBAUD_EN(i,val)  SET_PERI_REG_BITS(UART_AUTOBAUD_REG(i) ,UART_AUTOBAUD_EN_V,(val),UART_AUTOBAUD_EN_S)
 
 
 typedef int (*_read_r_fn) (struct _reent *r, int fd, void *buf, int size);
 
 static _read_r_fn _read_r_app;
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
 static _read_r_fn _read_r_pro;
 #endif
 
@@ -86,7 +90,7 @@ static int console_read_r (struct _reent *r, int fd, void *buf, int size, _read_
     return -1;
 }
 
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
 static int console_read_r_pro (struct _reent *r, int fd, void *buf, int size)
 {
   return console_read_r (r, fd, buf, size, _read_r_pro);
@@ -154,11 +158,6 @@ void console_setup (const ConsoleSetup_t *cfg)
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
   };
   uart_param_config(CONSOLE_UART, &uart_conf);
-
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
-  // TODO: Make this actually work
-  UART_SET_AUTOBAUD_EN(CONSOLE_UART, cfg->auto_baud);
-#endif
 }
 
 
@@ -179,14 +178,15 @@ void console_init (const ConsoleSetup_t *cfg, task_handle_t tsk)
     UART_FRM_ERR_INT_ENA_M);
 
   // Register our console_read_r_xxx functions to support stdin input
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
-  _read_r_app = syscall_table_ptr->_read_r;
-  syscall_table_ptr->_read_r = console_read_r_app;
-#else
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  // Only the original ESP32 uses per-cpu tables; the S2/S3/C3 do not
   _read_r_app = syscall_table_ptr_app->_read_r;
   _read_r_pro = syscall_table_ptr_pro->_read_r;
   syscall_table_ptr_app->_read_r = console_read_r_app;
   syscall_table_ptr_pro->_read_r = console_read_r_pro;
+#else
+  _read_r_app = syscall_table_ptr->_read_r;
+  syscall_table_ptr->_read_r = console_read_r_app;
 #endif
 }
 

@@ -56,7 +56,7 @@ static int node_bootreason( lua_State *L)
   // 21: EXT_CPU_RESET          = 14,    /**<14, for APP CPU, reseted by PRO CPU*/
   // 22: RTCWDT_BROWN_OUT_RESET = 15,    /**<15, Reset when the vdd voltage is not stable*/
   // 23: RTCWDT_RTC_RESET       = 16     /**<16, RTC Watch dog reset digital core and rtc module*/`
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#if !defined(CONFIG_IDF_TARGET_ESP32)
 # define SW_CPU_RESET   RTC_SW_CPU_RESET
 # define SW_RESET       RTC_SW_SYS_RESET
 #endif
@@ -67,24 +67,32 @@ static int node_bootreason( lua_State *L)
     case SW_RESET:
       rawinfo = 2; break;
     case NO_MEAN:
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
     case EXT_CPU_RESET:
 #endif
     case DEEPSLEEP_RESET:
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3)
     case SDIO_RESET:
+#endif
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+    case GLITCH_RTC_RESET:
+#endif
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    case EFUSE_RESET:
+#endif
     case TG0WDT_SYS_RESET:
     case TG1WDT_SYS_RESET:
     case INTRUSION_RESET:
     case RTCWDT_BROWN_OUT_RESET:
     case RTCWDT_RTC_RESET:
       rawinfo = 3; break;
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
+    case OWDT_RESET:
+    case TGWDT_CPU_RESET:
+#else
     case TG0WDT_CPU_RESET:
     case TG1WDT_CPU_RESET:
     case SUPER_WDT_RESET:
-#else
-    case OWDT_RESET:
-    case TGWDT_CPU_RESET:
 #endif
     case RTCWDT_CPU_RESET:
     case RTCWDT_SYS_RESET:
@@ -99,7 +107,7 @@ static int node_bootreason( lua_State *L)
   return 2;
 }
 
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
 {
@@ -783,7 +791,7 @@ LROT_END(node_wakeup, NULL, 0)
 
 LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( bootreason, node_bootreason )
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
   LROT_FUNCENTRY( chipid,     node_chipid )
 #endif
   LROT_FUNCENTRY( compile,    node_compile )

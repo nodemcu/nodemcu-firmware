@@ -21,11 +21,25 @@ menu "NodeMCU modules"
         help
             Includes the simple BlueTooth HCI module.
 
+    config NODEMCU_CMODULE_CAN
+        depends on CONFIG_IDF_TARGET_ESP32
+        bool "CAN module"
+        default "n"
+        help
+            Includes the can module.
+
     config NODEMCU_CMODULE_CRYPTO
         bool "Crypto module"
         default "n"
         help
             Includes the crypto module.
+
+    config NODEMCU_CMODULE_DAC
+        depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2
+        bool "DAC module"
+        default "n"
+        help
+            Includes the dac module.
 
     config NODEMCU_CMODULE_DHT
         bool "DHT11/21/22/AM2301/AM2302 module"
@@ -39,6 +53,14 @@ menu "NodeMCU modules"
         help
             Includes the encoder module. This provides hex and base64 encoding
             and decoding functionality.
+
+    config NODEMCU_CMODULE_ETH
+        depends on IDF_TARGET_ESP32
+        select ETH_USE_ESP32_EMAC
+        bool "Ethernet module"
+        default "n"
+        help
+            Includes the ethernet module.
 
     config NODEMCU_CMODULE_FILE
         bool "File module"
@@ -63,6 +85,13 @@ menu "NodeMCU modules"
         default "y"
         help
             Includes the I2C module (recommended).
+
+    config NODEMCU_CMODULE_I2S
+        depends on IDF_TARGET_ESP32
+        bool "I2S module"
+        default "n"
+        help
+            Includes the I2S module.
 
     config NODEMCU_CMODULE_LEDC
         bool "LEDC module"
@@ -108,12 +137,27 @@ menu "NodeMCU modules"
         help
             Includes the pipe module (required by our Lua VM).
 
+    config NODEMCU_CMODULE_PULSECNT
+        depends on IDF_TARGET_ESP32
+        bool "Pulse counter module"
+        default "n"
+        help
+            Includes the pulse counter module to use ESP32's built-in pulse
+            counting hardware.
+
     config NODEMCU_CMODULE_QRCODEGEN
         bool "QR Code Generator module"
         default "n"
         help
             Includes the QR Code Generator from
             https://www.nayuki.io/page/qr-code-generator-library
+
+    config NODEMCU_CMODULE_SDMMC
+        depends on IDF_TARGET_ESP32
+        bool "SD-MMC module"
+        default "n"
+        help
+            Includes the sdmmc module.
 
     config NODEMCU_CMODULE_SIGMA_DELTA
         bool "Sigma-Delta module"
@@ -152,6 +196,14 @@ menu "NodeMCU modules"
         default "y"
         help
             Includes the timer module (recommended).
+
+    config NODEMCU_CMODULE_TOUCH
+        depends on IDF_TARGET_ESP32
+        bool "Touch module"
+        default "n"
+        help
+            Includes the touch module to use ESP32's built-in touch sensor
+            hardware.
 
     config NODEMCU_CMODULE_U8G2
         bool "U8G2 module"

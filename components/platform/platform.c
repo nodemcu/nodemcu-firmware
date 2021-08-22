@@ -501,15 +501,7 @@ int platform_adc_channel_exists( uint8_t adc, uint8_t channel ) {
 
 uint8_t platform_adc_set_width( uint8_t adc, int bits ) {
   (void)adc;
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
-  if (bits != SOC_ADC_MAX_BITWIDTH)
-    return 0;
-  bits = SOC_ADC_MAX_BITWIDTH;
-#else
   bits = bits - 9;
-  if (bits < ADC_WIDTH_9Bit || bits > ADC_WIDTH_12Bit)
-    return 0;
-#endif
   if (ESP_OK != adc1_config_width( bits ))
     return 0;
 
@@ -530,7 +522,7 @@ int platform_adc_read( uint8_t adc, uint8_t channel ) {
 }
 
 int platform_adc_read_hall_sensor( ) {
-#if !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
   int value = hall_sensor_read( );
   return value;
 #else
