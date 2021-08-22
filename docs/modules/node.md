@@ -166,6 +166,18 @@ none
 #### Returns
 flash ID (number)
 
+
+## node.flashindex() --deprecated
+
+Deprecated synonym for [`node.LFS.get()`](#nodelfsget) to return an LFS function reference.
+
+Note that this returns `nil` if the function does not exist in LFS.
+
+## node.flashreload() --deprecated
+
+Deprecated synonym for [`node.LFS.reload()`](#nodelfsreload) to reload [LFS (Lua Flash Store)](../lfs.md) with the named flash image provided.
+
+
 ## node.heap()
 
 Returns the current available heap size in bytes. Note that due to fragmentation, actual allocations of this size may not be possible.
@@ -229,6 +241,65 @@ sk:on("receive", function(conn, payload) node.input(payload) end)
 
 #### See also
 [`node.output()`](#nodeoutput)
+
+
+## node.LFS
+
+Sub-table containing the API for [Lua Flash Store](../lfs.md)(**LFS**) access.  Programmers might prefer to map this to a global or local variable for convenience for example:
+```lua
+local LFS = node.LFS
+```
+This table contains the following methods and properties:
+
+Property/Method | Description
+-------|---------
+`config` | A synonym for [`node.info('lfs')`](#nodeinfo).  Returns the properties `lfs_base`, `lfs_mapped`, `lfs_size`, `lfs_used`.
+`get()` | See [node.LFS.get()](#nodelfsget).
+`list()` | See [node.LFS.list()](#nodelfslist).
+`reload()` |See [node.LFS.reload()](#nodelfsreload).
+`time` | Returns the Unix timestamp at time of image creation.
+
+
+## node.LFS.get()
+
+Returns the function reference for a function in LFS.
+
+Note that unused `node.LFS` properties map onto the equialent `get()` call so for example: `node.LFS.mySub1` is a synonym for `node.LFS.get('mySub1')`.
+
+#### Syntax
+`node.LFS.get(modulename)`
+
+#### Parameters
+`modulename`  The name of the module to be loaded.
+
+#### Returns
+-  If the LFS is loaded and the `modulename` is a string that is the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do
+-  Otherwise `nil` is returned.
+
+
+## node.LFS.list()
+
+List the modules in LFS.
+
+
+#### Returns
+-  If no LFS image IS LOADED then `nil` is returned.
+-  Otherwise an sorted array of the name of modules in LFS is returned.
+
+## node.LFS.reload()
+
+Reload LFS with the flash image provided. Flash images can be generated on the host machine using the `luac.cross`command.
+
+#### Syntax
+`node.LFS.reload(imageName)`
+
+#### Parameters
+`imageName` The name of a image file in the filesystem to be loaded into the LFS.
+
+#### Returns
+-  In the case when the `imagename` is a valid LFS image, this is expanded and loaded into flash, and the ESP is then immediately rebooted, _so control is not returned to the calling Lua application_ in the case of a successful reload.
+-  The reload process internally makes multiple passes through the LFS image file. The first pass validates the file and header formats and detects many errors.  If any is detected then an error string is returned.
+
 
 ## node.key() --deprecated
 
