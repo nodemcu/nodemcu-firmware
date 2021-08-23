@@ -1104,7 +1104,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 
 LUALIB_API lua_State *luaL_newstate (void) {
   lua_State *L = lua_newstate(l_alloc, NULL);
-  if (L) lua_atpanic(L, &panic);
+  if (L) lua_atpanic(L, lpanic);
   return L;
 }
 

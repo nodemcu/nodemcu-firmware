@@ -5,6 +5,6 @@
 
 void panic_clear_nvval (void);
 int panic_get_nvval (void);
-int panic (lua_State *L);
+int lpanic (lua_State *L);
 
 #endif

@@ -72,7 +72,7 @@ menu "Lua configuration"
             bool "UTF8 module"
             default "y"
             help
-                Includes the debug module.
+                Includes the debug module (required by our Lua VM).
 
         config LUA_BUILTIN_DEBUG
             bool "Debug module"
@@ -124,5 +124,6 @@ menu "Lua configuration"
       default y
       select NODEMCU_CMODULE_PIPE
       select NODEMCU_CMODULE_UART
+      select LUA_BUILTIN_DEBUG
 
 endmenu

@@ -2,6 +2,7 @@
 #include "lauxlib.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #ifndef LUA_CROSS_COMPILER
 #include "esp_system.h"
 /* defined in esp_system_internal.h */
@@ -33,7 +34,7 @@ int panic_get_nvval() {
 #endif
 
 
-int panic (lua_State *L) {
+int lpanic (lua_State *L) {
   (void)L;  /* to avoid warnings */
 #ifndef LUA_CROSS_COMPILER
   uint8_t paniclevel = panic_get_nvval();
@@ -43,6 +44,7 @@ int panic (lua_State *L) {
   lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
 #ifndef LUA_CROSS_COMPILER
+  fflush(stdout);
   /* call abort() directly - we don't want another reset cause to intervene */
   esp_reset_reason_set_hint(ESP_RST_PANIC);
 #endif
