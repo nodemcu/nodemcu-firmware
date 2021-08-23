@@ -55,7 +55,7 @@ static void i2s_tx_task( task_param_t param, task_prio_t prio ) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, is->cb);
     lua_pushinteger( L, i2s_id );
     lua_pushstring( L, "tx" );
-    lua_call( L, 2, 0 );
+    luaL_pcallx( L, 2, 0 );
   }
 }
 
@@ -68,7 +68,7 @@ static void i2s_rx_task( task_param_t param, task_prio_t prio ) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, is->cb);
     lua_pushinteger( L, i2s_id );
     lua_pushstring( L, "rx" );
-    lua_call( L, 2, 0 );
+    luaL_pcallx( L, 2, 0 );
   }
 }
 

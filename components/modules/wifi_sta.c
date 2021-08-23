@@ -141,7 +141,7 @@ static void on_event (esp_event_base_t base, int32_t id, const void *data)
   lua_pushstring (L, events[idx].name);
   lua_createtable (L, 0, 5);
   events[idx].fill_cb_arg (L, data);
-  lua_call (L, 2, 0);
+  luaL_pcallx (L, 2, 0);
 }
 
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_STA_START,           on_event);
@@ -390,7 +390,7 @@ static void on_scan_done(esp_event_base_t base, int32_t id, const void *data)
     else
       lua_pushfstring (L, "failure on scan done");
     luaM_free (L, aps);
-    lua_call (L, nargs, 0);
+    luaL_pcallx (L, nargs, 0);
   }
 }
 

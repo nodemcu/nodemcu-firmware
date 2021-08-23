@@ -141,7 +141,7 @@ static void touch_task(task_param_t param, task_prio_t prio)
 
       // call the cb_ref with one argument
       /* do the call (1 argument, 0 results) */
-      if (lua_pcall(L, 1, 0, 0) != 0) {
+      if (luaL_pcallx(L, 1, 0) != 0) {
         ESP_LOGI(TAG, "error running callback function `f': %s", funcName);
       }
     }

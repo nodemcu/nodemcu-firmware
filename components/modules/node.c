@@ -379,7 +379,7 @@ ssize_t redir_write(int fd, const void *data, size_t size) {
         lua_State *L = lua_getstate();
         lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir);  // push function reference
         lua_pushlstring(L, (char *)data, size);           // push data
-        lua_pcall(L, 1, 0, 0);                            // invoke callback
+        luaL_pcallx(L, 1, 0);                            // invoke callback
     }
     return size;
 }
@@ -447,7 +447,7 @@ int redir_vprintf(const char *fmt, va_list ap)
         lua_State *L = lua_getstate();
         lua_rawgeti(L, LUA_REGISTRYINDEX, os_output_redir);  // push function reference
         lua_pushlstring(L, (char *)data, size);           // push data
-        lua_pcall(L, 1, 0, 0);                            // invoke callback
+        luaL_pcallx(L, 1, 0);                            // invoke callback
     }
     return size;
 }
@@ -621,7 +621,7 @@ static void do_node_task (task_param_t task_fn_ref, task_prio_t prio)
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
   luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
   lua_pushinteger(L, prio);
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 // Lua: node.task.post([priority],task_cb) -- schedule a task for execution next

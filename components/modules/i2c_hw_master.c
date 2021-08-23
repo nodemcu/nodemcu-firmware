@@ -111,7 +111,7 @@ static void i2c_transfer_task( task_param_t param, task_prio_t prio )
       lua_pushnil( L );
     }
     lua_pushboolean( L, job->err == ESP_OK );
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
 
   // free all memory

@@ -109,7 +109,7 @@ static void i2c_receive_task( task_param_t param, task_prio_t prio )
     } else {
       lua_pushnil( L );
     }
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
 
   // free all memory

@@ -335,7 +335,7 @@ static int make_callback(lhttp_context_t *context, int id, void *data, size_t da
         // Lowercase all header names
         luaL_getmetafield(L, -1, "lower");
         lua_insert(L, -2);
-        lua_call(L, 1, 1);
+        luaL_pcallx(L, 1, 1);
         char *val = item->data + item->len + 1;
         lua_pushstring(L, val);
         lua_settable(L, -3);
@@ -366,7 +366,7 @@ static int make_callback(lhttp_context_t *context, int id, void *data, size_t da
     if (id != HTTP_REQUEST_COMPLETE) {
       context_setflag(context, InCallback);
     }
-    int err = lua_pcall(L, lua_gettop(L) - 1, 1, 0);
+    int err = luaL_pcallx(L, lua_gettop(L) - 1, 1);
     context_clearflag(context, InCallback);
     if (err) {
       const char *msg = lua_type(L, -1) == LUA_TSTRING ? lua_tostring(L, -1) : "<?>";
@@ -657,7 +657,7 @@ static int http_accumulate_complete(lua_State *L)
     context_setref(L, context, HeadersCallback);
   } else {
     lua_rawgeti(L, cache_table, 2); // headers
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
   // unset this since it contains a reference to the context and would prevent the context to be garbage collected
   context_unsetref(L, context,CompleteCallback); 
@@ -692,7 +692,7 @@ static int make_oneshot_request(lua_State *L, int callback_idx)
   // Finally, call request
   lua_pushcfunction(L, http_lapi_request);
   lua_pushvalue(L, -2); // context
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 
   if (async) {
     return 0;
@@ -736,7 +736,7 @@ static int http_lapi_get(lua_State *L)
   lua_pushinteger(L, HTTP_METHOD_GET);
   lua_pushvalue(L, 2); // options
 
-  lua_call(L, 3, 1); // returns context
+  luaL_pcallx(L, 3, 1); // returns context
 
   return make_oneshot_request(L, 3);
 }
@@ -768,12 +768,12 @@ static int http_lapi_post(lua_State *L)
   lua_pushinteger(L, HTTP_METHOD_POST);
   lua_pushvalue(L, 2); // options
 
-  lua_call(L, 3, 1); // returns context
+  luaL_pcallx(L, 3, 1); // returns context
 
   lua_pushcfunction(L, http_lapi_setpostdata);
   lua_pushvalue(L, -2); // context
   lua_pushvalue(L, 3); // body
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 
   return make_oneshot_request(L, 4); // 4 = callback idx
 }

@@ -271,7 +271,7 @@ static void invoke_cmd_q_callback (
     else
       lua_pushnil (L); // no error
     lua_pushlstring (L, (const char *)data, len ); // extra bytes, if any
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
 }
 
@@ -316,7 +316,7 @@ static void handle_hci_event (task_param_t arg, task_prio_t prio)
         uint8_t *report = &hci_event[5];
         lua_rawgeti (L, LUA_REGISTRYINDEX, adv_rep_cb_ref);
         lua_pushlstring (L, (const char *)report, len - 2);
-        lua_call (L, 1, 0);
+        luaL_pcallx (L, 1, 0);
       }
     }
   }

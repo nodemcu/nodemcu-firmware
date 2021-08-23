@@ -21,7 +21,7 @@ bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   int top = lua_gettop(gL);
   lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_status[id].receive_rf);
   lua_pushlstring(gL, buf, len);
-  lua_pcall(gL, 1, 0, 0);
+  luaL_pcallx(gL, 1, 0);
   lua_settop(gL, top);
   return !run_input;
 }
@@ -37,7 +37,7 @@ bool uart_on_error_cb(unsigned id, const char *buf, size_t len){
   int top = lua_gettop(gL);
   lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_status[id].error_rf);
   lua_pushlstring(gL, buf, len);
-  lua_pcall(gL, 1, 0, 0);
+  luaL_pcallx(gL, 1, 0);
   lua_settop(gL, top);
   return true;
 }

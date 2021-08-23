@@ -128,7 +128,7 @@ create_new_element(jsonsl_t jsn,
           // Call with the new table and the path as arguments
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-          lua_call(data->L, 2, 1);
+          luaL_pcallx(data->L, 2, 1);
           want_value = lua_toboolean(data->L, -1);
         }
         lua_pop(data->L, 2);    // Discard the metatable and either the getfield result or retval

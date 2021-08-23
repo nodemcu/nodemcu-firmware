@@ -59,7 +59,7 @@ static void alarm_timer_task(task_param_t param, task_prio_t prio)
     luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
     tmr->self_ref = LUA_NOREF;
   }
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 static tmr_t tmr_get( lua_State *L, int stack )

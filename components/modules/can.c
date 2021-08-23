@@ -46,7 +46,7 @@ static void can_data_task( task_param_t param, task_prio_t prio ) {
   lua_pushinteger(L, frame->MsgID);
   lua_pushlstring(L, (char *)frame->data.u8, frame->DLC); 
   free( frame );
-  lua_call(L, 3, 0);
+  luaL_pcallx(L, 3, 0);
 }
 
 // RTOS

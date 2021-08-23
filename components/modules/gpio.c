@@ -235,7 +235,7 @@ static void nodemcu_gpio_callback_task (task_param_t param, task_prio_t prio)
     lua_rawgeti (L, LUA_REGISTRYINDEX, gpio_cb_refs[gpio]);
     lua_pushinteger (L, gpio);
     lua_pushinteger (L, level);
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
     gpio_intr_enable (gpio);
   }
 }

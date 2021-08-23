@@ -968,7 +968,7 @@ static void ldnsfound_cb (lua_State *L, lnet_userdata *ud, ip_addr_t *addr) {
     } else {
       lua_pushnil(L);
     }
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
   ud->client.wait_dns --;
   if (ud->netconn && ud->type == TYPE_TCP_CLIENT && !ud->client.connecting) {
@@ -997,7 +997,7 @@ static void ldnsstatic_cb (lua_State *L, int cb_ref, ip_addr_t *addr) {
   } else {
     lua_pushnil(L);
   }
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 
@@ -1005,7 +1005,7 @@ static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->self_ref != LUA_NOREF && ud->client.cb_connect_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_connect_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -1041,7 +1041,7 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
         lua_pushinteger(L, port);
         lua_pushstring(L, iptmp);
       }
-      lua_call(L, num_args, 0);
+      luaL_pcallx(L, num_args, 0);
     }
   } while (netbuf_next(p) != -1);
 
@@ -1069,7 +1069,7 @@ static void laccept_cb (lua_State *L, lnet_userdata *ud) {
     nud->netconn->pcb.tcp->keep_cnt = 1;
   } else
     luaL_error(L, "cannot accept new server socket connection");
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 
@@ -1077,7 +1077,7 @@ static void lsent_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->client.cb_sent_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -1094,7 +1094,7 @@ static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
     lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
     lua_pushinteger(L, err);
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
   if (ud->client.wait_dns == 0) {
     lua_gc(L, LUA_GCSTOP, 0);

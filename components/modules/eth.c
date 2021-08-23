@@ -119,7 +119,7 @@ static void on_event(esp_event_base_t base, int32_t id, const void *data)
   lua_pushstring( L, events[idx].name );
   lua_createtable( L, 0, 5 );
   events[idx].fill_cb_arg( L, data );
-  lua_pcall( L, 2, 0, 0 );
+  luaL_pcallx( L, 2, 0 );
 
   lua_settop( L, top );
 }

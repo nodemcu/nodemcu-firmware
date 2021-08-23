@@ -115,7 +115,7 @@ static void on_event (esp_event_base_t base, int32_t id, const void *data)
   lua_pushstring (L, events[idx].name);
   lua_createtable (L, 0, 5);
   events[idx].fill_cb_arg (L, data);
-  lua_call (L, 2, 0);
+  luaL_pcallx (L, 2, 0);
 }
 
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_AP_START,            on_event);

@@ -214,7 +214,7 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
     lua_pushboolean (L, zero);
     // lua_pushinteger (L, moving_to);
     // lua_pushinteger (L, status);
-    lua_call (L, 6, 0);
+    luaL_pcallx (L, 6, 0);
   } else {
     if (pc->is_debug) ESP_LOGI("pulsecnt", "Could not find cb for unit %d with ptr %d", unit, pc->cb_ref);
   }
