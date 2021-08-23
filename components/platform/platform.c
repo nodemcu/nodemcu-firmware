@@ -1,5 +1,4 @@
 #include "platform.h"
-#include "driver/console.h"
 #include "driver/sigmadelta.h"
 #include "driver/adc.h"
 #include "driver/uart.h"
@@ -10,6 +9,8 @@
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
+#include "task/task.h"
+#include "linput.h"
 
 int platform_init (void)
 {
@@ -33,42 +34,52 @@ int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_G
 #define PLATFORM_UART_EVENT_RX       (UART_EVENT_MAX + 3)
 #define PLATFORM_UART_EVENT_BREAK    (UART_EVENT_MAX + 4)
 
+typedef struct {
+  unsigned id;
+  int type;
+  size_t size;
+  char* data;
+} uart_event_post_t;
+
 static const char *UART_TAG = "uart";
 
 uart_status_t uart_status[NUM_UART];
-
+task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
-task_handle_t uart_event_task_id = 0;
 
 void uart_event_task( task_param_t param, task_prio_t prio ) {
-  uint16_t need_len;
-  int16_t end_char;
-  char ch;
-  unsigned id;
-  uart_status_t *us;
   uart_event_post_t *post = (uart_event_post_t *)param;
-  id = post->id;
-  us = & uart_status[id];
+  unsigned id = post->id;
+  uart_status_t *us = &uart_status[id];
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    for(size_t p = 0; p < post->size; p++) {
-      ch = post->data[p];
-      us->line_buffer[us->line_position] = ch;
-      us->line_position++;
+    size_t i = 0;
+    while (i < post->size)
+    {
+      if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+        unsigned used = feed_lua_input(post->data + i, post->size - i);
+        i += used;
+      }
+      else {
+        char ch = post->data[i];
+        us->line_buffer[us->line_position] = ch;
+        us->line_position++;
 
-      need_len = us->need_len;
-      end_char = us->end_char;
-      size_t max_wanted =
-        (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
-      bool at_end = (us->line_position >= max_wanted);
-      bool end_char_found =
-        (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
-      if (at_end || end_char_found) {
-        uart_on_data_cb(id, us->line_buffer, us->line_position);
-        us->line_position = 0;
+        uint16_t need_len = us->need_len;
+        int16_t end_char = us->end_char;
+        size_t max_wanted =
+          (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
+        bool at_end = (us->line_position >= max_wanted);
+        bool end_char_found =
+          (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
+        if (at_end || end_char_found) {
+          uart_on_data_cb(id, us->line_buffer, us->line_position);
+          us->line_position = 0;
+        }
+        ++i;
       }
     }
     free(post->data);
@@ -177,88 +188,53 @@ static void task_uart( void *pvParameters ){
 // pins must not be null for non-console uart
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
-  if (id == CONSOLE_UART)
+  int flow_control = UART_HW_FLOWCTRL_DISABLE;
+  if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+  if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+  
+  uart_config_t cfg = {
+     .baud_rate = baud,
+     .flow_ctrl = flow_control,
+     .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
+  };
+  
+  switch (databits)
   {
-    ConsoleSetup_t cfg;
-    cfg.bit_rate  = baud;
-    switch (databits)
-    {
-      case 5: cfg.data_bits = CONSOLE_NUM_BITS_5; break;
-      case 6: cfg.data_bits = CONSOLE_NUM_BITS_6; break;
-      case 7: cfg.data_bits = CONSOLE_NUM_BITS_7; break;
-      case 8: // fall-through
-      default: cfg.data_bits = CONSOLE_NUM_BITS_8; break;
-    }
-    switch (parity)
-    {
-      case PLATFORM_UART_PARITY_EVEN: cfg.parity = CONSOLE_PARITY_EVEN; break;
-      case PLATFORM_UART_PARITY_ODD:  cfg.parity = CONSOLE_PARITY_ODD; break;
-      default: // fall-through
-      case PLATFORM_UART_PARITY_NONE: cfg.parity = CONSOLE_PARITY_NONE; break;
-    }
-    switch (stopbits)
-    {
-      default: // fall-through
-      case PLATFORM_UART_STOPBITS_1:
-        cfg.stop_bits = CONSOLE_STOP_BITS_1; break;
-      case PLATFORM_UART_STOPBITS_1_5:
-        cfg.stop_bits = CONSOLE_STOP_BITS_1_5; break;
-      case PLATFORM_UART_STOPBITS_2:
-        cfg.stop_bits = CONSOLE_STOP_BITS_2; break;
-    }
-    cfg.auto_baud = false;
-    console_setup (&cfg);
-    return baud;
+    case 5: cfg.data_bits = UART_DATA_5_BITS; break;
+    case 6: cfg.data_bits = UART_DATA_6_BITS; break;
+    case 7: cfg.data_bits = UART_DATA_7_BITS; break;
+    case 8: // fall-through
+    default: cfg.data_bits = UART_DATA_8_BITS; break;
   }
-  else
+  switch (parity)
   {
-    int flow_control = UART_HW_FLOWCTRL_DISABLE;
-    if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
-    if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
-    
-    uart_config_t cfg = {
-       .baud_rate = baud,
-       .flow_ctrl = flow_control,
-       .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
-    };
-    
-    switch (databits)
-    {
-      case 5: cfg.data_bits = UART_DATA_5_BITS; break;
-      case 6: cfg.data_bits = UART_DATA_6_BITS; break;
-      case 7: cfg.data_bits = UART_DATA_7_BITS; break;
-      case 8: // fall-through
-      default: cfg.data_bits = UART_DATA_8_BITS; break;
-    }
-    switch (parity)
-    {
-      case PLATFORM_UART_PARITY_EVEN: cfg.parity = UART_PARITY_EVEN; break;
-      case PLATFORM_UART_PARITY_ODD:  cfg.parity = UART_PARITY_ODD; break;
-      default: // fall-through
-      case PLATFORM_UART_PARITY_NONE: cfg.parity = UART_PARITY_DISABLE; break;
-    }
-    switch (stopbits)
-    {
-      default: // fall-through
-      case PLATFORM_UART_STOPBITS_1:
-        cfg.stop_bits = UART_STOP_BITS_1; break;
-      case PLATFORM_UART_STOPBITS_1_5:
-        cfg.stop_bits = UART_STOP_BITS_1_5; break;
-      case PLATFORM_UART_STOPBITS_2:
-        cfg.stop_bits = UART_STOP_BITS_2; break;
-    }
-    uart_param_config(id, &cfg);
+    case PLATFORM_UART_PARITY_EVEN: cfg.parity = UART_PARITY_EVEN; break;
+    case PLATFORM_UART_PARITY_ODD:  cfg.parity = UART_PARITY_ODD; break;
+    default: // fall-through
+    case PLATFORM_UART_PARITY_NONE: cfg.parity = UART_PARITY_DISABLE; break;
+  }
+  switch (stopbits)
+  {
+    default: // fall-through
+    case PLATFORM_UART_STOPBITS_1:
+      cfg.stop_bits = UART_STOP_BITS_1; break;
+    case PLATFORM_UART_STOPBITS_1_5:
+      cfg.stop_bits = UART_STOP_BITS_1_5; break;
+    case PLATFORM_UART_STOPBITS_2:
+      cfg.stop_bits = UART_STOP_BITS_2; break;
+  }
+  uart_param_config(id, &cfg);
+
+  if (pins != NULL) {
     uart_set_pin(id, pins->tx_pin, pins->rx_pin, pins->rts_pin, pins->cts_pin);
     uart_set_line_inverse(id, (pins->tx_inverse? UART_TXD_INV_M : 0)
                                 | (pins->rx_inverse? UART_RXD_INV_M : 0)
                                 | (pins->rts_inverse? UART_RTS_INV_M : 0)
                                 | (pins->cts_inverse? UART_CTS_INV_M : 0)
                         );
-
-    if(uart_event_task_id == 0) uart_event_task_id = task_get_id( uart_event_task );
-
-    return baud;
   }
+
+  return baud;
 }
 
 void platform_uart_setmode(unsigned id, unsigned mode)
@@ -285,7 +261,7 @@ void platform_uart_setmode(unsigned id, unsigned mode)
 void platform_uart_send_multi( unsigned id, const char *data, size_t len )
 {
   size_t i;
-  if (id == CONSOLE_UART) {
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM) {
       for( i = 0; i < len; i ++ ) {
         putchar (data[ i ]);
     }
@@ -296,7 +272,7 @@ void platform_uart_send_multi( unsigned id, const char *data, size_t len )
 
 void platform_uart_send( unsigned id, uint8_t data )
 {
-  if (id == CONSOLE_UART)
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     putchar (data);
   else
     uart_write_bytes(id, (const char *)&data, 1);
@@ -304,7 +280,7 @@ void platform_uart_send( unsigned id, uint8_t data )
 
 void platform_uart_flush( unsigned id )
 {
-  if (id == CONSOLE_UART)
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     fflush (stdout);
   else
     uart_tx_flush(id);
@@ -313,38 +289,38 @@ void platform_uart_flush( unsigned id )
 
 int platform_uart_start( unsigned id )
 {
-  if (id == CONSOLE_UART)
-    return 0;
-  else {
-    uart_status_t *us = & uart_status[id];
-    
-    esp_err_t ret = uart_driver_install(id, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 3, & us->queue, 0);
-    if(ret != ESP_OK) {
-      return -1;
-    }
-    us->line_buffer = malloc(LUA_MAXINPUT);
-    us->line_position = 0;
-    if(us->line_buffer == NULL) {
-      uart_driver_delete(id);
-      return -1;
-    }
+  if(uart_event_task_id == 0)
+    uart_event_task_id = task_get_id( uart_event_task );
 
-    char pcName[6];
-    snprintf( pcName, 6, "uart%d", id );
-    pcName[5] = '\0';
-    if(xTaskCreate(task_uart, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, & us->taskHandle) != pdPASS) {
-      uart_driver_delete(id);
-      free(us->line_buffer);
-      us->line_buffer = NULL;
-      return -1;
-    }
-  return 0;
+  uart_status_t *us = & uart_status[id];
+
+  esp_err_t ret = uart_driver_install(id, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 3, & us->queue, 0);
+  if(ret != ESP_OK) {
+    return -1;
   }
+  us->line_buffer = malloc(LUA_MAXINPUT);
+  us->line_position = 0;
+  if(us->line_buffer == NULL) {
+    uart_driver_delete(id);
+    return -1;
+  }
+
+  char pcName[6];
+  snprintf( pcName, 6, "uart%d", id );
+  pcName[5] = '\0';
+  if(xTaskCreate(task_uart, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, & us->taskHandle) != pdPASS) {
+    uart_driver_delete(id);
+    free(us->line_buffer);
+    us->line_buffer = NULL;
+    return -1;
+  }
+
+  return 0;
 }
 
 void platform_uart_stop( unsigned id )
 {
-  if (id == CONSOLE_UART)
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     ;
   else {
     uart_status_t *us = & uart_status[id];  

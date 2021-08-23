@@ -81,7 +81,7 @@ set(common_srcs
 idf_component_register(
   SRCS ${srcs} ${common_srcs}
   INCLUDE_DIRS ${luadir} "common"
-  REQUIRES "platform" "nvs_flash" "uzlib" "driver_console"
+  REQUIRES "platform" "nvs_flash" "uzlib"
   PRIV_REQUIRES "base_nodemcu" "embedded_lfs"
   LDFRAGMENTS "link_lua.lf"
 )

@@ -3,15 +3,13 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "driver/console.h"
+#include "linput.h"
 
 #include <stdint.h>
 #include <string.h>
 
-extern uart_status_t uart_status[NUM_UART];
-
 static lua_State *gL = NULL;
-bool run_input = true;
+
 bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
@@ -47,7 +45,7 @@ bool uart_on_error_cb(unsigned id, const char *buf, size_t len){
 // Lua: uart.on([id], "method", [number/char], function, [run_input])
 static int uart_on( lua_State* L )
 {
-  unsigned id = CONSOLE_UART;
+  unsigned id = CONFIG_ESP_CONSOLE_UART_NUM;
   size_t sl, el;
   int32_t run = 1;
   uint8_t stack = 1;
@@ -95,7 +93,7 @@ static int uart_on( lua_State* L )
     lua_pushnil(L);
   }
   if(sl == 4 && strcmp(method, "data") == 0){
-    if(id == CONSOLE_UART)
+    if(id == CONFIG_ESP_CONSOLE_UART_NUM)
       run_input = true;
     if(us->receive_rf != LUA_NOREF){
       luaL_unref(L, LUA_REGISTRYINDEX, us->receive_rf);
@@ -104,7 +102,7 @@ static int uart_on( lua_State* L )
     if(!lua_isnil(L, -1)){
       us->receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
       gL = L;
-      if(id == CONSOLE_UART && run==0)
+      if(id == CONFIG_ESP_CONSOLE_UART_NUM && run==0)
         run_input = false;
     } else {
       lua_pop(L, 1);
@@ -127,7 +125,6 @@ static int uart_on( lua_State* L )
   return 0; 
 }
 
-bool uart0_echo = true;
 // Lua: actualbaud = setup( id, baud, databits, parity, stopbits, echo )
 static int uart_setup( lua_State* L )
 {
@@ -141,13 +138,13 @@ static int uart_setup( lua_State* L )
   databits = luaL_checkinteger( L, 3 );
   parity = luaL_checkinteger( L, 4 );
   stopbits = luaL_checkinteger( L, 5 );
-  if(id == CONSOLE_UART && lua_isnumber(L,6)){
+  if(id == CONFIG_ESP_CONSOLE_UART_NUM && lua_isnumber(L,6)){
     echo = lua_tointeger(L,6);
     if(echo!=0)
-      uart0_echo = true;
+      input_echo = true;
     else
-      uart0_echo = false;
-  } else if(id != CONSOLE_UART && lua_istable( L, 6 )) {
+      input_echo = false;
+  } else if(id != CONFIG_ESP_CONSOLE_UART_NUM && lua_istable( L, 6 )) {
       lua_getfield (L, 6, "tx");
       pins.tx_pin = luaL_checkint(L, -1);
       lua_getfield (L, 6, "rx");

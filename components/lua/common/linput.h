@@ -1,9 +1,15 @@
-#ifndef READLINE_APP_H
-#define READLINE_APP_H
+#ifndef _LINPUT_H_
+#define _LINPUT_H_
 
-extern void input_setup(int bufsize, const char *prompt);
-extern void input_setprompt (const char *prompt);
+#include <stdbool.h>
+#include <stddef.h>
 
-void lua_handle_input(void);
+void input_setup(int bufsize, const char *prompt);
+void input_setprompt (const char *prompt);
+
+unsigned feed_lua_input(const char *buf, size_t n);
+
+extern bool input_echo;
+extern bool run_input;
 
 #endif /* READLINE_APP_H */

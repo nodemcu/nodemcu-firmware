@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "user_version.h"
-#include "driver/console.h"
 #include "linput.h"
 
 #define lua_c

@@ -101,12 +101,7 @@ typedef struct {
   int16_t end_char;
 } uart_status_t;
 
-typedef struct {
-  unsigned id;
-  int type;
-  size_t size;
-  char* data;
-} uart_event_post_t;
+extern uart_status_t uart_status[NUM_UART];
 
 // Flow control types (this is a bit mask, one can specify PLATFORM_UART_FLOW_RTS | PLATFORM_UART_FLOW_CTS )
 #define PLATFORM_UART_FLOW_NONE               0
