@@ -106,6 +106,8 @@ static void ws2812_isr(void *arg)
       ws2812_chain_t *chain = &(ws2812_chains[channel]);
 #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)
       uint32_t data_sub_len = RMT.tx_lim_ch[channel].limit/8;
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+      uint32_t data_sub_len = RMT.chn_tx_lim[channel].tx_lim_chn/8;
 #else
       uint32_t data_sub_len = RMT.tx_lim[channel].limit/8;
 #endif
