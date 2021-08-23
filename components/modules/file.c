@@ -550,6 +550,8 @@ static int file_chdir( lua_State *L )
 #endif
 
 LROT_BEGIN(file_obj, NULL, 0)
+  LROT_FUNCENTRY( __gc,      file_obj_free )
+  LROT_TABENTRY ( __index,   file_obj )
   LROT_FUNCENTRY( close,     file_close )
   LROT_FUNCENTRY( read,      file_read )
   LROT_FUNCENTRY( readline,  file_readline )
@@ -557,8 +559,6 @@ LROT_BEGIN(file_obj, NULL, 0)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( seek,      file_seek )
   LROT_FUNCENTRY( flush,     file_flush )
-  LROT_FUNCENTRY( __gc,      file_obj_free )
-  LROT_TABENTRY ( __index,   file_obj )
 LROT_END(file_obj, NULL, 0)
 
 // Module function map

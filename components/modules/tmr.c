@@ -236,6 +236,8 @@ static int tmr_create( lua_State *L ) {
 // Module function map
 
 LROT_BEGIN(tmr_dyn, NULL, 0)
+  LROT_FUNCENTRY( __gc,        tmr_unregister )
+  LROT_TABENTRY ( __index,     tmr_dyn )
   LROT_FUNCENTRY( register,    tmr_register )
   LROT_FUNCENTRY( alarm,       tmr_alarm )
   LROT_FUNCENTRY( start,       tmr_start )
@@ -243,8 +245,6 @@ LROT_BEGIN(tmr_dyn, NULL, 0)
   LROT_FUNCENTRY( unregister,  tmr_unregister )
   LROT_FUNCENTRY( interval,    tmr_interval)
   LROT_FUNCENTRY( state,       tmr_state )
-  LROT_FUNCENTRY( __gc,        tmr_unregister )
-  LROT_TABENTRY ( __index,     tmr_dyn )
 LROT_END(tmr_dyn, NULL, 0)
 
 LROT_BEGIN(tmr, NULL, 0)

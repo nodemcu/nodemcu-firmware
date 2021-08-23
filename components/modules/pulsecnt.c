@@ -679,6 +679,9 @@ static int pulsecnt_unregister(lua_State* L){
 }
 
 LROT_BEGIN(pulsecnt_dyn, NULL, 0)
+  LROT_FUNCENTRY( __gc,           pulsecnt_unregister )
+  LROT_TABENTRY ( __index,        pulsecnt_dyn )
+  // LROT_FUNCENTRY( __tostring,     pulsecnt_tostring )
   LROT_FUNCENTRY( getCnt,         pulsecnt_getCnt )
   LROT_FUNCENTRY( clear,          pulsecnt_clear )
   LROT_FUNCENTRY( testCb,         pulsecnt_testCb )
@@ -690,10 +693,6 @@ LROT_BEGIN(pulsecnt_dyn, NULL, 0)
   LROT_FUNCENTRY( setFilter,      pulsecnt_set_filter )
   LROT_FUNCENTRY( rawSetEventVal, pulsecnt_set_event_value )
   LROT_FUNCENTRY( rawGetEventVal, pulsecnt_get_event_value )
-
-  // LROT_FUNCENTRY( __tostring,     pulsecnt_tostring )
-  LROT_FUNCENTRY( __gc,           pulsecnt_unregister )
-  LROT_TABENTRY ( __index,        pulsecnt_dyn )
 LROT_END(pulsecnt_dyn, NULL, 0)
 
 LROT_BEGIN(pulsecnt, NULL, 0)
