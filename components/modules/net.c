@@ -479,7 +479,7 @@ static int net_listen( lua_State *L ) {
   if (!ipaddr_aton(domain, &addr))
     return luaL_error(L, "invalid IP address");
   if (ud->type == TYPE_TCP_SERVER) {
-    if (lua_isfunction(L, stack) || lua_islightfunction(L, stack)) {
+    if (lua_isfunction(L, stack)) {
       lua_pushvalue(L, stack++);
       luaL_unref(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
       ud->server.cb_accept_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -586,7 +586,7 @@ static int net_on( lua_State *L ) {
   }
   if (refptr == NULL)
     return luaL_error(L, "invalid callback name");
-  if (lua_isfunction(L, 3) || lua_islightfunction(L, 3)) {
+  if (lua_isfunction(L, 3)) {
     lua_pushvalue(L, 3);
     luaL_unref(L, LUA_REGISTRYINDEX, *refptr);
     *refptr = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -620,7 +620,7 @@ static int net_send( lua_State *L ) {
   data = luaL_checklstring(L, stack++, &datalen);
   if (!data || datalen == 0) return luaL_error(L, "no data to send");
   ud->client.num_send = datalen;
-  if (lua_isfunction(L, stack) || lua_islightfunction(L, stack)) {
+  if (lua_isfunction(L, stack)) {
     lua_pushvalue(L, stack++);
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
     ud->client.cb_sent_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -684,7 +684,7 @@ static int net_dns( lua_State *L ) {
   const char *domain = luaL_checklstring(L, 2, &dl);
   if (!domain)
     return luaL_error(L, "no domain specified");
-  if (lua_isfunction(L, 3) || lua_islightfunction(L, 3)) {
+  if (lua_isfunction(L, 3)) {
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_dns_ref);
     lua_pushvalue(L, 3);
     ud->client.cb_dns_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -890,7 +890,7 @@ static int net_dns_static( lua_State* L ) {
     return luaL_error(L, "domain name too long");
   }
 
-  luaL_checkanyfunction(L, 2);
+  luaL_checkfunction(L, 2);
   lua_settop(L, 2);
 
   dns_event_t *ev = luaM_new(L, dns_event_t);
@@ -968,7 +968,7 @@ static void ldnsfound_cb (lua_State *L, lnet_userdata *ud, ip_addr_t *addr) {
     } else {
       lua_pushnil(L);
     }
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
   ud->client.wait_dns --;
   if (ud->netconn && ud->type == TYPE_TCP_CLIENT && !ud->client.connecting) {
@@ -997,7 +997,7 @@ static void ldnsstatic_cb (lua_State *L, int cb_ref, ip_addr_t *addr) {
   } else {
     lua_pushnil(L);
   }
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 
@@ -1005,7 +1005,7 @@ static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->self_ref != LUA_NOREF && ud->client.cb_connect_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_connect_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -1041,7 +1041,7 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
         lua_pushinteger(L, port);
         lua_pushstring(L, iptmp);
       }
-      lua_call(L, num_args, 0);
+      luaL_pcallx(L, num_args, 0);
     }
   } while (netbuf_next(p) != -1);
 
@@ -1069,7 +1069,7 @@ static void laccept_cb (lua_State *L, lnet_userdata *ud) {
     nud->netconn->pcb.tcp->keep_cnt = 1;
   } else
     luaL_error(L, "cannot accept new server socket connection");
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 
@@ -1077,7 +1077,7 @@ static void lsent_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->client.cb_sent_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -1094,7 +1094,7 @@ static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
     lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
     lua_pushinteger(L, err);
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
   if (ud->client.wait_dns == 0) {
     lua_gc(L, LUA_GCSTOP, 0);
@@ -1108,15 +1108,17 @@ static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
 // --- Tables
 
 // Module function map
-LROT_BEGIN(net_tcpserver)
+LROT_BEGIN(net_tcpserver, NULL, 0)
+  LROT_FUNCENTRY( __gc,    net_delete )
+  LROT_TABENTRY ( __index, net_tcpserver )
   LROT_FUNCENTRY( listen,  net_listen )
   LROT_FUNCENTRY( getaddr, net_getaddr )
   LROT_FUNCENTRY( close,   net_close )
-  LROT_FUNCENTRY( __gc,    net_delete )
-  LROT_TABENTRY ( __index, net_tcpserver )
 LROT_END(net_tcpserver, NULL, 0)
 
-LROT_BEGIN(net_tcpsocket)
+LROT_BEGIN(net_tcpsocket, NULL, 0)
+  LROT_FUNCENTRY( __gc,    net_delete )
+  LROT_TABENTRY ( __index, net_tcpsocket )
   LROT_FUNCENTRY( connect, net_connect )
   LROT_FUNCENTRY( close,   net_close )
   LROT_FUNCENTRY( on,      net_on )
@@ -1124,28 +1126,27 @@ LROT_BEGIN(net_tcpsocket)
   LROT_FUNCENTRY( dns,     net_dns )
   LROT_FUNCENTRY( getpeer, net_getpeer )
   LROT_FUNCENTRY( getaddr, net_getaddr )
-  LROT_FUNCENTRY( __gc,    net_delete )
-  LROT_TABENTRY ( __index, net_tcpsocket )
 LROT_END(net_tcpsocket, NULL, 0)
 
-LROT_BEGIN(net_udpsocket)
+LROT_BEGIN(net_udpsocket, NULL, 0)
+  LROT_FUNCENTRY( __gc,    net_delete )
+  LROT_TABENTRY ( __index, net_udpsocket )
   LROT_FUNCENTRY( listen,  net_listen )
   LROT_FUNCENTRY( close,   net_close )
   LROT_FUNCENTRY( on,      net_on )
   LROT_FUNCENTRY( send,    net_send )
   LROT_FUNCENTRY( dns,     net_dns )
   LROT_FUNCENTRY( getaddr, net_getaddr )
-  LROT_FUNCENTRY( __gc,    net_delete )
-  LROT_TABENTRY ( __index, net_udpsocket )
 LROT_END(net_udpsocket, NULL, 0)
 
-LROT_BEGIN(net_dns)
+LROT_BEGIN(net_dns, NULL, 0)
   LROT_FUNCENTRY( setdnsserver, net_setdnsserver )
   LROT_FUNCENTRY( getdnsserver, net_getdnsserver )
   LROT_FUNCENTRY( resolve,      net_dns_static )
 LROT_END(net_dns, NULL, 0)
 
-LROT_BEGIN(net)
+LROT_BEGIN(net, NULL, 0)
+  LROT_TABENTRY ( __metatable,      net )
   LROT_FUNCENTRY( createServer,     net_createServer )
   LROT_FUNCENTRY( createConnection, net_createConnection )
   LROT_FUNCENTRY( createUDPSocket,  net_createUDPSocket )
@@ -1154,15 +1155,14 @@ LROT_BEGIN(net)
   LROT_TABENTRY ( dns,              net_dns )
   LROT_NUMENTRY ( TCP,              TYPE_TCP )
   LROT_NUMENTRY ( UDP,              TYPE_UDP )
-  LROT_TABENTRY ( __metatable,      net )
 LROT_END(net, NULL, 0)
 
 int luaopen_net( lua_State *L ) {
   igmp_init();
 
-  luaL_rometatable(L, NET_TABLE_TCP_SERVER, (void *)net_tcpserver_map);
-  luaL_rometatable(L, NET_TABLE_TCP_CLIENT, (void *)net_tcpsocket_map);
-  luaL_rometatable(L, NET_TABLE_UDP_SOCKET, (void *)net_udpsocket_map);
+  luaL_rometatable(L, NET_TABLE_TCP_SERVER, LROT_TABLEREF(net_tcpserver));
+  luaL_rometatable(L, NET_TABLE_TCP_CLIENT, LROT_TABLEREF(net_tcpsocket));
+  luaL_rometatable(L, NET_TABLE_UDP_SOCKET, LROT_TABLEREF(net_udpsocket));
 
   net_handler = task_get_id(handle_net_event);
   dns_handler = task_get_id(handle_dns_event);

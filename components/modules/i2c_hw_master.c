@@ -4,6 +4,7 @@
 #include "lmem.h"
 #include "driver/i2c.h"
 #include "soc/i2c_reg.h"
+#include "hal/i2c_ll.h"
 
 #include "i2c_common.h"
 
@@ -110,7 +111,7 @@ static void i2c_transfer_task( task_param_t param, task_prio_t prio )
       lua_pushnil( L );
     }
     lua_pushboolean( L, job->err == ESP_OK );
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
 
   // free all memory
@@ -219,7 +220,7 @@ int li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl,
   int timeoutcycles;
   i2c_lua_checkerr( L, i2c_get_timeout( port, &timeoutcycles) );
   timeoutcycles = timeoutcycles * stretchfactor;
-  luaL_argcheck( L, timeoutcycles * stretchfactor <= I2C_TIME_OUT_REG_V, 5, "excessive stretch factor" );
+  luaL_argcheck( L, timeoutcycles * stretchfactor <= I2C_LL_MAX_TIMEOUT, 5, "excessive stretch factor" );
   i2c_lua_checkerr( L, i2c_set_timeout( port, timeoutcycles) );
  
   i2c_lua_checkerr( L, i2c_driver_install( port, cfg.mode, 0, 0, 0 ));
@@ -319,7 +320,7 @@ int li2c_hw_master_transfer( lua_State *L )
     luaL_error( L, "no commands scheduled" );
 
   stack++;
-  if (lua_isfunction( L, stack ) || lua_islightfunction( L, stack )) {
+  if (lua_isfunction( L, stack )) {
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, job->cb_ref );
     job->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);

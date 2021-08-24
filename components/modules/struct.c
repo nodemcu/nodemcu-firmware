@@ -392,7 +392,7 @@ static int b_size (lua_State *L) {
 
 
 
-LROT_BEGIN(thislib)
+LROT_BEGIN(thislib, NULL, 0)
   LROT_FUNCENTRY(pack,   b_pack)
   LROT_FUNCENTRY(unpack, b_unpack)
   LROT_FUNCENTRY(size,   b_size)

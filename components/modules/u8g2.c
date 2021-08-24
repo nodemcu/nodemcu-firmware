@@ -558,7 +558,9 @@ static int lu8g2_updateDisplayArea( lua_State *L )
 }
 
 
-LROT_BEGIN(lu8g2_display)
+LROT_BEGIN(lu8g2_display, NULL, 0)
+  //LROT_FUNCENTRY( __gc,    lu8g2_display_free )
+  LROT_TABENTRY( __index, lu8g2_display )
   LROT_FUNCENTRY( clearBuffer,        lu8g2_clearBuffer )
   LROT_FUNCENTRY( drawBox,            lu8g2_drawBox )
   LROT_FUNCENTRY( drawCircle,         lu8g2_drawCircle )
@@ -600,8 +602,6 @@ LROT_BEGIN(lu8g2_display)
   LROT_FUNCENTRY( setPowerSave,       lu8g2_setPowerSave )
   LROT_FUNCENTRY( updateDispla,       lu8g2_updateDisplay )
   LROT_FUNCENTRY( updateDisplayArea,  lu8g2_updateDisplayArea )
-  //LROT_FUNCENTRY( __gc,    lu8g2_display_free )
-  LROT_TABENTRY( __index, lu8g2_display )
 LROT_END(lu8g2_display, NULL, 0)
 
 
@@ -802,7 +802,7 @@ U8G2_DISPLAY_TABLE_SPI
 #define U8G2_DISPLAY_TABLE_ENTRY(function, binding) \
   LROT_FUNCENTRY( binding, l ## binding )
 
-LROT_BEGIN(lu8g2)
+LROT_BEGIN(lu8g2, NULL, 0)
   U8G2_DISPLAY_TABLE_I2C
   U8G2_DISPLAY_TABLE_SPI
   //
@@ -824,7 +824,7 @@ LROT_BEGIN(lu8g2)
 LROT_END(lu8g2, NULL, 0)
 
 int luaopen_u8g2( lua_State *L ) {
-  luaL_rometatable(L, "u8g2.display", (void *)lu8g2_display_map);
+  luaL_rometatable(L, "u8g2.display", LROT_TABLEREF(lu8g2_display));
   return 0;
 }
 

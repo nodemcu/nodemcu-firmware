@@ -216,7 +216,7 @@ static int send_hci_command (lua_State *L, uint8_t *data, unsigned len)
         if (lua_gettop (L) > 0 && !lua_isnil (L, -1))
         {
           cmd_q[i].cmd = cmd;
-          luaL_checkanyfunction (L, -1);
+          luaL_checkfunction (L, -1);
           lua_pushvalue (L, -1);
           cmd_q[i].cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
         }
@@ -271,7 +271,7 @@ static void invoke_cmd_q_callback (
     else
       lua_pushnil (L); // no error
     lua_pushlstring (L, (const char *)data, len ); // extra bytes, if any
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
 }
 
@@ -316,7 +316,7 @@ static void handle_hci_event (task_param_t arg, task_prio_t prio)
         uint8_t *report = &hci_event[5];
         lua_rawgeti (L, LUA_REGISTRYINDEX, adv_rep_cb_ref);
         lua_pushlstring (L, (const char *)report, len - 2);
-        lua_call (L, 1, 0);
+        luaL_pcallx (L, 1, 0);
       }
     }
   }
@@ -424,7 +424,7 @@ static int lbthci_adv_setparams (lua_State *L)
   uint8_t   adv_chan_map = ADV_CHAN_ALL;
   uint8_t   adv_filter_pol = ADV_FILTER_NONE;
 
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
   lua_settop (L, 2); // Pad a nil into the function slot if necessary
 
   get_opt_field_int (1, adv_interval_min, "interval_min");
@@ -501,7 +501,7 @@ static int lbthci_scan_setparams (lua_State *L)
   uint8_t  own_addr_type = 0;
   uint8_t  filter_policy = 0;
 
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
   lua_settop (L, 2); // Pad a nil into the function slot if necessary
 
   get_opt_field_int (1, scan_mode,     "mode");
@@ -557,7 +557,7 @@ static int lbthci_rawhci (lua_State *L)
 }
 
 
-LROT_BEGIN(bthci_adv)
+LROT_BEGIN(bthci_adv, NULL, 0)
   LROT_FUNCENTRY( enable,        lbthci_adv_enable )
   LROT_FUNCENTRY( setdata,       lbthci_adv_setdata )
   LROT_FUNCENTRY( setparams,     lbthci_adv_setparams )
@@ -576,14 +576,14 @@ LROT_BEGIN(bthci_adv)
 LROT_END(bthci_adv, NULL, 0)
 
 
-LROT_BEGIN(bthci_scan)
+LROT_BEGIN(bthci_scan, NULL, 0)
   LROT_FUNCENTRY( enable,    lbthci_scan )
   LROT_FUNCENTRY( setparams, lbthci_scan_setparams )
   LROT_FUNCENTRY( on,        lbthci_scan_on )
 LROT_END(bthci_scan, NULL, 0)
 
 
-LROT_BEGIN(bthci)
+LROT_BEGIN(bthci, NULL, 0)
   LROT_FUNCENTRY( rawhci, lbthci_rawhci )
   LROT_FUNCENTRY( reset,  lbthci_reset )
   LROT_TABENTRY ( adv,    bthci_adv )

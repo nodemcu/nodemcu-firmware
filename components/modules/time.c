@@ -118,7 +118,7 @@ static int time_epoch2cal(lua_State *L)
 static int time_cal2epoc(lua_State *L)
 {
   struct tm date;
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
   
   lua_getfield (L, 1, "year");
   date.tm_year = luaL_optinteger(L, -1, 1900) - 1900;
@@ -143,7 +143,7 @@ static int time_cal2epoc(lua_State *L)
   return 1;
 }
 
-LROT_BEGIN(time)
+LROT_BEGIN(time, NULL, 0)
   LROT_FUNCENTRY(set,         time_set)
   LROT_FUNCENTRY(get,         time_get)
   LROT_FUNCENTRY(getlocal,    time_getLocal)

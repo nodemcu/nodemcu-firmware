@@ -6,10 +6,11 @@ jobs:
 
   build:
     strategy:
+      fail-fast: false
       matrix:
-        lua_ver: ['5.1']
-        numbers: ['float','integral']
-        target: ['esp32','esp32c3']
+        lua_ver: ['5.1', '5.3']
+        numbers: ['default', 'alternate']
+        target: ['esp32', 'esp32s2', 'esp32s3', 'esp32c3']
 
     runs-on: ubuntu-latest
 
@@ -28,17 +29,25 @@ jobs:
       - name: Install dependencies
         run: ./install.sh
         shell: bash
-      - name: Build firmware (Lua 5.1)
-        if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'float' }}
+      - name: Build firmware (default configuration)
+        if: ${{ matrix.numbers == 'default' }}
         run: |
           cp sdkconfig.defaults sdkconfig
           make IDF_TARGET=${{ matrix.target }}
         shell: bash
       - name: Build firmware (Lua 5.1, integer-only)
-        if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'integral' }}
+        if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'alternate' }}
         run: |
           cp sdkconfig.defaults sdkconfig
           echo CONFIG_LUA_NUMBER_INTEGRAL=y >> sdkconfig
+          make IDF_TARGET=${{ matrix.target }}
+        shell: bash
+      - name: Build firmware (Lua 5.3, 64bit int/double)
+        if: ${{ matrix.lua_ver == '5.3' && matrix.numbers == 'alternate' }}
+        run: |
+          cp sdkconfig.defaults sdkconfig
+          echo CONFIG_LUA_NUMBER_INT64=y >> sdkconfig
+          echo CONFIG_LUA_NUMBER_DOUBLE=y >> sdkconfig
           make IDF_TARGET=${{ matrix.target }}
         shell: bash
       - name: Upload luac.cross

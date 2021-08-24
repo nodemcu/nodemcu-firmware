@@ -11,7 +11,7 @@
 #define BUILD_DATE	  "unspecified"
 #endif
 
-#define SDK_VERSION "IDF"
+#define SDK_VERSION IDF_VER
 
 #endif	/* __USER_VERSION_H__ */
 

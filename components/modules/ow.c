@@ -326,7 +326,7 @@ static int ow_crc16( lua_State *L )
   return 1;
 }
 
-LROT_BEGIN(ow)
+LROT_BEGIN(ow, NULL, 0)
   LROT_FUNCENTRY( setup,         ow_setup )
   LROT_FUNCENTRY( reset,         ow_reset )
   LROT_FUNCENTRY( skip,          ow_skip )

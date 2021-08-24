@@ -119,7 +119,7 @@ static void event_connected(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
         luaX_push_weak_ref(L, mqtt_context->self);                         // push a reference to the client (first parameter)
 
         ESP_LOGD(TAG, "CB:connect: calling registered one-shot connect callback");
-        int res = lua_pcall(L, 1, 0, 0);  //call the connect callback: function(client)
+        int res = luaL_pcallx(L, 1, 0);  //call the connect callback: function(client)
         if (res != 0)
             ESP_LOGD(TAG, "CB:connect: Error when calling one-shot connect callback - (%d) %s", res, luaL_checkstring(L, -1));
 
@@ -133,7 +133,7 @@ static void event_connected(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
         ESP_LOGD(TAG, "CB:connect: calling registered standard connect callback");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_connect_cb);  // push the callback function reference to the stack
         luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
-        int res = lua_pcall(L, 1, 0, 0);                                 //call the connect callback: function(client)
+        int res = luaL_pcallx(L, 1, 0);                                 //call the connect callback: function(client)
         if (res != 0)
             ESP_LOGD(TAG, "CB:connect: Error when calling connect callback - (%d) %s", res, luaL_checkstring(L, -1));
     }
@@ -156,7 +156,7 @@ static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_m
         lua_pushinteger(L, -6);                                             // esp sdk mqtt lib does not provide reason codes. Push "-6" to be backward compatible with ESP8266 API
 
         ESP_LOGD(TAG, "CB:disconnect: calling registered one-shot disconnect callback");
-        int res = lua_pcall(L, 2, 0, 0);  //call the disconnect callback with 2 parameters: function(client, reason)
+        int res = luaL_pcallx(L, 2, 0);  //call the disconnect callback with 2 parameters: function(client, reason)
         if (res != 0)
             ESP_LOGD(TAG, "CB:disconnect: Error when calling one-shot disconnect callback - (%d) %s", res, luaL_checkstring(L, -1));
 
@@ -170,7 +170,7 @@ static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_m
         ESP_LOGD(TAG, "CB:disconnect: calling registered standard on_offline_cb callback");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_offline_cb);  // push the callback function reference to the stack
         luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
-        int res = lua_pcall(L, 1, 0, 0);                                 //call the offline callback: function(client)
+        int res = luaL_pcallx(L, 1, 0);                                 //call the offline callback: function(client)
         if (res != 0)
             ESP_LOGD(TAG, "CB:disconnect: Error when calling offline callback - (%d) %s", res, luaL_checkstring(L, -1));
     }
@@ -184,7 +184,7 @@ static void event_subscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_mqt
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->subscribed_ok_cb);  // push the function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                          // push the client object on the stack
     luaX_unset_ref(L, &mqtt_context->subscribed_ok_cb);                 // forget the callback since it is one-shot
-    int res = lua_pcall(L, 1, 0, 0);                                    //call the connect callback with one parameter: function(client)
+    int res = luaL_pcallx(L, 1, 0);                                    //call the connect callback with one parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
 }
@@ -197,7 +197,7 @@ static void event_published(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->published_ok_cb);  // push the callback function reference to the stack
     luaX_push_weak_ref(L, mqtt_context->self);                         // push the client reference to the stack
     luaX_unset_ref(L, &mqtt_context->published_ok_cb);                 // forget this callback since it is one-shot
-    int res = lua_pcall(L, 1, 0, 0);                                   //call the connect callback with 1 parameter: function(client)
+    int res = luaL_pcallx(L, 1, 0);                                   //call the connect callback with 1 parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:publish: Error when calling one-shot publish callback - (%d) %s", res, luaL_checkstring(L, -1));
 }
@@ -210,7 +210,7 @@ static void event_unsubscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_m
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->unsubscribed_ok_cb);  // push callback function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                            // push a reference to the client
     luaX_unset_ref(L, &mqtt_context->unsubscribed_ok_cb);                 // forget callback as it is one-shot
-    int res = lua_pcall(L, 1, 0, 0);                                      //call the connect callback with one parameter: function(client)
+    int res = luaL_pcallx(L, 1, 0);                                      //call the connect callback with one parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
 }
@@ -227,7 +227,7 @@ static void event_data_received(lua_State* L, mqtt_context_t* mqtt_context, esp_
         lua_pushlstring(L, event->data, event->data_len);
         numArg++;
     }
-    int res = lua_pcall(L, numArg, 0, 0);  //call the messagecallback
+    int res = luaL_pcallx(L, numArg, 0);  //call the messagecallback
     if (res != 0)
         ESP_LOGD(TAG, "CB:data: Error when calling message callback - (%d) %s", res, luaL_checkstring(L, -1));
 }
@@ -635,7 +635,9 @@ static int mqtt_new(lua_State* L) {
 }
 
 // map client methods to functions:
-LROT_BEGIN(mqtt_metatable)
+LROT_BEGIN(mqtt_metatable, NULL, 0)
+  LROT_FUNCENTRY(__gc, mqtt_delete)
+  LROT_TABENTRY(__index, mqtt_metatable)
   LROT_FUNCENTRY(connect, mqtt_connect)
   LROT_FUNCENTRY(close, mqtt_close)
   LROT_FUNCENTRY(lwt, mqtt_lwt)
@@ -643,17 +645,15 @@ LROT_BEGIN(mqtt_metatable)
   LROT_FUNCENTRY(subscribe, mqtt_subscribe)
   LROT_FUNCENTRY(unsubscribe, mqtt_unsubscribe)
   LROT_FUNCENTRY(on, mqtt_on)
-  LROT_FUNCENTRY(__gc, mqtt_delete)
-  LROT_TABENTRY(__index, mqtt_metatable)
 LROT_END(mqtt_metatable, NULL, 0)
 
 // Module function map
-LROT_BEGIN(mqtt)
+LROT_BEGIN(mqtt, NULL, 0)
   LROT_FUNCENTRY(Client, mqtt_new)
 LROT_END(mqtt, NULL, 0)
 
 int luaopen_mqtt(lua_State* L) {
-    luaL_rometatable(L, MQTT_METATABLE, (void*)mqtt_metatable_map);  // create metatable for mqtt
+    luaL_rometatable(L, MQTT_METATABLE, LROT_TABLEREF(mqtt_metatable));  // create metatable for mqtt
     return 0;
 }
 

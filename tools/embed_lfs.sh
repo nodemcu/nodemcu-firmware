@@ -35,12 +35,27 @@ fi
 
 echo "LFS segment address ${LFS_ADDR}, length ${LFS_SIZE}"
 
-${LUAC_CROSS} -a ${LFS_ADDR} -m ${LFS_SIZE} -o ${LUAC_OUTPUT} ${LUA_APP_SRC}
+if ${LUAC_CROSS} -v | grep -q 'Lua 5.1'
+then
+  echo "Generating Lua 5.1 LFS image..."
+  ${LUAC_CROSS} -a ${LFS_ADDR} -m ${LFS_SIZE} -o ${LUAC_OUTPUT} ${LUA_APP_SRC}
+else
+  set -e
+  echo "Generating intermediate Lua 5.3 LFS image..."
+  ${LUAC_CROSS} -f -m ${LFS_SIZE} -o ${LUAC_OUTPUT}.tmp ${LUA_APP_SRC}
+  echo "Converting to absolute LFS image..."
+  ${LUAC_CROSS} -F ${LUAC_OUTPUT}.tmp -a ${LFS_ADDR} -o ${LUAC_OUTPUT}
+  rm ${LUAC_OUTPUT}.tmp
+fi
 if [ $? != 0 ]; then
 	echo "Error: luac.cross failed"
 	exit 1
+else
+  echo "Generated $(ls -l ${LUAC_OUTPUT} | cut -f5 -d' ') bytes of LFS data"
 fi
 # cmake depencies don't seem to pick up the change to luac.out?
 rm -f build/lua.flash.store.reserved
 
-make
+echo "Re-linking nodemcu binary by invoking IDF build..."
+make >/dev/null
+echo "Done."

@@ -1,11 +1,45 @@
 menu "Lua configuration"
 
+    choice LUA_VERSION
+        prompt "Lua version"
+        default LUA_VERSION_51
+        help
+            The version of Lua interpreter to use.
+
+        config LUA_VERSION_51
+          bool "Lua 5.1"
+
+        config LUA_VERSION_53
+          bool "Lua 5.3"
+
+    endchoice
+
     config LUA_NUMBER_INTEGRAL
+      depends on LUA_VERSION_51
       bool "Integer-only build"
       default "n"
       help
           Build Lua without support for floating point numbers.
           Not generally recommended, but can save on code size.
+
+    config LUA_NUMBER_INT64
+      depends on LUA_VERSION_53
+      bool "Use 64bit integers"
+      default "n"
+      help
+          Build Lua with 64bit integers. This provides a greater value
+          range, but at the expense of extra memory usage and somewhat
+          reduced performance over the default 32bit integers.
+
+    config LUA_NUMBER_DOUBLE
+      depends on LUA_VERSION_53
+      bool "Use double precision floating point"
+      default "n"
+      help
+          Build Lua with double floating point precision. This provides
+          a greater value range, but at the expense of extra memory
+          usage and somewhat reduced performance over the default
+          single precision floating point.
 
     menu "Core Lua modules"
 
@@ -32,6 +66,13 @@ menu "Lua configuration"
             default "y"
             help
                 Includes the math module (recommended).
+
+        config LUA_BUILTIN_UTF8
+            depends on !LUA_VERSION_51
+            bool "UTF8 module"
+            default "y"
+            help
+                Includes the debug module (required by our Lua VM).
 
         config LUA_BUILTIN_DEBUG
             bool "Debug module"
@@ -77,5 +118,12 @@ menu "Lua configuration"
             default 3 if LUA_OPTIMIZE_DEBUG_LOCAL_UPVAL_LINENO
 
     endmenu
+
+    config LUA_REQUIRED_MODULES
+      bool
+      default y
+      select NODEMCU_CMODULE_PIPE
+      select NODEMCU_CMODULE_UART
+      select LUA_BUILTIN_DEBUG
 
 endmenu

@@ -1,8 +1,6 @@
 #define LUA_LIB
 
-#include "lua.h"
 #include "lauxlib.h"
-#include "lstring.h"
 
 #ifndef LOCAL_LUA
 #include "module.h"
@@ -18,7 +16,9 @@
 
 #define DEFAULT_DEPTH   20
 
-#define DBG_PRINTF(...)    
+#define DBG_PRINTF(...)
+
+#define SJSON_FLOAT_FMT   ((sizeof(lua_Float) == 8) ? "%.19g" : "%.9g")
 
 typedef struct {
   jsonsl_t jsn;
@@ -86,31 +86,31 @@ create_new_element(jsonsl_t jsn,
 
   switch(state->type) {
     case JSONSL_T_SPECIAL:
-    case JSONSL_T_STRING: 
-    case JSONSL_T_HKEY: 
+    case JSONSL_T_STRING:
+    case JSONSL_T_HKEY:
       break;
 
-    case JSONSL_T_LIST: 
-    case JSONSL_T_OBJECT: 
+    case JSONSL_T_LIST:
+    case JSONSL_T_OBJECT:
       create_table(data);
-      state->lua_object_ref = lua_ref(data->L, 1);
+      state->lua_object_ref = luaL_ref(data->L, LUA_REGISTRYINDEX);
       state->used_count = 0;
 
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
       if (data->hkey_ref == LUA_NOREF) {
         // list, so append
-        lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+        lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
         DBG_PRINTF("Adding array element\n");
       } else {
-        // object, so 
+        // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        lua_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
         DBG_PRINTF("Adding hash element\n");
       }
       if (data->pos_ref != LUA_NOREF && state->level > 1) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-        lua_pushnumber(data->L, state->level - 1);
+        lua_pushinteger(data->L, state->level - 1);
         lua_pushvalue(data->L, -3);     // get the key
         lua_settable(data->L, -3);
         lua_pop(data->L, 1);
@@ -118,17 +118,17 @@ create_new_element(jsonsl_t jsn,
       // At this point, the stack:
       // top: index/hash key
       //    : table
-      
+
       int want_value = 1;
       // Invoke the checkpath method if possible
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->metatable);
         lua_getfield(data->L, -1, "checkpath");
-        if (lua_type(data->L, -1) != LUA_TNIL) {
+        if (!lua_isnil(data->L, -1)) {
           // Call with the new table and the path as arguments
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-          lua_call(data->L, 2, 1);
+          luaL_pcallx(data->L, 2, 1);
           want_value = lua_toboolean(data->L, -1);
         }
         lua_pop(data->L, 2);    // Discard the metatable and either the getfield result or retval
@@ -155,9 +155,15 @@ create_new_element(jsonsl_t jsn,
 
 static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
   lua_pushlstring(data->L, get_state_buffer(data, state), state->pos_cur - state->pos_begin);
-  LUA_NUMBER r = lua_tonumber(data->L, -1);
-  lua_pop(data->L, 1);
-  lua_pushnumber(data->L, r);
+#if LUA_VERSION_NUM == 501
+  lua_pushnumber(data->L, lua_tonumber(data->L, -1));
+#else
+  if (!lua_stringtonumber(data->L, lua_tostring(data->L, -1))) {
+    // In this case stringtonumber does not push a value
+    luaL_error(data->L, "Invalid number");
+  }
+#endif
+  lua_remove(data->L, -2);
 }
 
 static int fromhex(char c) {
@@ -217,7 +223,7 @@ static void push_string(JSN_DATA *data, struct jsonsl_state_st *state) {
           continue;
       }
     }
-    luaL_putchar(&b, nc);
+    luaL_addchar(&b, nc);
   }
   luaL_pushresult(&b);
 }
@@ -236,18 +242,18 @@ cleanup_closing_element(jsonsl_t jsn,
  switch (state->type) {
    case JSONSL_T_HKEY:
       push_string(data, state);
-      data->hkey_ref = lua_ref(data->L, 1);
+      data->hkey_ref = luaL_ref(data->L, LUA_REGISTRYINDEX);
       break;
 
    case JSONSL_T_STRING:
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
       if (data->hkey_ref == LUA_NOREF) {
         // list, so append
-        lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+        lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
       } else {
-        // object, so 
+        // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        lua_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
       }
       push_string(data, state);
@@ -274,11 +280,11 @@ cleanup_closing_element(jsonsl_t jsn,
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
         if (data->hkey_ref == LUA_NOREF) {
           // list, so append
-          lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+          lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
         } else {
-          // object, so 
+          // object, so
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-          lua_unref(data->L, data->hkey_ref);
+          luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
           data->hkey_ref = LUA_NOREF;
         }
         lua_pushvalue(data->L, -3);
@@ -289,11 +295,11 @@ cleanup_closing_element(jsonsl_t jsn,
       break;
    case JSONSL_T_OBJECT:
    case JSONSL_T_LIST:
-      lua_unref(data->L, state->lua_object_ref);
+      luaL_unref(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
       state->lua_object_ref = LUA_NOREF;
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-        lua_pushnumber(data->L, state->level);
+        lua_pushinteger(data->L, state->level);
         lua_pushnil(data->L);
         lua_settable(data->L, -3);
         lua_pop(data->L, 1);
@@ -347,11 +353,11 @@ static int sjson_decoder_int(lua_State *L, int argno) {
   data->error = NULL;
   data->L = L;
   data->buffer_len = 0;
-  
+
   data->min_needed = data->min_available = jsn->pos;
 
   lua_pushlightuserdata(L, 0);
-  data->null_ref = lua_ref(L, 1);
+  data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   // This may throw...
   lua_newtable(L);
@@ -361,25 +367,25 @@ static int sjson_decoder_int(lua_State *L, int argno) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
     data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
-    data->null_ref = lua_ref(L, 1);
+    data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     lua_getfield(L, argno, "metatable");
     lua_pushvalue(L, -1);
-    data->metatable = lua_ref(L, 1);
+    data->metatable = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    if (lua_type(L, -1) != LUA_TNIL) {
+    if (!lua_isnil(L, -1)) {
       lua_getfield(L, -1, "checkpath");
-      if (lua_type(L, -1) != LUA_TNIL) {
+      if (!lua_isnil(L, -1)) {
         lua_newtable(L);
-        data->pos_ref = lua_ref(L, 1);
+        data->pos_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       }
-      lua_pop(L, 1);      // Throw away the checkpath value 
+      lua_pop(L, 1);      // Throw away the checkpath value
     }
     lua_pop(L, 1);      // Throw away the metatable
   }
 
   jsonsl_enable_all_callbacks(data->jsn);
-  
+
   jsn->action_callback = NULL;
   jsn->action_callback_PUSH = create_new_element;
   jsn->action_callback_POP = cleanup_closing_element;
@@ -477,7 +483,7 @@ static int sjson_decoder_write_int(lua_State *L, int udata_pos, int string_pos) 
     size_t blen;
     data->buffer = luaL_checklstring(L, -1, &blen);
     data->buffer_len = blen;
-    data->buffer_ref = lua_ref(L, 1);
+    data->buffer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     jsonsl_feed(data->jsn, str, len);
 
@@ -611,9 +617,9 @@ static void enc_pop_stack(lua_State *L, ENC_DATA *data) {
   }
   ENC_DATA_STATE *state = &data->stack[data->level];
 
-  lua_unref(L, state->lua_object_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_object_ref);
   state->lua_object_ref = LUA_NOREF;
-  lua_unref(L, state->lua_key_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
   state->lua_key_ref = LUA_REFNIL;
   data->level--;
 }
@@ -624,7 +630,7 @@ static void enc_push_stack(lua_State *L, ENC_DATA *data, int argno) {
   }
   lua_pushvalue(L, argno);
   ENC_DATA_STATE *state = &data->stack[data->level];
-  state->lua_object_ref = lua_ref(L, 1);
+  state->lua_object_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   state->size = sjson_encoder_get_table_size(L, argno);
   state->offset = 0;         // We haven't started on this one yet
 }
@@ -674,7 +680,7 @@ static int sjson_encoder(lua_State *L) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
     data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
-    data->null_ref = lua_ref(L, 1);
+    data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
   return 1;
@@ -694,7 +700,7 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       lua_rawgeti(L, LUA_REGISTRYINDEX, data->null_ref);
       if (lua_equal(L, -1, -2)) {
         type = LUA_TNIL;
-      } 
+      }
       lua_pop(L, 1);
     }
   }
@@ -716,12 +722,27 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
     case LUA_TNUMBER:
     {
       lua_pushvalue(L, argno);
-      size_t len;
-      const char *str = lua_tolstring(L, -1, &len);
-      char value[len + 1];
-      strcpy(value, str);
+      char value[50];
+
+#if LUA_VERSION_NUM == 501
+#ifdef LUA_NUMBER_INTEGRAL
+        snprintf(value, sizeof(value), "%d", lua_tointeger(L, -1));
+#else
+        snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
+#endif
+#else
+      if (lua_isinteger(L, -1)) {
+        snprintf(value, sizeof(value), LUA_INTEGER_FMT, lua_tointeger(L, -1));
+      } else {
+        snprintf(value, sizeof(value), SJSON_FLOAT_FMT, lua_tonumber(L, -1));
+      }
+#endif
       lua_pop(L, 1);
-      luaL_addstring(&b, value);
+      if (strcmp(value, "-inf") == 0 || strcmp(value, "nan") == 0 || strcmp(value, "inf") == 0) {
+        luaL_addstring(&b, "null");   // According to ECMA-262 section 24.5.2 Note 4
+      } else {
+        luaL_addstring(&b, value);
+      }
       break;
     }
 
@@ -785,10 +806,7 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
 static int sjson_encoder_next_value_is_table(lua_State *L) {
   int count = 10;
 
-  while ((lua_type(L, -1) == LUA_TFUNCTION 
-#ifdef LUA_TLIGHTFUNCTION
-    || lua_type(L, -1) == LUA_TLIGHTFUNCTION
-#endif
+  while ((lua_isfunction(L, -1)
     ) && count-- > 0) {
     // call it and use the return value
     lua_call(L, 0, 1);          // Expecting replacement value
@@ -806,7 +824,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
   luaL_buffinit(L, &b);
 
   // Ending condition
-  while (data->level >= 0 && !b.lvl) {
+  while (data->level >= 0 /* && !b.lvl */) {
     ENC_DATA_STATE *state = &data->stack[data->level];
 
     int finished = 0;
@@ -815,7 +833,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
       if (state->offset == 0) {
         // start of object or whatever
         luaL_addchar(&b, '[');
-      } 
+      }
       if (state->offset == state->size << 1) {
         luaL_addchar(&b, ']');
         finished = 1;
@@ -849,11 +867,11 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
       if (lua_next(L, -2)) {
         // save the key
         if (state->offset & 1) {
-          lua_unref(L, state->lua_key_ref);
+          luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
           state->lua_key_ref = LUA_NOREF;
           // Duplicate the key
           lua_pushvalue(L, -2);
-          state->lua_key_ref = lua_ref(L, 1);
+          state->lua_key_ref = luaL_ref(L, LUA_REGISTRYINDEX);
         }
 
         if ((state->offset & 1) == 0) {
@@ -895,7 +913,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
     }
   }
   luaL_pushresult(&b);
-  data->current_str_ref = lua_ref(L, 1);
+  data->current_str_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   data->offset = 0;
 }
 
@@ -923,7 +941,7 @@ static int sjson_encoder_read_int(lua_State *L, ENC_DATA *data, int readsize) {
       readsize -= amnt;
 
       if (data->offset == len) {
-        lua_unref(L, data->current_str_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, data->current_str_ref);
         data->current_str_ref = LUA_NOREF;
       }
     }
@@ -992,71 +1010,34 @@ static int sjson_encoder_destructor(lua_State *L) {
   return 0;
 }
 
-#ifdef LOCAL_LUA
-static const luaL_Reg sjson_encoder_map[] = {
-  { "read", sjson_encoder_read },
-  { "__gc", sjson_encoder_destructor },
-  { NULL, NULL }
-};
 
-static const luaL_Reg sjson_decoder_map[] = {
-  { "write", sjson_decoder_write },
-  { "result", sjson_decoder_result },
-  { "__gc", sjson_decoder_destructor },
-  { NULL, NULL }
-};
+LROT_BEGIN(sjson_encoder_map, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, sjson_encoder_destructor )
+  LROT_TABENTRY(  __index, sjson_encoder_map )
+  LROT_FUNCENTRY( read, sjson_encoder_read )
+LROT_END(sjson_encoder_map, NULL, LROT_MASK_GC_INDEX)
 
-static const luaL_Reg sjsonlib[] = {
-  { "decode", sjson_decode },
-  { "decoder", sjson_decoder },
-  { "encode", sjson_encode },
-  { "encoder", sjson_encoder },
-  {NULL, NULL}
-};
-#else
-LROT_BEGIN(sjson_encoder)
-  LROT_FUNCENTRY( read,                    sjson_encoder_read )
-  LROT_FUNCENTRY( __gc,                    sjson_encoder_destructor )
-  LROT_TABENTRY ( __index,                 sjson_encoder )
-LROT_END(sjson_encoder, NULL, 0)
 
-LROT_BEGIN(sjson_decoder)
-  LROT_FUNCENTRY( write,                   sjson_decoder_write )
-  LROT_FUNCENTRY( result,                  sjson_decoder_result )
-  LROT_FUNCENTRY( __gc,                    sjson_decoder_destructor )
-  LROT_TABENTRY ( __index,                 sjson_decoder )
-LROT_END(sjson_decoder, NULL, 0)
 
-LROT_BEGIN(sjson)
-  LROT_FUNCENTRY( encode,                  sjson_encode )
-  LROT_FUNCENTRY( decode,                  sjson_decode )
-  LROT_FUNCENTRY( encoder,                 sjson_encoder )
-  LROT_FUNCENTRY( decoder,                 sjson_decoder )
-  LROT_LUDENTRY ( NULL,                    0 )
+LROT_BEGIN(sjson_decoder_map, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
+  LROT_TABENTRY(  __index, sjson_decoder_map )
+  LROT_FUNCENTRY( write, sjson_decoder_write )
+  LROT_FUNCENTRY( result, sjson_decoder_result )
+LROT_END(sjson_decoder_map, NULL, LROT_MASK_GC_INDEX)
+
+
+LROT_BEGIN(sjson, NULL, 0)
+  LROT_FUNCENTRY( encode, sjson_encode )
+  LROT_FUNCENTRY( decode, sjson_decode )
+  LROT_FUNCENTRY( encoder, sjson_encoder )
+  LROT_FUNCENTRY( decoder, sjson_decoder )
 LROT_END(sjson, NULL, 0)
-#endif
 
 LUALIB_API int luaopen_sjson (lua_State *L) {
-#ifdef LOCAL_LUA
-  luaL_register(L, LUA_SJSONLIBNAME, sjsonlib);
-  lua_getglobal(L, LUA_SJSONLIBNAME);
-  lua_pushstring(L, "NULL");
-  lua_pushlightuserdata(L, 0);
-  lua_settable(L, -3);
-  lua_pop(L, 1);
-  luaL_newmetatable(L, "sjson.encoder");
-  luaL_register(L, NULL, sjson_encoder_map);
-  lua_setfield(L, -1, "__index");
-  luaL_newmetatable(L, "sjson.decoder");
-  luaL_register(L, NULL, sjson_decoder_map);
-  lua_setfield(L, -1, "__index");
-#else
-  luaL_rometatable(L, "sjson.decoder", (void *)sjson_decoder_map);
-  luaL_rometatable(L, "sjson.encoder", (void *)sjson_encoder_map);
-#endif
+  luaL_rometatable(L, "sjson.decoder", LROT_TABLEREF(sjson_decoder_map));
+  luaL_rometatable(L, "sjson.encoder", LROT_TABLEREF(sjson_encoder_map));
   return 1;
 }
 
-#ifndef LOCAL_LUA
 NODEMCU_MODULE(SJSON, "sjson", sjson, luaopen_sjson);
-#endif

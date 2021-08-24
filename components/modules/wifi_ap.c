@@ -115,7 +115,7 @@ static void on_event (esp_event_base_t base, int32_t id, const void *data)
   lua_pushstring (L, events[idx].name);
   lua_createtable (L, 0, 5);
   events[idx].fill_cb_arg (L, data);
-  lua_call (L, 2, 0);
+  luaL_pcallx (L, 2, 0);
 }
 
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_AP_START,            on_event);
@@ -136,7 +136,7 @@ void wifi_ap_init (void)
 
 static int wifi_ap_setip(lua_State *L)
 {
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
   size_t len = 0;
   const char *str = NULL;
@@ -202,7 +202,7 @@ static int wifi_ap_sethostname(lua_State *L)
 
 static int wifi_ap_config (lua_State *L)
 {
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
   bool save = luaL_optbool (L, 2, DEFAULT_SAVE);
 
   wifi_config_t cfg;
@@ -257,7 +257,7 @@ static int wifi_ap_on (lua_State *L)
 }
 
 
-LROT_PUBLIC_BEGIN(wifi_ap)
+LROT_BEGIN(wifi_ap, NULL, 0)
   LROT_FUNCENTRY( setip,               wifi_ap_setip )
   LROT_FUNCENTRY( sethostname,         wifi_ap_sethostname )
   LROT_FUNCENTRY( config,              wifi_ap_config )

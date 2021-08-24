@@ -60,7 +60,7 @@ static int read_hall_sensor( lua_State *L )
 }
 
 // Module function map
-LROT_BEGIN(adc)
+LROT_BEGIN(adc, NULL, 0)
   LROT_FUNCENTRY( setwidth,         adc_set_width )
   LROT_FUNCENTRY( setup,            adc_setup )
   LROT_FUNCENTRY( read,             adc_read )

@@ -1,41 +1,17 @@
-[sections:lua_libs]
-entries:
-    .lua_libs
-
-[sections:lua_libs_end_marker]
-entries:
-    .lua_libs_end_marker
-
-[sections:lua_rotable]
-entries:
-    .lua_rotable
-
-[sections:lua_rotable_end_marker]
-entries:
-    .lua_rotable_end_marker
-
 [sections:lua_esp_event_cb_table]
 entries:
     .lua_esp_event_cb_table
 
 [scheme:nodemcu_arrays]
 entries:
-    lua_libs -> flash_rodata
-    lua_libs_end_marker -> flash_rodata
-    lua_rotable -> flash_rodata
-    lua_rotable_end_marker -> flash_rodata
     lua_esp_event_cb_table -> flash_rodata
 
 
 # Important: don't change the alignments below without also updating the
-# _Static_assert over in linit.c and/or nodemcu_esp_event.h!
+# _Static_assert over in nodemcu_esp_event.h!
 
 [mapping:nodemcu]
 archive: *
 entries:
     * (nodemcu_arrays);
-        lua_libs -> flash_rodata KEEP() ALIGN(8) SURROUND(lua_libs_map),
-        lua_libs_end_marker -> flash_rodata KEEP(),
-        lua_rotable -> flash_rodata ALIGN(8) SURROUND(lua_rotables_map),
-        lua_rotable_end_marker -> flash_rodata KEEP(),
         lua_esp_event_cb_table -> flash_rodata KEEP() ALIGN(4) SURROUND(esp_event_cb_table)

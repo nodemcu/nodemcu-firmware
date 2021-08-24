@@ -59,7 +59,7 @@ static void alarm_timer_task(task_param_t param, task_prio_t prio)
     luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
     tmr->self_ref = LUA_NOREF;
   }
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 static tmr_t tmr_get( lua_State *L, int stack )
@@ -81,7 +81,7 @@ static int tmr_register(lua_State* L)
   luaL_argcheck(L, mode == TIMER_MODE_SINGLE || mode == TIMER_MODE_SEMI || mode == TIMER_MODE_AUTO, stack, "Invalid mode");
 
   ++stack;
-  luaL_argcheck(L, lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION, stack, "Must be function");
+  luaL_checkfunction(L, stack);
 
   if (tmr->timer) {
     // delete previous timer since mode change could be requested here
@@ -235,7 +235,9 @@ static int tmr_create( lua_State *L ) {
 
 // Module function map
 
-LROT_BEGIN(tmr_dyn)
+LROT_BEGIN(tmr_dyn, NULL, 0)
+  LROT_FUNCENTRY( __gc,        tmr_unregister )
+  LROT_TABENTRY ( __index,     tmr_dyn )
   LROT_FUNCENTRY( register,    tmr_register )
   LROT_FUNCENTRY( alarm,       tmr_alarm )
   LROT_FUNCENTRY( start,       tmr_start )
@@ -243,11 +245,9 @@ LROT_BEGIN(tmr_dyn)
   LROT_FUNCENTRY( unregister,  tmr_unregister )
   LROT_FUNCENTRY( interval,    tmr_interval)
   LROT_FUNCENTRY( state,       tmr_state )
-  LROT_FUNCENTRY( __gc,        tmr_unregister )
-  LROT_TABENTRY ( __index,     tmr_dyn )
 LROT_END(tmr_dyn, NULL, 0)
 
-LROT_BEGIN(tmr)
+LROT_BEGIN(tmr, NULL, 0)
   LROT_FUNCENTRY( create,       tmr_create )
   LROT_NUMENTRY ( ALARM_SINGLE, TIMER_MODE_SINGLE )
   LROT_NUMENTRY ( ALARM_SEMI,   TIMER_MODE_SEMI )
@@ -255,7 +255,7 @@ LROT_BEGIN(tmr)
 LROT_END(tmr, NULL, 0)
 
 static int luaopen_tmr( lua_State *L ){
-  luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
+  luaL_rometatable(L, "tmr.timer", LROT_TABLEREF(tmr_dyn));
 
   alarm_task_id = task_get_id(alarm_timer_task);
 

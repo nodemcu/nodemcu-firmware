@@ -177,11 +177,11 @@ free_mem:
 }
 
 
-LROT_BEGIN(lspi_device)
-  LROT_FUNCENTRY( transfer, lspi_device_transfer )
-  LROT_FUNCENTRY( remove,   lspi_device_free )
+LROT_BEGIN(lspi_device, NULL, 0)
   LROT_FUNCENTRY( __gc,     lspi_device_free )
   LROT_TABENTRY( __index,   lspi_device )
+  LROT_FUNCENTRY( transfer, lspi_device_transfer )
+  LROT_FUNCENTRY( remove,   lspi_device_free )
 LROT_END(lspi_device, NULL, 0)
 
 
@@ -320,11 +320,11 @@ static int lspi_host_device( lua_State *L )
 }
 
 
-LROT_BEGIN(lspi_master)
-  LROT_FUNCENTRY( device,  lspi_host_device )
-  LROT_FUNCENTRY( close,   lspi_host_free )
+LROT_BEGIN(lspi_master, NULL, 0)
   LROT_FUNCENTRY( __gc,    lspi_host_free )
   LROT_TABENTRY( __index,  lspi_master )
+  LROT_FUNCENTRY( device,  lspi_host_device )
+  LROT_FUNCENTRY( close,   lspi_host_free )
 LROT_END(lspi_master, NULL, 0)
 
 
@@ -332,7 +332,7 @@ LROT_END(lspi_master, NULL, 0)
 // Generic
 //
 int luaopen_spi_master( lua_State *L ) {
-  luaL_rometatable(L, UD_HOST_STR, (void *)lspi_master_map);
-  luaL_rometatable(L, UD_DEVICE_STR, (void *)lspi_device_map);
+  luaL_rometatable(L, UD_HOST_STR, LROT_TABLEREF(lspi_master));
+  luaL_rometatable(L, UD_DEVICE_STR, LROT_TABLEREF(lspi_device));
   return 0;
 }

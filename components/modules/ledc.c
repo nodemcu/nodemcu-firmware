@@ -17,7 +17,7 @@ typedef struct {
 static int lledc_new_channel( lua_State *L )
 {
   const int top = lua_gettop(L);
-  luaL_checkanytable (L, 1);
+  luaL_checktable (L, 1);
 
   /* Setup timer */
   ledc_timer_config_t ledc_timer;
@@ -231,7 +231,8 @@ static int lledc_set_fade( lua_State *L ) {
 }
 
 // Module function map
-LROT_BEGIN(ledc_channel)
+LROT_BEGIN(ledc_channel, NULL, 0)
+  LROT_TABENTRY ( __index,         ledc_channel )
   LROT_FUNCENTRY( getduty,         lledc_get_duty )
   LROT_FUNCENTRY( setduty,         lledc_set_duty )
   LROT_FUNCENTRY( getfreq,         lledc_get_freq )
@@ -245,11 +246,9 @@ LROT_BEGIN(ledc_channel)
   LROT_FUNCENTRY( fadewithtime,    lledc_set_fade_with_time )
   LROT_FUNCENTRY( fadewithstep,    lledc_set_fade_with_step )
   LROT_FUNCENTRY( fade,            lledc_set_fade )
-
-  LROT_TABENTRY ( __index,         ledc_channel )
 LROT_END(ledc_channel, NULL, 0)
 
-LROT_BEGIN(ledc)
+LROT_BEGIN(ledc, NULL, 0)
   LROT_FUNCENTRY( newChannel,      lledc_new_channel )
 
 #if SOC_LEDC_SUPPORT_HS_MODE
@@ -295,7 +294,7 @@ LROT_BEGIN(ledc)
 LROT_END(ledc, NULL, 0)
 
 int luaopen_ledc(lua_State *L) {
-  luaL_rometatable(L, "ledc.channel", (void *)ledc_channel_map);  // create metatable for ledc.channel
+  luaL_rometatable(L, "ledc.channel", LROT_TABLEREF(ledc_channel));  // create metatable for ledc.channel
   return 0;
 }
 

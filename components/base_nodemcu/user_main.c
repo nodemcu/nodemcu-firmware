@@ -9,6 +9,7 @@
  *     2014/1/1, v1.0 create this file.
 *******************************************************************************/
 #include "lua.h"
+#include "linput.h"
 #include "platform.h"
 #include <string.h>
 #include <stdlib.h>
@@ -19,7 +20,6 @@
 #include "nvs_flash.h"
 #include "flash_api.h"
 
-#include "driver/console.h"
 #include "task/task.h"
 #include "sections.h"
 #include "nodemcu_esp_event.h"
@@ -93,24 +93,9 @@ static void handle_default_loop_event(task_param_t param, task_prio_t prio)
 // +================== New task interface ==================+
 static void start_lua ()
 {
-  char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
-  lua_main( 2, lua_argv );
-}
-
-static void handle_input(task_param_t flag, task_prio_t priority) {
-  (void)priority;
-  lua_handle_input (flag);
-}
-
-static task_handle_t input_task;
-
-task_handle_t user_get_input_sig(void) {
-  return input_task;
-}
-
-bool user_process_input(bool force) {
-    return task_post_low(input_task, force);
+  if (lua_main()) // If it returns true then LFS restart is needed
+    lua_main();
 }
 
 void nodemcu_init(void)
@@ -144,8 +129,6 @@ void __attribute__((noreturn)) app_main(void)
 {
   task_init();
 
-  input_task = task_get_id (handle_input);
-
   relayed_event_handled = xSemaphoreCreateBinary();
   relayed_event_task = task_get_id(handle_default_loop_event);
 
@@ -156,19 +139,7 @@ void __attribute__((noreturn)) app_main(void)
     relay_default_loop_events,
     NULL);
 
-  ConsoleSetup_t cfg;
-  cfg.bit_rate  = CONFIG_NODEMCU_CONSOLE_BIT_RATE;
-  cfg.data_bits = CONSOLE_NUM_BITS_8;
-  cfg.parity    = CONSOLE_PARITY_NONE;
-  cfg.stop_bits = CONSOLE_STOP_BITS_1;
-  cfg.auto_baud = 
-#ifdef CONFIG_NODEMCU_CONSOLE_BIT_RATE_AUTO
-    true;
-#else
-    false;
-#endif
-
-  console_init (&cfg, input_task);
+  platform_uart_start(CONFIG_ESP_CONSOLE_UART_NUM);
   setvbuf(stdout, NULL, _IONBF, 0);
 
   nodemcu_init ();

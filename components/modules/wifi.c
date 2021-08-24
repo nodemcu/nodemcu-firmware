@@ -108,10 +108,10 @@ static int wifi_init (lua_State *L)
 }
 
 
-LROT_EXTERN(wifi_sta);
-LROT_EXTERN(wifi_ap);
+extern LROT_TABLE(wifi_sta);
+extern LROT_TABLE(wifi_ap);
 
-LROT_BEGIN(wifi)
+LROT_BEGIN(wifi, NULL, 0)
   LROT_FUNCENTRY( getchannel,                 wifi_getchannel )
   LROT_FUNCENTRY( getmode,                    wifi_getmode )
   LROT_FUNCENTRY( mode,                       wifi_mode )
