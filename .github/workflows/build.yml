@@ -6,6 +6,7 @@ jobs:
 
   build:
     strategy:
+      fail-fast: false
       matrix:
         lua_ver: ['5.1', '5.3']
         numbers: ['default', 'alternate']
