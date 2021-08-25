@@ -145,11 +145,15 @@ static void *Store_(LoadState *S, void *a, int ndx, const void *e, size_t s
 /* These compression maps must match the definitions in lobject.h etc. */
 #  define OFFSET_TSTRING (2*(sizeof(lu_int32)-sizeof(size_t)))
 #  define FMT_TSTRING   "AwwA"
-#  define FMT_TVALUE    "WA"
+#if defined(CONFIG_LUA_NUMBER_INT64) || defined(CONFIG_LUA_NUMBER_DOUBLE)
+#  define FMT_TVALUE    "www"
+#else
+#  define FMT_TVALUE    "AW"
+#endif
 #  define FMT_PROTO     "AwwwwwwwwwwAAAAAAAA"
 #  define FMT_UPVALUE   "AW"
 #  define FMT_LOCVAR    "Aww"
-#  define FMT_ROTENTRY  "AWA"
+#  define FMT_ROTENTRY  "A" FMT_TVALUE
 #  define FMT_ROTABLE   "AWAA"
 #  define StoreR(S,a, i, v, f) Store_(S, (a), i, &(v), sizeof(v), f)
 #  define Store(S, a, i, v)    StoreR(S, (a), i, v, NULL)
