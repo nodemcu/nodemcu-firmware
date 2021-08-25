@@ -4,7 +4,9 @@
 | 2014-12-24 | [https://github.com/LuaDist/bitlib](https://github.com/LuaDist/bitlib), [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [bit.c](../../components/modules/bit.c)|
 
 
-Bit manipulation support, on 32bit integers.
+Bit manipulation support, on the integer type used by the Lua VM. On 5.1 this
+will be 32bit, whereas on 5.3 it may be either 32bit (default) or 64bit if
+configured for 64bit integers.
 
 ## bit.arshift()
 Arithmetic right shift a number equivalent to `value >> shift` in C.
