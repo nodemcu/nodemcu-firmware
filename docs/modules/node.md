@@ -486,6 +486,32 @@ node.setcpufreq(node.CPU80MHZ)
 ```
 
 
+## node.setonerror()
+
+Overrides the default crash handling which always restarts the system. It can be used to e.g. write an error to a logfile or to secure connected hardware before restarting.
+
+!!! attention
+
+    It is strongly advised to ensure that the callback ends with a restart. Something has gone quite wrong and it is probably not safe to just wait for the next event (e.g., timer tick) and hope everything works out.
+
+#### Syntax
+`node.setonerror(function)`
+
+#### Parameters
+`function` a callback function to be executed when an error occurs, gets the error string as an argument, remember to **trigger a restart** at the end of the callback
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+node.setonerror(function(s)
+    print("Error: "..s)
+    node.restart()
+  end)
+```
+
+
 ## node.sleep()
 
 Enters light sleep mode, which saves power without losing state. The state of the CPU and peripherals is preserved during light sleep and is resumed once the processor wakes up. When the processor wakes back up depends on the supplied `options`. Wake up from light sleep can be triggered by a time period, or when a GPIO (or GPIOs) change level, when a touchpad event occurs, when data is received on a UART, or by the ULP (ultra low power processor, generally not used by NodeMCU). If multiple different wakeup sources are specified, the processor will wake when any of them occur. The return value of the function can be used to determine which source caused the wakeup. The function does not return until a wakeup occurs (and therefore may not return at all if a wakeup trigger never happens).

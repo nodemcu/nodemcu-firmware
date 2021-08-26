@@ -15,6 +15,42 @@
 #include "lnodeaux.h"
 #include "lpanic.h"
 #include "rom/rtc.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
+
+static void restart_callback(TimerHandle_t timer) {
+  (void)timer;
+  esp_restart();
+}
+
+static int default_onerror(lua_State *L) {
+  /* Use Lua print to print the ToS */
+  lua_settop(L, 1);
+  lua_getglobal(L, "print");
+  lua_insert(L, 1);
+  lua_pcall(L, 1, 0, 0);
+  /* One first time through set automatic restart after 2s delay */
+  static TimerHandle_t restart_timer;
+  if (!restart_timer) {
+    restart_timer = xTimerCreate(
+        "error_restart", pdMS_TO_TICKS(2000), pdFALSE, NULL, restart_callback);
+    if (xTimerStart(restart_timer, portMAX_DELAY) != pdPASS)
+      esp_restart(); // should never happen, but Justin Case fallback
+  }
+  return 0;
+}
+
+// Lua: setonerror([function])
+static int node_setonerror( lua_State* L ) {
+  lua_settop(L, 1);
+  if (!lua_isfunction(L, 1)) {
+    lua_pop(L, 1);
+    lua_pushcfunction(L, default_onerror);
+  }
+  lua_setfield(L, LUA_REGISTRYINDEX, "onerror");
+  return 0;
+}
+
 
 // Lua: node.bootreason()
 static int node_bootreason( lua_State *L)
@@ -808,6 +844,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( osoutput,   node_osoutput )
   LROT_FUNCENTRY( osprint,    node_osprint )
   LROT_FUNCENTRY( restart,    node_restart )
+  LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( sleep,      node_sleep )
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
   LROT_TABENTRY ( task,       node_task )
@@ -815,5 +852,10 @@ LROT_BEGIN(node, NULL, 0)
   LROT_TABENTRY ( wakeup,     node_wakeup )
 LROT_END(node, NULL, 0)
 
+int luaopen_node(lua_State *L)
+{
+  lua_settop(L, 0);
+  return node_setonerror(L);  /* set default onerror action */
+}
 
-NODEMCU_MODULE(NODE, "node", node, NULL);
+NODEMCU_MODULE(NODE, "node", node, luaopen_node);
