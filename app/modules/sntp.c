@@ -806,7 +806,7 @@ static int sntp_sync (lua_State *L)
   } else if (server_count == 0) {
     lua_newtable(L);
     struct netif *iface = (struct netif *)eagle_lwip_getif(0x00);
-    if (iface->dhcp && iface->dhcp->offered_ntp_addr.addr) {
+    if (iface && iface->dhcp && iface->dhcp->offered_ntp_addr.addr) {
 		ip_addr_t ntp_addr = iface->dhcp->offered_ntp_addr;
         lua_pushinteger(L, 1);
         lua_pushstring(L, inet_ntoa(ntp_addr));
