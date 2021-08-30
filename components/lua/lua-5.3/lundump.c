@@ -579,9 +579,10 @@ static void LoadAllProtos (LoadState *S) {
     S->pv[i] = LoadFunction(S, luaF_newproto(L), NULL);
   }
   /* generate the ROTable entries from first N constants; the last is a timestamp */
-  lua_assert(n+1 == LoadInt(S));
+  int nk = LoadInt(S);
+  lua_assert(n+1 == nk);
   ROTable_entry *entry_list = cast(ROTable_entry *, StoreGetPos(S));
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < nk - 1; i++) { // -1 to ignore timestamp
     lu_byte tt_data = LoadByte(S);
     TString *Tname = LoadString2(S, tt_data);
     const char *name = getstr(Tname) + OFFSET_TSTRING;
