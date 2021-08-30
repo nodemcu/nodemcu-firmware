@@ -79,16 +79,21 @@ extern void *LFSregion;
 LUAI_FUNC void luaN_setabsolute(lu_int32 addr);
 #endif
 
-#define FLASH_FORMAT_VERSION ( 2 << 8)
-#define FLASH_SIG_B1          0x06
-#define FLASH_SIG_B2          0x02
-#define FLASH_SIG_PASS2       0x0F
-#define FLASH_FORMAT_MASK    0xF00
-#define FLASH_SIG_B2_MASK     0x04
-#define FLASH_SIG_ABSOLUTE    0x01
-#define FLASH_SIG_IN_PROGRESS 0x08
-#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION)
 
-#define FLASH_FORMAT_MASK    0xF00
+#define FLASH_FORMAT_VERSION ( 2 << 8)
+
+#if defined(CONFIG_LUA_NUMBER_INT64)
+# define FLASH_SIG_B1 0x01
+#else
+# define FLASH_SIG_B1 0x00
+#endif
+
+#if defined(CONFIG_LUA_NUMBER_DOUBLE)
+# define FLASH_SIG_B2 0x02
+#else
+# define FLASH_SIG_B2 0x00
+#endif
+
+#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION | FLASH_SIG_B1 | FLASH_SIG_B2)
 
 #endif
