@@ -29,30 +29,37 @@ jobs:
       - name: Install dependencies
         run: ./install.sh
         shell: bash
-      - name: Build firmware (default configuration)
-        if: ${{ matrix.numbers == 'default' }}
+      - name: Prepare default sdkconfig
         run: |
           cp sdkconfig.defaults sdkconfig
-          make IDF_TARGET=${{ matrix.target }}
         shell: bash
-      - name: Build firmware (Lua 5.1, integer-only)
+      - name: Update config for Lua 5.1, integer-only
         if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'alternate' }}
         run: |
-          cp sdkconfig.defaults sdkconfig
           echo CONFIG_LUA_NUMBER_INTEGRAL=y >> sdkconfig
-          make IDF_TARGET=${{ matrix.target }}
         shell: bash
-      - name: Build firmware (Lua 5.3, 64bit int/double)
+      - name: Update config for Lua 5.3
+        if: ${{ matrix.lua_ver == '5.3' }}
+        run: |
+          echo CONFIG_LUA_VERSION_53=y >> sdkconfig
+        shell: bash
+      - name: Update config for Lua 5.3, 64bit numbers
         if: ${{ matrix.lua_ver == '5.3' && matrix.numbers == 'alternate' }}
         run: |
-          cp sdkconfig.defaults sdkconfig
           echo CONFIG_LUA_NUMBER_INT64=y >> sdkconfig
           echo CONFIG_LUA_NUMBER_DOUBLE=y >> sdkconfig
+        shell: bash
+      - name: Build firmware
+        run: |
           make IDF_TARGET=${{ matrix.target }}
+        shell: bash
+      - name: Get Lua build options
+        run: |
+          echo lua_build_opts="$(expr "$(./build/luac_cross/luac.cross -v)" : '.*\[\(.*\)\]')" >> $GITHUB_ENV
         shell: bash
       - name: Upload luac.cross
         uses: actions/upload-artifact@v2
         if: ${{ success() }}
         with:
-          name: luac.cross-${{ matrix.lua_ver }}-${{ matrix.numbers }}-${{ matrix.target }}
+          name: luac.cross-${{ env.lua_build_opts }}-${{ matrix.target }}
           path: build/luac_cross/luac.cross
