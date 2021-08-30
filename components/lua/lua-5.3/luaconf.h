@@ -441,4 +441,16 @@
 
 #define LUA_DEBUG_HOOK lua_debugbreak
 
+#if defined(CONFIG_LUA_NUMBER_INT64)
+# define XLUA_INT_OPT "int64"
+#else
+# define XLUA_INT_OPT "int32"
+#endif
+#if defined(CONFIG_LUA_NUMBER_DOUBLE)
+# define XLUA_FLOAT_OPT "doublefp"
+#else
+# define XLUA_FLOAT_OPT "singlefp"
+#endif
+#define XLUA_OPT_STR "5.3-" XLUA_INT_OPT "-" XLUA_FLOAT_OPT
+
 #endif

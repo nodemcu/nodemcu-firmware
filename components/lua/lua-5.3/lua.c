@@ -244,8 +244,8 @@ static int pmain (lua_State *L) {
     print_version(L);
   }
 #else
-  printf("\n%s build %s powered by %s on IDF %s\n",
-    NODE_VERSION, BUILD_DATE, LUA_RELEASE, IDF_VER);
+  printf("\n%s build %s powered by %s [%s] on IDF %s\n",
+    NODE_VERSION, BUILD_DATE, LUA_RELEASE, XLUA_OPT_STR, IDF_VER);
 #endif
  /*
   * And last of all, kick off application initialisation.  Note that if

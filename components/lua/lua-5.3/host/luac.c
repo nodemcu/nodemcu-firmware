@@ -161,7 +161,7 @@ static int doargs(int argc, char *argv[]) {
     argv[--i] = Output;
   }
   if (version) {
-    printf("%s\n", LUA_COPYRIGHT);
+    printf("%s [%s]\n", LUA_COPYRIGHT, XLUA_OPT_STR);
     if (version == argc - 1) exit(EXIT_SUCCESS);
   }
   return i;

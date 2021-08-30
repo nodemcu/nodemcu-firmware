@@ -875,4 +875,10 @@ union luai_Cast { double l_d; long l_l; };
 
 #define LUA_DEBUG_HOOK lua_debugbreak
 
+#if defined(CONFIG_LUA_NUMBER_INTEGRAL)
+# define XLUA_OPT_STR "5.1-integral"
+#else
+# define XLUA_OPT_STR "5.1-doublefp"
+#endif
+
 #endif
