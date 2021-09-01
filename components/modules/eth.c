@@ -1,3 +1,5 @@
+// When this isn't enabled, the esp_eth.h header isn't available
+#ifdef CONFIG_ETH_ENABLED
 #include <string.h>
 
 #include "module.h"
@@ -290,3 +292,4 @@ LROT_BEGIN(eth, NULL, 0)
 LROT_END(eth, NULL, 0)
 
 NODEMCU_MODULE(ETH, "eth", eth, NULL);
+#endif
