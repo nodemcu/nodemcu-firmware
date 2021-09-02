@@ -288,6 +288,33 @@ static int ow_crc16( lua_State *L )
 #endif
 #endif
 
+// Lua: r = ow.timings( reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay )
+static int ow_timings( lua_State *L )
+{
+  if(lua_isnumber(L, 1))
+    onewire_timings.reset_tx = lua_tointeger(L, 1);
+  if(lua_isnumber(L, 2))
+    onewire_timings.reset_wait = lua_tointeger(L, 2);
+  if(lua_isnumber(L, 3))
+    onewire_timings.reset_rx = lua_tointeger(L, 3);
+  if(lua_isnumber(L, 4))
+    onewire_timings.w_1_low = lua_tointeger(L, 4);
+  if(lua_isnumber(L, 5))
+    onewire_timings.w_1_high = lua_tointeger(L, 5);
+  if(lua_isnumber(L, 6))
+    onewire_timings.w_0_low = lua_tointeger(L, 6);
+  if(lua_isnumber(L, 7))
+    onewire_timings.w_0_high = lua_tointeger(L, 7);
+  if(lua_isnumber(L, 8))
+    onewire_timings.r_low = lua_tointeger(L, 8);
+  if(lua_isnumber(L, 9))
+    onewire_timings.r_wait = lua_tointeger(L, 9);
+  if(lua_isnumber(L, 10))
+    onewire_timings.r_delay = lua_tointeger(L, 10);
+
+  return 0;
+}
+
 // Module function map
 LROT_BEGIN(ow, NULL, 0)
   LROT_FUNCENTRY( setup, ow_setup )
@@ -311,6 +338,7 @@ LROT_BEGIN(ow, NULL, 0)
   LROT_FUNCENTRY( crc16, ow_crc16 )
 #endif
 #endif
+  LROT_FUNCENTRY( timings, ow_timings )
 LROT_END(ow, NULL, 0)
 
 

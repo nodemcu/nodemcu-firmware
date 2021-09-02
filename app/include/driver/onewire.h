@@ -47,6 +47,24 @@
 #define DIRECT_WRITE_LOW(pin)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), 0))
 #define DIRECT_WRITE_HIGH(pin)   (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), 1))
 
+// This allows tweaking of individual timings when doing onewire operations
+struct onewire_timings_s {
+	uint16_t reset_tx;
+	uint16_t reset_wait;
+	uint16_t reset_rx;
+
+	uint8_t w_1_low;
+	uint8_t w_1_high;
+	uint8_t w_0_low;
+	uint8_t w_0_high;
+
+	uint8_t r_low;
+	uint8_t r_wait;
+	uint8_t r_delay;
+};
+
+extern struct onewire_timings_s onewire_timings;
+
 void onewire_init(uint8_t pin);
 
 // Perform a 1-Wire reset cycle. Returns 1 if a device responds
