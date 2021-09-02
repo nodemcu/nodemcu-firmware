@@ -118,10 +118,11 @@ Clears the search state so that it will start from the beginning again.
 Looks for the next device.
 
 #### Syntax
-`ow.search(pin)`
+`ow.search(pin, alarm_search)`
 
 #### Parameters
-`pin` 1~12, I/O index
+- `pin` 1~12, I/O index
+- `alarm_search` 1 / 0, if 0 a regular 0xF0 search is performed (default), if non-zero a 0xEC ALARM SEARCH is performed.
 
 #### Returns
 `rom_code` string with length of 8 upon success. It contains the rom code of slave device. Returns `nil` if search was unsuccessful.

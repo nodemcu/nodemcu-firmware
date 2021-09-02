@@ -201,8 +201,15 @@ static int ow_search( lua_State *L )
   luaL_Buffer b;
   luaL_buffinit( L, &b );
   char *p = luaL_prepbuffer(&b);
+  uint8_t alarm_search = 0;
 
-  if(onewire_search(id, (uint8_t *)p)){
+  if(lua_isnumber(L, 2))
+    alarm_search = lua_tointeger(L, 2);
+  if(alarm_search != 0)
+    alarm_search = 1;
+
+
+  if(onewire_search(id, (uint8_t *)p, alarm_search)){
     luaL_addsize(&b, 8);
     luaL_pushresult( &b );
   } else {
