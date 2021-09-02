@@ -60,7 +60,7 @@ Stops forcing power onto the bus. You only need to do this if you used the 'powe
 #### Returns
 `nil`
 
-####See also
+#### See also
 - [ow.write()](#owwrite)
 - [ow.write_bytes()](#owwrite_bytes)
 
@@ -191,7 +191,7 @@ else
 end
 ```
 
-####See also
+#### See also
 [ow.reset()](#owreset)
 
 ## ow.setup()
@@ -231,7 +231,7 @@ Sets up the search to find the device type `family_code`. The search itself has 
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.search()](#owsearch)
 
 ## ow.write()
@@ -248,7 +248,7 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.depower()](#owdepower)
 
 ## ow.write_bytes()
@@ -265,7 +265,7 @@ Writes multi bytes. If `power` is 1 then the wire is held high at the end for pa
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.depower()](#owdepower)
 
 ## ow.timings()
