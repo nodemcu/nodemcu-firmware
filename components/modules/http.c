@@ -25,7 +25,7 @@ enum {
   // after this are other refs which aren't callbacks
 
   ContextRef,
-  PostDataRef,
+  BodyDataRef,
   CertRef,
   CountRefs // Must be last
 };
@@ -568,17 +568,16 @@ static int http_lapi_setheader(lua_State *L)
   return 0;
 }
 
-// context:setpostdata(data)
-static int http_lapi_setpostdata(lua_State *L)
+// context:setbody(data)
+static int http_lapi_setbody(lua_State *L)
 {
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
   CHECK_CONNECTION_IDLE(context);
 
-  size_t postdata_sz;
-  const char *postdata = luaL_optlstring(L, 2, NULL, &postdata_sz);
-  esp_http_client_set_method(context->client, HTTP_METHOD_POST);
-  esp_http_client_set_post_field(context->client, postdata, (int)postdata_sz);
-  context_setref(L, context, PostDataRef);
+  size_t data_sz;
+  const char *data = luaL_optlstring(L, 2, NULL, &data_sz);
+  esp_http_client_set_post_field(context->client, data, (int)data_sz);
+  context_setref(L, context, BodyDataRef);
   return 0;
 }
 
@@ -770,7 +769,44 @@ static int http_lapi_post(lua_State *L)
 
   luaL_pcallx(L, 3, 1); // returns context
 
-  lua_pushcfunction(L, http_lapi_setpostdata);
+  lua_pushcfunction(L, http_lapi_setbody);
+  lua_pushvalue(L, -2); // context
+  lua_pushvalue(L, 3); // body
+  lua_call(L, 2, 0);
+
+  return make_oneshot_request(L, 4); // 4 = callback idx
+}
+
+// http.put(url, options, body[, callback])
+static int http_lapi_put(lua_State *L)
+{
+  lua_settop(L, 4);
+
+  luaL_checkstring(L, 1);
+  if (lua_isnil(L, 2)) {
+    lua_newtable(L);
+    lua_replace(L, 2);
+  }
+  // Now 1 = url, 2 = non-nil options, 3 = body, 4 = [callback]
+
+  luaL_argcheck(L, lua_istable(L, 2), 2, "options must be nil or a table");
+  luaL_checkstring(L, 3);
+  bool async = lua_isfunction(L, 4);
+  luaL_argcheck(L, lua_isnil(L, 4) || async, 4, "callback must be nil or a function");
+
+  // Override options.async based on whether callback present
+  lua_pushboolean(L, async);
+  lua_setfield(L, 2, "async");
+
+  // Setup call to createConnection
+  lua_pushcfunction(L, http_lapi_createConnection);
+  lua_pushvalue(L, 1); // url
+  lua_pushinteger(L, HTTP_METHOD_PUT);
+  lua_pushvalue(L, 2); // options
+
+  lua_call(L, 3, 1); // returns context
+
+  lua_pushcfunction(L, http_lapi_setbody);
   lua_pushvalue(L, -2); // context
   lua_pushvalue(L, 3); // body
   luaL_pcallx(L, 2, 0);
@@ -782,12 +818,14 @@ LROT_BEGIN(http, NULL, 0)
   LROT_FUNCENTRY(createConnection, http_lapi_createConnection)
   LROT_NUMENTRY (GET,              HTTP_METHOD_GET)
   LROT_NUMENTRY (POST,             HTTP_METHOD_POST)
+  LROT_NUMENTRY (PUT,              HTTP_METHOD_PUT)
   LROT_NUMENTRY (DELETE,           HTTP_METHOD_DELETE)
   LROT_NUMENTRY (HEAD,             HTTP_METHOD_HEAD)
   LROT_NUMENTRY (DELAYACK,         DELAY_ACK)
   LROT_NUMENTRY (ACKNOW,           0) // Doesn't really matter what this is
   LROT_FUNCENTRY(get,              http_lapi_get)
   LROT_FUNCENTRY(post,             http_lapi_post)
+  LROT_FUNCENTRY(put,              http_lapi_put)
 LROT_END(http, NULL, 0)
 
 LROT_BEGIN(http_context, NULL, LROT_MASK_GC_INDEX)
@@ -798,7 +836,7 @@ LROT_BEGIN(http_context, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY(setmethod,   http_lapi_setmethod)
   LROT_FUNCENTRY(setheader,   http_lapi_setheader)
   LROT_FUNCENTRY(seturl,      http_lapi_seturl)
-  LROT_FUNCENTRY(setpostdata, http_lapi_setpostdata)
+  LROT_FUNCENTRY(setbody,     http_lapi_setbody)
   LROT_FUNCENTRY(close,       context_close)
   LROT_FUNCENTRY(ack,         http_lapi_ack)
 LROT_END(http_context, NULL, LROT_MASK_GC_INDEX)
