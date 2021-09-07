@@ -20,7 +20,7 @@ jobs:
             numbers: 'integral'  
           - lua_ver: 53
             numbers: '64bit'  
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
 
     env:
       LUA: ${{ matrix.lua_ver }}
