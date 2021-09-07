@@ -268,13 +268,13 @@ Writes multi bytes. If `power` is 1 then the wire is held high at the end for pa
 #### See also
 [ow.depower()](#owdepower)
 
-## ow.timings()
+## ow.set_timings()
 Tweak different bit timing parameters. Some slow custom devices might not work perfectly well with NodeMCU as 1-wire master. Since NodeMCU ow module is bit-banging the 1-wire protocol, it is possible to adjust the timings a bit.
 
 Note that you can break the protocol totally if you tweak some numbers too much. This should never be needed with normal devices.
 
 #### Syntax
-`ow.timings(reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay)`
+`ow.set_timings(reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay)`
 
 #### Parameters
 Each parameter specifies number of microseconds to delay at different stages in the 1-wire bit-banging process.
@@ -297,7 +297,7 @@ A nil value will leave the value unmodified.
 #### Example
 ```lua
 -- Give 300uS longer read/write slots for slow MCU based 1-wire slave
-ow.timings(
+ow.set_timings(
 	nil, -- reset_tx
 	nil, -- reset_wait
 	nil, -- reset_rx

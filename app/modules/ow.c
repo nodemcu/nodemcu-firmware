@@ -288,8 +288,8 @@ static int ow_crc16( lua_State *L )
 #endif
 #endif
 
-// Lua: r = ow.timings( reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay )
-static int ow_timings( lua_State *L )
+// Lua: r = ow.set_timings( reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay )
+static int ow_set_timings( lua_State *L )
 {
   if(lua_isnumber(L, 1))
     onewire_timings.reset_tx = lua_tointeger(L, 1);
@@ -338,7 +338,7 @@ LROT_BEGIN(ow, NULL, 0)
   LROT_FUNCENTRY( crc16, ow_crc16 )
 #endif
 #endif
-  LROT_FUNCENTRY( timings, ow_timings )
+  LROT_FUNCENTRY( set_timings, ow_set_timings )
 LROT_END(ow, NULL, 0)
 
 
