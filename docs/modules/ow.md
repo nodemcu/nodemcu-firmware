@@ -67,7 +67,7 @@ Stops forcing power onto the bus. You only need to do this if you used the 'powe
 ## ow.read()
 Reads a byte.
 
-####Syntax
+#### Syntax
 `ow.read(pin)`
 
 #### Parameters
@@ -288,7 +288,7 @@ A nil value will leave the value unmodified.
 - `w0_low` pull bus low during write 1 slot (default 65)
 - `w0_high` leave bus high during write 1 slot (default 5)
 - `r_low` pull bus low during read slot (default 5)
-- `r_wait`wait before reading bus level during read slot  (default 8)
+- `r_wait` wait before reading bus level during read slot  (default 8)
 - `r_delay` delay after reading bus level (default 52)
 
 #### Returns
@@ -305,9 +305,8 @@ ow.set_timings(
 	352, -- w1_high
 	nil, -- w0_low
 	305, -- w0_high
-	nil, --r_low
-	nil, --r_wait
-	352 -- r_delay
+	nil, -- r_low
+	nil, -- r_wait
+	352  -- r_delay
 )
 ```
-
