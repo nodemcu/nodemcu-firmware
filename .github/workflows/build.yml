@@ -20,7 +20,7 @@ jobs:
             numbers: 'integral'  
           - lua_ver: 53
             numbers: '64bit'  
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
 
     env:
       LUA: ${{ matrix.lua_ver }}
@@ -96,7 +96,7 @@ jobs:
             numbers: '64bit'  
             filter: 'cat'
     needs: build
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout repo
@@ -159,7 +159,7 @@ jobs:
           - lua_ver: 53
             numbers: '64bit'  
     needs: build
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout repo
@@ -230,7 +230,7 @@ jobs:
       matrix:
         include:
           - os: 'linux'
-            vm: 'ubuntu-16.04'
+            vm: 'ubuntu-20.04'
           - os: 'windows'
             vm: 'windows-latest'
     runs-on: ${{ matrix.vm }} 
@@ -260,7 +260,7 @@ jobs:
 
     strategy:
       fail-fast: false
-    runs-on: ubuntu-16.04 
+    runs-on: ubuntu-20.04 
       
     steps:
     - uses: actions/checkout@v2
