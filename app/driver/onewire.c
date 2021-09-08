@@ -75,6 +75,20 @@ static uint8_t LastFamilyDiscrepancy[NUM_OW];
 static uint8_t LastDeviceFlag[NUM_OW];
 #endif
 
+struct onewire_timings_s onewire_timings = {
+	.reset_tx = 480,
+	.reset_wait = 70,
+	.reset_rx = 410,
+	.w_1_low = 5,
+	.w_1_high = 52,
+	.w_0_low = 65,
+	.w_0_high = 5,
+	.r_low = 5,
+	.r_wait = 8,
+	.r_delay = 52
+};
+
+
 void onewire_init(uint8_t pin)
 {
 	// pinMode(pin, INPUT);
@@ -108,13 +122,13 @@ uint8_t onewire_reset(uint8_t pin)
 	noInterrupts();
 	DIRECT_WRITE_LOW(pin);
 	interrupts();
-	delayMicroseconds(480);
+	delayMicroseconds(onewire_timings.reset_tx);
 	noInterrupts();
 	DIRECT_MODE_INPUT(pin);	// allow it to float
-	delayMicroseconds(70);
+	delayMicroseconds(onewire_timings.reset_wait);
 	r = !DIRECT_READ(pin);
 	interrupts();
-	delayMicroseconds(410);
+	delayMicroseconds(onewire_timings.reset_rx);
 	return r;
 }
 
@@ -127,7 +141,7 @@ static void onewire_write_bit(uint8_t pin, uint8_t v, uint8_t power)
 	if (v & 1) {
 		noInterrupts();
 		DIRECT_WRITE_LOW(pin);
-		delayMicroseconds(5);
+		delayMicroseconds(onewire_timings.w_1_low);
 		if (power) {
 			DIRECT_WRITE_HIGH(pin);
 		} else {
@@ -135,18 +149,18 @@ static void onewire_write_bit(uint8_t pin, uint8_t v, uint8_t power)
 		}
 		delayMicroseconds(8);
 		interrupts();
-		delayMicroseconds(52);
+		delayMicroseconds(onewire_timings.w_1_high);
 	} else {
 		noInterrupts();
 		DIRECT_WRITE_LOW(pin);
-		delayMicroseconds(65);
+		delayMicroseconds(onewire_timings.w_0_low);
 		if (power) {
 			DIRECT_WRITE_HIGH(pin);
 		} else {
 			DIRECT_MODE_INPUT(pin);	// drive output high by the pull-up
 		}
 		interrupts();
-		delayMicroseconds(5);
+		delayMicroseconds(onewire_timings.w_0_high);
 	}
 }
 
@@ -161,12 +175,12 @@ static uint8_t onewire_read_bit(uint8_t pin)
 	noInterrupts();
 	DIRECT_WRITE_LOW(pin);
 
-	delayMicroseconds(5);
+	delayMicroseconds(onewire_timings.r_low);
 	DIRECT_MODE_INPUT(pin);	// let pin float, pull up will raise
-	delayMicroseconds(8);
+	delayMicroseconds(onewire_timings.r_wait);
 	r = DIRECT_READ(pin);
 	interrupts();
-	delayMicroseconds(52);
+	delayMicroseconds(onewire_timings.r_delay);
 	return r;
 }
 
@@ -289,7 +303,7 @@ void onewire_target_search(uint8_t pin, uint8_t family_code)
 // Return TRUE  : device found, ROM number in ROM_NO buffer
 //        FALSE : device not found, end of search
 //
-uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
+uint8_t onewire_search(uint8_t pin, uint8_t *newAddr, uint8_t alarm_search)
 {
    uint8_t id_bit_number;
    uint8_t last_zero, rom_byte_number, search_result;
@@ -318,7 +332,7 @@ uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
       }
 
       // issue the search command
-      onewire_write(pin, 0xF0, owDefaultPower);
+      onewire_write(pin, alarm_search ? 0xEC : 0xF0, owDefaultPower);
 
       // loop to do the search
       do

@@ -60,14 +60,14 @@ Stops forcing power onto the bus. You only need to do this if you used the 'powe
 #### Returns
 `nil`
 
-####See also
+#### See also
 - [ow.write()](#owwrite)
 - [ow.write_bytes()](#owwrite_bytes)
 
 ## ow.read()
 Reads a byte.
 
-####Syntax
+#### Syntax
 `ow.read(pin)`
 
 #### Parameters
@@ -118,10 +118,11 @@ Clears the search state so that it will start from the beginning again.
 Looks for the next device.
 
 #### Syntax
-`ow.search(pin)`
+`ow.search(pin, [alarm_search])`
 
 #### Parameters
-`pin` 1~12, I/O index
+- `pin` 1~12, I/O index
+- `alarm_search` 1 / 0, if 0 a regular 0xF0 search is performed (default if parameter is absent), if 1 a 0xEC ALARM SEARCH is performed.
 
 #### Returns
 `rom_code` string with length of 8 upon success. It contains the rom code of slave device. Returns `nil` if search was unsuccessful.
@@ -190,7 +191,7 @@ else
 end
 ```
 
-####See also
+#### See also
 [ow.reset()](#owreset)
 
 ## ow.setup()
@@ -230,7 +231,7 @@ Sets up the search to find the device type `family_code`. The search itself has 
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.search()](#owsearch)
 
 ## ow.write()
@@ -247,7 +248,7 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.depower()](#owdepower)
 
 ## ow.write_bytes()
@@ -264,5 +265,48 @@ Writes multi bytes. If `power` is 1 then the wire is held high at the end for pa
 #### Returns
 `nil`
 
-####See also
+#### See also
 [ow.depower()](#owdepower)
+
+## ow.set_timings()
+Tweak different bit timing parameters. Some slow custom devices might not work perfectly well with NodeMCU as 1-wire master. Since NodeMCU ow module is bit-banging the 1-wire protocol, it is possible to adjust the timings a bit.
+
+Note that you can break the protocol totally if you tweak some numbers too much. This should never be needed with normal devices.
+
+#### Syntax
+`ow.set_timings(reset_tx, reset_wait, reset_rx, w1_low, w1_high, w0_low, w0_high, r_low, r_wait, r_delay)`
+
+#### Parameters
+Each parameter specifies number of microseconds to delay at different stages in the 1-wire bit-banging process.
+A nil value will leave the value unmodified.
+
+- `reset_tx` pull bus low during reset (default 480)
+- `reset_wait` wait for presence pulse after reset (default 70)
+- `reset_rx` delay after presence pulse have been checked (default 410)
+- `w1_low` pull bus low during write 1 slot (default 5)
+- `w1_high` leave bus high during write 1 slot (default 52)
+- `w0_low` pull bus low during write 1 slot (default 65)
+- `w0_high` leave bus high during write 1 slot (default 5)
+- `r_low` pull bus low during read slot (default 5)
+- `r_wait` wait before reading bus level during read slot  (default 8)
+- `r_delay` delay after reading bus level (default 52)
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+-- Give 300uS longer read/write slots for slow MCU based 1-wire slave
+ow.set_timings(
+	nil, -- reset_tx
+	nil, -- reset_wait
+	nil, -- reset_rx
+	nil, -- w1_low
+	352, -- w1_high
+	nil, -- w0_low
+	305, -- w0_high
+	nil, -- r_low
+	nil, -- r_wait
+	352  -- r_delay
+)
+```
