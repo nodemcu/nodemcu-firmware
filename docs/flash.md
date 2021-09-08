@@ -86,4 +86,4 @@ If this data gets corrupted or you are upgrading major SDK versions, then the fi
 The easiest way to determine the flash capacity is to load the firmware and then `print(node.info'hw'.flash_size)` which reports the flash size in Kb.  Alternatively, if you want to determine the capacity of the flash chip _before_ a firmware is installed then you can run the following command.  This will return a 2 hex digit **Manufacturer** ID and a 4 digit **Device** ID and the detected flash size.
 
 `esptool.py --port <serial-port> flash_id`
-The chip ID can then be looked up in [https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h](https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h).
+The chip ID can then be looked up in <https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/heads/master/flashchips.h>.
