@@ -163,3 +163,40 @@ eth.set_mac(mac)
 `nil`
 
 An error is thrown in case of invalid parameters or if the ethernet driver failed.
+
+## eth.set_ip()
+Configures a static IPv4 address on the ethernet interface.
+
+Calling this function does three things:
+  - disables the DHCP client for the ethernet interface
+  - sets the IP address, netmask and gateway
+  - set the DNS server to use
+
+Note that these settings are not persisted to flash.
+
+#### Syntax
+`eth.set_ip(cfg_opts)`
+
+#### Parameters
+- `cfg_opts` - table with the following fields:
+    - `ip` static IPv4 address to set
+    - `netmask` the network netmask
+    - `gateway` default gateway to use
+    - `dns` DNS server
+
+#### Returns
+`nil`
+
+An error is thrown in case of invalid parameters or if any of the options can
+not be set.
+
+#### Example
+
+```lua
+eth.set_ip({
+  ip = "192.168.0.12",
+  netmask = "255.255.255.0",
+  gateway = "192.168.0.1",
+  dns = "8.8.8.8"
+})
+```

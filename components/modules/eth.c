@@ -183,6 +183,53 @@ static int leth_get_speed( lua_State *L )
   return 1;
 }
 
+static int leth_set_ip( lua_State *L )
+{
+  luaL_checktable(L, 1);
+
+  esp_netif_ip_info_t ip_info = { 0, };
+
+  lua_getfield(L, 1, "ip");
+  const char *ipstr = luaL_checkstring(L, -1);
+  esp_err_t err = esp_netif_str_to_ip4(ipstr, &ip_info.ip);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to parse IP address '%s'", ipstr);
+
+  lua_getfield(L, 1, "netmask");
+  const char *nmstr = luaL_checkstring(L, -1);
+  err = esp_netif_str_to_ip4(nmstr, &ip_info.netmask);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to parse netmask '%s'", nmstr);
+
+  lua_getfield(L, 1, "gateway");
+  const char *gwstr = luaL_checkstring(L, -1);
+  err = esp_netif_str_to_ip4(gwstr, &ip_info.gw);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to parse gateway address '%s'", gwstr);
+
+  esp_netif_dns_info_t dns_info = { .ip = { .type = ESP_IPADDR_TYPE_V4 } };
+
+  lua_getfield(L, 1, "dns");
+  const char *dnsstr = luaL_checkstring(L, -1);
+  err = esp_netif_str_to_ip4(dnsstr, &dns_info.ip.u_addr.ip4);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to parse DNS address '%s'", dnsstr);
+
+  err = esp_netif_dhcpc_stop(eth);
+  if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED)
+    return luaL_error(L, "failed to stop DHCP client (code %d)", err);
+
+  err = esp_netif_set_ip_info(eth, &ip_info);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to set IP details (code %d)", err);
+
+  err = esp_netif_set_dns_info(eth, ESP_NETIF_DNS_MAIN, &dns_info);
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to set DNS server (code %d)", err);
+
+  return 0;
+}
+
 static int leth_on( lua_State *L )
 {
   const char *event_name = luaL_checkstring( L, 1 );
@@ -290,6 +337,7 @@ LROT_BEGIN(eth, NULL, 0)
   LROT_FUNCENTRY( get_speed,  leth_get_speed )
   LROT_FUNCENTRY( get_mac,    leth_get_mac )
   LROT_FUNCENTRY( set_mac,    leth_set_mac )
+  LROT_FUNCENTRY( set_ip,     leth_set_ip )
 
   LROT_NUMENTRY( PHY_DP83848, ETH_PHY_DP83848 )
   LROT_NUMENTRY( PHY_IP101,   ETH_PHY_IP101 )
