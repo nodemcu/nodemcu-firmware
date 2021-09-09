@@ -92,6 +92,11 @@ eth.init({phy  = eth.PHY_LAN8720,
           addr = 0,
           mdc   = 16,
           mdio  = 17})
+
+
+-- Initialise wt32-eth01
+eth.init({ phy = eth.PHY_LAN8720, addr = 1, mdc = 23, mdio = 18, power = 16 })
+
 ```
 
 

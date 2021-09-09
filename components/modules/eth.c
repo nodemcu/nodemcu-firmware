@@ -1,5 +1,3 @@
-// When this isn't enabled, the esp_eth.h header isn't available
-#ifdef CONFIG_ETH_ENABLED
 #include <string.h>
 
 #include "module.h"
@@ -9,6 +7,9 @@
 #include "nodemcu_esp_event.h"
 #include "ip_fmt.h"
 #include "common.h"
+
+// When this isn't enabled, the esp_eth.h header isn't available
+#if defined(CONFIG_ETH_ENABLED)
 #include "esp_netif.h"
 #include "esp_eth.h"
 #include "esp_eth_phy.h"
@@ -275,6 +276,13 @@ cleanup_mac_phy:
   return luaL_error(L, "failed to init ethernet, code %d", err);
 }
 
+static int init_eth( lua_State *L)
+{
+  for (unsigned i = 0; i < ARRAY_LEN(event_cb); ++i)
+    event_cb[i] = LUA_NOREF;
+
+  return 0;
+}
 
 LROT_BEGIN(eth, NULL, 0)
   LROT_FUNCENTRY( init,       leth_init )
@@ -291,5 +299,5 @@ LROT_BEGIN(eth, NULL, 0)
   LROT_NUMENTRY( PHY_RTL8201, ETH_PHY_RTL8201 )
 LROT_END(eth, NULL, 0)
 
-NODEMCU_MODULE(ETH, "eth", eth, NULL);
+NODEMCU_MODULE(ETH, "eth", eth, init_eth);
 #endif
