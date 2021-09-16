@@ -74,6 +74,15 @@ menu "NodeMCU modules"
         help
             Includes the GPIO module (recommended).
 
+    config NODEMCU_CMODULE_HEAPTRACE
+        bool "Heap trace debug module"
+        default "n"
+        depends on HEAP_TRACING_STANDALONE
+        help
+            Includes the heap tracing module. This provides an interface to
+            the IDF's heap tracing API, allowing interactive tracing
+            sessions via the Lua command line.
+
     config NODEMCU_CMODULE_HTTP
         bool "HTTP module"
         default "y"

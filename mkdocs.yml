@@ -51,6 +51,7 @@ pages:
       - 'eth': 'modules/eth.md'
       - 'file': 'modules/file.md'
       - 'gpio': 'modules/gpio.md'
+      - 'heaptrace': 'modules/heaptrace.md'
       - 'http': 'modules/http.md'
       - 'i2c': 'modules/i2c.md'
       - 'i2s': 'modules/i2s.md'

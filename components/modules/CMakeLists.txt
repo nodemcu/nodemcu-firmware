@@ -9,6 +9,7 @@ set(module_srcs
   "encoder.c"
   "file.c"
   "gpio.c"
+  "heaptrace.c"
   "http.c"
   "i2c.c"
   "i2c_hw_master.c"
