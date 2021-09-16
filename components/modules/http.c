@@ -790,7 +790,7 @@ LROT_BEGIN(http, NULL, 0)
   LROT_FUNCENTRY(post,             http_lapi_post)
 LROT_END(http, NULL, 0)
 
-LROT_BEGIN(http_context, NULL, 0)
+LROT_BEGIN(http_context, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY(__gc,        context_gc)
   LROT_TABENTRY (__index,     http_context)
   LROT_FUNCENTRY(on,          http_lapi_on)
@@ -801,7 +801,7 @@ LROT_BEGIN(http_context, NULL, 0)
   LROT_FUNCENTRY(setpostdata, http_lapi_setpostdata)
   LROT_FUNCENTRY(close,       context_close)
   LROT_FUNCENTRY(ack,         http_lapi_ack)
-LROT_END(http_context, NULL, 0)
+LROT_END(http_context, NULL, LROT_MASK_GC_INDEX)
 
 static int luaopen_http(lua_State *L)
 {

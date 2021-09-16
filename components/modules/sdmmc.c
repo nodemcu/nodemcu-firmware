@@ -327,14 +327,14 @@ static int lsdmmc_umount( lua_State *L )
   return luaL_error( L, err_msg );
 }
 
-LROT_BEGIN(sdmmc_card, NULL, 0)
+LROT_BEGIN(sdmmc_card, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index,   sdmmc_card )
   LROT_FUNCENTRY( read,     lsdmmc_read )
   LROT_FUNCENTRY( write,    lsdmmc_write )
   LROT_FUNCENTRY( get_info, lsdmmc_get_info )
   LROT_FUNCENTRY( mount,    lsdmmc_mount )
   LROT_FUNCENTRY( umount,   lsdmmc_umount )
-LROT_END(sdmmc_card, NULL, 0)
+LROT_END(sdmmc_card, NULL, LROT_MASK_INDEX)
 
 LROT_BEGIN(sdmmc, NULL, 0)
   LROT_FUNCENTRY( init,  lsdmmc_init )

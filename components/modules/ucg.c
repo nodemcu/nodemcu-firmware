@@ -678,7 +678,7 @@ UCG_DISPLAY_TABLE
 
 
 // Module function map
-LROT_BEGIN(lucg_display, NULL, 0)
+LROT_BEGIN(lucg_display, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY( __gc,   lucg_close_display )
   LROT_TABENTRY( __index, lucg_display )
   LROT_FUNCENTRY( begin,              lucg_begin )
@@ -724,7 +724,7 @@ LROT_BEGIN(lucg_display, NULL, 0)
   LROT_FUNCENTRY( undoClipRange,      lucg_setMaxClipRange )
   LROT_FUNCENTRY( undoRotate,         lucg_undoRotate )
   LROT_FUNCENTRY( undoScale,          lucg_undoScale )
-LROT_END(lucg_display, NULL, 0)
+LROT_END(lucg_display, NULL, LROT_MASK_GC_INDEX)
 
 LROT_BEGIN(lucg, NULL, 0)
   LROT_TABENTRY( __metatable, lucg )

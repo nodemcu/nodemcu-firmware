@@ -497,7 +497,7 @@ static int ws2812_buffer_tostring(lua_State* L) {
   return 1;
 }
 
-LROT_BEGIN(ws2812_buffer, NULL, 0)
+LROT_BEGIN(ws2812_buffer, NULL, LROT_MASK_INDEX)
   LROT_FUNCENTRY( __concat,   ws2812_buffer_concat )
   LROT_TABENTRY ( __index,    ws2812_buffer )
   LROT_FUNCENTRY( __tostring, ws2812_buffer_tostring )
@@ -512,7 +512,7 @@ LROT_BEGIN(ws2812_buffer, NULL, 0)
   LROT_FUNCENTRY( shift,      ws2812_buffer_shift )
   LROT_FUNCENTRY( size,       ws2812_buffer_size )
   LROT_FUNCENTRY( sub,        ws2812_buffer_sub )
-LROT_END(ws2812_buffer, NULL, 0)
+LROT_END(ws2812_buffer, NULL, LROT_MASK_INDEX)
 
 LROT_BEGIN(ws2812, NULL, 0)
   LROT_FUNCENTRY( newBuffer,      ws2812_new_buffer )

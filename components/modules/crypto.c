@@ -153,12 +153,12 @@ static int crypto_hash_gc(lua_State* L) {
 }
 
 // The following table defines methods of the hasher object
-LROT_BEGIN(crypto_hasher, NULL, 0)
+LROT_BEGIN(crypto_hasher, NULL, LROT_MASK_GC_INDEX)
     LROT_FUNCENTRY(__gc,     crypto_hash_gc)
     LROT_TABENTRY(__index,   crypto_hasher)
     LROT_FUNCENTRY(update,   crypto_hash_update)
     LROT_FUNCENTRY(finalize, crypto_hash_finalize)
-LROT_END(crypto_hasher, NULL, 0)
+LROT_END(crypto_hasher, NULL, LROT_MASK_GC_INDEX)
 
 // This table defines the functions of the crypto module:
 LROT_BEGIN(crypto, NULL, 0)

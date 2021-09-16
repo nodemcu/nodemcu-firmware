@@ -635,7 +635,7 @@ static int mqtt_new(lua_State* L) {
 }
 
 // map client methods to functions:
-LROT_BEGIN(mqtt_metatable, NULL, 0)
+LROT_BEGIN(mqtt_metatable, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY(__gc, mqtt_delete)
   LROT_TABENTRY(__index, mqtt_metatable)
   LROT_FUNCENTRY(connect, mqtt_connect)
@@ -645,7 +645,7 @@ LROT_BEGIN(mqtt_metatable, NULL, 0)
   LROT_FUNCENTRY(subscribe, mqtt_subscribe)
   LROT_FUNCENTRY(unsubscribe, mqtt_unsubscribe)
   LROT_FUNCENTRY(on, mqtt_on)
-LROT_END(mqtt_metatable, NULL, 0)
+LROT_END(mqtt_metatable, NULL, LROT_MASK_GC_INDEX)
 
 // Module function map
 LROT_BEGIN(mqtt, NULL, 0)

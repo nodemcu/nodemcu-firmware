@@ -589,7 +589,7 @@ static int touch_unregister(lua_State* L) {
   return 0;
 }
 
-LROT_BEGIN(touch_dyn, NULL, 0)
+LROT_BEGIN(touch_dyn, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY( __gc,           touch_unregister )
   LROT_TABENTRY ( __index,        touch_dyn )
   // LROT_FUNCENTRY( __tostring,     touch_tostring )
@@ -598,7 +598,7 @@ LROT_BEGIN(touch_dyn, NULL, 0)
   LROT_FUNCENTRY( intrDisable,    touch_intrDisable )
   LROT_FUNCENTRY( setThres,       touch_setThres )
   LROT_FUNCENTRY( setTriggerMode, touch_setTriggerMode )
-LROT_END(touch_dyn, NULL, 0)
+LROT_END(touch_dyn, NULL, LROT_MASK_GC_INDEX)
 
 LROT_BEGIN(touch, NULL, 0)
   LROT_FUNCENTRY( create,            touch_create )

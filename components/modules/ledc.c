@@ -231,7 +231,7 @@ static int lledc_set_fade( lua_State *L ) {
 }
 
 // Module function map
-LROT_BEGIN(ledc_channel, NULL, 0)
+LROT_BEGIN(ledc_channel, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY ( __index,         ledc_channel )
   LROT_FUNCENTRY( getduty,         lledc_get_duty )
   LROT_FUNCENTRY( setduty,         lledc_set_duty )
@@ -246,7 +246,7 @@ LROT_BEGIN(ledc_channel, NULL, 0)
   LROT_FUNCENTRY( fadewithtime,    lledc_set_fade_with_time )
   LROT_FUNCENTRY( fadewithstep,    lledc_set_fade_with_step )
   LROT_FUNCENTRY( fade,            lledc_set_fade )
-LROT_END(ledc_channel, NULL, 0)
+LROT_END(ledc_channel, NULL, LROT_MASK_INDEX)
 
 LROT_BEGIN(ledc, NULL, 0)
   LROT_FUNCENTRY( newChannel,      lledc_new_channel )

@@ -45,9 +45,11 @@
   static ROTable_entry LOCK_IN_SECTION(s) rt ## _entries[] = {
 #define LROT_END(rt,mt,f)    {NULL, LRO_NILVAL} }; \
   const ROTable rt ## _ROTable = { \
-    (GCObject *)1, LUA_TROTABLE, LROT_MARKED, \
-    cast(lu_byte, ~(f)), (sizeof(rt ## _entries)/sizeof(ROTable_entry)) - 1, \
-    cast(Table *, mt), cast(ROTable_entry *, rt ## _entries) };
+    .next = (GCObject *)1, .tt = LUA_TROTABLE, .marked = LROT_MARKED, \
+    .flags = cast(lu_byte, ~(f)), \
+    .lsizenode = (sizeof(rt ## _entries)/sizeof(ROTable_entry)) - 1, \
+    .metatable = cast(Table *, mt), \
+    .entry = cast(ROTable_entry *, rt ## _entries) };
 #define LROT_BREAK(rt)       };
 
 #define LROT_MASK(m)         cast(lu_byte, 1<<TM_ ## m)
