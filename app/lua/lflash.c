@@ -29,7 +29,7 @@
  * process.
  */
 
-static char    *flashAddr;
+static const char *flashAddr;
 static uint32_t flashSize;
 static uint32_t flashAddrPhys;
 static uint32_t flashSector;
@@ -106,20 +106,20 @@ LUA_API void dumpStrings(lua_State *L) {
  * writes are suppressed if the global writeToFlash is false.  This is used in
  * phase I where the pass is used to size the structures in flash.
  */
-static char *flashPosition(void){
+static const char *flashPosition(void){
   return  flashAddr + curOffset;
 }
 
 
-static char *flashSetPosition(uint32_t offset){
+static const char *flashSetPosition(uint32_t offset){
   NODE_DBG("flashSetPosition(%04x)\n", offset);
   curOffset = offset;
   return flashPosition();
 }
 
 
-static char *flashBlock(const void* b, size_t size)  {
-  void *cur = flashPosition();
+static const char *flashBlock(const void* b, size_t size)  {
+  const void *cur = flashPosition();
   NODE_DBG("flashBlock((%04x),%p,%04x)\n", curOffset,b,size);
   lua_assert(ALIGN_BITS(b) == 0 && ALIGN_BITS(size) == 0);
   platform_flash_write(b, flashAddrPhys+curOffset, size);
@@ -136,6 +136,10 @@ static void flashErase(uint32_t start, uint32_t end){
   for (i = start; i<=end; i++)
     platform_flash_erase_sector( flashSector + i );
 }
+
+static int loadLFS (lua_State *L);
+static int loadLFSgc (lua_State *L);
+static void procFirstPass (void);
 
 /* =====================================================================================
  * luaN_init() is exported via lflash.h.
@@ -171,7 +175,7 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   }
 
   if ((fh->flash_sig & (~FLASH_SIG_ABSOLUTE)) != FLASH_SIG ) {
-    NODE_ERR("Flash sig not correct: 0x%08x vs 0x%08x\n",
+    NODE_ERR("LFS sig not correct: 0x%x vs expected 0x%x\n",
        fh->flash_sig & (~FLASH_SIG_ABSOLUTE), FLASH_SIG);
     return;
   }
@@ -207,6 +211,7 @@ LUALIB_API void luaL_lfsreload (lua_State *L) {
     lua_pushstring(L, "No LFS partition allocated");
     return;
   }
+
 
  /*
   * Do a protected call of loadLFS.
@@ -346,13 +351,13 @@ static void put_byte (uint8_t value) {
 }
 
 
-static uint8_t recall_byte (unsigned offset) {
+static uint8_t recall_byte (uint32_t offset) {
   if(offset > DICTIONARY_WINDOW || offset >= out->ndx)
     flash_error("invalid dictionary offset on inflate");
   /* ndx starts at 1. Need relative to 0 */
-  unsigned n   = out->ndx - offset;
-  unsigned pos = n % WRITE_BLOCKSIZE;
-  unsigned blockNo = out->ndx / WRITE_BLOCKSIZE - n  / WRITE_BLOCKSIZE;
+  uint32_t n   = out->ndx - offset;
+  uint32_t pos = n % WRITE_BLOCKSIZE;
+  uint32_t blockNo = out->ndx / WRITE_BLOCKSIZE - n  / WRITE_BLOCKSIZE;
   return out->block[blockNo]->byte[pos];
 }
 
@@ -386,7 +391,7 @@ void procFirstPass (void) {
          fh->flash_size > flashSize ||
          out->flagsLen != 1 + (out->flashLen/WORDSIZE - 1) / BITS_PER_WORD)
       flash_error("LFS length mismatch");
-    out->flags = luaM_newvector(out->L, out->flagsLen, unsigned);
+    out->flags = luaM_newvector(out->L, out->flagsLen, uint32_t);
   }
 
   /* update running CRC */
@@ -412,7 +417,7 @@ void procSecondPass (void) {
                   (out->flashLen % WRITE_BLOCKSIZE) / WORDSIZE :
                   WRITE_BLOCKSIZE / WORDSIZE;
   uint32_t *buf = (uint32_t *) out->buffer.byte;
-  uint32_t  flags = 0;
+  uint32_t flags = 0;
  /*
   * Relocate all the addresses tagged in out->flags.  This can't be done in
   * place because the out->blocks are still in use as dictionary content so
@@ -423,7 +428,7 @@ void procSecondPass (void) {
     if ((i&31)==0)
       flags = out->flags[out->flagsNdx++];
     if (flags&1)
-      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddr);
+      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddr); // mapped, not phys
   }
  /*
   * On first block, set the flash_sig has the in progress bit set and this
@@ -468,7 +473,7 @@ static int loadLFS (lua_State *L) {
   in->len = vfs_size(in->fd);
   if (in->len <= 200 ||        /* size of an empty luac output */
       vfs_lseek(in->fd, in->len-4, VFS_SEEK_SET) != in->len-4 ||
-      vfs_read(in->fd, &out->len, sizeof(unsigned)) != sizeof(unsigned))
+      vfs_read(in->fd, &out->len, sizeof(uint32_t)) != sizeof(uint32_t))
     flash_error("read error on LFS image file");
   vfs_lseek(in->fd, 0, VFS_SEEK_SET);
 

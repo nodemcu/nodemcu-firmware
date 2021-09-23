@@ -28,7 +28,7 @@
 #define LUA_TUPVAL	(LAST_TAG+2)
 #define LUA_TDEADKEY	(LAST_TAG+3)
 
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 /*
 ** force aligned access to critical fields in Flash-based structures
 ** wo is the offset of aligned word in bytes 0,4,8,..

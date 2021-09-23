@@ -394,6 +394,7 @@ LROT_END(mathlib, NULL, 0)
 ** Open math library
 */
 LUAMOD_API int luaopen_math (lua_State *L) {
+  (void)L;
   return 0;
 }
 

@@ -272,6 +272,7 @@ static int stripdebug (lua_State *L, Proto *f, int level) {
         f->lineinfo = luaM_freearray(L, f->lineinfo, f->sizelineinfo);
         len += f->sizelineinfo;
       }
+      // fall-through
     case 1:
       for (i=0; i<f->sizeupvalues; i++)
         f->upvalues[i].name = NULL;

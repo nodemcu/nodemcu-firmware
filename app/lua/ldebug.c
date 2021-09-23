@@ -248,6 +248,7 @@ static int stripdebug (lua_State *L, Proto *f, int level) {
         f->packedlineinfo = luaM_freearray(L, f->packedlineinfo, sizepackedlineinfo, unsigned char);
         len += sizepackedlineinfo;
       }
+      // fall-through
     case 1:
       f->locvars = luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
       f->upvalues = luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
@@ -501,7 +502,7 @@ static Instruction symbexec (const Proto *pt, int lastpc, int reg) {
       case OP_FORLOOP:
       case OP_FORPREP:
         checkreg(pt, a+3);
-        /* go through */
+        /* fall-through */
       case OP_JMP: {
         int dest = pc+1+b;
         /* not full check and jump is forward and do not skip `lastpc'? */

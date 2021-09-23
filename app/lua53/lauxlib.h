@@ -144,6 +144,9 @@ LUALIB_API void (luaL_requiref) (lua_State *L, const char *modname,
 #define luaL_loadbuffer(L,s,sz,n)	luaL_loadbufferx(L,s,sz,n,NULL)
 
 
+#define luaL_checkfunction(L,n)        luaL_checktype(L, (n), LUA_TFUNCTION);
+#define luaL_checktable(L,n)   luaL_checktype(L, (n), LUA_TTABLE);
+
 /*
 ** {======================================================
 ** Generic Buffer manipulation
@@ -227,7 +230,8 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 
 /* print a string */
 #if !defined(lua_writestring)
-#ifdef LUA_USE_ESP8266
+#ifdef LUA_USE_ESP
+void output_redirect(const char *str, size_t l);
 #define lua_writestring(s,l)  output_redirect((s),(l))
 #else
 #define lua_writestring(s,l)   fwrite((s), sizeof(char), (l), stdout)
@@ -290,11 +294,8 @@ LUALIB_API int  (luaL_pushlfsdts) (lua_State *L);
 LUALIB_API void (luaL_lfsreload) (lua_State *L);
 LUALIB_API int  (luaL_posttask) (lua_State* L, int prio);
 LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
-
 #define luaL_pushlfsmodule(l) lua_pushlfsfunc(L)
 
 /* }============================================================ */
 
 #endif
-
-
