@@ -20,7 +20,7 @@ Creates a connection object which can be configured and then executed. Note this
 
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix. Required.
-- `method` The HTTP method to use, one of `http.GET`, `http.POST`, `http.DELETE` or `http.HEAD`. Optional and may be omitted, the default is `http.GET`.
+- `method` The HTTP method to use, one of `http.GET`, `http.POST`, `http.PUT`, `http.DELETE` or `http.HEAD`. Optional and may be omitted, the default is `http.GET`.
 - `options` An optional table containing any or all of:
     - `async` If true, the request is processed asynchronously, meaning [`request()`](#connectionrequest) returns immediately rather than blocking until the connection is complete and all callbacks have been made. Some other connection APIs behave differently in asynchronous mode, see their documentation for details. If not specified, the default is `false`, meaning requests are processed synchronously.
     - `bufsz` The size in bytes of the temporary buffer used for reading data. If not specified, the default is `512`.
@@ -45,7 +45,7 @@ end)
 connection:request()
 ```
 
-# http connection objects
+# HTTP connection objects
 
 ## connection:on()
 Set a callback to be called when a certain event occurs.
@@ -94,7 +94,7 @@ Sets the connection method. Useful if making multiple requests of different type
 `connection:setmethod(method)`
 
 #### Parameters
-- `method` one of `http.GET`, `http.POST`, `http.HEAD`, `http.DELETE`.
+- `method` one of `http.GET`, `http.POST`, `http.PUT`, `http.HEAD`, `http.DELETE`.
 
 #### Returns
 `nil`
@@ -135,14 +135,14 @@ Sets an individual header in the request. Header names are case-insensitive, but
 - `name` name of the header to set.
 - `value` what to set it to. Must be a string, or `nil` to unset it.
 
-## connection:setpostdata()
-Sets the POST data to be used for this request. Also sets the method to `http.POST` if it isn't already. If a `Content-Type` header has not already been set, also sets that to `application/x-www-form-urlencoded`. Errors if called while a request is in progress.
+## connection:setbody()
+Sets the body data to be used for this request (for POST, PUT, etc). If a `Content-Type` header has not already been set, also sets that to `application/x-www-form-urlencoded`. Errors if called while a request is in progress.
 
 #### Syntax
-`connection:setpostdata([data])`
+`connection:setbody([data])`
 
 #### Parameters
-`data` - The data to POST. Unless a custom `Content-Type` header has been set, this data should be in `application/x-www-form-urlencoded` format. Can be `nil` to unset what to post and the `Content-Type` header.
+`data` The data to POST/PUT/etc.. Unless a custom `Content-Type` header has been set, this data should be in `application/x-www-form-urlencoded` format. Can be `nil` to unset what to post and the `Content-Type` header.
 
 #### Returns
 `nil`
@@ -225,7 +225,7 @@ Executes a single HTTP POST request and closes the connection. If a `callback` i
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `options` Same options as [`http.createConnection()`](#httpcreateconnection), except that `async` is set for you based on whether a `callback` is specified or not. May be `nil`.
-- `body` The body to post. Required and must already be encoded in the appropriate format, but may be empty. See [`connection:setpostdata()`](#connectionsetpostdata) for more information.
+- `body` The body to post. Required and must already be encoded in the appropriate format, but may be empty. See [`connection:setbody()`](#connectionsetbody) for more information.
 - `callback` Should be `nil` or omitted to specify synchronous mode, otherwise a callback function to be invoked when the response has been received or an error occurred, which is called with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` will be a negative number.
 
 #### Returns
@@ -246,3 +246,19 @@ http.post("http://httpbin.org/post", { headers = headers }, body,
     end
   end)
 ```
+
+## http.put()
+
+Executes a single HTTP PUT request and closes the connection. If a `callback` is specifed then the function operates in asynchronous mode, otherwise it is synchronous.
+
+#### Syntax
+`http.put(url, options, body[, callback])`
+
+#### Parameters
+- `url` The URL to fetch, including the `http://` or `https://` prefix
+- `options` Same options as [`http.createConnection()`](#httpcreateconnection), except that `async` is set for you based on whether a `callback` is specified or not. May be `nil`.
+- `body` The body to post. Required and must already be encoded in the appropriate format, but may be empty. See [`connection:setbody()`](#connectionsetbody) for more information.
+- `callback` Should be `nil` or omitted to specify synchronous mode, otherwise a callback function to be invoked when the response has been received or an error occurred, which is called with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` will be a negative number.
+
+#### Returns
+In synchronous mode, returns 3 results `status_code, body, headers` once the request has completed. In asynchronous mode, returns `nil` immediately. 
