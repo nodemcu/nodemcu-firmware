@@ -46,6 +46,8 @@
 #include "nimble/ble.h"
 #include "task/task.h"
 
+#define PERROR() printf("pcall failed: %s\n", lua_tostring(L, -1))
+
 static int lble_start_advertising();
 static int lble_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -737,6 +739,8 @@ static int
 lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
   // Actually the only thing we care about is the arg and the ctxt
 
+  printf("access_cb called with op %d\n", ctxt->op);
+
   size_t task_block_size = sizeof(task_block_t);
 
   if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
@@ -762,21 +766,25 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
       return BLE_ATT_ERR_UNLIKELY;
     }
   }
+
+  printf("ABout to task_post\n");
   
   if (!task_post(TASK_PRIORITY_HIGH, task_handle, (task_param_t) task_block)) {
     free(task_block);
     return BLE_ATT_ERR_UNLIKELY;
   }
 
-  response_message_t *message;
+  response_message_t message;
 
   while (1) {
+    printf("About to receive\n");
+
     if (xQueueReceive(response_queue, &message, (TickType_t) (10000/portTICK_PERIOD_MS) ) != pdPASS) {
       free(task_block);
       return BLE_ATT_ERR_UNLIKELY;
     }
 
-    if (message->seqno == task_block->seqno) {
+    if (message.seqno == task_block->seqno) {
       break;
     }
   }
@@ -784,17 +792,17 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   int rc = BLE_ATT_ERR_UNLIKELY;
 
   if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
-    rc = message->errcode;
+    rc = message.errcode;
     if (rc == 0) {
-      if (os_mbuf_append(ctxt->om, message->buffer, message->length)) {
+      if (os_mbuf_append(ctxt->om, message.buffer, message.length)) {
 	rc = BLE_ATT_ERR_INSUFFICIENT_RES;
       }
     }
   } else if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
-    rc = message->errcode;
+    rc = message.errcode;
   }
 
-  free(message->buffer);
+  free(message.buffer);
   free(task_block);
 
   return rc;
@@ -811,7 +819,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
   lua_State *L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_block->arg);
   // Now we have the characteristic table in -1
-  lua_getfield(L, -1, "struct");
+  lua_getfield(L, -1, "type");
   // -1 is the struct mapping (if any), -2 is the table
 
   if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
@@ -821,6 +829,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       lua_pushvalue(L, -3);   // dup the table onto the top
       if (lua_pcall(L, 1, 1, 0)) {
         // error.
+        PERROR();
         message.errcode = BLE_ATT_ERR_UNLIKELY;
         lua_pop(L, 1);
         goto cleanup;
@@ -832,23 +841,26 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     // Now we have the value (-1), struct (-2), table (-3)
     if (!lua_isnoneornil(L, -2)) {
       // need to convert value
+      printf("About to convert vaclue for read\n");
       if (!lua_istable(L, -1)) {
         // wrap it in a table
         lua_createtable(L, 1, 0);
         lua_pushvalue(L, -2);  // Now have value, table, value, struct, table
         lua_rawseti(L, -2, 1); 
         lua_remove(L, -2);   // now have table, struct, chr table
+        printf("wrapped in table\n");
       }
 
       // Now call struct.pack
       // The arguments are the format string, and then the values
       lua_rawgeti(L, LUA_REGISTRYINDEX, struct_pack_index);
       lua_pushvalue(L, -3);   // dup the format
-      int nv = lua_rawlen(L, -5);
-      for (int i = 1; i < nv; i++) {
-        lua_rawgeti(L, -4 - i, i);
+      int nv = lua_rawlen(L, -3);
+      for (int i = 1; i <= nv; i++) {
+        lua_rawgeti(L, -2 - i, i);
       }
       if (lua_pcall(L, nv + 1, 1, 0)) {
+        PERROR();
         message.errcode = BLE_ATT_ERR_UNLIKELY;
         lua_pop(L, 2);
         goto cleanup;
@@ -868,6 +880,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       }
     }
     lua_pop(L, 1);
+    message.errcode = 0;
   }
   if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
     // Push the value
@@ -879,16 +892,19 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       lua_createtable(L, 0, 0);
       int stack_size = lua_gettop(L);
       lua_rawgeti(L, LUA_REGISTRYINDEX, struct_unpack_index);
-      lua_pushvalue(L, -3);   // dup the format
-      lua_pushvalue(L, -3);   // dup the string
+      lua_pushvalue(L, -4);   // dup the format
+      lua_pushvalue(L, -4);   // dup the string
       if (lua_pcall(L, 2, LUA_MULTRET, 0)) {
+        PERROR();
         message.errcode = BLE_ATT_ERR_UNLIKELY;
         lua_pop(L, 2);
         goto cleanup;
       }
       int vals = lua_gettop(L) - stack_size;
+      printf("unpacked %d vals\n", vals - 1);
 
-      for (int i = 1; i <= vals; i++) {
+      // Note that the last entry is actually the string offset
+      for (int i = 1; i < vals; i++) {
         lua_pushvalue(L, -(vals - i + 1));
         lua_rawseti(L, -(vals + 2), i);
       }
@@ -906,6 +922,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     if (!lua_isnoneornil(L, -1)) {
       lua_pushvalue(L, -2);   // the values table
       if (lua_pcall(L, 1, 0, 0)) {
+        PERROR();
 	message.errcode = BLE_ATT_ERR_UNLIKELY;
 	lua_pop(L, 2);
 	goto cleanup;
@@ -914,9 +931,11 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     lua_pop(L, 1);  // Throw away the null write pointer
     // just save the result in the value
     lua_setfield(L, -3, "value");
+    message.errcode = 0;
   }
 
 cleanup:
+  printf("Returning code %d\n", message.errcode);
   lua_pop(L, 2);
   message.seqno = task_block->seqno;
 
@@ -930,7 +949,12 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   // + number of characteristics (nc) + ns * sizeof(ble_gatt_chr_def)
   // + ns + nc * sizeof(ble_uuid_any_t)
 
+  printf("build_gatt_svcs\n");
+
   lua_getfield(L, 1, "services");
+  if (!lua_istable(L, -1)) {
+    return luaL_error(L, "services entry must be a table");
+  }
   int ns = lua_rawlen(L, -1);
 
   // -1 is the services list
@@ -953,7 +977,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
 
   int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t);
 
-  printf("Computed size: %d\n", size);
+  printf("Computed size: %d (nc %d, ns %d)\n", size, nc, ns);
 
   struct ble_gatt_svc_def *svcs = malloc(size);
   if (!svcs) {
@@ -974,7 +998,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
     // -1 is now the service which should be a table. It must have a uuid
     lua_getfield(L, -1, "uuid");
     // Convert the uuid
-    if ((void *) (uuids + 1) >= eom) {
+    if ((void *) (uuids + 1) > eom) {
       free_gatt_svcs(L, result);
       return luaL_error(L, "Miscalculated memory requirements");
     }
@@ -998,7 +1022,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
       // -1 is now the characteristic
       lua_getfield(L, -1, "uuid");
       // Convert the uuid
-      if ((void *) (uuids + 1) >= eom) {
+      if ((void *) (uuids + 1) > eom) {
 	free_gatt_svcs(L, result);
 	return luaL_error(L, "Miscalculated memory requirements");
       }
@@ -1045,7 +1069,10 @@ static int
 gatt_svr_init(lua_State *L) {
     int rc;
 
+    printf("about to call gap_init\n");
+
     ble_svc_gap_init();
+    printf("about to call gatt_init\n");
     ble_svc_gatt_init();
     
     // Now we have to build the gatt_svr_svcs data structure
@@ -1057,6 +1084,7 @@ gatt_svr_init(lua_State *L) {
     gatt_svr_svcs = svcs;
     
 
+    printf("about to call count_cfg\n");
     rc = ble_gatts_count_cfg(gatt_svr_svcs);
     if (rc != 0) {
       return luaL_error(L, "Failed to count gatts: %d", rc);
@@ -1066,6 +1094,8 @@ gatt_svr_init(lua_State *L) {
     if (rc != 0) {
       return luaL_error(L, "Failed to add gatts: %d", rc);
     }
+
+    ble_gatts_start();
 
     return 0;
 }
@@ -1328,6 +1358,38 @@ lble_on_sync(void)
     lble_start_advertising();
 }
 
+void
+gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
+{
+    char buf[BLE_UUID_STR_LEN];
+
+    switch (ctxt->op) {
+    case BLE_GATT_REGISTER_OP_SVC:
+        MODLOG_DFLT(DEBUG, "registered service %s with handle=%d\n",
+                    ble_uuid_to_str(ctxt->svc.svc_def->uuid, buf),
+                    ctxt->svc.handle);
+        break;
+
+    case BLE_GATT_REGISTER_OP_CHR:
+        MODLOG_DFLT(DEBUG, "registering characteristic %s with "
+                           "def_handle=%d val_handle=%d\n",
+                    ble_uuid_to_str(ctxt->chr.chr_def->uuid, buf),
+                    ctxt->chr.def_handle,
+                    ctxt->chr.val_handle);
+        break;
+
+    case BLE_GATT_REGISTER_OP_DSC:
+        MODLOG_DFLT(DEBUG, "registering descriptor %s with handle=%d\n",
+                    ble_uuid_to_str(ctxt->dsc.dsc_def->uuid, buf),
+                    ctxt->dsc.handle);
+        break;
+
+    default:
+        assert(0);
+        break;
+    }
+}
+
 
 static int lble_init(lua_State *L) {
   if (!struct_pack_index) {
@@ -1341,6 +1403,7 @@ static int lble_init(lua_State *L) {
   // Passed the config table
   luaL_checktype(L, 1, LUA_TTABLE);
 
+  printf("About to init_stack");
   lble_init_stack(L);
 
   lua_getfield(L, 1, "name");
@@ -1354,8 +1417,8 @@ static int lble_init(lua_State *L) {
   /* Initialize the NimBLE host configuration. */
   // ble_hs_cfg.reset_cb = bleprph_on_reset;
   ble_hs_cfg.sync_cb = lble_on_sync;
-  // ble_hs_cfg.gatts_register_cb = gatt_svr_register_cb;
-  // ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
+  ble_hs_cfg.gatts_register_cb = gatt_svr_register_cb;
+  ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
   rc = gatt_svr_init(L);
   if (rc) {
