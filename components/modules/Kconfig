@@ -14,6 +14,13 @@ menu "NodeMCU modules"
             Includes the bit module. This module provide bit manipulation
             functions on Lua numbers.
 
+    config NODEMCU_CMODULE_BLE
+        bool "BlueTooth GAP/GATT interface module"
+        default "n"
+        select BLE_ENABLED
+        help
+            Includes the simple BlueTooth GAP/GATT module.
+
     config NODEMCU_CMODULE_BTHCI
         bool "BlueTooth HCI interface module"
         default "n"

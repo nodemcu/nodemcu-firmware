@@ -2,6 +2,7 @@
 set(module_srcs
   "adc.c"
   "bit.c"
+  "ble.c"
   "bthci.c"
   "common.c"
   "crypto.c"
