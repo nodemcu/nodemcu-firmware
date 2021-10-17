@@ -17,7 +17,8 @@ menu "NodeMCU modules"
     config NODEMCU_CMODULE_BLE
         bool "BlueTooth GAP/GATT interface module"
         default "n"
-        select BLE_ENABLED
+	select NODEMCU_CMODULE_STRUCT
+        select BT_ENABLED
         help
             Includes the simple BlueTooth GAP/GATT module.
 
