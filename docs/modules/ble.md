@@ -22,7 +22,7 @@ configuration table. See below for a detailed description of this table.
 
 #### Example
 ```lua
-local config = {name="MyGadget=", services={{uuid="0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}}}
+local config = {name="MyGadget=", services={{uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}}}
 ble.init(config)
 ```
 
@@ -47,6 +47,10 @@ ble.shutdown(function(err) print(err or "Ok!") end)
 
 ## Conventions
 
+## UUID
+
+The service and characteristic identifiers are UUIDs. These are represented in twin-hex. They must be either 4 characters, 8 characters or 32 characters long.
+
 ## Configuration Table
 
 The configuration table contains the following keys:
@@ -55,6 +59,7 @@ The configuration table contains the following keys:
 
 - `services` This is a list of tables that define the individual services. The primary service is the first service. Many examples will only have a single service.
 
+- `mfg` This is a string to be advertised in the mfg data field.
 
 ### Service table
 
@@ -62,8 +67,6 @@ The service table contains the following keys:
 
 - `uuid` The UUID of the service. This is a 16 byte string (128 bits) that identifies the particular service. It can also be a two byte string for a well-known service.
 - `characteristics` This is a list of tables, where each entry describes a characateristic (attribute)
-- `preread` This is an optional function that is invoked just before a read of any characteristic in this service.
-- `postwrite` This is an optional function that is invoked just after a write of any characteristic in this service.
 
 ### Characteristic table
 
@@ -75,7 +78,11 @@ The characteristic table contains the following keys:
 - `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set)
 - `write` This is a function that will be invoked to write the value (and so does not need the `value` entry). It is given a string of bytes (unless `type` is set)
 
-The characteristics are treated as read/write unless only one of the `read` or `write` keys is present. 
+The characteristics are treated as read/write unless only one of the `read` or `write` keys is present and the `value` key is not specificed.
 
-The calling conventions for these functions are TBD.
+The calling conventions for these functions are as follows:
+
+- `read` This is invoked with the charactersitic table as its only argument.
+- `write` This is invoked with two arguments, the characteristic table and the data to be written (after conversion by `type`)
+
 
