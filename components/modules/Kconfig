@@ -91,6 +91,32 @@ menu "NodeMCU modules"
         help
             Includes the HTTP module (recommended).
 
+    config NODEMCU_CMODULE_HTTPD
+        bool "Httpd (web server) module"
+        default "n"
+        help
+            Includes the HTTPD module. This module uses the regular IDF
+            http server component internally.
+
+    config NODEMCU_CMODULE_HTTPD_MAX_RESPONSE_HEADERS
+        int "Max response header fields" if NODEMCU_CMODULE_HTTPD
+        default 5
+        help
+            Determines how much space to allocate for header fields in the
+            HTTP response. This value does not include header fields the
+            http server itself generates internally, but only headers
+            explicitly returned in a dynamic route handler. Typically only
+            Content-Type is needed, so for most applications the default
+            value here will suffice.
+
+    config NODEMCU_CMODULE_HTTPD_RECV_BODY_CHUNK_SIZE
+        int "Receive body chunk size" if NODEMCU_CMODULE_HTTPD
+        default 1024
+        help
+            When receiving a body payload, receive at most this many
+            bytes at a time. Higher values means reduced overhead at
+            the cost of higher memory load.
+
     config NODEMCU_CMODULE_I2C
         bool "I2C module"
         default "y"
