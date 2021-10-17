@@ -27,7 +27,7 @@ CONFIG_LWIP_SO_REUSE=y
 
 # Decrease the duration of sockets in TIME_WAIT
 # see https://github.com/nodemcu/nodemcu-firmware/issues/1836
-CONFIG_TCP_MSL=5000
+CONFIG_LWIP_TCP_MSL=5000
 
 # Disable esp-idf's bluetooth component by default.
 # The bthci module is also disabled and will enable bt when selected
