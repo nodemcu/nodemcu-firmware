@@ -9,7 +9,10 @@ This allows you to build simple gadgets that can be interrogated and controlled 
 ## ble.init(configuration)
 
 This initializes the BlueTooth stack and starts advertising according to the data in the
-configuration table. See below for a detailed description of this table.
+configuration table. See below for a detailed description of this table. 
+
+Once the stack is initialized, another `init` can be performed and it will switch over to using
+the new config. 
 
 #### Syntax
 `ble.init(ble_config)`
@@ -26,23 +29,19 @@ local config = {name="MyGadget=", services={{uuid="0123456789abcdef0123456789abc
 ble.init(config)
 ```
 
-## bthci.shutdown(callback)
+## ble.shutdown()
 
 Shuts down the BlueTooth controller and returns it to the state where another `init` can be performed.
 
 #### Syntax
-`ble.shutdown([callback])`
-
-#### Parameters
-- `callback` optional function to be invoked when the shutdown completes. Its
-  only argument is an error code, or `nil` on success.
+`ble.shutdown()`
 
 #### Returns
 `nil`
 
 #### Example
 ```lua
-ble.shutdown(function(err) print(err or "Ok!") end)
+ble.shutdown()
 ```
 
 ## Conventions
@@ -82,7 +81,10 @@ The characteristics are treated as read/write unless only one of the `read` or `
 
 The calling conventions for these functions are as follows:
 
-- `read` This is invoked with the charactersitic table as its only argument.
+- `read` This is invoked with the characteristic table as its only argument.
 - `write` This is invoked with two arguments, the characteristic table and the data to be written (after conversion by `type`)
 
 
+### Type conversions
+
+If the `type` value converts a single item, then that will be the value that is placed into the `value` element. If it converts multiple elements, then the elements will be placed into an array that that will be plaed into the `value` element.

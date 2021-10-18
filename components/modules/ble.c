@@ -187,7 +187,7 @@ static int
 lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
   // Actually the only thing we care about is the arg and the ctxt
 
-  printf("access_cb called with op %d\n", ctxt->op);
+  MODLOG_DFLT(INFO, "access_cb called with op %d\n", ctxt->op);
 
   size_t task_block_size = sizeof(task_block_t);
 
@@ -215,7 +215,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
     }
   }
 
-  printf("ABout to task_post\n");
+  MODLOG_DFLT(INFO, "ABout to task_post\n");
   
   if (!task_post(TASK_PRIORITY_HIGH, task_handle, (task_param_t) task_block)) {
     free(task_block);
@@ -225,7 +225,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   response_message_t message;
 
   while (1) {
-    printf("About to receive\n");
+    MODLOG_DFLT(INFO, "About to receive\n");
 
     if (xQueueReceive(response_queue, &message, (TickType_t) (10000/portTICK_PERIOD_MS) ) != pdPASS) {
       free(task_block);
@@ -289,14 +289,12 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     // Now we have the value (-1), struct (-2), table (-3)
     if (!lua_isnoneornil(L, -2)) {
       // need to convert value
-      printf("About to convert vaclue for read\n");
       if (!lua_istable(L, -1)) {
         // wrap it in a table
         lua_createtable(L, 1, 0);
         lua_pushvalue(L, -2);  // Now have value, table, value, struct, table
         lua_rawseti(L, -2, 1); 
         lua_remove(L, -2);   // now have table, struct, chr table
-        printf("wrapped in table\n");
       }
 
       // Now call struct.pack
@@ -349,7 +347,6 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
         goto cleanup;
       }
       int vals = lua_gettop(L) - stack_size;
-      printf("unpacked %d vals\n", vals - 1);
 
       // Note that the last entry is actually the string offset
       for (int i = 1; i < vals; i++) {
@@ -367,6 +364,15 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       lua_remove(L, -2);	// and throw away the table
     }
     // value, struct, chr table
+    // save to `value` if present
+    lua_getfield(L, -3, "value");
+    if (!lua_isnoneornil(L, -1)) {
+      lua_pop(L, 1);
+      lua_pushvalue(L, -1);
+      lua_setfield(L, -4, "value");
+    } else {
+      lua_pop(L, 1);
+    }
     lua_getfield(L, -3, "write");
     if (!lua_isnoneornil(L, -1)) {
       lua_pushvalue(L, -4);   // the characterstics table
@@ -379,14 +385,11 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       }
     } else {
       lua_pop(L, 1);  // Throw away the null write pointer
-      // just save the result in the value
-      lua_setfield(L, -3, "value");
-      message.errcode = 0;
     }
+    lua_pop(L, 1);	// THrow away the value
   }
 
 cleanup:
-  printf("Returning code %d\n", message.errcode);
   lua_pop(L, 2);
   message.seqno = task_block->seqno;
 
@@ -399,8 +402,6 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   // This is the number of services (ns) + 1 * sizeof(ble_gatt_svc_def)
   // + number of characteristics (nc) + ns * sizeof(ble_gatt_chr_def)
   // + ns + nc * sizeof(ble_uuid_any_t)
-
-  printf("build_gatt_svcs\n");
 
   lua_getfield(L, 1, "services");
   if (!lua_istable(L, -1)) {
@@ -428,7 +429,6 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
 
   int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t);
 
-  printf("Computed size: %d (nc %d, ns %d)\n", size, nc, ns);
 
   struct ble_gatt_svc_def *svcs = malloc(size);
   if (!svcs) {
@@ -520,12 +520,6 @@ static int
 gatt_svr_init(lua_State *L) {
     int rc;
 
-    printf("about to call gap_init\n");
-
-    ble_svc_gap_init();
-    printf("about to call gatt_init\n");
-    ble_svc_gatt_init();
-    
     // Now we have to build the gatt_svr_svcs data structure
 
     
@@ -534,8 +528,6 @@ gatt_svr_init(lua_State *L) {
     free_gatt_svcs(L, gatt_svr_svcs);
     gatt_svr_svcs = svcs;
     
-
-    printf("about to call count_cfg\n");
     rc = ble_gatts_count_cfg(gatt_svr_svcs);
     if (rc != 0) {
       return luaL_error(L, "Failed to count gatts: %d", rc);
@@ -607,30 +599,39 @@ lble_host_task(void *param)
 
 static void 
 lble_init_stack(lua_State *L) {
-  int ret = esp_nimble_hci_and_controller_init();
-  if (ret != ESP_OK) {
-    luaL_error(L, "esp_nimble_hci_and_controller_init() failed with error: %d", ret);
-    return;
+  static char stack_inited;
+  if (!stack_inited) {
+    stack_inited = 1;
+    int ret = esp_nimble_hci_and_controller_init();
+    if (ret != ESP_OK) {
+      luaL_error(L, "esp_nimble_hci_and_controller_init() failed with error: %d", ret);
+      return;
+    }
+
+    nimble_port_init();
+
+    //Initialize the NimBLE Host configuration
+
+    nimble_port_freertos_init(lble_host_task);
+
+    printf("about to call gap_init\n");
+
+    ble_svc_gap_init();
+    printf("about to call gatt_init\n");
+    ble_svc_gatt_init();
   }
-
-  nimble_port_init();
-
-  //Initialize the NimBLE Host configuration
-
-  nimble_port_freertos_init(lble_host_task);
 }
 
 static int
 lble_gap_event(struct ble_gap_event *event, void *arg)
 {
-  printf("GAP event %d\n", event->type);
   struct ble_gap_conn_desc desc;
   int rc;
 
   switch (event->type) {
   case BLE_GAP_EVENT_CONNECT:
       /* A new connection was established or a connection attempt failed. */
-      printf("connection %s; status=%d ",
+      MODLOG_DFLT(INFO, "connection %s; status=%d ",
 		  event->connect.status == 0 ? "established" : "failed",
 		  event->connect.status);
       if (event->connect.status == 0) {
@@ -639,7 +640,7 @@ lble_gap_event(struct ble_gap_event *event, void *arg)
 	  lble_print_conn_desc(&desc);
 
       }
-      printf("\n");
+      MODLOG_DFLT(INFO, "\n");
 
       if (event->connect.status != 0) {
 	  /* Connection failed; resume advertising. */
@@ -648,9 +649,9 @@ lble_gap_event(struct ble_gap_event *event, void *arg)
       return 0;
 
   case BLE_GAP_EVENT_DISCONNECT:
-      printf("disconnect; reason=%d ", event->disconnect.reason);
+      MODLOG_DFLT(INFO, "disconnect; reason=%d ", event->disconnect.reason);
       lble_print_conn_desc(&event->disconnect.conn);
-      printf("\n");
+      MODLOG_DFLT(INFO, "\n");
 
       /* Connection terminated; resume advertising. */
       lble_start_advertising();
@@ -732,7 +733,7 @@ lble_start_advertising() {
   /* Figure out address to use while advertising (no privacy for now) */
   rc = ble_hs_id_infer_auto(0, &own_addr_type);
   if (rc != 0) {
-    return printf("error determining address type; rc=%d", rc);
+    return MODLOG_DFLT(INFO, "error determining address type; rc=%d", rc);
   }
 
   /**
@@ -779,13 +780,13 @@ lble_start_advertising() {
     scan_response_fields.name_is_complete = 1;
     rc = ble_gap_adv_rsp_set_fields(&scan_response_fields);
     if (rc) {
-      return printf("gap_adv_rsp_set_fields failed: %d", rc);
+      return MODLOG_DFLT(INFO, "gap_adv_rsp_set_fields failed: %d", rc);
     }
   }
 
   rc = ble_gap_adv_set_fields(&fields);
   if (rc != 0) {
-    return printf("error setting advertisement data; rc=%d", rc);
+    return MODLOG_DFLT(INFO, "error setting advertisement data; rc=%d", rc);
   }
 
   /* Begin advertising. */
@@ -795,7 +796,7 @@ lble_start_advertising() {
   rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER,
 			 &adv_params, lble_gap_event, NULL);
   if (rc != 0) {
-      return printf("error enabling advertisement; rc=%d", rc);
+      return MODLOG_DFLT(INFO, "error enabling advertisement; rc=%d", rc);
   }
 
   return 0;
@@ -857,7 +858,6 @@ static int lble_init(lua_State *L) {
   // Passed the config table
   luaL_checktype(L, 1, LUA_TTABLE);
 
-  printf("About to init_stack");
   lble_init_stack(L);
 
   lua_getfield(L, 1, "name");
@@ -899,6 +899,16 @@ static int lble_init(lua_State *L) {
 }
 
 static int lble_shutdown(lua_State *L) {
+  if (nimble_port_stop()) {
+    return luaL_error(L, "Failed to stop the NIMBLE task");
+  }
+
+  nimble_port_deinit();
+ 
+  if (ESP_OK != esp_nimble_hci_and_controller_deinit()) {
+    return luaL_error(L, "Failed to shutdown the BLE controller");
+  }
+
   return 0;
 }
 
