@@ -412,6 +412,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   // -1 is the services list
   int nc = 0;
   for (int i = 1; i <= ns; i++) {
+    MODLOG_DFLT(INFO, "Counting -- service %d (top %d)\n", i, lua_gettop(L));
     lua_geti(L, -1, i);
     // -1 is now the service which should be a table. It must have a uuid
     if (lua_type(L, -1) != LUA_TTABLE) {
@@ -426,6 +427,8 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
     nc += lua_rawlen(L, -1);
     lua_pop(L, 2);
   }
+
+  MODLOG_DFLT(INFO, "Discovered %d services with %d characteristics\n", ns, nc);
 
   int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t);
 
@@ -444,6 +447,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   // Now fill out the data structure
   // -1 is the services list
   for (int i = 1; i <= ns; i++) {
+    MODLOG_DFLT(INFO, "Processing service %d (top %d)\n", i, lua_gettop(L));
     struct ble_gatt_svc_def *svc = svcs++;
     lua_geti(L, -1, i);
     // -1 is now the service which should be a table. It must have a uuid
@@ -457,9 +461,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
       free_gatt_svcs(L, result);
       return luaL_error(L, "Unable to convert UUID: %s", lua_tostring(L, -1));
     }
-    if (i == 1) {
-      svc->type = BLE_GATT_SVC_TYPE_PRIMARY;
-    }
+    svc->type = BLE_GATT_SVC_TYPE_PRIMARY;
     svc->uuid = (ble_uuid_t *) uuids++;
     svc->characteristics = chrs;
     lua_pop(L, 1);
@@ -467,6 +469,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
     lua_getfield(L, -1, "characteristics");
     int nc = lua_rawlen(L, -1);
     for (int j = 1; j <= nc; j++) {
+      MODLOG_DFLT(INFO, "Processing characteristic %d (top %d)\n", j, lua_gettop(L));
       struct ble_gatt_chr_def *chr = chrs++;
       lua_geti(L, -1, j);
 
@@ -488,13 +491,13 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
         chr->flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE;
         lua_pop(L, 1); // pop off value
       } else {
-        lua_getfield(L, -1, "read");
+        lua_getfield(L, -2, "read");
 	if (!lua_isnoneornil (L, -1)) {
 	  luaL_checkfunction (L, -1);
 	  chr->flags |= BLE_GATT_CHR_F_READ;
 	}
 
-        lua_getfield(L, -1, "write");
+        lua_getfield(L, -3, "write");
 	if (!lua_isnoneornil (L, -1)) {
 	  luaL_checkfunction (L, -1);
 	  chr->flags |= BLE_GATT_CHR_F_WRITE;
@@ -508,6 +511,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
       chr->access_cb = lble_access_cb;
     }
     lua_pop(L, 2);
+    chrs++;	// terminate the list of characteristics for this service
   }
   lua_pop(L, 1);
 

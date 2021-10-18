@@ -534,6 +534,58 @@ static int file_fsinfo( lua_State* L )
   return 3;
 }
 
+// Lua: getfile(filename)
+static int file_getfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L ,1);
+  // Stack [1] = FD
+  file_open(L);
+  // Stack [1] = filename; [2] = FD or nil
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 1);  // dump filename, so [1] = FD
+    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
+    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd);
+    // Stack [1] = FD; [2] = contents if ret_cnt = 1;
+    file_close(L);     // leaves Stack unchanged if [1] = FD
+    lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
+  }
+  return ret_cnt;
+}
+
+// Lua: getfile(filename)
+static int file_putfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L, 2);
+  lua_pushvalue(L, 2); //dup contents onto the ToS [3]
+  lua_pushliteral(L, "w+");
+  lua_replace(L, 2);
+  // Stack [1] = filename; [2] "w+" [3] contents;
+  file_open(L);
+  // Stack [1] = filename; [2] "w+" [3] contents; [4] FD or nil
+
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 2);  //dump "w+" attribute literal
+    lua_replace(L, 1);
+    // Stack [1] = FD; [2] contents
+    file_write(L);
+    // Stack [1] = FD; [2] contents; [3] result status
+    lua_remove(L, 2);  //dump contents
+    file_close(L);
+    lua_remove(L, 1); // Dump FD leaving status as ToS
+  }
+  return 1;
+}
+
+
+
 typedef struct {
   vfs_vol *vol;
 } volume_type;
@@ -570,6 +622,8 @@ LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( read,      file_read )
   LROT_FUNCENTRY( readline,  file_readline )
+  LROT_FUNCENTRY( getcontents,  file_getfile )
+  LROT_FUNCENTRY( putcontents,  file_putfile )
 #ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   LROT_FUNCENTRY( format,    file_format )
   LROT_FUNCENTRY( fscfg,     file_fscfg )
