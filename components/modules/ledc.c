@@ -30,6 +30,8 @@ static int lledc_new_channel( lua_State *L )
 
   ledc_timer.timer_num = opt_checkint_range(L, "timer", -1, 0, LEDC_TIMER_MAX-1);
 
+  ledc_timer.clk_cfg = LEDC_AUTO_CLK;
+
   /* Setup channel */
   ledc_channel_config_t channel_config = {
     .speed_mode = ledc_timer.speed_mode,

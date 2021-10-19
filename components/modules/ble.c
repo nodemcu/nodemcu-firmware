@@ -48,6 +48,7 @@
 
 #define PERROR() printf("pcall failed: %s\n", lua_tostring(L, -1))
 
+static volatile bool synced = false;
 static int lble_start_advertising();
 static int lble_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -542,7 +543,6 @@ gatt_svr_init(lua_State *L) {
       return luaL_error(L, "Failed to add gatts: %d", rc);
     }
 
-    ble_gatts_start();
 
     return 0;
 }
@@ -618,11 +618,6 @@ lble_init_stack(lua_State *L) {
 
     nimble_port_freertos_init(lble_host_task);
 
-    printf("about to call gap_init\n");
-
-    ble_svc_gap_init();
-    printf("about to call gatt_init\n");
-    ble_svc_gatt_init();
   }
 }
 
@@ -814,7 +809,11 @@ lble_on_sync(void)
     rc = ble_hs_util_ensure_addr(0);
     assert(rc == 0);
 
-    lble_start_advertising();
+    if (!synced) {
+      synced = true;
+    } else {
+      lble_start_advertising();
+    }
 }
 
 void
@@ -862,8 +861,6 @@ static int lble_init(lua_State *L) {
   // Passed the config table
   luaL_checktype(L, 1, LUA_TTABLE);
 
-  lble_init_stack(L);
-
   lua_getfield(L, 1, "name");
   const char *name = strdup(luaL_checkstring(L, -1));
 
@@ -888,6 +885,10 @@ static int lble_init(lua_State *L) {
     memcpy(gadget_mfg, mfg, len);
   }
 
+  synced = false;
+
+  lble_init_stack(L);
+
   /* Initialize the NimBLE host configuration. */
   // ble_hs_cfg.reset_cb = bleprph_on_reset;
   ble_hs_cfg.sync_cb = lble_on_sync;
@@ -897,6 +898,30 @@ static int lble_init(lua_State *L) {
   rc = gatt_svr_init(L);
   if (rc) {
     luaL_error(L, "Failed to gatt_svr_init: %d", rc);
+  }
+
+  bool seen1800 = false;
+  // See if we already have the 1800 service registered
+  for (struct ble_gatt_svc_def *svcs = gatt_svr_svcs; svcs->type; svcs++) {
+    if (!ble_uuid_cmp(svcs->uuid, BLE_UUID16_DECLARE(0x1800))) {
+      seen1800 = true;
+    }
+  }
+
+  if (!seen1800) {
+    printf("about to call gap_init\n");
+    ble_svc_gap_init();
+  }
+  printf("about to call gatt_init\n");
+  ble_svc_gatt_init();
+
+  printf("about to call gatts_start\n");
+  ble_gatts_start();
+
+  if (synced) {
+    lble_start_advertising();
+  } else {
+    synced = true;
   }
 
   return 0;
