@@ -383,60 +383,40 @@ static int file_stat( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 {
-  char *heap_mem = NULL;
-
-  if(n <= 0)
-    n = FILE_READ_CHUNK;
-
-  if(end_char < 0 || end_char >255)
-    end_char = EOF;
+  int i, j;
+  luaL_Buffer b;
+  char p[LUAL_BUFFERSIZE/2];
 
   if(!fd)
     return luaL_error(L, "open a file first");
 
-  char *p;
-  int i;
-  size_t bufsize = n;
+  luaL_buffinit(L, &b);
 
-  if (n > LUAL_BUFFERSIZE) {
-    // get buffer from heap
-    p = heap_mem = luaM_malloc(L, bufsize);
-  } else {
-    // small chunks go onto the stack
-    p = alloca(bufsize);
-  }
+  for (j = 0; j < n; j += sizeof(p)) { 
+    int nwanted = (n - j >= sizeof(p)) ? sizeof(p) : n - j;
+    int nread   = vfs_read(fd, p, nwanted);
 
-  n = vfs_read(fd, p, n);
-  // bypass search if no end character provided
-  if (n > 0 && end_char != EOF) {
-    for (i = 0; i < n; ++i)
-      if (p[i] == end_char)
-      {
-        ++i;
+    if (nread == VFS_RES_ERR || nread == 0) {
+      if (j > 0) {
         break;
       }
-  } else {
-    i = n;
+      lua_pushnil(L);
+      return 1;
+    }
+
+    for (i = 0; i < nread; ++i) {
+      luaL_addchar(&b, p[i]);
+      if (p[i] == end_char) {
+        vfs_lseek(fd, -nread + i + 1, VFS_SEEK_CUR); //reposition after end char found
+        nread = 0;   // force break on outer loop
+        break;
+      }
+    }
+
+    if (nread < nwanted)
+      break;
   }
-
-  int err = 0;
-
-  if (i == 0 || n == VFS_RES_ERR) {
-    lua_pushnil(L);
-  } else {
-    vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-    err = luaX_pushlstring(L, p, i); // On error it will return nonzero and leave a message on top of the stack.
-  }
-
-  if (heap_mem) {
-    luaN_freearray(L, heap_mem, bufsize);
-  }
-
-  if (err){
-    lua_error(L); // luaX_pushlstring failed and the error message is on top of the stack. Throw it.
-    // never returns
-  }
-
+  luaL_pushresult(&b);
   return 1;
 }
 
@@ -474,6 +454,29 @@ static int file_readline( lua_State* L )
   GET_FILE_OBJ;
 
   return file_g_read(L, FILE_READ_CHUNK, '\n', fd);
+}
+
+
+// Lua: getfile(filename)
+static int file_getfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L ,1);
+  // Stack [1] = FD
+  file_open(L);
+  // Stack [1] = filename; [2] = FD or nil
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 1);  // dump filename, so [1] = FD
+    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
+    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd);
+    // Stack [1] = FD; [2] = contents if ret_cnt = 1;
+    file_close(L);     // leaves Stack unchanged if [1] = FD
+    lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
+  }
+  return ret_cnt;
 }
 
 // Lua: write("string")
@@ -532,28 +535,6 @@ static int file_fsinfo( lua_State* L )
   lua_pushinteger(L, used);
   lua_pushinteger(L, total);
   return 3;
-}
-
-// Lua: getfile(filename)
-static int file_getfile( lua_State* L )
-{
-  // Warning this code C calls other file_* routines to avoid duplication code.  These
-  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
-  // align these
-  int ret_cnt = 0;
-  lua_settop(L ,1);
-  // Stack [1] = FD
-  file_open(L);
-  // Stack [1] = filename; [2] = FD or nil
-  if (!lua_isnil(L, -1)) {
-    lua_remove(L, 1);  // dump filename, so [1] = FD
-    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
-    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd);
-    // Stack [1] = FD; [2] = contents if ret_cnt = 1;
-    file_close(L);     // leaves Stack unchanged if [1] = FD
-    lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
-  }
-  return ret_cnt;
 }
 
 // Lua: getfile(filename)
@@ -622,8 +603,6 @@ LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( read,      file_read )
   LROT_FUNCENTRY( readline,  file_readline )
-  LROT_FUNCENTRY( getcontents,  file_getfile )
-  LROT_FUNCENTRY( putcontents,  file_putfile )
 #ifdef CONFIG_NODEMCU_BUILD_SPIFFS
   LROT_FUNCENTRY( format,    file_format )
   LROT_FUNCENTRY( fscfg,     file_fscfg )
@@ -633,6 +612,8 @@ LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( flush,     file_flush )
   LROT_FUNCENTRY( rename,    file_rename )
   LROT_FUNCENTRY( exists,    file_exists )
+  LROT_FUNCENTRY( getcontents,  file_getfile )
+  LROT_FUNCENTRY( putcontents,  file_putfile )
   LROT_FUNCENTRY( fsinfo,    file_fsinfo )
   LROT_FUNCENTRY( on,        file_on )
   LROT_FUNCENTRY( stat,      file_stat )

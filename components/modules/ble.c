@@ -64,6 +64,8 @@ static QueueHandle_t response_queue;
 static int struct_pack_index;
 static int struct_unpack_index;
 
+static enum { STOPPED, RUNNING, SHUTTING } inited;
+
 static int seqno;
 
 // Note that the buffer should be freed 
@@ -490,7 +492,21 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
 
       if (lua_getfield(L, -1, "value") != LUA_TNIL) {
         chr->flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE;
-        lua_pop(L, 1); // pop off value
+
+        int flags = 0;
+        lua_getfield(L, -2, "read");
+        if (lua_isboolean(L, 1) && lua_toboolean(L, -1)) {
+          flags = BLE_GATT_CHR_F_READ;
+        }
+        lua_getfield(L, -3, "write");
+        if (lua_isboolean(L, 1) && lua_toboolean(L, -1)) {
+          flags |= BLE_GATT_CHR_F_WRITE;
+        }
+        if (flags) {
+          chr->flags = flags;
+        }
+       
+        lua_pop(L, 3); // pop off value, read, write
       } else {
         lua_getfield(L, -2, "read");
 	if (!lua_isnoneornil (L, -1)) {
@@ -729,6 +745,10 @@ lble_start_advertising() {
   const char *name = gadget_name;
   int rc;
 
+  if (inited != RUNNING) {
+    return 0;
+  }
+
   /* Figure out address to use while advertising (no privacy for now) */
   rc = ble_hs_id_infer_auto(0, &own_addr_type);
   if (rc != 0) {
@@ -850,6 +870,9 @@ gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
 
 
 static int lble_init(lua_State *L) {
+  if (inited != STOPPED) {
+    return luaL_error(L, "ble is already running");
+  }
   if (!struct_pack_index) {
     lua_getglobal(L, "struct");
     lua_getfield(L, -1, "pack");
@@ -924,10 +947,14 @@ static int lble_init(lua_State *L) {
     synced = true;
   }
 
+  inited = RUNNING;
+
   return 0;
 }
 
 static int lble_shutdown(lua_State *L) {
+  inited = SHUTTING;
+
   if (nimble_port_stop()) {
     return luaL_error(L, "Failed to stop the NIMBLE task");
   }
@@ -937,6 +964,8 @@ static int lble_shutdown(lua_State *L) {
   if (ESP_OK != esp_nimble_hci_and_controller_deinit()) {
     return luaL_error(L, "Failed to shutdown the BLE controller");
   }
+
+  inited = STOPPED;
 
   return 0;
 }

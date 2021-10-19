@@ -74,10 +74,12 @@ The characteristic table contains the following keys:
 - `uuid` The UUID of the characteristics. This can be either a 16 byte string or a 2 byte string that identifies the particular characteristic. Typically, 2 byte strings are used for well-known characteristics.
 - `type` This is the optional type of the value. It has the same value as a unpack code in the `struct` module.
 - `value` This is the actual value of the characteristic. This will be a string of bytes unless a `type` value is set.
-- `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set)
+- `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set).
 - `write` This is a function that will be invoked to write the value (and so does not need the `value` entry). It is given a string of bytes (unless `type` is set)
 
-The characteristics are treated as read/write unless only one of the `read` or `write` keys is present and the `value` key is not specificed.
+If the `value` key is present, then the characteristic is read/write. However, if one or `read` or `write` is set to `true`, then it restricts access to that mode.
+
+The characteristics are treated as read/write unless only one of the `read` or `write` keys is present and the `value` key is not specified.
 
 The calling conventions for these functions are as follows:
 
