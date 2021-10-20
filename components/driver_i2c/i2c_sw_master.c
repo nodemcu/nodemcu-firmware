@@ -105,7 +105,7 @@ uint8_t i2c_sw_master_get_pinSCL()
  * Parameters   : NONE
  * Returns      : NONE
 *******************************************************************************/
-void i2c_sw_master_gpio_init(uint8 sda, uint8 scl)
+void i2c_sw_master_gpio_init(uint8_t sda, uint8_t scl)
 {
   pinSDA = sda;
   pinSCL = scl;

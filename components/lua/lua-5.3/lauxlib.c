@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 /*
 ** This file uses only the official API of Lua.
@@ -31,10 +32,9 @@
 #include "lpanic.h"
 #define LUA_LIB
 
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 #include "platform.h"
 #include "vfs.h"
-#include <fcntl.h>
 #endif
 
 
@@ -677,11 +677,7 @@ LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
 ** =======================================================
 */
 
-#ifdef LUA_CROSS_COMPILER
-#  define file(f) FILE *f
-#  define freopen_bin(f,fn) freopen(f,"rb",fn)
-#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
-#else /* map stdio API and macros to vfs */
+#if defined(LUA_USE_ESP8266) /* map stdio API and macros to vfs */
 #  undef feof
 #  undef fopen
 #  undef getc
@@ -690,10 +686,15 @@ LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
 #  define strerror(n) ""
 #  define feof(f)        vfs_eof(f)
 #  define fopen(f, m)    vfs_open(f, m)
+#  define fclose(f)      vfs_close(f)
 #  define freopen_bin(fn,f) ((void) vfs_close(f), vfs_open(fn, "r"))
 #  define getc(f)        vfs_getc(f)
 #  define ungetc(c,f)    vfs_ungetc(c, f)
 #  define read_buff(b,f) vfs_read(f, b, sizeof (b))
+#else
+#  define file(f) FILE *f
+#  define freopen_bin(f,fn) freopen(f,"rb",fn)
+#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
 #endif
 #define LAUXLIB_TYPE 0
 typedef struct LoadF {
@@ -803,7 +804,7 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   }
 #else
   (void) readstatus;              /* avoid compile error */
-  if (filename) vfs_close(lf.f);  /* close file (even in case of errors) */
+  if (filename) fclose(lf.f);  /* close file (even in case of errors) */
 #endif
    lua_remove(L, fnameindex);
   return status;

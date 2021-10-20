@@ -17,7 +17,7 @@
 #include <string.h>
 #include <fcntl.h>
 
-#ifndef LUA_CROSS_COMPILER
+#ifdef LUA_USE_ESP8266
 #include "vfs.h"
 #endif
 
@@ -329,7 +329,7 @@ static int ll_loadlib (lua_State *L) {
 ** 'require' function
 ** =======================================================
 */
-#ifdef LUA_CROSS_COMPILER
+#if !defined(LUA_USE_ESP8266)
 static int readable (const char *filename) {
   FILE *f = fopen(filename, "r");  /* try to open file */
   if (f == NULL) return 0;  /* open failed */

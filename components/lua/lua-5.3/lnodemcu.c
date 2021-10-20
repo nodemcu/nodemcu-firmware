@@ -20,11 +20,14 @@
 
 #ifdef LUA_USE_ESP
 #include "platform.h"
-#include "vfs.h"
 #include "task/task.h"
 #else
 // On the cross-compiler we do need the LFS reload mechanism, regardless
 #undef CONFIG_NODEMCU_EMBEDDED_LFS_SIZE
+#endif
+
+#ifdef LUA_USE_ESP8266
+#include "vfs.h"
 #endif
 
 /*
@@ -47,7 +50,8 @@
 
 
 //====================== Wrap POSIX and VFS file API =========================//
-#ifdef LUA_USE_ESP
+
+#ifdef LUA_USE_ESP8266
 int luaopen_file(lua_State *L);
 #  define l_file(f)   int f
 #  define l_open(f)   vfs_open(f, "r")
@@ -64,11 +68,13 @@ int luaopen_file(lua_State *L);
 #  define l_rewind(f) rewind(f)
 #endif
 
-#ifdef LUA_USE_ESP
-
+#ifdef LUA_USE_ESP8266
 extern void dbg_printf(const char *fmt, ...);                // DEBUG
 #undef printf
 #define printf(...) dbg_printf(__VA_ARGS__)                  // DEBUG
+#endif
+
+#ifdef LUA_USE_ESP
 
 #define FLASH_PAGE_SIZE INTERNAL_FLASH_SECTOR_SIZE
 /* Erasing the LFS invalidates ESP instruction cache,  so doing a block 64Kb */
@@ -520,7 +526,7 @@ LUAI_FUNC void *luaN_writeFlash(void *vF, const void *rec, size_t n) {
 LUAI_FUNC int luaN_init (lua_State *L) {
   static LFSflashState *F = NULL;
   static LFSHeader *fh;
-  char fname[CONFIG_NODEMCU_FS_OBJ_NAME_LEN];
+  char fname[CONFIG_SPIFFS_OBJ_NAME_LEN-1];
   bool have_load_file = lfs_get_load_filename(fname, sizeof(fname));
 
  /*
@@ -582,7 +588,7 @@ LUAI_FUNC int luaN_init (lua_State *L) {
       }
 #endif
       lfs_clear_load_filename();
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
       luaopen_file(L);
 #endif
       if (!(F->f = l_open(fname))) {

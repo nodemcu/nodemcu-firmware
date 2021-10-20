@@ -73,6 +73,7 @@ idf_component_register(
     "bt"
     "driver_can"
     "esp_http_client"
+    "fatfs"
     "libsodium"
     "lua"
     "mbedtls"
