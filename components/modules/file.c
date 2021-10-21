@@ -543,7 +543,6 @@ static int file_putfile( lua_State* L )
   // Warning this code C calls other file_* routines to avoid duplication code.  These
   // use Lua stack addressing of arguments, so this does Lua stack maniplation to
   // align these
-  int ret_cnt = 0;
   lua_settop(L, 2);
   lua_pushvalue(L, 2); //dup contents onto the ToS [3]
   lua_pushliteral(L, "w+");

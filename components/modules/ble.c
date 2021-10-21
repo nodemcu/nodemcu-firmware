@@ -928,13 +928,10 @@ static int lble_init(lua_State *L) {
   }
 
   if (!seen1800) {
-    printf("about to call gap_init\n");
     ble_svc_gap_init();
   }
-  printf("about to call gatt_init\n");
   ble_svc_gatt_init();
 
-  printf("about to call gatts_start\n");
   ble_gatts_start();
 
   inited = RUNNING;
