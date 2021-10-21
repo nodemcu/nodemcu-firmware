@@ -128,11 +128,12 @@ Table containing the card's OCR, CID, CSD, SCR, and RCA with elements:
 Mount filesystem on SD card.
 
 #### Syntax
-`card:mount(ldrv[, slot])`
+`card:mount(ldrv[, partition])`
 
 #### Parameters
 - `ldrv` name of logical drive, "/SD0", "/SD1", etc.
-- `slot` one of `sdmmc.HS1` or `sdmmc.HS2`, defaults to `sdmmc.HS2` if omitted
+- `partition` the partition number, default is 0, meaning the first available
+   FAT partition.
 
 #### Returns
 `true` if successful, `false` otherwise

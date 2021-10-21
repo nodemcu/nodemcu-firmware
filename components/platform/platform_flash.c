@@ -146,7 +146,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
       return 0;
     memcpy(apbuf, from, size);
   }
-  r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
+  r = flash_write(toaddr, apbuf?(uint32_t *)apbuf:(uint32_t *)from, size);
   if(apbuf)
     free(apbuf);
   if(ESP_OK == r)
@@ -174,18 +174,18 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if( ((uint32_t)to) & blkmask )
   {
     uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
-    uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
+    uint32_t* to2=(uint32_t*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
     r = flash_read(fromaddr, to2, size2);
     if(ESP_OK == r)
     {
       memmove(to,to2,size2);
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
-      r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      r=flash_read(fromaddr+size2,(uint32_t*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
       memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
     }
   }
   else
-    r = flash_read(fromaddr, (uint32 *)to, size);
+    r = flash_read(fromaddr, (uint32_t *)to, size);
 
   if(ESP_OK == r)
     return size;

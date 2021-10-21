@@ -5,7 +5,7 @@
 
 #define I2C_NUM_MAX 1
 
-void i2c_sw_master_gpio_init(uint8 sda, uint8 scl);
+void i2c_sw_master_gpio_init(uint8_t sda, uint8_t scl);
 void i2c_sw_master_init(void);
 
 #define i2c_sw_master_wait ets_delay_us

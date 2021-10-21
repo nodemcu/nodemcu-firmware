@@ -19,7 +19,7 @@
 // assuming system_timer_reinit() has *not* been called
 #define MAX_TIMEOUT_DEF 6870947  //SDK 1.5.3 limit (0x68D7A3)
 
-static const uint32 MAX_TIMEOUT=MAX_TIMEOUT_DEF;
+static const uint32_t MAX_TIMEOUT=MAX_TIMEOUT_DEF;
 static const char* MAX_TIMEOUT_ERR_STR = "Range: 1-"STRINGIFY(MAX_TIMEOUT_DEF);
 
 typedef struct{

@@ -61,6 +61,12 @@ menu "Lua configuration"
             help
                 Includes the coroutine module (recommended).
 
+        config LUA_BUILTIN_IO
+            bool "I/O module"
+            default "y"
+            help
+                Includes the file I/O module (recommended).
+
         config LUA_BUILTIN_MATH
             bool "Math module"
             default "y"

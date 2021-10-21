@@ -241,7 +241,6 @@ int platform_flash_erase_sector( uint32_t sector_id );
 #define PLATFORM_PARTITION_SUBTYPE_DATA_RF     0x01
 #define PLATFORM_PARTITION_SUBTYPE_DATA_WIFI   0x02
 
-#define PLATFORM_PARTITION_SUBTYPE_NODEMCU_SPIFFS 0x00
 #define PLATFORM_PARTITION_SUBTYPE_NODEMCU_LFS    0x01
 
 typedef struct {

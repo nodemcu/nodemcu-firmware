@@ -11,8 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#ifndef LUA_CROSS_COMPILER
+#ifdef LUA_USE_ESP
 #include "esp_system.h"
+#endif
+#ifdef LUA_USE_ESP8266
 #include "vfs.h"
 #endif
 
@@ -716,29 +718,31 @@ LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
 
 typedef struct LoadF {
   int extraline;
-#ifdef LUA_CROSS_COMPILER
-  FILE *f;
-#else
+#ifdef LUA_USE_ESP8266
   int f;
+#else
+  FILE *f;
 #endif
   char buff[LUAL_BUFFERSIZE];
 } LoadF;
 
-#ifdef LUA_CROSS_COMPILER
-#  define freopen_bin(f,fn) freopen(f,"rb",fn)
-#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
-#else
+#ifdef LUA_USE_ESP8266
 #  define strerror(n) ""
 #undef feof
 #  define feof(f)        vfs_eof(f)
 #undef fopen
 #  define fopen(f, m)    vfs_open(f, m)
 #  define freopen_bin(fn,f) ((void) vfs_close(f), vfs_open(fn, "r"))
+#undef fclose
+#  define fclose(f)      vfs_close(f)
 #undef getc
 #  define getc(f)        vfs_getc(f)
 #undef ungetc
 #  define ungetc(c,f)    vfs_ungetc(c, f)
 #  define read_buff(b,f) vfs_read(f, b, sizeof (b))
+#else
+#  define freopen_bin(f,fn) freopen(f,"rb",fn)
+#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
 #endif
 
 
@@ -810,7 +814,7 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
   }
 #else
   (void) readstatus;
-  if (filename) vfs_close(lf.f); /* close file (even in case of errors) */
+  if (filename) fclose(lf.f); /* close file (even in case of errors) */
 #endif
   lua_remove(L, fnameindex);
   return status;

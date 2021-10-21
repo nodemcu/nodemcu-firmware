@@ -4,7 +4,6 @@
 #include "lundump.h"
 #include "platform.h"
 #include "task/task.h"
-#include "vfs.h"
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
@@ -572,14 +571,13 @@ static int node_egc_setmode(lua_State* L) {
 static int writer(lua_State* L, const void* p, size_t size, void* u)
 {
   UNUSED(L);
-  int file_fd = *( (int *)u );
-  if (!file_fd)
+  FILE *file = (FILE *)u;
+  if (!file)
     return 1;
-  NODE_DBG("get fd:%d,size:%d\n", file_fd, size);
 
-  if (size != 0 && (size != vfs_write(file_fd, (const char *)p, size)) )
+  if (size != 0 && (size != fwrite((const char *)p, size, 1, file)) )
     return 1;
-  NODE_DBG("write fd:%d,size:%d\n", file_fd, size);
+
   return 0;
 }
 
@@ -589,11 +587,9 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 static int node_compile( lua_State* L )
 {
   Proto* f;
-  int file_fd = 0;
+  FILE *file = 0;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, strlen(basename) <= CONFIG_NODEMCU_FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
   char *output = luaM_malloc( L, len+1 );
   strcpy(output, fname);
@@ -616,23 +612,22 @@ static int node_compile( lua_State* L )
 
   int stripping = 1;      /* strip debug information? */
 
-  file_fd = vfs_open(output, "w+");
-  if (!file_fd)
+  file = fopen(output, "w+");
+  if (!file)
   {
     luaM_free( L, output );
     return luaL_error(L, "cannot open/write to file");
   }
 
   lua_lock(L);
-  int result = luaU_dump(L, f, writer, &file_fd, stripping);
+  int result = luaU_dump(L, f, writer, file, stripping);
   lua_unlock(L);
 
-  if (vfs_flush(file_fd) != VFS_RES_OK) {
+  if (fflush(file) != 0) {
     // overwrite Lua error, like writer() does in case of a file io error
     result = 1;
   }
-  vfs_close(file_fd);
-  file_fd = 0;
+  fclose(file);
   luaM_free( L, output );
 
   if (result == LUA_ERR_CC_INTOVERFLOW) {

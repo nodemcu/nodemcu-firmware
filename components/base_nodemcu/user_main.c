@@ -13,10 +13,10 @@
 #include "platform.h"
 #include <string.h>
 #include <stdlib.h>
-#include "vfs.h"
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
+#include "esp_spiffs.h"
 #include "nvs_flash.h"
 #include "flash_api.h"
 
@@ -108,20 +108,36 @@ void nodemcu_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
+    const char *label = CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL;
 
-#if defined ( CONFIG_NODEMCU_BUILD_SPIFFS )
-    // This can take a while, so be nice and provide some feedback while waiting
-    printf ("Mounting flash filesystem...\n");
-    if (!vfs_mount("/FLASH", 0)) {
-        // Failed to mount -- try reformat
-	      NODE_ERR("Formatting file system. Please wait...\n");
-        if (!vfs_format()) {
-            NODE_ERR( "*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-        // Note that fs_format leaves the file system mounted
+    esp_vfs_spiffs_conf_t spiffs_cfg = {
+      .base_path = "",
+      .partition_label = (label && label[0]) ? label : NULL,
+      .max_files = CONFIG_NODEMCU_MAX_OPEN_FILES,
+      .format_if_mount_failed = true,
+    };
+    const char *reason = NULL;
+    switch(esp_vfs_spiffs_register(&spiffs_cfg))
+    {
+      case ESP_OK: break;
+      case ESP_ERR_NO_MEM:
+        reason = "out of memory";
+        break;
+      case ESP_ERR_INVALID_STATE:
+        reason = "already mounted, or encrypted";
+        break;
+      case ESP_ERR_NOT_FOUND:
+        reason = "no SPIFFS partition found";
+        break;
+      case ESP_FAIL:
+        reason = "failed to mount or format partition";
+        break;
+      default:
+        reason = "unknown";
+        break;
     }
-#endif
+    if (reason)
+      printf("Failed to mount SPIFFS partition: %s\n", reason);
 }
 
 

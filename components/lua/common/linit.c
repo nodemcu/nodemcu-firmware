@@ -129,6 +129,9 @@ LROT_ENTRIES_IN_SECTION(lua_libs, libs)
 #ifdef CONFIG_LUA_BUILTIN_STRING
   LROT_FUNCENTRY( string, luaopen_string )
 #endif
+#ifdef CONFIG_LUA_BUILTIN_IO
+  LROT_FUNCENTRY( io, luaopen_io )
+#endif
   LROT_FUNCENTRY( nodemcu, luaN_init )
 LROT_BREAK(lua_libs)
 

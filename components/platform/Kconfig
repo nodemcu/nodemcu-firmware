@@ -17,29 +17,25 @@ menu "NodeMCU platform config"
             output, something has gone seriously wrong and you probably want
             to know about it.
 
-    config NODEMCU_FS_OBJ_NAME_LEN
-        int "Make filesystem object name length"
-        default 31
+    config NODEMCU_DEFAULT_SPIFFS_LABEL
+        string "Partition label of SPIFFS to mount as default file system"
+        default ""
         help
-            Maximum name of filesystem objects (files, directories).
+            If there are multiple SPIFFS partitions, this setting can
+            be used to control which partition gets mounted as the
+            default file system. Leaving it empty defaults to using
+            the first SPIFFS partition found.
 
-    config NODEMCU_SPIFFS_MAX_OPEN_FILES
-        int "Maximum number of open files for SPIFFS"
+    config NODEMCU_MAX_OPEN_FILES
+        int "Maximum number of open files"
         default 4
         help
-            Maximum number of open files for SPIFFS
-
-    config NODEMCU_BUILD_SPIFFS
-        bool
-        default "y"
-        # I don't think we can deal without SPIFFS at this point, so always on for now
-
-    config NODEMCU_BUILD_FATFS
-        bool "Support for FAT filesystems"
-        default "n"
-        select NODEMCU_CMODULE_SDMMC
-        help
-            Include support for accessing FAT filesystems on SD cards.
+            This sets the maximum number of open files at the same time.
+            Technically, it's per file system, but the most common use
+            case only has a single file system (internal SPIFFS) so in
+            that case it is the number of concurrent files that can be
+            opened. Raising this limit will incur some extra memory
+            overhead.
 
     config NODEMCU_EMBED_LFS
         bool "Embed LFS as part of the NodeMCU firmware"

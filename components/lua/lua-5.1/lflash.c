@@ -13,7 +13,6 @@
 #include "lfunc.h"
 #include "lflash.h"
 #include "platform.h"
-#include "vfs.h"
 #include "uzlib.h"
 #include "platform_wdt.h"
 
@@ -24,6 +23,17 @@
 #include <string.h>
 
 #include "lfs.h"
+
+#ifdef LUA_USE_ESP8266
+#include "vfs.h"
+#define fopen(f, m)         vfs_open(f, m)
+#define fclose(f)           vfs_close(f)
+#define fseek(f,n.w)        vfs_lseek(f, n, w)
+#define SEEK_SET            VFS_SEEK_SET
+#define SEEK_END            VFS_SEEK_END
+#define ftell(f)            vfs_tell(f)
+#define fread(o, s, n, f)   vfs_read(f, o, (s)*(n))
+#endif
 
 /*
  * Flash memory is a fixed memory addressable block that is serially allocated by the
@@ -52,7 +62,11 @@ static uint32_t curOffset;
 #define WRITE_BLOCK_WORDS  (WRITE_BLOCKSIZE/WORDSIZE)
 
 struct INPUT {
-  int      fd;
+#ifdef LUA_USE_ESP8266
+  int      f;
+#else
+  FILE *   f;
+#endif
   int      len;
   uint8_t  block[READ_BLOCKSIZE];
   uint8_t *inPtr;
@@ -330,7 +344,7 @@ static uint8_t get_byte (void) {
     int remaining = in->len - in->bytesRead;
     int wanted    = remaining >= READ_BLOCKSIZE ? READ_BLOCKSIZE : remaining;
 
-    if (vfs_read(in->fd, in->block, wanted) != wanted)
+    if (fread(in->block, 1, wanted, in->f) != wanted)
       flash_error("read error on LFS image file");
 
     platform_wdt_feed();
@@ -477,14 +491,16 @@ static int loadLFS (lua_State *L) {
   out->crc       = ~0;
 
   /* Open LFS image/ file, read unpacked length from last 4 byte and rewind */
-  if (!(in->fd = vfs_open(fn, "r")))
+  if (!(in->f = fopen(fn, "r")))
     flash_error("LFS image file not found");
-  in->len = vfs_size(in->fd);
+  fseek(in->f, 0, SEEK_END);
+  in->len = ftell(in->f);
+  fseek(in->f, in->len - 4, SEEK_SET);
   if (in->len <= 200 ||        /* size of an empty luac output */
-      vfs_lseek(in->fd, in->len-4, VFS_SEEK_SET) != in->len-4 ||
-      vfs_read(in->fd, &out->len, sizeof(uint32_t)) != sizeof(uint32_t))
+      ftell(in->f) != in->len-4 ||
+      fread(&out->len, 1, sizeof(uint32_t), in->f) != sizeof(uint32_t))
     flash_error("read error on LFS image file");
-  vfs_lseek(in->fd, 0, VFS_SEEK_SET);
+  fseek(in->f, 0, SEEK_SET);
 
   /* Allocate the out buffers */
   for(i = 0;  i < WRITE_BLOCKS; i++)
@@ -507,7 +523,7 @@ static int loadLFS (lua_State *L) {
   * basic signature, crc and length checks, so now we can reset the counts
   * to do the actual write to flash on the second pass.
   */
-  vfs_lseek(in->fd, 0, VFS_SEEK_SET);
+  fseek(in->f, 0, SEEK_SET);
   flashErase(0,(out->flashLen - 1)/FLASH_PAGE_SIZE);
   flashSetPosition(0);
 
@@ -535,8 +551,8 @@ static int loadLFSgc (lua_State *L) {
     luaM_free(L, out);
   }
   if (in) {
-    if (in->fd)
-      vfs_close(in->fd);
+    if (in->f)
+      fclose(in->f);
     luaM_free(L, in);
   }
   return 0;

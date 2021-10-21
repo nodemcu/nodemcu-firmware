@@ -4,7 +4,9 @@
 
 #include "lmem.h"
 
-#include "vfs.h"
+#include "esp_vfs_fat.h"
+#include "diskio_impl.h" // for ff_diskio_get_drive
+#include "diskio_sdmmc.h"
 
 #include "driver/sdmmc_host.h"
 #include "sdmmc_cmd.h"
@@ -12,9 +14,8 @@
 
 #include "common.h"
 
-// the index of cards here must be aligned with the pdrv for fatfs
-// see FF_VOLUMES in ffconf.h
-#define NUM_CARDS 4
+// We're limiting ourselves to the number of FAT volumes configured.
+#define NUM_CARDS FF_VOLUMES
 sdmmc_card_t *lsdmmc_card[NUM_CARDS];
 
 // local definition for SDSPI host
@@ -24,8 +25,72 @@ sdmmc_card_t *lsdmmc_card[NUM_CARDS];
 
 typedef struct {
   sdmmc_card_t *card;
-  vfs_vol *vol;
+  FATFS *fs;
+  int base_path_ref;
+  BYTE pdrv;
 } lsdmmc_ud_t;
+
+
+static void choose_partition(uint8_t pdrv, uint8_t part)
+{
+  // Update the volume->partition mapping in FatFS
+  for (unsigned i = 0; i < FF_VOLUMES; ++i)
+  {
+    if (VolToPart[i].pd == pdrv)
+      VolToPart[i].pt = part;
+  }
+}
+
+
+static esp_err_t sdmmc_mount_fat(lsdmmc_ud_t *ud, const char *base_path, uint8_t partition)
+{
+  esp_err_t err = ff_diskio_get_drive(&ud->pdrv);
+  if (err != ESP_OK)
+    return err;
+
+  choose_partition(ud->pdrv, partition);
+
+  ff_diskio_register_sdmmc(ud->pdrv, ud->card);
+
+  char drv[3] = { (char)('0' + ud->pdrv), ':', 0 };
+  err = esp_vfs_fat_register(
+    base_path, drv, CONFIG_NODEMCU_MAX_OPEN_FILES, &ud->fs);
+  if (err != ESP_OK)
+    goto fail;
+
+  if (f_mount(ud->fs, drv, 1) != FR_OK)
+  {
+    err = ESP_FAIL;
+    goto fail;
+  }
+
+  return ESP_OK;
+
+fail:
+  if (ud->fs)
+  {
+    f_mount(NULL, drv, 0);
+    ud->fs = NULL;
+  }
+  esp_vfs_fat_unregister_path(base_path);
+  choose_partition(ud->pdrv, 0);
+  ff_diskio_unregister(ud->pdrv);
+
+  return err;
+}
+
+
+static esp_err_t sdmmc_unmount_fat(lsdmmc_ud_t *ud, const char *base_path)
+{
+  char drv[3] = { (char)('0' + ud->pdrv), ':', 0 };
+  f_mount(NULL, drv, 0);
+  ud->fs = NULL;
+
+  esp_err_t err = esp_vfs_fat_unregister_path(base_path);
+  ff_diskio_unregister(ud->pdrv);
+
+  return err;
+}
 
 
 static int lsdmmc_init( lua_State *L )
@@ -135,8 +200,9 @@ static int lsdmmc_init( lua_State *L )
           luaL_getmetatable(L, "sdmmc.card");
           lua_setmetatable(L, -2);
           ud->card = lsdmmc_card[card_idx];
-          ud->vol = NULL;
-
+          ud->base_path_ref = LUA_NOREF;
+          ud->fs = NULL;
+          ud->pdrv = 0;
           // all done
           return 1;
         }
@@ -154,6 +220,9 @@ static int lsdmmc_init( lua_State *L )
     }
   } else
     err_msg = "failed to init sdmmc host";
+
+  luaM_free(L, lsdmmc_card[card_idx]);
+  lsdmmc_card[card_idx] = NULL;
 
   return luaL_error( L, err_msg );
 }
@@ -279,53 +348,52 @@ static int lsdmmc_get_info( lua_State *L )
 // Lua: card:mount("/SD0"[, partition])
 static int lsdmmc_mount( lua_State *L )
 {
-  const char *err_msg = "";
-
   GET_CARD_UD;
   (void)card;
 
-  int stack = 1;
+  const char *ldrv = luaL_checkstring(L, 2);
+  int part = luaL_optint(L, 3, 0);
 
-  const char *ldrv = luaL_checkstring( L, ++stack );
+  lua_settop(L, 2);
 
-  int num = luaL_optint( L, ++stack, -1 );
-
-  if (ud->vol == NULL) {
-
-    if ((ud->vol = vfs_mount( ldrv, num )))
-      lua_pushboolean( L, true );
+  if (ud->fs == NULL)
+  {
+    esp_err_t err = sdmmc_mount_fat(ud, ldrv, part);
+    if (err == ESP_OK)
+    {
+      // We need this when we unmount
+      ud->base_path_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      lua_pushboolean(L, true);
+    }
     else
-      lua_pushboolean( L, false );
-
+      lua_pushboolean(L, false);
     return 1;
-
-  } else
-    err_msg = "already mounted";
-
-  return luaL_error( L, err_msg );
+  }
+  else
+    return luaL_error(L, "already mounted");
 }
+
 
 // Lua: card:umount()
 static int lsdmmc_umount( lua_State *L )
 {
-  const char *err_msg = "";
-
   GET_CARD_UD;
   (void)card;
 
-  if (ud->vol) {
-    if (vfs_umount( ud->vol ) == VFS_RES_OK) {
-      ud->vol = NULL;
-      // all ok
-      return 0;
-    } else
-      err_msg = "umount failed";
-
-  } else
-    err_msg = "not mounted";
-
-  return luaL_error( L, err_msg );
+  if (ud->fs)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->base_path_ref);
+    const char *base_path = lua_tostring(L, -1);
+    luaL_unref2(L, LUA_REGISTRYINDEX, ud->base_path_ref);
+    esp_err_t err = sdmmc_unmount_fat(ud, base_path);
+    if (err != ESP_OK)
+      return luaL_error(L, "unmount reported error code %d", err);
+    return 0;
+  }
+  else
+    return luaL_error(L, "not mounted");
 }
+
 
 LROT_BEGIN(sdmmc_card, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index,   sdmmc_card )

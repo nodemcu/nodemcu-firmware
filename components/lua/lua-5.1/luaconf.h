@@ -317,7 +317,7 @@ void output_redirect(const char *str, size_t l);
 @@ lua_writestringerror defines how to print error messages.
 ** (A format string with one argument is enough for Lua...)
 */
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 #define lua_writestringerror(s,p)      dbg_printf((s), (p))
 #else
 #define lua_writestringerror(s,p)      fprintf(stderr, (s), (p))

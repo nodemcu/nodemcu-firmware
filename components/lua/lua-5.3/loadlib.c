@@ -23,7 +23,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-#ifndef LUA_USE_HOST
+#ifdef LUA_USE_ESP8266
 #include <fcntl.h>
 #include "vfs.h"
 #endif
@@ -421,7 +421,7 @@ static int ll_loadlib (lua_State *L) {
 ** =======================================================
 */
 
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 #define file_t int
 #undef fopen
 #undef fclose
