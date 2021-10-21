@@ -48,7 +48,7 @@
 
 #define PERROR() printf("pcall failed: %s\n", lua_tostring(L, -1))
 
-static volatile bool synced = false;
+static volatile enum { IDLE, SYNCED, READY_TO_ADVERTISE, ADVERTISING } synced;
 static int lble_start_advertising();
 static int lble_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -190,8 +190,6 @@ static int
 lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
   // Actually the only thing we care about is the arg and the ctxt
 
-  MODLOG_DFLT(INFO, "access_cb called with op %d\n", ctxt->op);
-
   size_t task_block_size = sizeof(task_block_t);
 
   if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
@@ -218,8 +216,6 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
     }
   }
 
-  MODLOG_DFLT(INFO, "ABout to task_post\n");
-  
   if (!task_post(TASK_PRIORITY_HIGH, task_handle, (task_param_t) task_block)) {
     free(task_block);
     return BLE_ATT_ERR_UNLIKELY;
@@ -228,8 +224,6 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   response_message_t message;
 
   while (1) {
-    MODLOG_DFLT(INFO, "About to receive\n");
-
     if (xQueueReceive(response_queue, &message, (TickType_t) (10000/portTICK_PERIOD_MS) ) != pdPASS) {
       free(task_block);
       return BLE_ATT_ERR_UNLIKELY;
@@ -829,10 +823,12 @@ lble_on_sync(void)
     rc = ble_hs_util_ensure_addr(0);
     assert(rc == 0);
 
-    if (!synced) {
-      synced = true;
-    } else {
+    if (synced == READY_TO_ADVERTISE) {
       lble_start_advertising();
+      synced = ADVERTISING;
+    }
+    if (synced == IDLE) {
+      synced = SYNCED;
     }
 }
 
@@ -908,7 +904,7 @@ static int lble_init(lua_State *L) {
     memcpy(gadget_mfg, mfg, len);
   }
 
-  synced = false;
+  synced = IDLE;
 
   lble_init_stack(L);
 
@@ -925,7 +921,7 @@ static int lble_init(lua_State *L) {
 
   bool seen1800 = false;
   // See if we already have the 1800 service registered
-  for (struct ble_gatt_svc_def *svcs = gatt_svr_svcs; svcs->type; svcs++) {
+  for (const struct ble_gatt_svc_def *svcs = gatt_svr_svcs; svcs->type; svcs++) {
     if (!ble_uuid_cmp(svcs->uuid, BLE_UUID16_DECLARE(0x1800))) {
       seen1800 = true;
     }
@@ -941,13 +937,14 @@ static int lble_init(lua_State *L) {
   printf("about to call gatts_start\n");
   ble_gatts_start();
 
-  if (synced) {
-    lble_start_advertising();
-  } else {
-    synced = true;
-  }
-
   inited = RUNNING;
+
+  if (synced == SYNCED) {
+    lble_start_advertising();
+    synced = ADVERTISING;
+  } else {
+    synced = READY_TO_ADVERTISE;
+  }
 
   return 0;
 }
