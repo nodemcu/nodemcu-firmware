@@ -9,7 +9,7 @@ This allows you to build simple gadgets that can be interrogated and controlled 
 ## ble.init(configuration)
 
 This initializes the BlueTooth stack and starts advertising according to the data in the
-configuration table. See below for a detailed description of this table. 
+configuration table. See below for a detailed description of this table.
 
 At the present time, you can only call the `init` function once. There is some problem
 in the underlying implementation of the BLE stack that prevents a `init`, `shutdown`, `init`
@@ -26,7 +26,7 @@ sequence from working.
 
 #### Example
 ```lua
-function read_battery_level() 
+function read_battery_level()
   -- This ought to do something better!
   return 50
 end
@@ -96,7 +96,7 @@ The calling conventions for these functions are as follows:
 #### Example
 
 ```
-function read_attribute(t) 
+function read_attribute(t)
   return something
 end
 

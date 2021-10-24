@@ -78,7 +78,7 @@ static enum { STOPPED, RUNNING, SHUTTING } inited;
 
 static int seqno;
 
-// Note that the buffer should be freed 
+// Note that the buffer should be freed
 typedef struct {
   int seqno;
   int errcode;
@@ -127,7 +127,7 @@ gethexval(char c) {
   return -1;
 }
 
-static int 
+static int
 decodehex(const char *s) {
   // two characters
   int v1 = gethexval(s[0]);
@@ -156,7 +156,7 @@ convert_uuid(ble_uuid_any_t *uuid, const char *s) {
       continue;
     }
     sptr -= 2;
-    
+
     int val = decodehex(sptr);
     if (val < 0) {
       return false;
@@ -260,7 +260,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   return rc;
 }
 
-static void 
+static void
 lble_task_cb(task_param_t param, task_prio_t prio) {
   task_block_t *task_block = (task_block_t *) param;
 
@@ -297,7 +297,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
         // wrap it in a table
         lua_createtable(L, 1, 0);
         lua_pushvalue(L, -2);  // Now have value, table, value, struct, table
-        lua_rawseti(L, -2, 1); 
+        lua_rawseti(L, -2, 1);
         lua_remove(L, -2);   // now have table, struct, chr table
       }
 
@@ -359,7 +359,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       }
       lua_pop(L, vals);
       lua_remove(L, -2);
-      // Now have table, struct, chrtable 
+      // Now have table, struct, chrtable
     }
     // If the value is a table of a single value, then
     // treat as value
@@ -400,7 +400,7 @@ cleanup:
   xQueueSend(response_queue, &message, (TickType_t) 0);
 }
 
-static int 
+static int
 lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   // We have to first figure out how big the allocated memory is.
   // This is the number of services (ns) + 1 * sizeof(ble_gatt_svc_def)
@@ -506,7 +506,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
         if (flags) {
           chr->flags = flags;
         }
-       
+
         lua_pop(L, 3); // pop off value, read, write
       } else {
         lua_getfield(L, -2, "read");
@@ -534,7 +534,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   lua_pop(L, 1);
 
   *resultp = result;
- 
+
   return 0;
 }
 
@@ -544,12 +544,12 @@ gatt_svr_init(lua_State *L) {
 
     // Now we have to build the gatt_svr_svcs data structure
 
-    
+
     struct ble_gatt_svc_def *svcs = NULL;
     lble_build_gatt_svcs(L, &svcs);
     //free_gatt_svcs(L, gatt_svr_svcs);
     gatt_svr_svcs = svcs;
- 
+
     rc = ble_gatts_count_cfg(gatt_svr_svcs);
     if (rc != 0) {
       return luaL_error(L, "Failed to count gatts: %d", rc);
@@ -610,14 +610,14 @@ lble_sys_init(lua_State *L) {
   return 0;
 }
 
-static void 
+static void
 lble_host_task(void *param)
 {
      nimble_port_run(); //This function will return only when nimble_port_stop() is executed.
      nimble_port_freertos_deinit();
 }
 
-static void 
+static void
 lble_init_stack(lua_State *L) {
   static char stack_inited;
   if (!stack_inited) {
@@ -969,7 +969,7 @@ static int lble_shutdown(lua_State *L) {
   }
 
   nimble_port_deinit();
- 
+
   if (ESP_OK != esp_nimble_hci_and_controller_deinit()) {
     return luaL_error(L, "Failed to shutdown the BLE controller");
   }
