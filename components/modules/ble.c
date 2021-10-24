@@ -46,10 +46,18 @@
 #include "nimble/ble.h"
 #include "task/task.h"
 
-#define PERROR() printf("pcall failed: %s\n", lua_tostring(L, -1))
+#if 0
+#undef MODLOG_DFLT
+#define MODLOG_DFLT(level, ...) printf(__VA_ARGS__)
+#endif
+
+#define PERROR() MODLOG_DFLT(INFO, "pcall failed: %s\n", lua_tostring(L, -1))
+
+extern void ble_hs_lock();
+extern void ble_hs_unlock();
 
 static volatile enum { IDLE, SYNCED, READY_TO_ADVERTISE, ADVERTISING } synced;
-static int lble_start_advertising();
+static void lble_start_advertising();
 static int lble_gap_event(struct ble_gap_event *event, void *arg);
 
 static const char *gadget_name;
@@ -60,6 +68,8 @@ static const struct ble_gatt_svc_def *gatt_svr_svcs;
 
 static task_handle_t task_handle;
 static QueueHandle_t response_queue;
+
+static bool already_inited;
 
 static int struct_pack_index;
 static int struct_unpack_index;
@@ -83,9 +93,6 @@ typedef struct {
   char *buffer;
   size_t length;
 } task_block_t;
-
-#undef MODLOG_DFLT
-#define MODLOG_DFLT(level, ...) printf(__VA_ARGS__)
 
 /**
  * Utility function to log an array of bytes.
@@ -540,9 +547,9 @@ gatt_svr_init(lua_State *L) {
     
     struct ble_gatt_svc_def *svcs = NULL;
     lble_build_gatt_svcs(L, &svcs);
-    free_gatt_svcs(L, gatt_svr_svcs);
+    //free_gatt_svcs(L, gatt_svr_svcs);
     gatt_svr_svcs = svcs;
-    
+ 
     rc = ble_gatts_count_cfg(gatt_svr_svcs);
     if (rc != 0) {
       return luaL_error(L, "Failed to count gatts: %d", rc);
@@ -552,7 +559,6 @@ gatt_svr_init(lua_State *L) {
     if (rc != 0) {
       return luaL_error(L, "Failed to add gatts: %d", rc);
     }
-
 
     return 0;
 }
@@ -621,14 +627,13 @@ lble_init_stack(lua_State *L) {
       luaL_error(L, "esp_nimble_hci_and_controller_init() failed with error: %d", ret);
       return;
     }
-
-    nimble_port_init();
-
-    //Initialize the NimBLE Host configuration
-
-    nimble_port_freertos_init(lble_host_task);
-
   }
+
+  nimble_port_init();
+
+  //Initialize the NimBLE Host configuration
+
+  nimble_port_freertos_init(lble_host_task);
 }
 
 static int
@@ -731,7 +736,7 @@ lble_gap_event(struct ble_gap_event *event, void *arg)
   return 0;
 }
 
-static int
+static void
 lble_start_advertising() {
   uint8_t own_addr_type;
   struct ble_gap_adv_params adv_params;
@@ -740,13 +745,14 @@ lble_start_advertising() {
   int rc;
 
   if (inited != RUNNING) {
-    return 0;
+    return;
   }
 
   /* Figure out address to use while advertising (no privacy for now) */
   rc = ble_hs_id_infer_auto(0, &own_addr_type);
   if (rc != 0) {
-    return MODLOG_DFLT(INFO, "error determining address type; rc=%d", rc);
+    MODLOG_DFLT(INFO, "error determining address type; rc=%d", rc);
+    return;
   }
 
   /**
@@ -793,13 +799,15 @@ lble_start_advertising() {
     scan_response_fields.name_is_complete = 1;
     rc = ble_gap_adv_rsp_set_fields(&scan_response_fields);
     if (rc) {
-      return MODLOG_DFLT(INFO, "gap_adv_rsp_set_fields failed: %d", rc);
+      MODLOG_DFLT(INFO, "gap_adv_rsp_set_fields failed: %d", rc);
+      return;
     }
   }
 
   rc = ble_gap_adv_set_fields(&fields);
   if (rc != 0) {
-    return MODLOG_DFLT(INFO, "error setting advertisement data; rc=%d", rc);
+    MODLOG_DFLT(INFO, "error setting advertisement data; rc=%d", rc);
+    return;
   }
 
   /* Begin advertising. */
@@ -809,10 +817,11 @@ lble_start_advertising() {
   rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER,
 			 &adv_params, lble_gap_event, NULL);
   if (rc != 0) {
-      return MODLOG_DFLT(INFO, "error enabling advertisement; rc=%d", rc);
+      MODLOG_DFLT(INFO, "error enabling advertisement; rc=%d", rc);
+      return;
   }
 
-  return 0;
+  return;
 }
 
 static void
@@ -869,6 +878,10 @@ static int lble_init(lua_State *L) {
   if (inited != STOPPED) {
     return luaL_error(L, "ble is already running");
   }
+  if (already_inited) {
+    return luaL_error(L, "Can only call ble.init once. Internal stack problem.");
+  }
+  already_inited = true;
   if (!struct_pack_index) {
     lua_getglobal(L, "struct");
     lua_getfield(L, -1, "pack");
@@ -887,7 +900,7 @@ static int lble_init(lua_State *L) {
   gadget_name = name;
 
   int rc;
-  
+
   free((void *) gadget_mfg);
   gadget_mfg = NULL;
   gadget_mfg_len = 0;
@@ -948,6 +961,8 @@ static int lble_init(lua_State *L) {
 
 static int lble_shutdown(lua_State *L) {
   inited = SHUTTING;
+
+  ble_gap_adv_stop();
 
   if (nimble_port_stop()) {
     return luaL_error(L, "Failed to stop the NIMBLE task");

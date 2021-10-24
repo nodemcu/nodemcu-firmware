@@ -1,7 +1,7 @@
 # BT HCI Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2021-10-10 | [pjsg](https://github.com/pjsg) | [ble.c](../../components/modules/ble.c)|
+| 2021-10-10 | [pjsg](https://github.com/pjsg) | [pjsg](https://github.com/pjsg) | [ble.c](../../components/modules/ble.c)|
 
 The BLE module provides a simple interface to allow implementation of a simple GAP/GATT server.
 This allows you to build simple gadgets that can be interrogated and controlled over BLE.
@@ -11,8 +11,9 @@ This allows you to build simple gadgets that can be interrogated and controlled 
 This initializes the BlueTooth stack and starts advertising according to the data in the
 configuration table. See below for a detailed description of this table. 
 
-Once the stack is initialized, another `init` can be performed and it will switch over to using
-the new config. 
+At the present time, you can only call the `init` function once. There is some problem
+in the underlying implementation of the BLE stack that prevents a `init`, `shutdown`, `init`
+sequence from working.
 
 #### Syntax
 `ble.init(ble_config)`
@@ -25,13 +26,19 @@ the new config.
 
 #### Example
 ```lua
-local config = {name="MyGadget=", services={{uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}}}
+function read_battery_level() 
+  -- This ought to do something better!
+  return 50
+end
+local battery = { uuid="180f", characteristics={ {uuid="2a19", type='B', read=read_battery_level} } }
+local myservice = {uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}
+local config = {name="MyGadget=", services={ myservice, battery }
 ble.init(config)
 ```
 
 ## ble.shutdown()
 
-Shuts down the BlueTooth controller and returns it to the state where another `init` can be performed.
+Shuts down the BlueTooth controller and returns it to the state where another `init` ought to work (but currently doesn't).
 
 #### Syntax
 `ble.shutdown()`
@@ -85,6 +92,19 @@ The calling conventions for these functions are as follows:
 
 - `read` This is invoked with the characteristic table as its only argument.
 - `write` This is invoked with two arguments, the characteristic table and the data to be written (after conversion by `type`)
+
+#### Example
+
+```
+function read_attribute(t) 
+  return something
+end
+
+function write_attribute(t, val)
+  -- Just store the written value in the table.
+  t.value = val
+end
+```
 
 
 ### Type conversions
