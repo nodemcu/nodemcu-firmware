@@ -74,10 +74,12 @@
 # define LUA_FLOAT_TYPE LUA_FLOAT_FLOAT
 #endif
 
+#ifdef LUA_USE_ESP
 #define L_RANDMAX 2147483647
 extern uint32_t esp_random(void);
 #define l_rand()	  (esp_random() & L_RANDMAX)
 #define l_srand(x)  
+#endif
 
 /*
 ** Configuration for Paths.
