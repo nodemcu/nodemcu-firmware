@@ -736,25 +736,10 @@ lble_gap_event(struct ble_gap_event *event, void *arg)
   return 0;
 }
 
-static void
-lble_start_advertising() {
-  uint8_t own_addr_type;
-  struct ble_gap_adv_params adv_params;
+static int 
+lble_update_adv_fields() {
   struct ble_hs_adv_fields fields;
   const char *name = gadget_name;
-  int rc;
-
-  if (inited != RUNNING) {
-    return;
-  }
-
-  /* Figure out address to use while advertising (no privacy for now) */
-  rc = ble_hs_id_infer_auto(0, &own_addr_type);
-  if (rc != 0) {
-    MODLOG_DFLT(INFO, "error determining address type; rc=%d", rc);
-    return;
-  }
-
   /**
    *  Set the advertisement data included in our advertisements:
    *     o Flags (indicates advertisement type and other general info).
@@ -783,30 +768,58 @@ lble_start_advertising() {
   fields.mfg_data_len = gadget_mfg_len;
 
   size_t name_length = strlen(name);
-  if (name_length < 16) {
-    fields.name = (uint8_t *)name;
-    fields.name_len = name_length;
-    fields.name_is_complete = 1;
-  } else {
-    fields.name = (uint8_t *)name;
-    fields.name_len = 16;
-    fields.name_is_complete = 0;
+  fields.name = (uint8_t *)name;
+  fields.name_len = name_length;
+  fields.name_is_complete = 1;
 
+  // See if we can fit the whole name or need to truncate
+  while (1) {
+    int rc = ble_gap_adv_set_fields(&fields);
+    if (!rc) {
+      break;
+    }
+    if (!fields.name_len) {
+      MODLOG_DFLT(INFO, "error setting advertisement data; rc=%d", rc);
+      return rc;
+    }
+    fields.name_len = fields.name_len - 1;
+    fields.name_is_complete = 0;
+  }
+  
+  if (!fields.name_is_complete) {
     struct ble_hs_adv_fields scan_response_fields;
     memset(&scan_response_fields, 0, sizeof scan_response_fields);
     scan_response_fields.name = (uint8_t *)name;
     scan_response_fields.name_len = name_length;
     scan_response_fields.name_is_complete = 1;
-    rc = ble_gap_adv_rsp_set_fields(&scan_response_fields);
+    int rc = ble_gap_adv_rsp_set_fields(&scan_response_fields);
     if (rc) {
       MODLOG_DFLT(INFO, "gap_adv_rsp_set_fields failed: %d", rc);
-      return;
+      return rc;
     }
   }
+  return 0;
+}
 
-  rc = ble_gap_adv_set_fields(&fields);
+static void
+lble_start_advertising() {
+  uint8_t own_addr_type;
+  struct ble_gap_adv_params adv_params;
+  int rc;
+
+  if (inited != RUNNING) {
+    return;
+  }
+
+  /* Figure out address to use while advertising (no privacy for now) */
+  rc = ble_hs_id_infer_auto(0, &own_addr_type);
   if (rc != 0) {
-    MODLOG_DFLT(INFO, "error setting advertisement data; rc=%d", rc);
+    MODLOG_DFLT(INFO, "error determining address type; rc=%d", rc);
+    return;
+  }
+
+  rc = lble_update_adv_fields();
+  if (rc != 0) {
     return;
   }
 
@@ -873,6 +886,38 @@ gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
     }
 }
 
+static int 
+lble_update_adv_change(lua_State *L) {
+  free((void *) gadget_mfg);
+  gadget_mfg = NULL;
+  gadget_mfg_len = 0;
+
+  if (!lua_isnoneornil(L, -1)) {
+    size_t len;
+    const char *mfg = lua_tolstring(L, 1, &len);
+    gadget_mfg = malloc(len);
+    if (!gadget_mfg) {
+      return luaL_error(L, "out of memory");
+    }
+    gadget_mfg_len = len;
+    memcpy(gadget_mfg, mfg, len);
+  }
+
+  return 0;
+}
+
+static int 
+lble_update_adv(lua_State *L) {
+  lua_pushvalue(L, 1);
+  lble_update_adv_change(L);
+
+  if (lble_update_adv_fields()) {
+    return luaL_error(L, "Unable to update advertisement");
+  }
+
+  return 0;
+}
+
 
 static int lble_init(lua_State *L) {
   if (inited != STOPPED) {
@@ -901,21 +946,11 @@ static int lble_init(lua_State *L) {
 
   int rc;
 
-  free((void *) gadget_mfg);
-  gadget_mfg = NULL;
-  gadget_mfg_len = 0;
+  lua_getfield(L, 1, "advertisement");
 
-  lua_getfield(L, 1, "mfg");
-  if (!lua_isnoneornil(L, -1)) {
-    size_t len;
-    const char *mfg = lua_tolstring(L, -1, &len);
-    gadget_mfg = malloc(len);
-    if (!gadget_mfg) {
-      return luaL_error(L, "out of memory");
-    }
-    gadget_mfg_len = len;
-    memcpy(gadget_mfg, mfg, len);
-  }
+  rc = lble_update_adv_change(L);
+
+  lua_pop(L, 1);
 
   synced = IDLE;
 
@@ -981,6 +1016,7 @@ static int lble_shutdown(lua_State *L) {
 
 LROT_BEGIN(lble, NULL, 0)
   LROT_FUNCENTRY( init, lble_init )
+  LROT_FUNCENTRY( advertise, lble_update_adv )
   LROT_FUNCENTRY( shutdown, lble_shutdown )
 LROT_END(lble, NULL, 0)
 

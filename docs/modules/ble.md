@@ -36,6 +36,25 @@ local config = {name="MyGadget=", services={ myservice, battery }
 ble.init(config)
 ```
 
+## ble.advertise()
+
+Updates the advertising data field for future advertising frames.
+
+#### Syntax
+`ble.advertise(advertisement)`
+
+#### Parameters
+
+- `advertisement` This string will be placed in future advertising frames as the manufacturer data field. This overrides the a`advertisement` value from the config block.
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+ble.advertise("foo")
+```
+
 ## ble.shutdown()
 
 Shuts down the BlueTooth controller and returns it to the state where another `init` ought to work (but currently doesn't).
@@ -65,7 +84,7 @@ The configuration table contains the following keys:
 
 - `services` This is a list of tables that define the individual services. The primary service is the first service. Many examples will only have a single service.
 
-- `mfg` This is a string to be advertised in the mfg data field.
+- `advertisement` This is a string to be advertised in the mfg data field.
 
 ### Service table
 
