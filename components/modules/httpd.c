@@ -37,9 +37,10 @@
  *    in e.g. a full OTA image and writing it progressively.
  *
  *  - Sending the response. This includes status message, content type
- *    and any body data. At the time of writing only a single blob
- *    of response data is supported. In the future it may be possible
- *    to also send the body chunk by chunk similar to how it is received.
+ *    and any body data. The body data may either be submitted in a single
+ *    go, or a function to "pull" the body data chunk by chunk may be
+ *    given, in which case chunked encoding is used for the response body
+ *    and the content length needs not be known in advance.
  *
  * @author Johny Mattsson (johny.mattsson+github@gmail.com)
  */
@@ -47,6 +48,8 @@
 // More wieldly names for the Kconfig settings
 #define MAX_RESPONSE_HEADERS  CONFIG_NODEMCU_CMODULE_HTTPD_MAX_RESPONSE_HEADERS
 #define RECV_BODY_CHUNK_SIZE  CONFIG_NODEMCU_CMODULE_HTTPD_RECV_BODY_CHUNK_SIZE
+
+#define REQUEST_METATABLE "httpd.req"
 
 typedef struct {
   const char *key;
@@ -65,7 +68,12 @@ typedef struct {
 
 // Request from the LVM thread back to the httpd thread *during* request
 // processing in a dynamic handler.
-typedef enum { GET_HEADER, READ_BODY_CHUNK, SEND_RESPONSE } request_type_t;
+typedef enum {
+  GET_HEADER,
+  READ_BODY_CHUNK,
+  SEND_RESPONSE,
+  SEND_PARTIAL_RESPONSE,
+} request_type_t;
 
 typedef struct {
   size_t used;
@@ -92,6 +100,12 @@ typedef struct {
   int method;
   size_t body_len;
 } request_data_t;
+
+
+typedef struct {
+  const request_data_t *req_info;
+  uint32_t guard;
+} req_udata_t;
 
 
 typedef enum { INDEX_NONE, INDEX_ROOT, INDEX_ALL } index_mode_t;
@@ -279,20 +293,29 @@ static esp_err_t dynamic_handler_httpd(httpd_req_t *req)
       else
         (*tr.body_chunk)->used = to_read;
     }
-    else if (tr.request_type == SEND_RESPONSE)
+    else if (tr.request_type == SEND_RESPONSE ||
+             tr.request_type == SEND_PARTIAL_RESPONSE)
     {
-      if (errored) // error receiving body?
+      if (errored)
         httpd_resp_send_408(req);
       else
       {
+        bool is_partial = (tr.request_type == SEND_PARTIAL_RESPONSE);
         const response_data_t *resp = tr.response;
-        httpd_resp_set_status(req, resp->status_str);
-        httpd_resp_set_type(req, resp->content_type);
+        if (!is_partial || resp->status_str)
+          httpd_resp_set_status(req, resp->status_str);
+        if (!is_partial || resp->content_type)
+          httpd_resp_set_type(req, resp->content_type);
         for (unsigned i = 0; resp->headers[i].key; ++i)
           httpd_resp_set_hdr(req, resp->headers[i].key, resp->headers[i].value);
-        // At some point it might be nice to also support incremental body
-        // responses via httpd_resp_send_chunk().
-        httpd_resp_send(req, resp->body_data, resp->body_len);
+        if (!is_partial)
+          httpd_resp_send(req, resp->body_data, resp->body_len);
+        else
+        {
+          httpd_resp_send_chunk(req, resp->body_data, resp->body_len);
+          if (resp->body_data == NULL) // Was this the last chunk?
+            tr.request_type = SEND_RESPONSE; // If so, flag our exit condition
+        }
       }
     }
 
@@ -335,7 +358,7 @@ static int lsync_get_hdr(lua_State *L)
 {
   check_valid_guard_value(L);
 
-  const char *header_name = luaL_checkstring(L, 1);
+  const char *header_name = luaL_checkstring(L, 2);
   char *header_val = NULL;
   thread_request_t tr = {
     .request_type = GET_HEADER,
@@ -367,10 +390,48 @@ static int lsync_get_body_chunk(lua_State *L)
   xQueueSend(queue, &tr, portMAX_DELAY);
   xSemaphoreTake(done, portMAX_DELAY);
   if (chunk)
-    lua_pushlstring(L, chunk->data, chunk->used);
+  {
+    if (chunk->used)
+      lua_pushlstring(L, chunk->data, chunk->used);
+    else
+      lua_pushnil(L); // end of body reached
+  }
   else
     return luaL_error(L, "read body failed");
   return 1;
+}
+
+
+static int lhttpd_req_index(lua_State *L)
+{
+  req_udata_t *ud = (req_udata_t *)luaL_checkudata(L, 1, REQUEST_METATABLE);
+  const char *key = luaL_checkstring(L, 2);
+#define KEY_IS(x) (strcmp(key, x) == 0)
+  if (KEY_IS("uri"))
+    lua_pushstring(L, ud->req_info->uri);
+  else if (KEY_IS("method"))
+    lua_pushinteger(L, ud->req_info->method);
+  else if (KEY_IS("query") && ud->req_info->query_str)
+    lua_pushstring(L, ud->req_info->query_str);
+  else if (KEY_IS("headers"))
+  {
+    lua_newtable(L);
+    lua_newtable(L); // metatable
+    lua_pushinteger(L, ud->guard); // +1
+    lua_pushcclosure(L, lsync_get_hdr, 1); // -1 +1
+    lua_setfield(L, -2, "__index"); // -1
+    lua_setmetatable(L, -2); // -1
+  }
+  else if (KEY_IS("getbody"))
+  {
+    lua_pushinteger(L, guard); // +1
+    lua_pushcclosure(L, lsync_get_body_chunk, 1); // -1 +1
+  }
+  else
+    lua_pushnil(L);
+
+  return 1;
+#undef KEY_IS
 }
 
 
@@ -383,27 +444,27 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
   lua_State *L = lua_getstate();
   int saved_top = lua_gettop(L);
 
-  lua_checkstack(L, MAX_RESPONSE_HEADERS*2 + 8);
+  lua_checkstack(L, MAX_RESPONSE_HEADERS*2 + 9);
 
   response_data_t resp = error_resp;
+  thread_request_t tr = {
+    .request_type = SEND_RESPONSE,
+    .response = &resp,
+  };
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, dynamic_handlers_table_ref); // +1
   lua_getfield(L, -1, req_info->key); // +1
   if (lua_isfunction(L, -1))
   {
-    // push method, uri, query str, gethdr(), getbody()
-    lua_pushinteger(L, req_info->method); // +1
-    lua_pushstring(L, req_info->uri); // +1
-    if (req_info->query_str) // +1
-      lua_pushstring(L, req_info->query_str);
-    else
-      lua_pushnil(L);
-    lua_pushinteger(L, guard); // +1
-    lua_pushcclosure(L, lsync_get_hdr, 1); // -1 +1
-    lua_pushinteger(L, guard); // +1
-    lua_pushcclosure(L, lsync_get_body_chunk, 1); // -1 +1
+    // push req
+    req_udata_t *ud =
+      (req_udata_t *)lua_newuserdata(L, sizeof(req_udata_t)); // +1
+    ud->req_info = req_info;
+    ud->guard = guard;
+    luaL_getmetatable(L, REQUEST_METATABLE); // +1
+    lua_setmetatable(L, -2); // -1
 
-    int err = luaL_pcallx(L, 5, 1); // -6 +1
+    int err = luaL_pcallx(L, 1, 1); // -1 +1
     if (!err && lua_istable(L, -1))
     {
       // pull out response data
@@ -432,13 +493,48 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
           lua_pop(L, 1); // drop value, keep key for lua_next()
         }
       }
+      lua_getfield(L, t, "getbody"); // +1
+      if (lua_isfunction(L, -1))
+      {
+        // Okay, we're doing a chunked body send, so we have to repeatedly
+        // call the provided getbody() function until it returns nil
+        bool headers_cleared = false;
+        tr.request_type = SEND_PARTIAL_RESPONSE;
+next_chunk:
+        resp.body_data = NULL;
+        resp.body_len = 0;
+        err = luaL_pcallx(L, 0, 1); // -1 +1
+        resp.body_data =
+          err ? NULL : luaL_optlstring(L, -1, NULL, &resp.body_len);
+        if (resp.body_data)
+        {
+          // Toss this bit of response data over to the httpd thread
+          xQueueSend(queue, &tr, portMAX_DELAY);
+          // ...and wait until it's done sending it
+          xSemaphoreTake(done, portMAX_DELAY);
+
+          lua_pop(L, 1); // -1
+
+          if (!headers_cleared)
+          {
+            // Clear the header data; it's only used for the first chunk
+            resp.status_str = NULL;
+            resp.content_type = NULL;
+            for (unsigned i = 0; i < MAX_RESPONSE_HEADERS; ++i)
+              resp.headers[i].key = resp.headers[i].value = NULL;
+
+            headers_cleared = true;
+          }
+          lua_getfield(L, t, "getbody"); // +1
+          goto next_chunk;
+        }
+        // else, getbody() returned nil, so let the normal exit path
+        // toss the final SEND_PARTIAL_RESPONSE request over to the httpd
+      }
     }
   }
+
   // Toss the response data over to the httpd thread for sending
-  thread_request_t tr = {
-    .request_type = SEND_RESPONSE,
-    .response = &resp,
-  };
   xQueueSend(queue, &tr, portMAX_DELAY);
 
   // Block until the httpd thread has finished accessing our Lua strings
@@ -620,13 +716,9 @@ static int lhttpd_stop(lua_State *L)
 }
 
 
-static int lhttpd_init(lua_State *L)
-{
-  dynamic_task = task_get_id(dynamic_handler_lvm);
-  queue = xQueueCreate(1, sizeof(thread_request_t));
-  done = xSemaphoreCreateBinary();
-  return 0;
-}
+LROT_BEGIN(httpd_req_mt, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __index, lhttpd_req_index )
+LROT_END(httpd_req_mt, NULL, LROT_MASK_INDEX)
 
 
 LROT_BEGIN(httpd, NULL, 0)
@@ -642,5 +734,17 @@ LROT_BEGIN(httpd, NULL, 0)
   LROT_NUMENTRY( POST,        HTTP_POST )
   LROT_NUMENTRY( DELETE,      HTTP_DELETE )
 LROT_END(httpd, NULL, 0)
+
+
+static int lhttpd_init(lua_State *L)
+{
+  dynamic_task = task_get_id(dynamic_handler_lvm);
+  queue = xQueueCreate(1, sizeof(thread_request_t));
+  done = xSemaphoreCreateBinary();
+
+  luaL_rometatable(L, REQUEST_METATABLE, LROT_TABLEREF(httpd_req_mt));
+
+  return 0;
+}
 
 NODEMCU_MODULE(HTTPD, "httpd", httpd, lhttpd_init);
