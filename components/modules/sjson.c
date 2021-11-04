@@ -1037,7 +1037,7 @@ LROT_END(sjson, NULL, 0)
 LUALIB_API int luaopen_sjson (lua_State *L) {
   luaL_rometatable(L, "sjson.decoder", LROT_TABLEREF(sjson_decoder_map));
   luaL_rometatable(L, "sjson.encoder", LROT_TABLEREF(sjson_encoder_map));
-  return 1;
+  return 0;
 }
 
 NODEMCU_MODULE(SJSON, "sjson", sjson, luaopen_sjson);
