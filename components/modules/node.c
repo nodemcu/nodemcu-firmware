@@ -399,25 +399,89 @@ static int node_input( lua_State* L )
 // When there is any write to the replaced stdout, our function redir_write will be called.
 // we can then invoke the lua callback.
 
-static FILE *oldstdout;              // keep the old stdout, e.g., the uart0
-lua_ref_t output_redir = LUA_NOREF;  // this will hold the Lua callback
-int serial_debug = 0;                // whether or not to write also to uart
-const char *VFS_REDIR = "/redir";    // virtual filesystem mount point
+// A buffer size that should be sufficient for most cases, yet not so large
+// as to present an issue.
+# define OUTPUT_CHUNK_SIZE 127
+typedef struct {
+  uint8_t used;
+  uint8_t bytes[OUTPUT_CHUNK_SIZE];
+} output_chunk_t;
+
+static task_handle_t output_task;    // for getting output into the LVM thread
+static lua_ref_t output_redir = LUA_NOREF;  // this will hold the Lua callback
+static FILE *serial_debug;                  // the console uart, if wanted
+static const char *VFS_REDIR = "/redir";    // virtual filesystem mount point
 
 // redir_write will be called everytime any code writes to stdout when
-// redirection is active
+// redirection is active, from ANY RTOS thread
 ssize_t redir_write(int fd, const void *data, size_t size) {
-    if (serial_debug)  // if serial_debug is nonzero, write to uart
-        fwrite(data, sizeof(char), size, oldstdout);
-
-    if (output_redir != LUA_NOREF) {  // prepare lua call
-        lua_State *L = lua_getstate();
-        lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir);  // push function reference
-        lua_pushlstring(L, (char *)data, size);           // push data
-        luaL_pcallx(L, 1, 0);                            // invoke callback
+  UNUSED(fd);
+  if (size)
+  {
+    size_t n = (size > OUTPUT_CHUNK_SIZE) ? OUTPUT_CHUNK_SIZE : size;
+    output_chunk_t *chunk = malloc(sizeof(output_chunk_t));
+    chunk->used = (uint8_t)n;
+    memcpy(chunk->bytes, data, n);
+    _Static_assert(sizeof(task_param_t) >= sizeof(chunk), "cast error below");
+    if (!task_post_high(output_task, (task_param_t)chunk))
+    {
+      static const char overflow[] = "E: output overflow\n";
+      fwrite(overflow, sizeof(overflow) -1, sizeof(char), serial_debug);
+      free(chunk);
+      return -1;
     }
-    return size;
+
+    if (serial_debug)
+    {
+      size_t written = 0;
+      while (written < n)
+      {
+        size_t w = fwrite(
+          data + written, sizeof(char), n - written, serial_debug);
+        if (w > 0)
+          written += w;
+        else break;
+      }
+    }
+
+    return n;
+  }
+  else
+    return 0;
 }
+
+void redir_output(task_param_t param, task_prio_t prio)
+{
+  UNUSED(prio);
+  output_chunk_t *chunk = (output_chunk_t *)param;
+  bool redir_active = (output_redir != LUA_NOREF);
+  if (redir_active)
+  {
+    lua_State *L = lua_getstate();
+    lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir);
+    lua_pushlstring(L, (char *)chunk->bytes, chunk->used);
+    luaL_pcallx(L, 1, 0);
+  }
+  free(chunk);
+}
+
+#if !defined(CONFIG_ESP_CONSOLE_NONE)
+static const char *default_console_name(void)
+{
+  return
+#if defined(CONFIG_ESP_CONSOLE_UART)
+# define STRINGIFY(x) STRINGIFY2(x)
+# define STRINGIFY2(x) #x
+    "/dev/uart/" STRINGIFY(CONFIG_ESP_CONSOLE_UART_NUM);
+#undef STRINGIFY2
+#undef STRINGIFY
+#elif defined(CONFIG_ESP_CONSOLE_USB_CDC)
+    "/dev/cdcacm";
+#elif defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+    "/dev/usbserjtag";
+#endif
+}
+#endif
 
 // redir_open is called when fopen() is called on /redir/xxx
 int redir_open(const char *path, int flags, int mode) {
@@ -426,6 +490,11 @@ int redir_open(const char *path, int flags, int mode) {
 
 // Lua: node.output(func, serial_debug)
 static int node_output(lua_State *L) {
+    if (serial_debug)
+    {
+        fclose(serial_debug);
+        serial_debug = NULL;
+    }
     if (lua_isfunction(L, 1)) {
         if (output_redir == LUA_NOREF) {
             // create an instance of a virtual filesystem so we can use fopen
@@ -439,69 +508,25 @@ static int node_output(lua_State *L) {
             };
             // register this filesystem under the `/redir` namespace
             ESP_ERROR_CHECK(esp_vfs_register(VFS_REDIR, &redir_fs, NULL));
-            oldstdout = stdout;              // save the previous stdout
-            stdout = fopen(VFS_REDIR, "w");  // open the new one for writing
+            freopen(VFS_REDIR, "w", stdout);
+
+            if (lua_isnoneornil(L, 2) ||
+                (lua_isnumber(L, 2) && lua_tonumber(L, 2)))
+                    serial_debug = fopen(default_console_name(), "w");
         } else {
             luaX_unset_ref(L, &output_redir);  // dereference previous callback
         }
         luaX_set_ref(L, 1, &output_redir);  // set the callback
     } else {
         if (output_redir != LUA_NOREF) {
-            fclose(stdout);                                  // close the redirected stdout
-            stdout = oldstdout;                              // restore original stdout
-            ESP_ERROR_CHECK(esp_vfs_unregister(VFS_REDIR));  // unregister redir filesystem
-            luaX_unset_ref(L, &output_redir);                // forget callback
-        }
-        serial_debug = 1;
-        return 0;
-    }
-
-    // second parameter indicates whether output will also be sent to old stdout
-    if (lua_isnumber(L, 2)) {
-        serial_debug = lua_tointeger(L, 2);
-        if (serial_debug != 0)
-            serial_debug = 1;
-    } else {
-        serial_debug = 1;  // default to 1
-    }
-
-    return 0;
-}
-
-// The implementation of node.osoutput redirect all OS logging to Lua space
-lua_ref_t os_output_redir = LUA_NOREF;  // this will hold the Lua callback
-static vprintf_like_t oldvprintf;       // keep the old vprintf
-
-// redir_vprintf will be called everytime the OS attempts to print a trace statement
-int redir_vprintf(const char *fmt, va_list ap)
-{
-    static char data[128];
-    int size = vsnprintf(data, 128, fmt, ap);
-
-    if (os_output_redir != LUA_NOREF) {  // prepare lua call
-        lua_State *L = lua_getstate();
-        lua_rawgeti(L, LUA_REGISTRYINDEX, os_output_redir);  // push function reference
-        lua_pushlstring(L, (char *)data, size);           // push data
-        luaL_pcallx(L, 1, 0);                            // invoke callback
-    }
-    return size;
-}
-
-
-// Lua: node.output(func, serial_debug)
-static int node_osoutput(lua_State *L) {
-    if (lua_isfunction(L, 1)) {
-        if (os_output_redir == LUA_NOREF) {
-            // register our log redirect first time this is invoked
-            oldvprintf = esp_log_set_vprintf(redir_vprintf);
-        } else {
-            luaX_unset_ref(L, &os_output_redir);  // dereference previous callback
-        }
-        luaX_set_ref(L, 1, &os_output_redir);  // set the callback
-    } else {
-        if (os_output_redir != LUA_NOREF) {
-            esp_log_set_vprintf(oldvprintf);
-            luaX_unset_ref(L, &os_output_redir);                // forget callback
+#if defined(CONFIG_ESP_CONSOLE_NONE)
+            fclose(stdout);
+#else
+            // reopen the console device onto the stdout stream
+            freopen(default_console_name(), "w", stdout);
+#endif
+            ESP_ERROR_CHECK(esp_vfs_unregister(VFS_REDIR));
+            luaX_unset_ref(L, &output_redir);
         }
     }
 
@@ -836,7 +861,6 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( heap,       node_heap )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )
-  LROT_FUNCENTRY( osoutput,   node_osoutput )
   LROT_FUNCENTRY( osprint,    node_osprint )
   LROT_FUNCENTRY( restart,    node_restart )
   LROT_FUNCENTRY( setonerror, node_setonerror )
@@ -849,6 +873,8 @@ LROT_END(node, NULL, 0)
 
 int luaopen_node(lua_State *L)
 {
+  output_task = task_get_id(redir_output);
+
   lua_settop(L, 0);
   return node_setonerror(L);  /* set default onerror action */
 }

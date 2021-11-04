@@ -97,23 +97,3 @@ size_t feed_lua_input(const char *buf, size_t n)
 
   return n; // we consumed/buffered all the provided data
 }
-
-
-void output_redirect(const char *str, size_t l) {
-  lua_State *L = lua_getstate();
-  int n = lua_gettop(L);
-  lua_pushliteral(L, "stdout");
-  lua_rawget(L, LUA_REGISTRYINDEX);                       /* fetch reg.stdout */
-  if (lua_istable(L, -1)) { /* reg.stdout is pipe */
-    lua_rawgeti(L, -1, 1);          /* get the pipe_write func from stdout[1] */
-    lua_insert(L, -2);                         /* and move above the pipe ref */
-    lua_pushlstring(L, str, l);
-    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {           /* Reg.stdout:write(str) */
-      lua_writestringerror("error calling stdout:write(%s)\n", lua_tostring(L, -1));
-      esp_restart();
-    }
-  } else { /* reg.stdout == nil */
-    printf(str, l);
-  }
-  lua_settop(L, n);         /* Make sure all code paths leave stack unchanged */
-}

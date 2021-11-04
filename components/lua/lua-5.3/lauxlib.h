@@ -230,7 +230,7 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 
 /* print a string */
 #if !defined(lua_writestring)
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 void output_redirect(const char *str, size_t l);
 #define lua_writestring(s,l)  output_redirect((s),(l))
 #else

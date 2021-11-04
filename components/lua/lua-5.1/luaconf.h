@@ -305,7 +305,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
-#ifdef LUA_USE_ESP
+#ifdef LUA_USE_ESP8266
 void output_redirect(const char *str, size_t l);
 #define lua_writestring(s,l)  output_redirect((s),(l))
 #else
