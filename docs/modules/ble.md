@@ -57,7 +57,8 @@ ble.advertise("foo")
 
 ## ble.shutdown()
 
-Shuts down the BlueTooth controller and returns it to the state where another `init` ought to work (but currently doesn't).
+Shuts down the BlueTooth controller and returns it to the state where another `init` ought to work (but currently doesn't). And, at the moment, shutting
+it down doesn't work either -- it appears to corrupt some deep data structures.
 
 #### Syntax
 `ble.shutdown()`

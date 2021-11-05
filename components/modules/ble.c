@@ -995,6 +995,10 @@ static int lble_init(lua_State *L) {
 }
 
 static int lble_shutdown(lua_State *L) {
+  // It seems that shutting down the stack corrupts some critical data structures
+  // so, for now, don't allow it.
+  luaL_error(L, "Shutting down the BLE stack is currently not possible");
+
   inited = SHUTTING;
 
   ble_gap_adv_stop();
