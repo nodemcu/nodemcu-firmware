@@ -234,7 +234,7 @@ static esp_err_t static_file_handler(httpd_req_t *req)
 static esp_err_t auto_index_handler(httpd_req_t *req)
 {
   char *fname = NULL;
-  asprintf(&fname, "%s/index.html", webroot);
+  asprintf(&fname, "%s%.*s/index.html", webroot, strlen(req->uri) -1, req->uri);
   serve_file(req, fname);
   free(fname);
   return ESP_OK;
@@ -733,6 +733,10 @@ LROT_BEGIN(httpd, NULL, 0)
   LROT_NUMENTRY( PUT,         HTTP_PUT )
   LROT_NUMENTRY( POST,        HTTP_POST )
   LROT_NUMENTRY( DELETE,      HTTP_DELETE )
+
+  LROT_NUMENTRY( INDEX_NONE,  INDEX_NONE )
+  LROT_NUMENTRY( INDEX_ROOT,  INDEX_ROOT )
+  LROT_NUMENTRY( INDEX_ALL,   INDEX_ALL  )
 LROT_END(httpd, NULL, 0)
 
 
