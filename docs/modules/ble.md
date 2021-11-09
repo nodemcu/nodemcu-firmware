@@ -1,4 +1,4 @@
-# BT HCI Module
+# Bluetooth GAP/GATT Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2021-10-10 | [pjsg](https://github.com/pjsg) | [pjsg](https://github.com/pjsg) | [ble.c](../../components/modules/ble.c)|
@@ -8,7 +8,7 @@ This allows you to build simple gadgets that can be interrogated and controlled 
 
 ## ble.init(configuration)
 
-This initializes the BlueTooth stack and starts advertising according to the data in the
+This initializes the Bluetooth stack and starts advertising according to the data in the
 configuration table. See below for a detailed description of this table.
 
 At the present time, you can only call the `init` function once. There is some problem
@@ -57,7 +57,7 @@ ble.advertise("foo")
 
 ## ble.shutdown()
 
-Shuts down the BlueTooth controller and returns it to the state where another `init` ought to work (but currently doesn't). And, at the moment, shutting
+Shuts down the Bluetooth controller and returns it to the state where another `init` ought to work (but currently doesn't). And, at the moment, shutting
 it down doesn't work either -- it appears to corrupt some deep data structures.
 
 #### Syntax

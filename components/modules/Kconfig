@@ -15,15 +15,15 @@ menu "NodeMCU modules"
             functions on Lua numbers.
 
     config NODEMCU_CMODULE_BLE
-        bool "BlueTooth GAP/GATT interface module"
+        bool "Bluetooth GAP/GATT interface module"
         default "n"
 	select NODEMCU_CMODULE_STRUCT
         select BT_ENABLED
         help
-            Includes the simple BlueTooth GAP/GATT module.
+            Includes the simple Bluetooth GAP/GATT module.
 
     config NODEMCU_CMODULE_BTHCI
-        bool "BlueTooth HCI interface module"
+        bool "Bluetooth HCI interface module"
         default "n"
         select BT_ENABLED
         help
