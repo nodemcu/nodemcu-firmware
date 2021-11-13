@@ -13,7 +13,8 @@ content generation. For static files, all files need to reside under a
 common prefix (the "webroot") in the (virtual) filesystem. The module does
 not care whether the underlying file system supports directories or not,
 so files may be served from SPIFFS, FAT filesystems, or whatever else
-may be mounted.
+may be mounted. If you wish to include the static website contents within
+the firmware image itself, considering using the [EROMFS](eromfs.md) module.
 
 Unlike the default behaviour of the Espressif web server, this module serves
 static files based on file extensions primarily. Static routes are typically
