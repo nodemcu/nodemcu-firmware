@@ -54,6 +54,34 @@ menu "NodeMCU modules"
             Includes the encoder module. This provides hex and base64 encoding
             and decoding functionality.
 
+    config NODEMCU_CMODULE_EROMFS
+        bool "Eromfs module (embedded read-only mountable file sets)"
+        select VFS_SUPPORT_IO
+        default "n"
+        help
+            Includes the eromfs module, giving access to the embedded mountable
+            file sets (volumes) configured here. Useful for bundling file sets
+            within the main firmware image, such as website contents.
+
+    config NODEMCU_CMODULE_EROMFS_VOLUMES
+        depends on NODEMCU_CMODULE_EROMFS
+        string "File sets to embed"
+        default "volume_name=/path/to/volume_root;myvol2=../relpath"
+        help
+            List one or more volume definitions in the form of
+            VolumeName=/path/to/files where the VolumeName is the identifier
+            by which the eromfs module will refer to the volume. The path
+            may be given as either a relative or absolute path. If relative,
+            it is relative to the top-level nodemcu-firmware directory.
+            All files and directories within the specified volume root will
+            be included. Symlinks are not supported and will result in
+            failure if encountered. Multiple volumes may be declared by
+            separating the entries with a semicolon.
+
+            Note that eromfs does not support directories per se, but will
+            store the directory path as part of the filename just as SPIFFS
+            does.
+
     config NODEMCU_CMODULE_ETH
         depends on IDF_TARGET_ESP32
         select ETH_USE_ESP32_EMAC

@@ -7,6 +7,7 @@ set(module_srcs
   "crypto.c"
   "dht.c"
   "encoder.c"
+  "eromfs.c"
   "file.c"
   "gpio.c"
   "heaptrace.c"
@@ -140,3 +141,17 @@ set_property(
   DIRECTORY "${COMPONENT_DIR}" APPEND
   PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ucg_config.h u8g2_fonts.h u8g2_displays.h
 )
+
+# eromfs generation
+add_custom_command(
+  OUTPUT eromfs.bin
+  COMMAND ${COMPONENT_DIR}/eromfs.py ${CONFIG_NODEMCU_CMODULE_EROMFS_VOLUMES}
+  DEPENDS ${SDKCONFIG_HEADER}
+)
+add_custom_target(eromfs_bin DEPENDS eromfs.bin)
+target_add_binary_data(${COMPONENT_LIB} "${CMAKE_CURRENT_BINARY_DIR}/eromfs.bin" BINARY DEPENDS eromfs_bin)
+set_property(
+  DIRECTORY "${COMPONENT_DIR}" APPEND
+  PROPERTY ADDITIONAL_MAKE_CLEAN_FILES eromfs.bin
+)
+
