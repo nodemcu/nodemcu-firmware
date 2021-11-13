@@ -44,8 +44,13 @@ static int file_list( lua_State* L )
     lua_newtable( L );
     struct dirent *e;
     while ((e = readdir(dir))) {
+      char *fname;
+      asprintf(&fname, "%s/%s", dirname, e->d_name);
+      if (!fname)
+        return luaL_error(L, "no memory");
       struct stat st = { 0, };
-      stat(e->d_name, &st);
+      stat(fname, &st);
+      free(fname);
       lua_pushinteger(L, st.st_size);
       lua_setfield(L, -2, e->d_name);
     }
