@@ -731,7 +731,7 @@ igmp_start_timer(struct igmp_group *group, u8_t max_time)
 if(max_time == 1)
   group->timer = 1;
 else
-  group->timer = (LWIP_RAND() % (max_time - 1)) + 1;
+  group->timer = (u16_t) ((unsigned int)LWIP_RAND() % (max_time - 1)) + 1;
 }
 
 /**
