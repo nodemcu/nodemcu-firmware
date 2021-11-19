@@ -473,7 +473,7 @@ static int loadLFS (lua_State *L) {
   vfs_lseek(in->fd, 0, VFS_SEEK_SET);
 
   /* Allocate the out buffers */
-  for(i = 0;  i <= WRITE_BLOCKS; i++)
+  for(i = 0;  i < WRITE_BLOCKS; i++)
     out->block[i] = luaM_new(L, outBlock);
 
   /* first inflate pass */
@@ -497,8 +497,9 @@ static int loadLFS (lua_State *L) {
   flashErase(0,(out->flashLen - 1)/FLASH_PAGE_SIZE);
   flashSetPosition(0);
 
-  if ((res = uzlib_inflate(get_byte, put_byte, recall_byte,
-                    in->len, &crc, &in->inflate_state)) != UZLIB_DONE) {
+  res = uzlib_inflate(get_byte, put_byte, recall_byte,
+    in->len, &crc, &in->inflate_state);
+  if (res < 0) { // UZLIB_OK == 0, UZLIB_DONE == 1
     const char *err[] = {"Data_error during decompression",
                          "Chksum_error during decompression",
                          "Dictionary error during decompression",
