@@ -145,11 +145,15 @@ static void *Store_(LoadState *S, void *a, int ndx, const void *e, size_t s
 /* These compression maps must match the definitions in lobject.h etc. */
 #  define OFFSET_TSTRING (2*(sizeof(lu_int32)-sizeof(size_t)))
 #  define FMT_TSTRING   "AwwA"
-#  define FMT_TVALUE    "WA"
+#if defined(CONFIG_LUA_NUMBER_INT64) || defined(CONFIG_LUA_NUMBER_DOUBLE) || defined(LUA_NUMBER_64BITS)
+#  define FMT_TVALUE    "www"
+#else
+#  define FMT_TVALUE    "AW"
+#endif
 #  define FMT_PROTO     "AwwwwwwwwwwAAAAAAAA"
 #  define FMT_UPVALUE   "AW"
 #  define FMT_LOCVAR    "Aww"
-#  define FMT_ROTENTRY  "AWA"
+#  define FMT_ROTENTRY  "A" FMT_TVALUE
 #  define FMT_ROTABLE   "AWAA"
 #  define StoreR(S,a, i, v, f) Store_(S, (a), i, &(v), sizeof(v), f)
 #  define Store(S, a, i, v)    StoreR(S, (a), i, v, NULL)
@@ -575,9 +579,10 @@ static void LoadAllProtos (LoadState *S) {
     S->pv[i] = LoadFunction(S, luaF_newproto(L), NULL);
   }
   /* generate the ROTable entries from first N constants; the last is a timestamp */
-  lua_assert(n+1 == LoadInt(S));
+  int nk = LoadInt(S);
+  lua_assert(n+1 == nk);
   ROTable_entry *entry_list = cast(ROTable_entry *, StoreGetPos(S));
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < nk - 1; i++) { // -1 to ignore timestamp
     lu_byte tt_data = LoadByte(S);
     TString *Tname = LoadString2(S, tt_data);
     const char *name = getstr(Tname) + OFFSET_TSTRING;
