@@ -17,20 +17,21 @@ X,Y,Z data (integers)
 
 #### Example
 ```lua
-adxl345.init(1, 2)
+local sda, scl = 1, 2
+i2c.setup(0, sda, scl, i2c.SLOW)  -- call i2c.setup() only once
+adxl345.setup()
 local x,y,z = adxl345.read()
 print(string.format("X = %d, Y = %d, Z = %d", x, y, z))
 ```
 
-## adxl345.init()
-Initializes the module and sets the pin configuration.
+## adxl345.setup()
+Initializes the module.
 
 #### Syntax
-`adxl345.init(sda, scl)`
+`adxl345.setup()`
 
 #### Parameters
-- `sda` data pin
-- `scl` clock pin
+None
 
 #### Returns
 `nil`

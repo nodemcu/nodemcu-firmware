@@ -4,12 +4,12 @@
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 ------------------------------------------------------------------------------
-require("http").createServer(80, function(req, res)
+require("httpserver").createServer(80, function(req, res)
   -- analyse method and url
   print("+R", req.method, req.url, node.heap())
   -- setup handler of headers, if any
-  req.onheader = function(self, name, value)
-    -- print("+H", name, value)
+  req.onheader = function(self, name, value) -- luacheck: ignore
+    print("+H", name, value)
     -- E.g. look for "content-type" header,
     --   setup body parser to particular format
     -- if name == "content-type" then
@@ -21,15 +21,13 @@ require("http").createServer(80, function(req, res)
     -- end
   end
   -- setup handler of body, if any
-  req.ondata = function(self, chunk)
+  req.ondata = function(self, chunk) -- luacheck: ignore
     print("+B", chunk and #chunk, node.heap())
-    -- request ended?
     if not chunk then
       -- reply
-      --res:finish("")
       res:send(nil, 200)
       res:send_header("Connection", "close")
-      res:send("Hello, world!")
+      res:send("Hello, world!\n")
       res:finish()
     end
   end

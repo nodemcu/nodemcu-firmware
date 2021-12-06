@@ -10,9 +10,9 @@ and do some other magic to make everything work and compile under FreeRTOS.
 #endif
 
 /*
-Enable this to make the exception and debugging handlers switch to a private stack. This will use 
+Enable this to make the exception and debugging handlers switch to a private stack. This will use
 up 1K of RAM, but may be useful if you're debugging stack or stack pointer corruption problems. It's
-normally disabled because not many situations need it. If for some reason the GDB communication 
+normally disabled because not many situations need it. If for some reason the GDB communication
 stops when you run into an error in your code, try enabling this.
 */
 #ifndef GDBSTUB_USE_OWN_STACK
@@ -30,7 +30,7 @@ the gdbstub_init call.
 #endif
 
 /*
-Enabling this will redirect console output to GDB. This basically means that printf/os_printf output 
+Enabling this will redirect console output to GDB. This basically means that printf/os_printf output
 will show up in your gdb session, which is useful if you use gdb to do stuff. It also means that if
 you use a normal terminal, you can't read the printfs anymore.
 */
@@ -52,7 +52,7 @@ Gdbstub functions are placed in flash or IRAM using attributes, as defined here.
 (and related) can always be in flash, because it's called in the normal code flow. The rest of the
 gdbstub functions can be in flash too, but only if there's no chance of them being called when the
 flash somehow is disabled (eg during SPI operations or flash write/erase operations). If the routines
-are called when the flash is disabled (eg due to a Ctrl-C at the wrong time), the ESP8266 will most 
+are called when the flash is disabled (eg due to a Ctrl-C at the wrong time), the ESP8266 will most
 likely crash.
 */
 #define ATTR_GDBINIT	ICACHE_FLASH_ATTR

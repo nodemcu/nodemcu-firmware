@@ -34,6 +34,44 @@
 #ifndef SPIFFS_CHECK_DBG
 #define SPIFFS_CHECK_DBG(...) //dbg_printf(__VA_ARGS__)
 #endif
+// Set spiffs debug output call for all api invocations.
+#ifndef SPIFFS_API_DBG
+#define SPIFFS_API_DBG(_f, ...) //printf(_f, ## __VA_ARGS__)
+#endif
+
+// Defines spiffs debug print formatters
+// some general signed number
+#ifndef _SPIPRIi
+#define _SPIPRIi   "%d"
+#endif
+// address
+#ifndef _SPIPRIad
+#define _SPIPRIad  "%08x"
+#endif
+// block
+#ifndef _SPIPRIbl
+#define _SPIPRIbl  "%04x"
+#endif
+// page
+#ifndef _SPIPRIpg
+#define _SPIPRIpg  "%04x"
+#endif
+// span index
+#ifndef _SPIPRIsp
+#define _SPIPRIsp  "%04x"
+#endif
+// file descriptor
+#ifndef _SPIPRIfd
+#define _SPIPRIfd  "%d"
+#endif
+// file object id
+#ifndef _SPIPRIid
+#define _SPIPRIid  "%04x"
+#endif
+// file flags
+#ifndef _SPIPRIfl
+#define _SPIPRIfl  "%02x"
+#endif
 
 // Enable/disable API functions to determine exact number of bytes
 // for filedescriptor and cache buffers. Once decided for a configuration,
@@ -56,6 +94,11 @@
 // Enable/disable statistics on caching. Debug/test purpose only.
 #ifndef  SPIFFS_CACHE_STATS
 #define SPIFFS_CACHE_STATS              1
+#endif
+#else
+// No SPIFFS_CACHE, also disable SPIFFS_CACHE_WR
+#ifndef SPIFFS_CACHE_WR
+#define SPIFFS_CACHE_WR                 0
 #endif
 #endif
 
@@ -104,11 +147,25 @@
 #define SPIFFS_OBJ_NAME_LEN             (FS_OBJ_NAME_LEN+1)
 #endif
 
+// Maximum length of the metadata associated with an object.
+// Setting to non-zero value enables metadata-related API but also
+// changes the on-disk format, so the change is not backward-compatible.
+//
+// Do note: the meta length must never exceed
+// logical_page_size - (SPIFFS_OBJ_NAME_LEN + 64)
+//
+// This is derived from following:
+// logical_page_size - (SPIFFS_OBJ_NAME_LEN + sizeof(spiffs_page_header) +
+// spiffs_object_ix_header fields + at least some LUT entries)
+#ifndef SPIFFS_OBJ_META_LEN
+#define SPIFFS_OBJ_META_LEN             (0)
+#endif
+
 // Size of buffer allocated on stack used when copying data.
 // Lower value generates more read/writes. No meaning having it bigger
 // than logical page size.
 #ifndef SPIFFS_COPY_BUFFER_STACK
-#define SPIFFS_COPY_BUFFER_STACK        (64)
+#define SPIFFS_COPY_BUFFER_STACK        (256)
 #endif
 
 // Enable this to have an identifiable spiffs filesystem. This will look for
@@ -201,6 +258,64 @@
 // Might be useful for e.g. bootloaders and such.
 #ifndef SPIFFS_READ_ONLY
 #define SPIFFS_READ_ONLY                      0
+#endif
+
+// Enable this to add a temporal file cache using the fd buffer.
+// The effects of the cache is that SPIFFS_open will find the file faster in
+// certain cases. It will make it a lot easier for spiffs to find files
+// opened frequently, reducing number of readings from the spi flash for
+// finding those files.
+// This will grow each fd by 6 bytes. If your files are opened in patterns
+// with a degree of temporal locality, the system is optimized.
+// Examples can be letting spiffs serve web content, where one file is the css.
+// The css is accessed for each html file that is opened, meaning it is
+// accessed almost every second time a file is opened. Another example could be
+// a log file that is often opened, written, and closed.
+// The size of the cache is number of given file descriptors, as it piggybacks
+// on the fd update mechanism. The cache lives in the closed file descriptors.
+// When closed, the fd know the whereabouts of the file. Instead of forgetting
+// this, the temporal cache will keep handling updates to that file even if the
+// fd is closed. If the file is opened again, the location of the file is found
+// directly. If all available descriptors become opened, all cache memory is
+// lost.
+#ifndef SPIFFS_TEMPORAL_FD_CACHE
+#define SPIFFS_TEMPORAL_FD_CACHE              1
+#endif
+
+// Temporal file cache hit score. Each time a file is opened, all cached files
+// will lose one point. If the opened file is found in cache, that entry will
+// gain SPIFFS_TEMPORAL_CACHE_HIT_SCORE points. One can experiment with this
+// value for the specific access patterns of the application. However, it must
+// be between 1 (no gain for hitting a cached entry often) and 255.
+#ifndef SPIFFS_TEMPORAL_CACHE_HIT_SCORE
+#define SPIFFS_TEMPORAL_CACHE_HIT_SCORE       4
+#endif
+
+// Enable to be able to map object indices to memory.
+// This allows for faster and more deterministic reading if cases of reading
+// large files and when changing file offset by seeking around a lot.
+// When mapping a file's index, the file system will be scanned for index pages
+// and the info will be put in memory provided by user. When reading, the
+// memory map can be looked up instead of searching for index pages on the
+// medium. This way, user can trade memory against performance.
+// Whole, parts of, or future parts not being written yet can be mapped. The
+// memory array will be owned by spiffs and updated accordingly during garbage
+// collecting or when modifying the indices. The latter is invoked by when the
+// file is modified in some way. The index buffer is tied to the file
+// descriptor.
+#ifndef SPIFFS_IX_MAP
+#define SPIFFS_IX_MAP                         0
+#endif
+
+// By default SPIFFS in some cases relies on the property of NOR flash that bits
+// cannot be set from 0 to 1 by writing and that controllers will ignore such
+// bit changes. This results in fewer reads as SPIFFS can in some cases perform
+// blind writes, with all bits set to 1 and only those it needs reset set to 0.
+// Most of the chips and controllers allow this behavior, so the default is to
+// use this technique. If your controller is one of the rare ones that don't,
+// turn this option on and SPIFFS will perform a read-modify-write instead.
+#ifndef SPIFFS_NO_BLIND_WRITES
+#define SPIFFS_NO_BLIND_WRITES                0
 #endif
 
 // Set SPIFFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function

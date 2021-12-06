@@ -1,6 +1,6 @@
 # SPIFFS File System
 
-The NodeMCU project uses the [SPIFFS](https://github.com/pellepl/spiffs) 
+The NodeMCU project uses the [SPIFFS](https://github.com/pellepl/spiffs)
 filesystem to store files in the flash chip. The technical details about how this is configured can be found below, along with various build time options.
 
 # spiffsimg - Manipulate SPI Flash File System disk images
@@ -13,12 +13,12 @@ NodeMCU uses a SPIFFS filesystem that knows how big it is -- i.e. when you build
 image, it must fit into the flash chip, and it cannot be expanded once flashed.
 It is important to give the `spiffimg` tool the correct size. You can provide either the `-c` option or both the `-U` and `-S` options.
 
-### Syntax 
+### Syntax
 
 ```
-spiffsimg -f <filename> 
+spiffsimg -f <filename>
 	[-o <offsetfile>]
-	[-c <size>] 
+	[-c <size>]
 	[-S <flashsize>]
 	[-U <usedsize>]
 	[-d]
@@ -73,29 +73,29 @@ f    880 http/favicon.ico
 # Technical Details
 
 The SPIFFS configuration is 4k sectors (the only size supported by the SDK) and 8k blocks. 256 byte pages. Magic is enabled and magic_len is also enabled. This allows the firmware to find the start of the filesystem (and also the size).
-One of the goals is to make the filsystem more persistent across reflashing of the firmware. However, there are still cases
+One of the goals is to make the filesystem more persistent across reflashing of the firmware. However, there are still cases
 where spiffs detects a filesystem and uses it when it isn't valid. If you are getting weirdness with the filesystem, then just reformat it.
 
-There are two significant sizes of flash -- the 512K and 4M (or bigger). 
+There are two significant sizes of flash -- the 512K and 4M (or bigger).
 
-The file system has to start on a 4k boundary, but since it ends on a much bigger boundary (a 16k boundary), it also starts on an 8k boundary. For the small flash chip, there is 
-not much spare space, so a newly formatted file system will start as low as possible (to get as much space as possible). For the large flash, the 
-file system will start on a 64k boundary. A newly formatted file system will start between 64k and 128k from the end of the firmware. This means that the file 
-system will survive lots of reflashing and at least 64k of firmware growth. 
+The file system has to start on a 4k boundary, but since it ends on a much bigger boundary (a 16k boundary), it also starts on an 8k boundary. For the small flash chip, there is
+not much spare space, so a newly formatted file system will start as low as possible (to get as much space as possible). For the large flash, the
+file system will start on a 64k boundary. A newly formatted file system will start between 64k and 128k from the end of the firmware. This means that the file
+system will survive lots of reflashing and at least 64k of firmware growth.
 
 The standard build process for the firmware builds the `spiffsimg` tool (found in the `tools/spiffsimg` subdirectory).
-The top level Makfile also checks if
+The top level Makefile also checks if
 there is any data in the `local/fs` directory tree, and it will then copy these files
-into the flash disk image. Two images will normally be created -- one for the 512k flash part and the other for the 4M flash part. If the data doesn't 
+into the flash disk image. Two images will normally be created -- one for the 512k flash part and the other for the 4M flash part. If the data doesn't
 fit into the 512k part after the firmware is included, then the file will not be generated.
-The disk image file is placed into the `bin` directory and it is named `0x<offset>-<size>.bin` where the offset is the location where it should be 
+The disk image file is placed into the `bin` directory and it is named `0x<offset>-<size>.bin` where the offset is the location where it should be
 flashed, and the size is the size of the flash part. It is quite valid (and quicker) to flash the 512k image into a 4M part. However, there will probably be
 limited space in the file system for creating new files.
 
 The default configuration will try and build three different file systems for 512KB, 1MB and 4MB flash sizes. The 1MB size is suitable for the ESP8285. This can be overridden by specifying the FLASHSIZE parameter to the makefile.
 
-If the `local/fs` directory is empty, then no flash images will be created (and the ones from the last build will be removed). The `spiffsimg` tool can 
-then be used to build an image as required. 
+If the `local/fs` directory is empty, then no flash images will be created (and the ones from the last build will be removed). The `spiffsimg` tool can
+then be used to build an image as required.
 
 If no file system is found during platform boot, then a new file system will be formatted. This can take some time on the first boot.
 
@@ -108,8 +108,8 @@ Just place the following define in `user_config.h` or some other file that is in
 #define SPIFFS_MAX_FILESYSTEM_SIZE	32768
 ```
 
-This filesystem size limit only affects the formatting of a file system -- if the firm finds an existing valid filesystem (of any size) it will use that. However, if the 
-filesystem is reformatted from Lua (using file.format()) then the new file system will obey the size limit. 
+This filesystem size limit only affects the formatting of a file system -- if the firm finds an existing valid filesystem (of any size) it will use that. However, if the
+filesystem is reformatted from Lua (using file.format()) then the new file system will obey the size limit.
 
 There is also an option to control the positioning of the SPIFFS file system:
 
@@ -117,7 +117,7 @@ There is also an option to control the positioning of the SPIFFS file system:
 #define SPIFFS_FIXED_LOCATION   	0x100000
 ```
 
-This specifies that the SPIFFS filesystem starts at 1Mb from the start of the flash. Unless otherwise specified, it will run to the end of the flash (excluding the 16k of space reserved by the SDK). 
+This specifies that the SPIFFS filesystem starts at 1Mb from the start of the flash. Unless otherwise specified, it will run to the end of the flash (excluding the 16k of space reserved by the SDK).
 
 There is an option that limits the size of the file system to run up to the next 1MB boundary (minus the 16k for the parameter space). This may be useful when dealing with OTA upgrades.
 

@@ -2,7 +2,6 @@
 
 Accessing files on external SD cards is currently only supported from the `file` module. This imposes the same overall restrictions of internal SPIFFS to SD cards:
 
-- only one file can be opened at a time
 - no support for sub-folders
 - no timestamps
 - no file attributes (read-only, system, etc.)
@@ -11,9 +10,9 @@ Work is in progress to extend the `file` API with support for the missing featur
 
 ## Enabling FatFs
 
-The FAT file system is implemented by [Chan's FatFs](http://elm-chan.org/fsw/ff/00index_e.html) version [R0.12a](http://elm-chan.org/fsw/ff/ff12a.zip). It's disabled by default to save memory space and has to be enabled before compiling the firmware:
+The FAT file system is implemented by [Chan's FatFs](http://elm-chan.org/fsw/ff/00index_e.html) version [R0.13c](http://elm-chan.org/fsw/ff/ff13c.zip). It's disabled by default to save memory space and has to be enabled before compiling the firmware:
 
-Uncomment `#define BUILD_FATFS` in [`user_config.h`](../../app/include/user_config.h).
+Uncomment `#define BUILD_FATFS` in [`user_config.h`](../app/include/user_config.h).
 
 ## SD Card connection
 
@@ -64,10 +63,10 @@ file.close()
 
     If the card doesn't work when calling `file.mount()` for the first time then re-try the command. It's possible that certain cards time out during the first initialization after power-up.
 
-The logical drives are mounted at the root of a unified directory tree where the mount points distinguish between internal flash (`/FLASH`) and the card's paritions (`/SD0` to `/SD3`). Files are accessed via either the absolute hierarchical path or relative to the current working directory. It defaults to `/FLASH` and can be changed with `file.chdir(path)`.
+The logical drives are mounted at the root of a unified directory tree where the mount points distinguish between internal flash (`/FLASH`) and the card's partitions (`/SD0` to `/SD3`). Files are accessed via either the absolute hierarchical path or relative to the current working directory. It defaults to `/FLASH` and can be changed with `file.chdir(path)`.
 
 Subdirectories are supported on FAT volumes only.
 
 ## Multiple partitions / multiple cards
 
-The mapping from logical volumes (eg. `/SD0`) to partitions on an SD card is defined in [`fatfs_config.h`](../../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../../app/fatfs/ffconf.h) as well.
+The mapping from logical volumes (eg. `/SD0`) to partitions on an SD card is defined in [`fatfs_config.h`](../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../app/fatfs/ffconf.h) as well.

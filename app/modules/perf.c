@@ -1,7 +1,7 @@
 //
 // This module allows performance monitoring by looking at
 // the PC at regular intervals and building a histogram
-// 
+//
 // perf.start(start, end, nbins[, pc offset on stack])
 // perf.stop()  -> total sample, samples outside range, table { addr -> count , .. }
 
@@ -9,7 +9,7 @@
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "module.h"
 #include "lauxlib.h"
@@ -24,7 +24,6 @@ typedef struct {
   uint32_t bucket_count;
   uint32_t total_samples;
   uint32_t outside_samples;
-  uint32_t pc_offset;
   uint32_t bucket[1];
 } DATA;
 
@@ -39,7 +38,11 @@ static void ICACHE_RAM_ATTR hw_timer_cb(os_param_t p)
   uint32_t stackaddr;
 
   if (data) {
-    uint32_t pc = *(&stackaddr + data->pc_offset);
+    uint32_t pc;
+    asm (
+      "rsr   %0, EPC1;"    /* read out the EPC */
+      :"=r"(pc)
+    );
 
     uint32_t bucket_number = (pc - data->start) >> data->bucket_shift;
     if (bucket_number < data->bucket_count) {
@@ -72,11 +75,6 @@ static int perf_start(lua_State *L)
 
   bins = (end - start + (1 << shift) - 1) / (1 << shift);
 
-  int pc_offset = 20;  // This appears to be correct
-  if (lua_gettop(L) >= 4) {
-    pc_offset = luaL_checkinteger(L, 4);
-  }
-
   size_t data_size = sizeof(DATA) + bins * sizeof(uint32_t);
   DATA *d = (DATA *) lua_newuserdata(L, data_size);
   memset(d, 0, data_size);
@@ -84,10 +82,9 @@ static int perf_start(lua_State *L)
   d->start = start;
   d->bucket_shift = shift;
   d->bucket_count = bins;
-  d->pc_offset = pc_offset;	
 
   if (data) {
-    lua_unref(L, data->ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, data->ref);
   }
 
   data = d;
@@ -96,7 +93,7 @@ static int perf_start(lua_State *L)
   if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
     // Failed to init the timer
     data = NULL;
-    lua_unref(L, d->ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, d->ref);
     luaL_error(L, "Unable to initialize timer");
   }
 
@@ -118,30 +115,30 @@ static int perf_stop(lua_State *L)
   DATA *d = data;
   data = NULL;
 
-  lua_pushnumber(L, d->total_samples);
-  lua_pushnumber(L, d->outside_samples);
+  lua_pushunsigned(L, d->total_samples);
+  lua_pushunsigned(L, d->outside_samples);
   lua_newtable(L);
   int i;
   uint32_t addr = d->start;
   for (i = 0; i < d->bucket_count; i++, addr += (1 << d->bucket_shift)) {
     if (d->bucket[i]) {
-      lua_pushnumber(L, addr);
-      lua_pushnumber(L, d->bucket[i]);
+      lua_pushunsigned(L, addr);
+      lua_pushunsigned(L, d->bucket[i]);
       lua_settable(L, -3);
     }
   }
 
-  lua_pushnumber(L, 1 << d->bucket_shift);
+  lua_pushunsigned(L, 1 << d->bucket_shift);
 
-  lua_unref(L, d->ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, d->ref);
 
   return 4;
 }
 
-static const LUA_REG_TYPE perf_map[] = {
-  { LSTRKEY( "start" ),   LFUNCVAL( perf_start ) },
-  { LSTRKEY( "stop" ),    LFUNCVAL( perf_stop ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(perf, NULL, 0)
+  LROT_FUNCENTRY( start, perf_start )
+  LROT_FUNCENTRY( stop, perf_stop )
+LROT_END(perf, NULL, 0)
 
-NODEMCU_MODULE(PERF, "perf", perf_map, NULL);
+
+NODEMCU_MODULE(PERF, "perf", perf, NULL);

@@ -1,27 +1,28 @@
-
-
-#include "c_stdlib.h"
-#include "c_stdio.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include "vfs.h"
-
+#include "vfs_int.h"
 
 #define LDRV_TRAVERSAL 0
 
+// This interferes with our clearerr member in our ops struct
+#undef clearerr
 
 // ---------------------------------------------------------------------------
 // RTC system interface
 //
-static sint32_t (*rtc_cb)( vfs_time *tm ) = NULL;
+static int32_t (*rtc_cb)( vfs_time *tm ) = NULL;
 
 // called by operating system
-void vfs_register_rtc_cb( sint32_t (*cb)( vfs_time *tm ) )
+void vfs_register_rtc_cb( int32_t (*cb)( vfs_time *tm ) )
 {
   // allow NULL pointer to unregister callback function
   rtc_cb = cb;
 }
 
 // called by file system drivers
-sint32_t vfs_get_rtc( vfs_time *tm )
+int32_t vfs_get_rtc( vfs_time *tm )
 {
   if (rtc_cb) {
     return rtc_cb( tm );
@@ -33,15 +34,18 @@ sint32_t vfs_get_rtc( vfs_time *tm )
 
 static int dir_level = 1;
 
+
+#if ! LDRV_TRAVERSAL
+
+#define normalize_path(p) (p)
+
+#else
 static const char *normalize_path( const char *path )
 {
-#if ! LDRV_TRAVERSAL
-  return path;
-#else
   const char *temp = path;
   size_t len;
 
-  while ((len = c_strlen( temp )) >= 2) {
+  while ((len = strlen( temp )) >= 2) {
     if (temp[0] == '.' && temp[1] == '.') {
       --dir_level;
       if (len >= 4 && dir_level > 0) {
@@ -63,8 +67,8 @@ static const char *normalize_path( const char *path )
     // path traverses via root
     return temp;
   }
-#endif
 }
+#endif
 
 
 // ---------------------------------------------------------------------------
@@ -85,7 +89,7 @@ vfs_vol *vfs_mount( const char *name, int num )
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
     vfs_vol *r = fs_fns->mount( outname, num );
-    c_free( outname );
+    free( outname );
     return r;
   }
 #endif
@@ -108,7 +112,7 @@ int vfs_open( const char *name, const char *mode )
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
     int r = (int)fs_fns->open( outname, mode );
-    c_free( outname );
+    free( outname );
     return r;
   }
 #endif
@@ -131,7 +135,7 @@ vfs_dir *vfs_opendir( const char *name )
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
     vfs_dir *r = fs_fns->opendir( outname );
-    c_free( outname );
+    free( outname );
     return r;
   }
 #endif
@@ -139,7 +143,7 @@ vfs_dir *vfs_opendir( const char *name )
   return NULL;
 }
 
-vfs_item *vfs_stat( const char *name )
+int32_t vfs_stat( const char *name, struct vfs_stat *buf )
 {
   vfs_fs_fns *fs_fns;
   const char *normname = normalize_path( name );
@@ -147,22 +151,22 @@ vfs_item *vfs_stat( const char *name )
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normname, &outname, FALSE )) {
-    return fs_fns->stat( outname );
+    return fs_fns->stat( outname, buf );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    vfs_item *r = fs_fns->stat( outname );
-    c_free( outname );
+    int32_t r = fs_fns->stat( outname, buf );
+    free( outname );
     return r;
   }
 #endif
 
-  return NULL;
+  return VFS_RES_ERR;
 }
 
-sint32_t vfs_remove( const char *name )
+int32_t vfs_remove( const char *name )
 {
   vfs_fs_fns *fs_fns;
   const char *normname = normalize_path( name );
@@ -176,8 +180,8 @@ sint32_t vfs_remove( const char *name )
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    sint32_t r = fs_fns->remove( outname );
-    c_free( outname );
+    int32_t r = fs_fns->remove( outname );
+    free( outname );
     return r;
   }
 #endif
@@ -185,7 +189,7 @@ sint32_t vfs_remove( const char *name )
   return VFS_RES_ERR;
 }
 
-sint32_t vfs_rename( const char *oldname, const char *newname )
+int32_t vfs_rename( const char *oldname, const char *newname )
 {
   vfs_fs_fns *fs_fns;
   const char *normoldname = normalize_path( oldname );
@@ -203,19 +207,19 @@ sint32_t vfs_rename( const char *oldname, const char *newname )
 #ifdef BUILD_FATFS
   if (myfatfs_realm( normoldname, &oldoutname, FALSE )) {
     if (fs_fns = myfatfs_realm( normnewname, &newoutname, FALSE )) {
-      sint32_t r = fs_fns->rename( oldoutname, newoutname );
-      c_free( oldoutname );
-      c_free( newoutname );
+      int32_t r = fs_fns->rename( oldoutname, newoutname );
+      free( oldoutname );
+      free( newoutname );
       return r;
     }
-    c_free( oldoutname );
+    free( oldoutname );
   }
 #endif
 
   return -1;
 }
 
-sint32_t vfs_mkdir( const char *name )
+int32_t vfs_mkdir( const char *name )
 {
   vfs_fs_fns *fs_fns;
   const char *normname = normalize_path( name );
@@ -227,8 +231,8 @@ sint32_t vfs_mkdir( const char *name )
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    sint32_t r = fs_fns->mkdir( outname );
-    c_free( outname );
+    int32_t r = fs_fns->mkdir( outname );
+    free( outname );
     return r;
   }
 #endif
@@ -236,7 +240,7 @@ sint32_t vfs_mkdir( const char *name )
   return VFS_RES_ERR;
 }
 
-sint32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
+int32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
 {
   vfs_fs_fns *fs_fns;
   char *outname;
@@ -253,7 +257,7 @@ sint32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    c_free( outname );
+    free( outname );
     return fs_fns->fsinfo( total, used );
   }
 #endif
@@ -261,7 +265,7 @@ sint32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
   return VFS_RES_ERR;
 }
 
-sint32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size)
+int32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size)
 {
   vfs_fs_fns *fs_fns;
   char *outname;
@@ -280,7 +284,7 @@ sint32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size)
   return VFS_RES_ERR;
 }
 
-sint32_t vfs_format( void )
+int32_t vfs_format( void )
 {
   vfs_fs_fns *fs_fns;
   char *outname;
@@ -299,7 +303,7 @@ sint32_t vfs_format( void )
   return 0;
 }
 
-sint32_t vfs_chdir( const char *path )
+int32_t vfs_chdir( const char *path )
 {
   vfs_fs_fns *fs_fns;
   const char *normpath = normalize_path( path );
@@ -315,9 +319,9 @@ sint32_t vfs_chdir( const char *path )
   } else {
     level = normpath;
   }
-  while (c_strlen( level ) > 0) {
+  while (strlen( level ) > 0) {
     dir_level++;
-    if (level = c_strchr( level, '/' )) {
+    if (level = strchr( level, '/' )) {
       level++;
     } else {
       break;
@@ -328,7 +332,7 @@ sint32_t vfs_chdir( const char *path )
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normpath, &outname, TRUE )) {
     // our SPIFFS integration doesn't support directories
-    if (c_strlen( outname ) == 0) {
+    if (strlen( outname ) == 0) {
       ok = VFS_RES_OK;
     }
   }
@@ -336,7 +340,7 @@ sint32_t vfs_chdir( const char *path )
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normpath, &outname, TRUE )) {
-    if (c_strchr( outname, ':' )) {
+    if (strchr( outname, ':' )) {
       // need to set FatFS' default drive
       fs_fns->chdrive( outname );
       // and force chdir to root in case path points only to root
@@ -345,14 +349,14 @@ sint32_t vfs_chdir( const char *path )
     if (fs_fns->chdir( outname ) == VFS_RES_OK) {
       ok = VFS_RES_OK;
     }
-    c_free( outname );
+    free( outname );
   }
 #endif
 
   return ok == VFS_RES_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-sint32_t vfs_errno( const char *name )
+int32_t vfs_errno( const char *name )
 {
   vfs_fs_fns *fs_fns;
   char *outname;
@@ -369,8 +373,8 @@ sint32_t vfs_errno( const char *name )
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    sint32_t r = fs_fns->ferrno( );
-    c_free( outname );
+    int32_t r = fs_fns->ferrno( );
+    free( outname );
     return r;
   }
 #endif
@@ -378,7 +382,7 @@ sint32_t vfs_errno( const char *name )
   return VFS_RES_ERR;
 }
 
-sint32_t vfs_ferrno( int fd )
+int32_t vfs_ferrno( int fd )
 {
   vfs_file *f = (vfs_file *)fd;
 
@@ -397,8 +401,8 @@ sint32_t vfs_ferrno( int fd )
 
 #ifdef BUILD_FATFS
     if (fs_fns = myfatfs_realm( name, &outname, FALSE )) {
-      sint32_t r = fs_fns->ferrno( );
-      c_free( outname );
+      int32_t r = fs_fns->ferrno( );
+      free( outname );
       return r;
     }
 #endif
@@ -417,14 +421,14 @@ void vfs_clearerr( const char *name )
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normname, &outname, FALSE )) {
-    fs_fns->clearerr( );
+    fs_fns->clearerr ( );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    fs_fns->clearerr( );
-    c_free( outname );
+    fs_fns->clearerr ( );
+    free( outname );
   }
 #endif
 }
@@ -434,9 +438,9 @@ const char *vfs_basename( const char *path )
   const char *basename;
 
   // deduce basename (incl. extension) for length check
-  if (basename = c_strrchr( path, '/' )) {
+  if (basename = strrchr( path, '/' )) {
     basename++;
-  } else if (basename = c_strrchr( path, ':' )) {
+  } else if (basename = strrchr( path, ':' )) {
     basename++;
   } else {
     basename = path;
@@ -452,7 +456,7 @@ const char *vfs_basename( const char *path )
 int vfs_getc( int fd )
 {
   unsigned char c = 0xFF;
-  sint32_t res;
+  int32_t res;
 
   if(!vfs_eof( fd )) {
     if (1 != vfs_read( fd, &c, 1 )) {

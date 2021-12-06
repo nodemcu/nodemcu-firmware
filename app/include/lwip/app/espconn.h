@@ -1,12 +1,38 @@
+/*
+ * ESPRESSIF MIT License
+ *
+ * Copyright (c) 2016 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ *
+ * Permission is hereby granted for use on ESPRESSIF SYSTEMS ESP8266 only, in which case,
+ * it is free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #ifndef __ESPCONN_H__
 #define __ESPCONN_H__
 
+#include "lwip/err.h"
 #include "lwip/dns.h"
 #include "os_type.h"
+#include "lwip/app/espconn_buf.h"
 
 #if 0
 #define espconn_printf(fmt, args...) os_printf(fmt,## args)
-#else 
+#else
 #define espconn_printf(fmt, args...)
 #endif
 
@@ -32,10 +58,11 @@ typedef void (* espconn_reconnect_callback)(void *arg, sint8 err);
 #define ESPCONN_ARG        -12   /* Illegal argument.        */
 #define ESPCONN_IF		   -14	 /* Low_level error			 */
 #define ESPCONN_ISCONN     -15   /* Already connected.       */
+#define ESPCONN_TIME	   -16	 /* Sync Time error			 */
+#define ESPCONN_NODATA	   -17	 /* No data can be read	     */
 
 #define ESPCONN_HANDSHAKE  -28   /* ssl handshake failed	 */
-#define ESPCONN_RESP_TIMEOUT -29 /* ssl handshake no response*/
-#define ESPCONN_PROTO_MSG  -61   /* ssl application invalid	 */
+#define ESPCONN_SSL_INVALID_DATA  -61   /* ssl application invalid	 */
 
 #define ESPCONN_SSL			0x01
 #define ESPCONN_NORM		0x00
@@ -118,13 +145,16 @@ enum espconn_option{
 	ESPCONN_NODELAY = 0x02,
 	ESPCONN_COPY = 0x04,
 	ESPCONN_KEEPALIVE = 0x08,
+	ESPCONN_MANUALRECV = 0x10,
 	ESPCONN_END
 };
 
-enum espconn_level{
-	ESPCONN_KEEPIDLE,
-	ESPCONN_KEEPINTVL,
-	ESPCONN_KEEPCNT
+enum espconn_mode{
+	ESPCONN_NOMODE,
+	ESPCONN_TCPSERVER_MODE,
+	ESPCONN_TCPCLIENT_MODE,
+	ESPCONN_UDP_MODE,
+	ESPCONN_NUM_MODE
 };
 
 struct espconn_packet{
@@ -169,6 +199,7 @@ typedef struct _espconn_msg{
 	struct espconn *pespconn;
 	comon_pkt pcommon;
 	uint8 count_opt;
+	uint8 espconn_mode;
 	sint16_t hs_status;	//the status of the handshake
 	void *preverse;
 	void *pssl;
@@ -177,6 +208,8 @@ typedef struct _espconn_msg{
 //***********Code for WIFI_BLOCK from upper**************
 	uint8 recv_hold_flag;
 	uint16 recv_holded_buf_Len;
+//*******************************************************
+	ringbuf *readbuf;
 }espconn_msg;
 
 #ifndef _MDNS_INFO
@@ -262,16 +295,6 @@ bool espconn_find_connection(struct espconn *pespconn, espconn_msg **pnode);
 sint8 espconn_get_connection_info(struct espconn *pespconn, remot_info **pcon_info, uint8 typeflags);
 
 /******************************************************************************
- * FunctionName : espconn_get_packet_info
- * Description  : get the packet info with host
- * Parameters   : espconn -- the espconn used to disconnect the connection
- * 				  infoarg -- the packet info
- * Returns      : the errur code
-*******************************************************************************/
-
-sint8 espconn_get_packet_info(struct espconn *espconn, struct espconn_packet* infoarg);
-
-/******************************************************************************
  * FunctionName : espconn_connect
  * Description  : The function given as the connect
  * Parameters   : espconn -- the espconn used to listen the connection
@@ -317,23 +340,6 @@ extern sint8 espconn_accept(struct espconn *espconn);
 extern sint8 espconn_create(struct espconn *espconn);
 
 /******************************************************************************
- * FunctionName : espconn_tcp_get_wnd
- * Description  : get the window size of simulatenously active TCP connections
- * Parameters   : none
- * Returns      : the number of TCP_MSS active TCP connections
-*******************************************************************************/
-extern uint8 espconn_tcp_get_wnd(void);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_con
- * Description  : set the window size simulatenously active TCP connections
- * Parameters   : num -- the number of TCP_MSS
- * Returns      : ESPCONN_ARG -- Illegal argument
- * 				  ESPCONN_OK  -- No error
-*******************************************************************************/
-extern sint8 espconn_tcp_set_wnd(uint8 num);
-
-/******************************************************************************
  * FunctionName : espconn_tcp_get_max_con
  * Description  : get the number of simulatenously active TCP connections
  * Parameters   : none
@@ -343,50 +349,6 @@ extern sint8 espconn_tcp_set_wnd(uint8 num);
 extern uint8 espconn_tcp_get_max_con(void);
 
 /******************************************************************************
- * FunctionName : espconn_tcp_set_max_con
- * Description  : set the number of simulatenously active TCP connections
- * Parameters   : num -- total number
- * Returns      : none
-*******************************************************************************/
-
-extern sint8 espconn_tcp_set_max_con(uint8 num);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_get_max_retran
- * Description  : get the Maximum number of retransmissions of data active TCP connections
- * Parameters   : none
- * Returns      : the Maximum number of retransmissions
-*******************************************************************************/
-extern uint8 espconn_tcp_get_max_retran(void);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_retran
- * Description  : set the Maximum number of retransmissions of data active TCP connections
- * Parameters   : num -- the Maximum number of retransmissions
- * Returns      : result
-*******************************************************************************/
-
-extern sint8 espconn_tcp_set_max_retran(uint8 num);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_get_max_syn
- * Description  : get the Maximum number of retransmissions of SYN segments
- * Parameters   : none
- * Returns      : the Maximum number of retransmissions
-*******************************************************************************/
-
-extern uint8 espconn_tcp_get_max_syn(void);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_syn
- * Description  : set the Maximum number of retransmissions of SYN segments
- * Parameters   : num -- the Maximum number of retransmissions
- * Returns      : result
-*******************************************************************************/
-
-extern sint8 espconn_tcp_set_max_syn(uint8 num);
-
-/******************************************************************************
  * FunctionName : espconn_tcp_get_max_con_allow
  * Description  : get the count of simulatenously active connections on the server
  * Parameters   : espconn -- espconn to get the count
@@ -394,15 +356,6 @@ extern sint8 espconn_tcp_set_max_syn(uint8 num);
 *******************************************************************************/
 
 extern sint8 espconn_tcp_get_max_con_allow(struct espconn *espconn);
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_con_allow
- * Description  : set the count of simulatenously active connections on the server
- * Parameters   : espconn -- espconn to set the count
- * Returns      : result
-*******************************************************************************/
-
-extern sint8 espconn_tcp_set_max_con_allow(struct espconn *espconn, uint8 num);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_set_buf_count
@@ -429,7 +382,7 @@ extern sint8 espconn_regist_time(struct espconn *espconn, uint32 interval, uint8
  * Description  : Used to specify the function that should be called when data
  * 				  has been successfully delivered to the remote host.
  * Parameters   : struct espconn *espconn -- espconn to set the sent callback
- * 				  espconn_sent_callback sent_cb -- sent callback function to 
+ * 				  espconn_sent_callback sent_cb -- sent callback function to
  * 				  call for this espconn when data is successfully sent
  * Returns      : none
 *******************************************************************************/
@@ -448,6 +401,17 @@ extern sint8 espconn_regist_sentcb(struct espconn *espconn, espconn_sent_callbac
 extern sint8 espconn_regist_write_finish(struct espconn *espconn, espconn_connect_callback write_finish_fn);
 
 /******************************************************************************
+ * FunctionName : espconn_send
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                psent -- data to send
+ *                length -- length of data to send
+ * Returns      : none
+*******************************************************************************/
+extern sint8 espconn_send(struct espconn *espconn, uint8 *psent, uint16 length);
+
+
+/******************************************************************************
  * FunctionName : espconn_sent
  * Description  : sent data for client or server
  * Parameters   : espconn -- espconn to set for client or server
@@ -460,10 +424,10 @@ extern sint8 espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length);
 
 /******************************************************************************
  * FunctionName : espconn_regist_connectcb
- * Description  : used to specify the function that should be called when 
- * 				  connects to host. 
- * Parameters   : espconn -- espconn to set the connect callback 
- * 				  connect_cb -- connected callback function to call when connected 
+ * Description  : used to specify the function that should be called when
+ * 				  connects to host.
+ * Parameters   : espconn -- espconn to set the connect callback
+ * 				  connect_cb -- connected callback function to call when connected
  * Returns      : none
 *******************************************************************************/
 
@@ -471,9 +435,9 @@ extern sint8 espconn_regist_connectcb(struct espconn *espconn, espconn_connect_c
 
 /******************************************************************************
  * FunctionName : espconn_regist_recvcb
- * Description  : used to specify the function that should be called when recv 
+ * Description  : used to specify the function that should be called when recv
  * 				  data from host.
- * Parameters   : espconn -- espconn to set the recv callback 
+ * Parameters   : espconn -- espconn to set the recv callback
  * 				  recv_cb -- recv callback function to call when recv data
  * Returns      : none
 *******************************************************************************/
@@ -482,10 +446,10 @@ extern sint8 espconn_regist_recvcb(struct espconn *espconn, espconn_recv_callbac
 
 /******************************************************************************
  * FunctionName : espconn_regist_reconcb
- * Description  : used to specify the function that should be called when connection 
+ * Description  : used to specify the function that should be called when connection
  * 				  because of err disconnect.
- * Parameters   : espconn -- espconn to set the err callback 
- * 				  recon_cb -- err callback function to call when err 
+ * Parameters   : espconn -- espconn to set the err callback
+ * 				  recon_cb -- err callback function to call when err
  * Returns      : none
 *******************************************************************************/
 
@@ -512,153 +476,105 @@ extern sint8 espconn_regist_disconcb(struct espconn *espconn, espconn_connect_ca
 extern uint32 espconn_port(void);
 
 /******************************************************************************
- * FunctionName : espconn_set_opt
- * Description  : access port value for client so that we don't end up bouncing
- *                all connections at the same time .
- * Parameters   : none
- * Returns      : access port value
-*******************************************************************************/
-extern sint8 espconn_set_opt(struct espconn *espconn, uint8 opt);
-
-/******************************************************************************
- * FunctionName : espconn_set_keepalive
- * Description  : access level value for connection so that we set the value for
- * 				  keep alive
- * Parameters   : espconn -- the espconn used to set the connection
- * 				  level -- the connection's level
- * 				  value -- the value of time(s)
- * Returns      : access port value
-*******************************************************************************/
-extern sint8 espconn_set_keepalive(struct espconn *espconn, uint8 level, void* optarg);
-
-/******************************************************************************
- * FunctionName : espconn_get_keepalive
- * Description  : access level value for connection so that we get the value for
- * 				  keep alive
- * Parameters   : espconn -- the espconn used to get the connection
- * 				  level -- the connection's level
- * Returns      : access keep alive value
-*******************************************************************************/
-extern sint8 espconn_get_keepalive(struct espconn *espconn, uint8 level, void *optarg);
-
-/******************************************************************************
- * FunctionName : espconn_gethostbyname
- * Description  : Resolve a hostname (string) into an IP address.
- * Parameters   : pespconn -- espconn to resolve a hostname
- *                hostname -- the hostname that is to be queried
- *                addr -- pointer to a ip_addr_t where to store the address if 
- *                        it is already cached in the dns_table (only valid if
- *                        ESPCONN_OK is returned!)
- *                found -- a callback function to be called on success, failure
- *                         or timeout (only if ERR_INPROGRESS is returned!)
- * Returns      : err_t return code
- *                - ESPCONN_OK if hostname is a valid IP address string or the host
- *                  name is already in the local names table.
- *                - ESPCONN_INPROGRESS enqueue a request to be sent to the DNS server
- *                  for resolution if no errors are present.
- *                - ESPCONN_ARG: dns client not initialized or invalid hostname
+ * FunctionName : espconn_encry_connect
+ * Description  : The function given as connection
+ * Parameters   : espconn -- the espconn used to connect with the host
+ * Returns      : none
 *******************************************************************************/
 
-extern sint8 espconn_gethostbyname(struct espconn *pespconn, const char *name, ip_addr_t *addr, dns_found_callback found);
+extern sint8 espconn_secure_connect(struct espconn *espconn);
 
 /******************************************************************************
- * FunctionName : espconn_igmp_join
- * Description  : join a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
+ * FunctionName : espconn_encry_disconnect
+ * Description  : The function given as the disconnection
+ * Parameters   : espconn -- the espconn used to disconnect with the host
  * Returns      : none
 *******************************************************************************/
-extern sint8 espconn_igmp_join(ip_addr_t *host_ip, ip_addr_t *multicast_ip);
+
+extern sint8 espconn_secure_disconnect(struct espconn *espconn);
 
 /******************************************************************************
- * FunctionName : espconn_igmp_leave
- * Description  : leave a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
+ * FunctionName : espconn_secure_send
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                               psent -- data to send
+ *                length -- length of data to send
  * Returns      : none
 *******************************************************************************/
-extern sint8 espconn_igmp_leave(ip_addr_t *host_ip, ip_addr_t *multicast_ip);
+
+extern sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 length);
 
 /******************************************************************************
- * FunctionName : espconn_mdns_init
- * Description  : register a device with mdns
- * Parameters   : ipAddr -- the ip address of device
- * 				  hostname -- the hostname of device
+ * FunctionName : espconn_encry_sent
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                               psent -- data to send
+ *                length -- length of data to send
  * Returns      : none
 *******************************************************************************/
-extern void espconn_mdns_init(struct mdns_info *info);
+
+extern sint8 espconn_secure_sent(struct espconn *espconn, uint8 *psent, uint16 length);
+
 /******************************************************************************
- * FunctionName : espconn_mdns_init
- * Description  : close mdns socket
- * Parameters   : void
+ * FunctionName : espconn_secure_ca_enable
+ * Description  : enable the certificate authenticate and set the flash sector
+ *                               as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ *                               flash_sector -- flash sector for save certificate
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_ca_enable(uint8 level, uint32 flash_sector );
+
+/******************************************************************************
+ * FunctionName : espconn_secure_ca_disable
+ * Description  : disable the certificate authenticate  as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_ca_disable(uint8 level);
+
+
+/******************************************************************************
+ * FunctionName : espconn_secure_cert_req_enable
+ * Description  : enable the client certificate authenticate and set the flash sector
+ *                               as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ *                               flash_sector -- flash sector for save certificate
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_cert_req_enable(uint8 level, uint32 flash_sector );
+
+/******************************************************************************
+ * FunctionName : espconn_secure_ca_disable
+ * Description  : disable the client certificate authenticate  as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_cert_req_disable(uint8 level);
+
+/******************************************************************************
+ * FunctionName : espconn_recv_hold
+ * Description  : hold tcp receive
+ * Parameters   : espconn -- espconn to hold
  * Returns      : none
 *******************************************************************************/
-extern void espconn_mdns_close(void);
+extern sint8 espconn_recv_hold(struct espconn *pespconn);
+
 /******************************************************************************
- * FunctionName : mdns_server_register
- * Description  : register a server and join a multicast group
- * Parameters   : none
+ * FunctionName : espconn_recv_unhold
+ * Description  : unhold tcp receive
+ * Parameters   : espconn -- espconn to unhold
  * Returns      : none
 *******************************************************************************/
-extern void espconn_mdns_server_register(void);
-/******************************************************************************
- * FunctionName : mdns_server_register
- * Description  : unregister server and leave multicast group
- * Parameters   : none
- * Returns      : none
-*******************************************************************************/
-extern void espconn_mdns_server_unregister(void);
-/******************************************************************************
- * FunctionName : espconn_mdns_get_servername
- * Description  : get server name
- * Parameters   : none
- * Returns      : server name
-*******************************************************************************/
-extern char* espconn_mdns_get_servername(void);
-/******************************************************************************
- * FunctionName : espconn_mdns_get_servername
- * Description  : set server name
- * Parameters   : server name
- * Returns      : none
-*******************************************************************************/
-extern void espconn_mdns_set_servername(const char *name);
-/******************************************************************************
- * FunctionName : espconn_mdns_set_hostname
- * Description  : set host name
- * Parameters   : host name
- * Returns      : none
-*******************************************************************************/
-extern void espconn_mdns_set_hostname(char *name);
-/******************************************************************************
- * FunctionName : espconn_mdns_init
- * Description  : get host name
- * Parameters   : void
- * Returns      : hostname
-*******************************************************************************/
-extern char* espconn_mdns_get_hostname(void);
-/******************************************************************************
- * FunctionName : espconn_mdns_disable
- * Description  : join a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
- * Returns      : none
-*******************************************************************************/
-extern void espconn_mdns_disable(void);
-/******************************************************************************
- * FunctionName : espconn_mdns_enable
- * Description  : enable mdns
- * Parameters   : void
- * Returns      : none
-*******************************************************************************/
-extern void espconn_mdns_enable(void);
-/******************************************************************************
- * FunctionName : espconn_dns_setserver
- * Description  : Initialize one of the DNS servers.
- * Parameters   : numdns -- the index of the DNS server to set must
- * 				  be < DNS_MAX_SERVERS = 2
- * 			      dnsserver -- IP address of the DNS server to set
- *  Returns     : none
-*******************************************************************************/
-extern void espconn_dns_setserver(u8_t numdns, ip_addr_t *dnsserver);
+extern sint8 espconn_recv_unhold(struct espconn *pespconn);
+
 #endif
 

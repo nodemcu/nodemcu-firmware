@@ -8,8 +8,8 @@
 #include "os_type.h"
 
 /*SPI number define*/
-#define SPI 			0
-#define HSPI			1
+#define SPI_SPI 		0
+#define SPI_HSPI		1
 
 #define SPI_ORDER_LSB 0
 #define SPI_ORDER_MSB 1
@@ -47,7 +47,7 @@ void spi_byte_read_espslave(uint8 spi_no,uint8 *data);
 void spi_slave_init(uint8 spi_no);
   //esp8266 slave isr handle funtion,tiggered when any transmission is finished.
   //the function is registered in spi_slave_init.
-void spi_slave_isr_handler(void *para); 
+void spi_slave_isr_handler(void *para);
 
 
 //hspi test function, used to test esp8266 spi slave

@@ -1,9 +1,11 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
+
+#include "pixbuf.h"
 
 static inline uint32_t _getCycleCount(void) {
   uint32_t cycles;
@@ -13,8 +15,9 @@ static inline uint32_t _getCycleCount(void) {
 
 // This algorithm reads the cpu clock cycles to calculate the correct
 // pulse widths. It works in both 80 and 160 MHz mode.
-static void ICACHE_RAM_ATTR tm1829_write_to_pin(uint8_t pin, uint8_t *pixels, uint32_t length) {
-  uint8_t *p, *end;
+static void ICACHE_RAM_ATTR tm1829_write_to_pin(uint8_t pin, const uint8_t *pixels, size_t length) {
+  const uint8_t *p, *end;
+  uint8_t phasergb = 0;
 
   p   =  pixels;
   end =  p + length;
@@ -28,6 +31,13 @@ static void ICACHE_RAM_ATTR tm1829_write_to_pin(uint8_t pin, uint8_t *pixels, ui
     register int i;
 
     register uint8_t pixel = *p++;
+    if ((phasergb == 0) && (pixel == 0xFF)) {
+      // clamp initial byte value to avoid constant-current shenanigans.  Yuck!
+      pixel = 0xFE;
+    }
+    if (++phasergb == 3) {
+      phasergb = 0;
+    }
 
     ets_intr_lock();
 
@@ -55,35 +65,27 @@ static void ICACHE_RAM_ATTR tm1829_write_to_pin(uint8_t pin, uint8_t *pixels, ui
 }
 
 // Lua: tm1829.write(pin, "string")
-// Byte triples in the string are interpreted as R G B values and sent to the hardware as G R B.
-// WARNING: this function scrambles the input buffer :
-//    a = string.char(255,0,128)
-//    tm1829.write(3,a)
-//    =a.byte()
-//    (0,255,128)
+// Byte triples in the string are interpreted as GRB values.
 static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
+  const uint8_t *pixels;
   size_t length;
-  const char *rgb = luaL_checklstring(L, 2, &length);
 
-  // dont modify lua-internal lstring - make a copy instead
-  char *buffer = (char *)c_malloc(length);
-
-  // Ignore incomplete Byte triples at the end of buffer
-  length -= length % 3;
-
-  // Copy payload and make sure first byte is < 0xFF (triggers
-  // constant current command, instead of PWM duty command)
-  size_t i;
-  for (i = 0; i < length; i += 3) {
-    buffer[i]     = rgb[i];
-    buffer[i + 1] = rgb[i + 1];
-    buffer[i + 2] = rgb[i + 2];
-
-    // Check for first byte
-    if (buffer[i] == 0xff)
-        buffer[i] = 0xfe;
+  switch(lua_type(L, 3)) {
+  case LUA_TSTRING: {
+    pixels = luaL_checklstring(L, 2, &length);
+    break;
+   }
+  case LUA_TUSERDATA: {
+    pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
+    luaL_argcheck(L, pixbuf_channels(buffer) == 3, 2, "Bad pixbuf format");
+    pixels = buffer->values;
+    length = 3 * buffer->npix;
+    break;
+   }
+  default:
+    return luaL_argerror(L, 2, "String or pixbuf expected");
   }
 
   // Initialize the output pin and wait a bit
@@ -91,24 +93,21 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   platform_gpio_write(pin, 1);
 
   // Send the buffer
-  tm1829_write_to_pin(pin_num[pin], (uint8_t*) buffer, length);
+  tm1829_write_to_pin(pin_num[pin], pixels, length);
 
   os_delay_us(500); // reset time
-
-  c_free(buffer);
 
   return 0;
 }
 
-static const LUA_REG_TYPE tm1829_map[] =
-{
-  { LSTRKEY( "write" ), LFUNCVAL( tm1829_write) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tm1829, NULL, 0)
+  LROT_FUNCENTRY( write, tm1829_write )
+LROT_END(tm1829, NULL, 0)
+
 
 int luaopen_tm1829(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
   return 0;
 }
 
-NODEMCU_MODULE(TM1829, "tm1829", tm1829_map, luaopen_tm1829);
+NODEMCU_MODULE(TM1829, "tm1829", tm1829, luaopen_tm1829);

@@ -144,7 +144,7 @@ udp_input(struct pbuf *p, struct netif *inp)
     /* all packets for DHCP_CLIENT_PORT not coming from DHCP_SERVER_PORT are dropped! */
     if (src == DHCP_SERVER_PORT) {
       if ((inp->dhcp != NULL) && (inp->dhcp->pcb != NULL)) {
-        /* accept the packe if 
+        /* accept the packe if
            (- broadcast or directed to us) -> DHCP is link-layer-addressed, local ip is always ANY!
            - inp->dhcp->pcb->remote == ANY or iphdr->src */
         if ((ip_addr_isany(&inp->dhcp->pcb->remote_ip) ||
@@ -152,13 +152,13 @@ udp_input(struct pbuf *p, struct netif *inp)
           pcb = inp->dhcp->pcb;
         }
       }
-    } else if (dest == DHCP_SERVER_PORT) {
-      if (src == DHCP_CLIENT_PORT) {
-        if ( inp->dhcps_pcb != NULL ) {
-          if ((ip_addr_isany(&inp->dhcps_pcb->local_ip) ||
-              ip_addr_cmp(&(inp->dhcps_pcb->local_ip), &current_iphdr_dest))) {
-            pcb = inp->dhcps_pcb;
-          }
+    }
+  } else if (dest == DHCP_SERVER_PORT) {
+    if (src == DHCP_CLIENT_PORT) {
+      if ( inp->dhcps_pcb != NULL ) {
+        if ((ip_addr_isany(&inp->dhcps_pcb->local_ip) ||
+            ip_addr_cmp(&(inp->dhcps_pcb->local_ip), &current_iphdr_dest))) {
+          pcb = inp->dhcps_pcb;
         }
       }
     }
@@ -196,7 +196,7 @@ udp_input(struct pbuf *p, struct netif *inp)
            (broadcast))) {
 #endif /* IP_SOF_BROADCAST_RECV */
         local_match = 1;
-        if ((uncon_pcb == NULL) && 
+        if ((uncon_pcb == NULL) &&
             ((pcb->flags & UDP_FLAGS_CONNECTED) == 0)) {
           /* the first unconnected matching PCB */
           uncon_pcb = pcb;
@@ -422,7 +422,7 @@ udp_send_chksum(struct udp_pcb *pcb, struct pbuf *p,
  *
  * If the PCB already has a remote address association, it will
  * be restored after the data is sent.
- * 
+ *
  * @return lwIP error code (@see udp_send for possible error codes)
  *
  * @see udp_disconnect() udp_send()
@@ -553,7 +553,7 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
   udphdr->src = htons(pcb->local_port);
   udphdr->dest = htons(dst_port);
   /* in UDP, 0 checksum means 'no checksum' */
-  udphdr->chksum = 0x0000; 
+  udphdr->chksum = 0x0000;
 
   /* Multicast Loop? */
 #if LWIP_IGMP

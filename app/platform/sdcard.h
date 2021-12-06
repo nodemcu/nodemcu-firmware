@@ -1,7 +1,8 @@
 #ifndef _SDCARD_H
 #define _SDCARD_H
 
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 
 int platform_sdcard_init( uint8_t spi_no, uint8_t ss_pin );
 int platform_sdcard_status( void );

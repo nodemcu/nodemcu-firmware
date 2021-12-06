@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = ucglib.a
+GEN_LIBS = libucglib.a
 endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit
@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+DEFINES += -DUSE_PIN_LIST
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,9 +38,9 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
+CSRCS := $(wildcard ucg/src/clib/*.c *.c)
+
+INCLUDES += -I ucg/src/clib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

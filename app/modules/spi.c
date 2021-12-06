@@ -4,6 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
+#include "driver/spi.h"
+
 #define SPI_HALFDUPLEX 0
 #define SPI_FULLDUPLEX 1
 
@@ -196,37 +198,35 @@ static int spi_recv( lua_State *L )
 }
 
 // Lua: spi.set_mosi( id, offset, bitlen, data1, [data2], ..., [datan] )
+// Lua: spi.set_mosi( id, string )
 static int spi_set_mosi( lua_State *L )
 {
-  int id       = luaL_checkinteger( L, 1 );
-  int offset   = luaL_checkinteger( L, 2 );
-  int bitlen   = luaL_checkinteger( L, 3 );
-  int argn;
+  int id = luaL_checkinteger( L, 1 );
 
   MOD_CHECK_ID( spi, id );
 
-  if (offset < 0 || offset > 511) {
-    return luaL_error( L, "offset out of range" );
-  }
+  if (lua_type( L, 2 ) == LUA_TSTRING) {
+    size_t len;
+    const char *data = luaL_checklstring( L, 2, &len );
+    luaL_argcheck( L, 2, len <= 64, "out of range" );
 
-  if (bitlen < 1 || bitlen > 32) {
-    return luaL_error( L, "bitlen out of range" );
-  }
+    spi_mast_blkset( id, len * 8, data );
 
-  if (lua_gettop( L ) < 4) {
-    return luaL_error( L, "too few args" );
-  }
+  } else {
+    int offset = luaL_checkinteger( L, 2 );
+    int bitlen = luaL_checkinteger( L, 3 );
 
-  for (argn = 4; argn <= lua_gettop( L ); argn++, offset += bitlen )
-  {
-    u32 data = ( u32 )luaL_checkinteger(L, argn );
+    luaL_argcheck( L, 2, offset >= 0 && offset <= 511, "out of range" );
+    luaL_argcheck( L, 3, bitlen >= 1 && bitlen <= 32, "out of range" );
 
-    if (offset + bitlen > 512) {
-      return luaL_error( L, "data range exceeded > 512 bits" );
-    }
+    for (int argn = 4; argn <= lua_gettop( L ); argn++, offset += bitlen ) {
+      u32 data = ( u32 )luaL_checkinteger(L, argn );
 
-    if (PLATFORM_OK != platform_spi_set_mosi( id, offset, bitlen, data )) {
-      return luaL_error( L, "failed" );
+      if (offset + bitlen > 512) {
+        return luaL_error( L, "data range exceeded > 512 bits" );
+      }
+
+      spi_mast_set_mosi( id, offset, bitlen, data );
     }
   }
 
@@ -234,95 +234,109 @@ static int spi_set_mosi( lua_State *L )
 }
 
 // Lua: data = spi.get_miso( id, offset, bitlen, num )
+// Lua: string = spi.get_miso( id, len )
 static int spi_get_miso( lua_State *L )
 {
-  int id       = luaL_checkinteger( L, 1 );
-  int offset   = luaL_checkinteger( L, 2 );
-  int bitlen   = luaL_checkinteger( L, 3 );
-  int num      = luaL_checkinteger( L, 4 ), i;
+  int id = luaL_checkinteger( L, 1 );
 
   MOD_CHECK_ID( spi, id );
 
-  if (offset < 0 || offset > 511) {
-    return luaL_error( L, "out of range" );
-  }
+  if (lua_gettop( L ) == 2) {
+    uint8_t data[64];
+    int len = luaL_checkinteger( L, 2 );
 
-  if (bitlen < 1 || bitlen > 32) {
-    return luaL_error( L, "bitlen out of range" );
-  }
+    luaL_argcheck( L, 2, len >= 1 && len <= 64, "out of range" );
 
-  if (offset + bitlen * num > 512) {
-    return luaL_error( L, "out of range" );
-  }
+    spi_mast_blkget( id, len * 8, data );
 
-  for (i = 0; i < num; i++)
-  {
-    lua_pushinteger( L, platform_spi_get_miso( id, offset + (bitlen * i), bitlen ) );
+    lua_pushlstring( L, data, len );
+    return 1;
+
+  } else {
+    int offset = luaL_checkinteger( L, 2 );
+    int bitlen = luaL_checkinteger( L, 3 );
+    int num    = luaL_checkinteger( L, 4 ), i;
+
+    luaL_argcheck( L, 2, offset >= 0 && offset <= 511, "out of range" );
+    luaL_argcheck( L, 3, bitlen >= 1 && bitlen <= 32, "out of range" );
+
+    if (offset + bitlen * num > 512) {
+      return luaL_error( L, "out of range" );
+    }
+
+    for (i = 0; i < num; i++) {
+      lua_pushinteger( L, spi_mast_get_miso( id, offset + (bitlen * i), bitlen ) );
+    }
+    return num;
   }
-  return num;
 }
 
 // Lua: spi.transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data, mosi_bitlen, dummy_bitlen, miso_bitlen )
 static int spi_transaction( lua_State *L )
 {
-  int id           = luaL_checkinteger( L, 1 );
-  int cmd_bitlen   = luaL_checkinteger( L, 2 );
-  u16 cmd_data     = ( u16 )luaL_checkinteger( L, 3 );
-  int addr_bitlen  = luaL_checkinteger( L, 4 );
-  u32 addr_data    = ( u32 )luaL_checkinteger( L, 5 );
-  int mosi_bitlen  = luaL_checkinteger( L, 6 );
-  int dummy_bitlen = luaL_checkinteger( L, 7 );
-  int miso_bitlen  = luaL_checkinteger( L, 8 );
+  int id = luaL_checkinteger( L, 1 );
 
   MOD_CHECK_ID( spi, id );
 
-  if (cmd_bitlen < 0 || cmd_bitlen > 16) {
-    return luaL_error( L, "cmd_bitlen out of range" );
-  }
+  int cmd_bitlen = luaL_checkinteger( L, 2 );
+  u16 cmd_data   = ( u16 )luaL_checkinteger( L, 3 );
+  luaL_argcheck( L, 2, cmd_bitlen >= 0 && cmd_bitlen <= 16, "out of range" );
 
-  if (addr_bitlen < 0 || addr_bitlen > 32) {
-    return luaL_error( L, "addr_bitlen out of range" );
-  }
+  int addr_bitlen = luaL_checkinteger( L, 4 );
+  u32 addr_data   = ( u32 )luaL_checkinteger( L, 5 );
+  luaL_argcheck( L, 4, addr_bitlen >= 0 && addr_bitlen <= 32, "out of range" );
 
-  if (mosi_bitlen < 0 || mosi_bitlen > 512) {
-    return luaL_error( L, "mosi_bitlen out of range" );
-  }
+  int mosi_bitlen = luaL_checkinteger( L, 6 );
+  luaL_argcheck( L, 6, mosi_bitlen >= 0 && mosi_bitlen <= 512, "out of range" );
 
-  if (dummy_bitlen < 0 || dummy_bitlen > 256) {
-    return luaL_error( L, "dummy_bitlen out of range" );
-  }
+  int dummy_bitlen = luaL_checkinteger( L, 7 );
+  luaL_argcheck( L, 7, dummy_bitlen >= 0 && dummy_bitlen <= 256, "out of range" );
 
-  if (miso_bitlen < -512 || miso_bitlen > 512) {
-    return luaL_error( L, "miso_bitlen out of range" );
-  }
+  int miso_bitlen = luaL_checkinteger( L, 8 );
+  luaL_argcheck( L, 8, miso_bitlen >= -512 && miso_bitlen <= 512, "out of range" );
 
-  if (PLATFORM_OK != platform_spi_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data,
-                                               mosi_bitlen, dummy_bitlen, miso_bitlen) ) {
-    return luaL_error( L, "failed" );
-  }
+  spi_mast_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data,
+			mosi_bitlen, dummy_bitlen, miso_bitlen );
 
   return 0;
 }
 
+// Lua: old_div = spi.set_clock_div( id, new_div )
+static int spi_set_clock_div( lua_State *L )
+{
+  int id = luaL_checkinteger( L, 1 );
+
+  MOD_CHECK_ID( spi, id );
+
+  u32 clk_div = luaL_checkinteger( L, 2 );
+
+  u32 old_div = spi_set_clkdiv(id, clk_div);
+
+  lua_pushinteger( L, old_div );
+
+  return 1;
+}
+
 
 // Module function map
-static const LUA_REG_TYPE spi_map[] = {
-  { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
-  { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
-  { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
-  { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
-  { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
-  { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
-  { LSTRKEY( "MASTER" ),      LNUMVAL( PLATFORM_SPI_MASTER ) },
-  { LSTRKEY( "SLAVE" ),       LNUMVAL( PLATFORM_SPI_SLAVE) },
-  { LSTRKEY( "CPHA_LOW" ),    LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
-  { LSTRKEY( "CPHA_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
-  { LSTRKEY( "CPOL_LOW" ),    LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
-  { LSTRKEY( "CPOL_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
-  { LSTRKEY( "DATABITS_8" ),  LNUMVAL( 8 ) },
-  { LSTRKEY( "HALFDUPLEX" ),  LNUMVAL( SPI_HALFDUPLEX ) },
-  { LSTRKEY( "FULLDUPLEX" ),  LNUMVAL( SPI_FULLDUPLEX ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(spi, NULL, 0)
+  LROT_FUNCENTRY( setup, spi_setup )
+  LROT_FUNCENTRY( send, spi_send_recv )
+  LROT_FUNCENTRY( recv, spi_recv )
+  LROT_FUNCENTRY( set_mosi, spi_set_mosi )
+  LROT_FUNCENTRY( get_miso, spi_get_miso )
+  LROT_FUNCENTRY( transaction, spi_transaction )
+  LROT_FUNCENTRY( set_clock_div, spi_set_clock_div )
+  LROT_NUMENTRY( MASTER, PLATFORM_SPI_MASTER )
+  LROT_NUMENTRY( SLAVE, PLATFORM_SPI_SLAVE )
+  LROT_NUMENTRY( CPHA_LOW, PLATFORM_SPI_CPHA_LOW )
+  LROT_NUMENTRY( CPHA_HIGH, PLATFORM_SPI_CPHA_HIGH )
+  LROT_NUMENTRY( CPOL_LOW, PLATFORM_SPI_CPOL_LOW )
+  LROT_NUMENTRY( CPOL_HIGH, PLATFORM_SPI_CPOL_HIGH )
+  LROT_NUMENTRY( DATABITS_8, 8 )
+  LROT_NUMENTRY( HALFDUPLEX, SPI_HALFDUPLEX )
+  LROT_NUMENTRY( FULLDUPLEX, SPI_FULLDUPLEX )
+LROT_END(spi, NULL, 0)
 
-NODEMCU_MODULE(SPI, "spi", spi_map, NULL);
+
+NODEMCU_MODULE(SPI, "spi", spi, NULL);

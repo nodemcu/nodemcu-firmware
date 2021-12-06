@@ -27,8 +27,10 @@
 // Uncomment the UCG_DISPLAY_TABLE_ENTRY for the device(s) you want to
 // compile into the firmware.
 //
+//    UCG_DISPLAY_TABLE_ENTRY(hx8352c_18x240x400_hw_spi, ucg_dev_hx8352c_18x240x400, ucg_ext_hx8352c_18) \
 //    UCG_DISPLAY_TABLE_ENTRY(ili9163_18x128x128_hw_spi, ucg_dev_ili9163_18x128x128, ucg_ext_ili9163_18) \
 //    UCG_DISPLAY_TABLE_ENTRY(ili9341_18x240x320_hw_spi, ucg_dev_ili9341_18x240x320, ucg_ext_ili9341_18) \
+//    UCG_DISPLAY_TABLE_ENTRY(ili9486_18x320x480_hw_spi, ucg_dev_ili9486_18x320x480, ucg_ext_ili9486_18) \
 //    UCG_DISPLAY_TABLE_ENTRY(pcf8833_16x132x132_hw_spi, ucg_dev_pcf8833_16x132x132, ucg_ext_pcf8833_16) \
 //    UCG_DISPLAY_TABLE_ENTRY(seps225_16x128x128_uvis_hw_spi, ucg_dev_seps225_16x128x128_univision, ucg_ext_seps225_16) \
 //    UCG_DISPLAY_TABLE_ENTRY(ssd1351_18x128x128_hw_spi, ucg_dev_ssd1351_18x128x128_ilsoft, ucg_ext_ssd1351_18) \

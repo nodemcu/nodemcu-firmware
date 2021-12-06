@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -9,7 +10,7 @@ function M.run()
 
     local x, y, w, h, i
     local m
-  
+
     disp:setColor(0, 80, 40, 0)
     disp:setColor(1, 60, 0, 40)
     disp:setColor(2, 20, 0, 20)
@@ -29,7 +30,7 @@ function M.run()
         h = 22
         x = bit.rshift(lcg_rnd() * (disp:getWidth() - w), 8)
         y = bit.rshift(lcg_rnd() * (disp:getHeight() - h), 8)
-    
+
         disp:setPrintPos(x, y+h)
         disp:setPrintDir(bit.band(bit.rshift(i, 2), 3))
         i = i + 1

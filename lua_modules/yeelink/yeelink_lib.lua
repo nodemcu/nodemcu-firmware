@@ -22,7 +22,7 @@ local apikey = ""
 --================================
 local debug = true --<<<<<<<<<<<<< Don't forget to "false" it before using
 --================================
-local sk=net.createConnection(net.TCP, 0)
+local sk = net.createConnection(net.TCP, 0)
 
 local datapoint = 0
 
@@ -31,10 +31,11 @@ local datapoint = 0
 
 if wifi.sta.getip() == nil then
     print("Please Connect WIFI First")
-    tmr.alarm(1,1000,1,function ()
+    local wifiTimer = tmr.create()
+    wifiTimer:alarm(1000, tmr.ALARM_AUTO,function ()
         if wifi.sta.getip() ~= nil then
-            tmr.stop(1)
-            sk:dns("api.yeelink.net",function(conn,ip) 
+            wifiTimer:stop()
+            sk:dns("api.yeelink.net",function(_,ip)
             dns=ip
             print("DNS YEELINK OK... IP: "..dns)
             end)
@@ -42,12 +43,9 @@ if wifi.sta.getip() == nil then
     end)
 end
 
-sk:dns("api.yeelink.net",function(conn,ip) 
-
-dns=ip
-
-print("DNS YEELINK OK... IP: "..dns)
-
+sk:dns("api.yeelink.net",function(conn, ip) -- luacheck: no unused
+  dns = ip
+  print("DNS YEELINK OK... IP: "..dns)
 end)
 
 --========Set the init function===========
@@ -61,12 +59,12 @@ function M.init(_device, _sensor, _apikey)
     sensor = tostring(_sensor)
     apikey = _apikey
     if dns == "0.0.0.0" then
-    tmr.alarm(2,5000,1,function ()
-    if dns == "0.0.0.0" then
-        print("Waiting for DNS...")
-    end
-        end)
-        return false
+      tmr.create():alarm(5000,tmr.ALARM_AUTO,function ()
+        if dns == "0.0.0.0" then
+          print("Waiting for DNS...")
+        end
+      end)
+    return false
     else
         return dns
     end
@@ -74,8 +72,8 @@ end
 --========Check the DNS Status===========
 --if DNS success, return the address(string)
 --if DNS fail(or processing), return nil
--- 
--- 
+--
+--
 --========================================
 function  M.getDNS()
 
@@ -96,11 +94,11 @@ function M.update(_datapoint)
 
     datapoint = tostring(_datapoint)
 
-    sk:on("connection", function(conn) 
+    sk:on("connection", function()
 
-        print("connect OK...") 
+        print("connect OK...")
 
-    
+
     local a=[[{"value":]]
     local b=[[}]]
 
@@ -116,10 +114,10 @@ function M.update(_datapoint)
 
     end)
 
-    sk:on("receive", function(sck, content) 
-    
+    sk:on("receive", function(conn, content) -- luacheck: no unused
+
     if debug then
-    print("\r\n"..content.."\r\n") 
+    print("\r\n"..content.."\r\n")
     else
     print("Date Receive")
     end

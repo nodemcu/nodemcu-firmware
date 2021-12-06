@@ -1,10 +1,11 @@
 # Extension Developer FAQ
 
-**# # # Work in Progress # # #**
+## Firmware build options
+[Building the firmware → Build Options](build.md#build-options) lists a few of the common parameters to customize your firmware *at build time*.
 
 ## How does the non-OS SDK structure execution
 
-Details of the execution model for the **non-OS SDK** is not well documented by 
+Details of the execution model for the **non-OS SDK** is not well documented by
 Espressif. This section summarises the project's understanding of how this execution
 model works based on the Espressif-supplied examples and SDK documentation, plus
 various posts on the Espressif BBS and other forums, and an examination of the
@@ -20,7 +21,7 @@ which are also used by the SDK. In this model, execution units are either:
     critical and should complete in no more than 50 µSec.
 
     ISR code and data constants should be run out of RAM or ROM, for two reasons:
-    if an ISR interrupts a flash I/O operation (which must disable the Flash 
+    if an ISR interrupts a flash I/O operation (which must disable the Flash
     instruction cache) and a cache miss occurs, then the ISR will trigger a
     fatal exception; secondly, the
     execution time for Flash memory (that is located in the `irom0` load section)
@@ -31,7 +32,7 @@ which are also used by the SDK. In this model, execution units are either:
     guidelines. (Note that any time critical code within normal execution and that
     is bracketed by interrupt lock / unlock guards should also follow this 50
     µSec guideline.)<br/><br/>
-    
+
 -   **TASKS**. A task is a normal execution unit running at a non-interrupt priority.
     Tasks can be executed from Flash memory. An executing task can be interrupted
     by one or more ISRs being delivered, but it won't be preempted by another
@@ -92,5 +93,5 @@ normal LLT to execute a `task_post_YYY(XXX_callback_handle,param)` where YYY is
 one of `low`, `medium`, `high`. The callback will then be executed when the SDK
 delivers the task.
 
-_Note_: `task_post_YYY` can fail with a false return if the task Q is full. 
+_Note_: `task_post_YYY` can fail with a false return if the task Q is full.
 

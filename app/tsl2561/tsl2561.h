@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*! 
+/*!
     @file     tsl2561.h
     @author   K. Townsend (microBuilder.eu) / Adapted for nodeMCU by Michael Lucas (Aeprox @github)
 
@@ -33,7 +33,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /**************************************************************************/
-#include "c_types.h"
+#include <stdint.h>
 
 #ifndef _TSL2561_H_
 #define _TSL2561_H_

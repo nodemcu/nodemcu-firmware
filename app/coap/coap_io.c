@@ -1,4 +1,4 @@
-#include "c_string.h"
+#include <string.h>
 #include "coap_io.h"
 #include "node.h"
 #include "espconn.h"
@@ -16,10 +16,10 @@ coap_tid_t coap_send(struct espconn *pesp_conn, coap_pdu_t *pdu) {
   espconn_sent(pesp_conn, (unsigned char *)(pdu->msg.p), pdu->msg.len);
 
   if(pesp_conn->type == ESPCONN_TCP){
-    c_memcpy(&ip, pesp_conn->proto.tcp->remote_ip, sizeof(ip));
+    memcpy(&ip, pesp_conn->proto.tcp->remote_ip, sizeof(ip));
     port = pesp_conn->proto.tcp->remote_port;
   }else{
-    c_memcpy(&ip, pesp_conn->proto.udp->remote_ip, sizeof(ip));
+    memcpy(&ip, pesp_conn->proto.udp->remote_ip, sizeof(ip));
     port = pesp_conn->proto.udp->remote_port;
   }
   coap_transaction_id(ip, port, pdu->pkt, &id);
@@ -64,7 +64,7 @@ coap_tid_t coap_send_confirmed(struct espconn *pesp_conn, coap_pdu_t *pdu) {
    */
   coap_timer_stop();
   coap_timer_update(&gQueue);
-  node->t = node->timeout;  
+  node->t = node->timeout;
   coap_insert_node(&gQueue, node);
   coap_timer_start(&gQueue);
   return node->id;

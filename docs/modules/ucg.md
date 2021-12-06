@@ -3,23 +3,58 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-08-05 | [Oli Kraus](https://github.com/olikraus/ucglib), [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [ucglib](../../app/ucglib/)|
 
-Ucglib is a graphics library developed at [olikraus/ucglib](https://github.com/olikraus/ucglib) with support for color TFT displays. The NodeMCU firmware supports a subset of these:
+Ucglib is a graphics library developed at [olikraus/ucglib](https://github.com/olikraus/ucglib) with support for color TFT displays.
 
+!!! note "BSD License for Ucglib Code"
+    Universal 8bit Graphics Library (http://code.google.com/p/u8glib/)
+
+    Copyright (c) 2014, olikraus@gmail.com
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without modification,
+    are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this list
+      of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice, this
+      list of conditions and the following disclaimer in the documentation and/or other
+      materials provided with the distribution.
+
+
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+        CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+        INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+        MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+        DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+        CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+        NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+        LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+        CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+        STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+        ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The NodeMCU firmware supports a subset of these:
+
+- HX8352C
 - ILI9163
 - ILI9341
+- ILI9486
 - PCF8833
 - SEPS225
 - SSD1331
 - SSD1351
 - ST7735
 
-This integration is based on [v1.3.3](https://github.com/olikraus/Ucglib_Arduino/releases/tag/v1.3.3).
+This integration is based on version [1.5.2](https://github.com/olikraus/Ucglib_Arduino/releases/tag/1.5.2).
 
 ## Overview
 
 ### SPI Connection
 
-The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
+The HSPI module is used ([more information](https://web.archive.org/web/20180425221055/http://d.av.id.au:80/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
@@ -31,7 +66,7 @@ All other pins can be assigned to any available GPIO:
 * D/C
 * RES (optional for some displays)
 
-Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua):
+Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_examples/ucglib/GraphicsTest.lua):
 ```lua
 spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
@@ -48,18 +83,33 @@ disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
 ```
 
 This object provides all of ucglib's methods to control the display.
-Again, refer to [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
+Again, refer to [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/release/lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
 
-### Displays
-To get access to the display constructors, add the desired entries to the display table in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h):
+### Display selection
+HW SPI based displays with support in u8g2 can be enabled.
+
+The procedure is different for ESP8266 and ESP32 platforms.
+
+#### ESP8266
+
+Add the desired entries to the display table in [app/include/ucg_config.h](../../app/include/ucg_config.h):
 ```c
 #define UCG_DISPLAY_TABLE                          \
     UCG_DISPLAY_TABLE_ENTRY(ili9341_18x240x320_hw_spi, ucg_dev_ili9341_18x240x320, ucg_ext_ili9341_18) \
     UCG_DISPLAY_TABLE_ENTRY(st7735_18x128x160_hw_spi, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18) \
 ```
 
+#### ESP32
+Enable the desired entries for SPI displays in ucg's sub-menu (run `make menuconfig`).
+
 ### Fonts
-ucglib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h) and recompile. Simply add the desired fonts to the font table:
+ucglib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image.
+
+The procedure is different for ESP8266 and ESP32 platforms.
+
+#### ESP8266
+
+Add the desired fonts to the font table in  [app/include/ucg_config.h](../../app/include/ucg_config.h):
 ```c
 #define UCG_FONT_TABLE                              \
     UCG_FONT_TABLE_ENTRY(font_7x13B_tr)             \
@@ -68,14 +118,19 @@ ucglib comes with a wide range of fonts for small displays. Since they need to b
     UCG_FONT_TABLE_ENTRY(font_ncenR12_tr)           \
     UCG_FONT_TABLE_ENTRY(font_ncenR14_hr)
 ```
-They'll be available as `ucg.<font_name>` in Lua.
+They will be available as `ucg.<font_name>` in Lua.
+
+#### ESP32
+Add the desired fonts to the font selection sub-entry via `make menuconfig`.
 
 ## Display Drivers
 
 Initialize a display via Hardware SPI.
 
+- `hx8352c_18x240x400_hw_spi()`
 - `ili9163_18x128x128_hw_spi()`
 - `ili9341_18x240x320_hw_spi()`
+- `ili9486_18x320x480_hw_spi()`
 - `pcf8833_16x132x132_hw_spi()`
 - `seps225_16x128x128_uvis_hw_spi()`
 - `ssd1351_18x128x128_hw_spi()`
@@ -84,24 +139,43 @@ Initialize a display via Hardware SPI.
 - `st7735_18x128x160_hw_spi()`
 
 #### Syntax
-`ucg.st7735_18x128x160_hw_spi(cs, dc[, res])`
+`ucg.st7735_18x128x160_hw_spi(bus, cs, dc[, res])`
 
 #### Parameters
+- `bus` SPI master bus
 - `cs` GPIO pin for /CS
 - `dc` GPIO pin for DC
-- `res` GPIO pin for /RES (optional)
+- `res` GPIO pin for /RES, none if omitted
 
 #### Returns
 ucg display object
 
-#### Example
+#### Example for ESP8266
 ```lua
-spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
-
+-- Hardware SPI CLK  = GPIO14
+-- Hardware SPI MOSI = GPIO13
+-- Hardware SPI MISO = GPIO12 (not used)
+-- Hardware SPI /CS  = GPIO15 (not used)
 cs  = 8 -- GPIO15, pull-down 10k to GND
 dc  = 4 -- GPIO2
 res = 0 -- GPIO16, RES is optional YMMV
-disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
+bus = 1
+spi.setup(bus, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
+-- we won't be using the HSPI /CS line, so disable it again
+gpio.mode(8, gpio.INPUT, gpio.PULLUP)
+
+disp = ucg.st7735_18x128x160_hw_spi(bus, cs, dc, res)
+```
+
+#### Example for ESP32
+```lua
+sclk = 19
+mosi = 23
+cs   = 22
+dc   = 16
+res  = 17
+bus = spi.master(spi.HSPI, {sclk=sclk, mosi=mosi})
+disp = ucg.st7735_18x128x160_hw_spi(bus, cs, dc, res)
 ```
 
 ## Constants
@@ -196,16 +270,7 @@ See [ucglib setClipRange()](https://github.com/olikraus/ucglib/wiki/reference#se
 See [ucglib setColor()](https://github.com/olikraus/ucglib/wiki/reference#setcolor).
 
 ## ucg.disp:setFont()
-ucglib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h) and recompile. Simply add the desired fonts to the font table:
-```c
-#define UCG_FONT_TABLE                              \
-    UCG_FONT_TABLE_ENTRY(font_7x13B_tr)             \
-    UCG_FONT_TABLE_ENTRY(font_helvB12_hr)           \
-    UCG_FONT_TABLE_ENTRY(font_helvB18_hr)           \
-    UCG_FONT_TABLE_ENTRY(font_ncenR12_tr)           \
-    UCG_FONT_TABLE_ENTRY(font_ncenR14_hr)
-```
-They'll be available as `ucg.<font_name>` in Lua.
+Define a ucg font for the glyph and string drawing functions. They are available as `ucg.<font_name>` in Lua.
 
 #### Syntax
 `disp:setFont(font)`

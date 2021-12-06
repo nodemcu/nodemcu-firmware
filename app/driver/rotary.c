@@ -11,16 +11,16 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
-#include "../libc/c_stdlib.h"
-#include "../libc/c_stdio.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "task/task.h"
 #include "driver/rotary.h"
 #include "user_interface.h"
-#include "task/task.h"
 #include "ets_sys.h"
 
 //
-//  Queue is empty if read == write. 
+//  Queue is empty if read == write.
 //  However, we always want to keep the previous value
 //  so writing is only allowed if write - read < QUEUE_SIZE - 1
 
@@ -37,7 +37,7 @@
 #define GET_READ_STATUS(d)	(d->queue[d->read_offset & (QUEUE_SIZE - 1)])
 #define ADVANCE_IF_POSSIBLE(d)  if (d->read_offset < d->write_offset) { d->read_offset++; }
 
-#define STATUS_IS_PRESSED(x)	((x & 0x80000000) != 0)
+#define STATUS_IS_PRESSED(x)	(((x) & 0x80000000) != 0)
 
 typedef struct {
   int8_t   phase_a_pin;
@@ -60,7 +60,7 @@ static uint8_t task_queued;
 
 static void set_gpio_bits(void);
 
-static void rotary_clear_pin(int pin) 
+static void rotary_clear_pin(int pin)
 {
   if (pin >= 0) {
     gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), GPIO_PIN_INTR_DISABLE);
@@ -69,7 +69,7 @@ static void rotary_clear_pin(int pin)
 }
 
 // Just takes the channel number. Cleans up the resources used.
-int rotary_close(uint32_t channel) 
+int rotary_close(uint32_t channel)
 {
   if (channel >= sizeof(data) / sizeof(data[0])) {
     return -1;
@@ -87,14 +87,14 @@ int rotary_close(uint32_t channel)
   rotary_clear_pin(d->phase_b_pin);
   rotary_clear_pin(d->press_pin);
 
-  c_free(d);
+  free(d);
 
   set_gpio_bits();
 
   return 0;
 }
 
-static uint32_t  ICACHE_RAM_ATTR rotary_interrupt(uint32_t ret_gpio_status) 
+static uint32_t  ICACHE_RAM_ATTR rotary_interrupt(uint32_t ret_gpio_status)
 {
   // This function really is running at interrupt level with everything
   // else masked off. It should take as little time as necessary.
@@ -168,10 +168,10 @@ static uint32_t  ICACHE_RAM_ATTR rotary_interrupt(uint32_t ret_gpio_status)
     }
 
     new_status |= rotary_pos & 0x7fffffff;
-    
+
     if (last_status != new_status) {
       // Either we overwrite the status or we add a new one
-      if (!HAS_QUEUED_DATA(d) 
+      if (!HAS_QUEUED_DATA(d)
 	  || STATUS_IS_PRESSED(last_status ^ new_status)
 	  || STATUS_IS_PRESSED(last_status ^ GET_PREV_STATUS(d).pos)) {
 	if (HAS_QUEUE_SPACE(d)) {
@@ -207,13 +207,12 @@ int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_han
     }
   }
 
-  DATA *d = (DATA *) c_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) calloc(1, sizeof(DATA));
   if (!d) {
     return -1;
   }
 
   data[channel] = d;
-  int i;
 
   d->tasknumber = tasknumber;
 
@@ -271,10 +270,10 @@ bool rotary_has_queued_event(uint32_t channel)
 }
 
 // Get the oldest event in the queue and remove it (if possible)
-bool rotary_getevent(uint32_t channel, rotary_event_t *resultp) 
+bool rotary_getevent(uint32_t channel, rotary_event_t *resultp)
 {
   rotary_event_t result = { 0 };
-  
+
   if (channel >= sizeof(data) / sizeof(data[0])) {
     return FALSE;
   }

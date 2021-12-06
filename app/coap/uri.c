@@ -1,10 +1,10 @@
 /* uri.c -- helper functions for URI treatment
  */
 
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "c_ctype.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "coap.h"
 #include "uri.h"
@@ -17,22 +17,22 @@
 #endif
 
 
-/** 
+/**
  * A length-safe version of strchr(). This function returns a pointer
  * to the first occurrence of @p c  in @p s, or @c NULL if not found.
- * 
+ *
  * @param s   The string to search for @p c.
  * @param len The length of @p s.
  * @param c   The character to search.
- * 
- * @return A pointer to the first occurence of @p c, or @c NULL 
+ *
+ * @return A pointer to the first occurence of @p c, or @c NULL
  * if not found.
  */
 static inline unsigned char *
 strnchr(unsigned char *s, size_t len, unsigned char c) {
   while (len && *s++ != c)
     --len;
-  
+
   return len ? s : NULL;
 }
 
@@ -43,7 +43,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
   if (!str_var || !uri)
     return -1;
 
-  c_memset(uri, 0, sizeof(coap_uri_t));
+  memset(uri, 0, sizeof(coap_uri_t));
   uri->port = COAP_DEFAULT_PORT;
 
   /* search for scheme */
@@ -57,7 +57,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
   while (len && *q && tolower(*p) == *q) {
     ++p; ++q; --len;
   }
-  
+
   /* If q does not point to the string end marker '\0', the schema
    * identifier is wrong. */
   if (*q) {
@@ -84,7 +84,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
   q = p;
   if (len && *p == '[') {	/* IPv6 address reference */
     ++p;
-    
+
     while (len && *q != ']') {
       ++q; --len;
     }
@@ -92,7 +92,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
     if (!len || *q != ']' || p == q) {
       res = -3;
       goto error;
-    } 
+    }
 
     COAP_SET_STR(&uri->host, q - p, p);
     ++q; --len;
@@ -115,7 +115,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
   if (len && *q == ':') {
     p = ++q;
     --len;
-    
+
     while (len && isdigit(*q)) {
       ++q;
       --len;
@@ -123,19 +123,19 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
 
     if (p < q) {		/* explicit port number given */
       int uri_port = 0;
-    
+
       while (p < q)
 	     uri_port = uri_port * 10 + (*p++ - '0');
 
       uri->port = uri_port;
-    } 
+    }
   }
-  
+
  path:		 /* at this point, p must point to an absolute path */
 
   if (!len)
     goto end;
-  
+
   if (*q == '/') {
     p = ++q;
     --len;
@@ -144,7 +144,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
       ++q;
       --len;
     }
-  
+
     if (p < q) {
       COAP_SET_STR(&uri->path, q - p, p);
       p = q;
@@ -161,28 +161,28 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
 
   end:
   return len ? -1 : 0;
-  
+
   error:
   return res;
 }
 
-/** 
+/**
  * Calculates decimal value from hexadecimal ASCII character given in
  * @p c. The caller must ensure that @p c actually represents a valid
- * heaxdecimal character, e.g. with isxdigit(3). 
+ * heaxdecimal character, e.g. with isxdigit(3).
  *
  * @hideinitializer
  */
 #define hexchar_to_dec(c) ((c) & 0x40 ? ((c) & 0x0F) + 9 : ((c) & 0x0F))
 
-/** 
+/**
  * Decodes percent-encoded characters while copying the string @p seg
  * of size @p length to @p buf. The caller of this function must
  * ensure that the percent-encodings are correct (i.e. the character
  * '%' is always followed by two hex digits. and that @p buf provides
  * sufficient space to hold the result. This function is supposed to
  * be called by make_decoded_option() only.
- * 
+ *
  * @param seg     The segment to decode and copy.
  * @param length  Length of @p seg.
  * @param buf     The result buffer.
@@ -193,12 +193,12 @@ void decode_segment(const unsigned char *seg, size_t length, unsigned char *buf)
 
     if (*seg == '%') {
       *buf = (hexchar_to_dec(seg[1]) << 4) + hexchar_to_dec(seg[2]);
-      
+
       seg += 2; length -= 2;
     } else {
       *buf = *seg;
     }
-    
+
     ++buf; ++seg;
   }
 }
@@ -216,18 +216,18 @@ int check_segment(const unsigned char *s, size_t length) {
     if (*s == '%') {
       if (length < 2 || !(isxdigit(s[1]) && isxdigit(s[2])))
         return -1;
-      
+
       s += 2;
       length -= 2;
     }
 
     ++s; ++n; --length;
   }
-  
+
   return n;
 }
-	 
-/** 
+
+/**
  * Writes a coap option from given string @p s to @p buf. @p s should
  * point to a (percent-encoded) path or query segment of a coap_uri_t
  * object.  The created option will have type @c 0, and the length
@@ -235,18 +235,18 @@ int check_segment(const unsigned char *s, size_t length) {
  * On success, this function returns the option's size, or a value
  * less than zero on error. This function must be called from
  * coap_split_path_impl() only.
- * 
+ *
  * @param s       The string to decode.
  * @param length  The size of the percent-encoded string @p s.
  * @param buf     The buffer to store the new coap option.
  * @param buflen  The maximum size of @p buf.
- * 
+ *
  * @return The option's size, or @c -1 on error.
  *
  * @bug This function does not split segments that are bigger than 270
  * bytes.
  */
-int make_decoded_option(const unsigned char *s, size_t length, 
+int make_decoded_option(const unsigned char *s, size_t length,
 		    unsigned char *buf, size_t buflen) {
   int res;
   size_t written;
@@ -289,32 +289,32 @@ int make_decoded_option(const unsigned char *s, size_t length,
 
 typedef void (*segment_handler_t)(unsigned char *, size_t, void *);
 
-/** 
+/**
  * Splits the given string into segments. You should call one of the
  * macros coap_split_path() or coap_split_query() instead.
- * 
+ *
  * @param parse_iter The iterator used for tokenizing.
  * @param h      A handler that is called with every token.
  * @param data   Opaque data that is passed to @p h when called.
- * 
+ *
  * @return The number of characters that have been parsed from @p s.
  */
 size_t coap_split_path_impl(coap_parse_iterator_t *parse_iter,
 		     segment_handler_t h, void *data) {
   unsigned char *seg;
   size_t length;
-  
+
   assert(parse_iter);
   assert(h);
 
   length = parse_iter->n;
-  
+
   while ( (seg = coap_parse_next(parse_iter)) ) {
 
     /* any valid path segment is handled here: */
     h(seg, parse_iter->segment_length, data);
   }
-  
+
   return length - (parse_iter->n - parse_iter->segment_length);
 }
 
@@ -332,7 +332,7 @@ void write_option(unsigned char *s, size_t len, void *data) {
   /* skip empty segments and those that consist of only one or two dots */
   if (memcmp(s, "..", min(len,2)) == 0)
     return;
-  
+
   res = check_segment(s, len);
   if (res < 0){
     NODE_DBG("not a valid segment\n");
@@ -360,7 +360,7 @@ int coap_split_path(coap_rw_buffer_t *scratch, coap_packet_t *pkt, const unsigne
   struct pkt_scr tmp = { pkt, scratch, 0 };
   coap_parse_iterator_t pi;
 
-  coap_parse_iterator_init((unsigned char *)s, length, 
+  coap_parse_iterator_init((unsigned char *)s, length,
          '/', (unsigned char *)"?#", 2, &pi);
   coap_split_path_impl(&pi, write_option, &tmp);
 
@@ -376,7 +376,7 @@ int coap_split_query(coap_rw_buffer_t *scratch, coap_packet_t *pkt, const unsign
   struct pkt_scr tmp = { pkt, scratch, 0 };
   coap_parse_iterator_t pi;
 
-  coap_parse_iterator_init((unsigned char *)s, length, 
+  coap_parse_iterator_init((unsigned char *)s, length,
          '&', (unsigned char *)"#", 1, &pi);
 
   coap_split_path_impl(&pi, write_option, &tmp);
@@ -394,16 +394,16 @@ int coap_split_query(coap_rw_buffer_t *scratch, coap_packet_t *pkt, const unsign
 coap_uri_t * coap_new_uri(const unsigned char *uri, unsigned int length) {
   unsigned char *result;
 
-  result = (unsigned char *)c_malloc(length + 1 + sizeof(coap_uri_t));
+  result = (unsigned char *)malloc(length + 1 + sizeof(coap_uri_t));
 
   if (!result)
     return NULL;
 
-  c_memcpy(URI_DATA(result), uri, length);
+  memcpy(URI_DATA(result), uri, length);
   URI_DATA(result)[length] = '\0'; /* make it zero-terminated */
 
   if (coap_split_uri(URI_DATA(result), length, (coap_uri_t *)result) < 0) {
-    c_free(result);
+    free(result);
     return NULL;
   }
   return (coap_uri_t *)result;
@@ -411,7 +411,7 @@ coap_uri_t * coap_new_uri(const unsigned char *uri, unsigned int length) {
 
 /* iterator functions */
 
-coap_parse_iterator_t * coap_parse_iterator_init(unsigned char *s, size_t n, 
+coap_parse_iterator_t * coap_parse_iterator_init(unsigned char *s, size_t n,
 			 unsigned char separator,
 			 unsigned char *delim, size_t dlen,
 			 coap_parse_iterator_t *pi) {

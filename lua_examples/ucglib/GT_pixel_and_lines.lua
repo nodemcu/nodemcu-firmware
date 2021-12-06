@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -11,7 +12,7 @@ function M.run()
     local x, xx
     mx = disp:getWidth() / 2
     --my = disp:getHeight() / 2
-  
+
     disp:setColor(0, 0, 0, 150)
     disp:setColor(1, 0, 60, 40)
     disp:setColor(2, 60, 0, 40)
@@ -27,11 +28,11 @@ function M.run()
     disp:drawPixel(1, 0)
     --disp:drawPixel(disp:getWidth()-1, 0)
     --disp:drawPixel(0, disp:getHeight()-1)
-  
+
     disp:drawPixel(disp:getWidth()-1, disp:getHeight()-1)
     disp:drawPixel(disp:getWidth()-1-1, disp:getHeight()-1)
 
-  
+
     x = 0
     while x < mx do
         xx = ((x)*255)/mx

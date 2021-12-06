@@ -9,7 +9,7 @@
 static int ow_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
-  
+
   if(id==0)
     return luaL_error( L, "no 1-wire for D0" );
 
@@ -210,7 +210,7 @@ static int ow_search( lua_State *L )
     lua_pop(L,1);
     lua_pushnil(L);
   }
-  return 1; 
+  return 1;
 }
 #endif
 
@@ -282,29 +282,29 @@ static int ow_crc16( lua_State *L )
 #endif
 
 // Module function map
-static const LUA_REG_TYPE ow_map[] = {
-  { LSTRKEY( "setup" ),         LFUNCVAL( ow_setup ) },
-  { LSTRKEY( "reset" ),         LFUNCVAL( ow_reset ) },
-  { LSTRKEY( "skip" ),          LFUNCVAL( ow_skip ) },
-  { LSTRKEY( "select" ),        LFUNCVAL( ow_select ) },
-  { LSTRKEY( "write" ),         LFUNCVAL( ow_write ) },
-  { LSTRKEY( "write_bytes" ),   LFUNCVAL( ow_write_bytes ) },
-  { LSTRKEY( "read" ),          LFUNCVAL( ow_read ) },
-  { LSTRKEY( "read_bytes" ),    LFUNCVAL( ow_read_bytes ) },
-  { LSTRKEY( "depower" ),       LFUNCVAL( ow_depower ) },
+LROT_BEGIN(ow, NULL, 0)
+  LROT_FUNCENTRY( setup, ow_setup )
+  LROT_FUNCENTRY( reset, ow_reset )
+  LROT_FUNCENTRY( skip, ow_skip )
+  LROT_FUNCENTRY( select, ow_select )
+  LROT_FUNCENTRY( write, ow_write )
+  LROT_FUNCENTRY( write_bytes, ow_write_bytes )
+  LROT_FUNCENTRY( read, ow_read )
+  LROT_FUNCENTRY( read_bytes, ow_read_bytes )
+  LROT_FUNCENTRY( depower, ow_depower )
 #if ONEWIRE_SEARCH
-  { LSTRKEY( "reset_search" ),  LFUNCVAL( ow_reset_search ) },
-  { LSTRKEY( "target_search" ), LFUNCVAL( ow_target_search ) },
-  { LSTRKEY( "search" ),        LFUNCVAL( ow_search ) },
+  LROT_FUNCENTRY( reset_search, ow_reset_search )
+  LROT_FUNCENTRY( target_search, ow_target_search )
+  LROT_FUNCENTRY( search, ow_search )
 #endif
 #if ONEWIRE_CRC
-  { LSTRKEY( "crc8" ),          LFUNCVAL( ow_crc8 ) },
+  LROT_FUNCENTRY( crc8, ow_crc8 )
 #if ONEWIRE_CRC16
-  { LSTRKEY( "check_crc16" ),   LFUNCVAL( ow_check_crc16 ) },
-  { LSTRKEY( "crc16" ),         LFUNCVAL( ow_crc16 ) },
+  LROT_FUNCENTRY( check_crc16, ow_check_crc16 )
+  LROT_FUNCENTRY( crc16, ow_crc16 )
 #endif
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END(ow, NULL, 0)
 
-NODEMCU_MODULE(OW, "ow", ow_map, NULL);
+
+NODEMCU_MODULE(OW, "ow", ow, NULL);

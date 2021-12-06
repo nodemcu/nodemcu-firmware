@@ -12,7 +12,7 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/uart.h"
-#include "task/task.h"
+#include "platform.h"
 #include "user_config.h"
 #include "user_interface.h"
 #include "osapi.h"
@@ -29,19 +29,35 @@
 
 
 // For event signalling
-static task_handle_t sig = 0;
+static platform_task_handle_t sig = 0;
 static uint8 *sig_flag;
 static uint8 isr_flag = 0;
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
-
+#ifdef BIT_RATE_AUTOBAUD
 static os_timer_t autobaud_timer;
-
+#endif
 static void (*alt_uart0_tx)(char txchar);
 
 LOCAL void ICACHE_RAM_ATTR
 uart0_rx_intr_handler(void *para);
+
+
+/******************************************************************************
+ * FunctionName : uart_wait_tx_empty
+ * Description  : Internal used function
+ *                Wait for TX FIFO to become empty.
+ * Parameters   : uart_no, use UART0 or UART1 defined ahead
+ * Returns      : NONE
+*******************************************************************************/
+LOCAL void ICACHE_FLASH_ATTR
+uart_wait_tx_empty(uint8 uart_no)
+{
+    while ((READ_PERI_REG(UART_STATUS(uart_no)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) > 0)
+        ;
+}
+
 
 /******************************************************************************
  * FunctionName : uart_config
@@ -54,6 +70,8 @@ uart0_rx_intr_handler(void *para);
 LOCAL void ICACHE_FLASH_ATTR
 uart_config(uint8 uart_no)
 {
+    uart_wait_tx_empty(uart_no);
+
     if (uart_no == UART1) {
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
     } else {
@@ -98,6 +116,8 @@ uart_config(uint8 uart_no)
 void ICACHE_FLASH_ATTR
 uart0_alt(uint8 on)
 {
+    uart_wait_tx_empty(UART0);
+
     if (on)
     {
         PIN_PULLUP_DIS(PERIPHS_IO_MUX_MTDO_U);
@@ -147,30 +167,6 @@ uart_tx_one_char(uint8 uart, uint8 TxChar)
 }
 
 /******************************************************************************
- * FunctionName : uart1_write_char
- * Description  : Internal used function
- *                Do some special deal while tx char is '\r' or '\n'
- * Parameters   : char c - character to tx
- * Returns      : NONE
-*******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR
-uart1_write_char(char c)
-{
-  if (c == '\n')
-  {
-    uart_tx_one_char(UART1, '\r');
-    uart_tx_one_char(UART1, '\n');
-  }
-  else if (c == '\r')
-  {
-  }
-  else
-  {
-    uart_tx_one_char(UART1, c);
-  }
-}
-
-/******************************************************************************
  * FunctionName : uart0_tx_buffer
  * Description  : use uart0 to transfer buffer
  * Parameters   : uint8 *buf - point to send buffer
@@ -192,16 +188,24 @@ uart0_tx_buffer(uint8 *buf, uint16 len)
  * FunctionName : uart0_sendStr
  * Description  : use uart0 to transfer buffer
  * Parameters   : uint8 *buf - point to send buffer
- *                uint16 len - buffer len
  * Returns      :
 *******************************************************************************/
-void ICACHE_FLASH_ATTR uart0_sendStr(const char *str)
-{
+void ICACHE_FLASH_ATTR uart0_sendStr(const char *str) {
     while(*str)
-    {
-        // uart_tx_one_char(UART0, *str++);
         uart0_putc(*str++);
-    }
+}
+
+/******************************************************************************
+ * FunctionName : uart0_sendStr
+ * Description  : use uart0 to transfer buffer
+ * Parameters   : uint8 *buf - point to send buffer
+ *                size_t len - buffer len
+ * Returns      :
+*******************************************************************************/
+void ICACHE_FLASH_ATTR uart0_sendStrn(const char *str, size_t len) {
+    size_t i;
+    for(i = 0; i < len; i++)
+        uart0_putc(*str++);
 }
 
 /******************************************************************************
@@ -280,14 +284,16 @@ uart0_rx_intr_handler(void *para)
     }
 
     if (got_input && sig) {
+      // Only post a new handler request once the handler has fired clearing the last post
       if (isr_flag == *sig_flag) {
         isr_flag ^= 0x01;
-        task_post_low (sig, 0x8000 | isr_flag << 14 | false);
+        platform_post_high(sig, isr_flag);
       }
     }
 }
 
-static void 
+#ifdef BIT_RATE_AUTOBAUD
+static void
 uart_autobaud_timeout(void *timer_arg)
 {
   uint32_t uart_no = (uint32_t) timer_arg;
@@ -303,35 +309,32 @@ uart_autobaud_timeout(void *timer_arg)
     uart_div_modify(uart_no, divisor);
   }
 }
-
-static void 
+#include "pm/swtimer.h"
+static void
 uart_init_autobaud(uint32_t uart_no)
 {
   os_timer_setfn(&autobaud_timer, uart_autobaud_timeout, (void *) uart_no);
+  SWTIMER_REG_CB(uart_autobaud_timeout, SWTIMER_DROP);
+    //if autobaud hasn't done it's thing by the time light sleep triggered, it probably isn't going to happen.
   os_timer_arm(&autobaud_timer, 100, TRUE);
 }
 
-static void 
+static void
 uart_stop_autobaud()
 {
   os_timer_disarm(&autobaud_timer);
 }
-
+#endif
 /******************************************************************************
  * FunctionName : uart_init
  * Description  : user interface for init uart
  * Parameters   : UartBautRate uart0_br - uart0 bautrate
  *                UartBautRate uart1_br - uart1 bautrate
- *                os_signal_t  sig_input - signal to post
- *                uint8       *flag_input - flag of consumer task
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input, uint8 *flag_input)
+uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
-    sig = sig_input;
-    sig_flag = flag_input;
-
     // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
@@ -348,9 +351,24 @@ uart_setup(uint8 uart_no)
 #ifdef BIT_RATE_AUTOBAUD
     uart_stop_autobaud();
 #endif
+    // poll Tx FIFO empty outside before disabling interrupts
+    uart_wait_tx_empty(uart_no);
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();
+}
+
+/******************************************************************************
+ * FunctionName : uart_init_task
+ * Description  : user interface for init uart task callback
+ * Parameters   : os_signal_t  sig_input - signal to post
+ *                uint8       *flag_input - flag of consumer task
+ * Returns      : NONE
+*******************************************************************************/
+
+void ICACHE_FLASH_ATTR uart_init_task(os_signal_t sig_input, uint8 *flag_input) {
+    sig = sig_input;
+    sig_flag = flag_input;
 }
 
 void ICACHE_FLASH_ATTR uart_set_alt_output_uart0(void (*fn)(char)) {

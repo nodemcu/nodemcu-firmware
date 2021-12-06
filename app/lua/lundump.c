@@ -6,10 +6,9 @@
 
 #define lundump_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -164,16 +163,9 @@ static TString* LoadString(LoadState* S)
   return NULL;
  else
  {
-  char* s;
-  if (!luaZ_direct_mode(S->Z)) {
-   s = luaZ_openspace(S->L,S->b,size);
-   LoadBlock(S,s,size);
-   return luaS_newlstr(S->L,s,size-1); /* remove trailing zero */
-  } else {
-   s = (char*)luaZ_get_crt_address(S->Z);
-   LoadBlock(S,NULL,size);
-   return luaS_newrolstr(S->L,s,size-1);
-  }
+  char* s = luaZ_openspace(S->L,S->b,size);
+  LoadBlock(S,s,size);
+  return luaS_newlstr(S->L,s,size-1); /* remove trailing zero */
  }
 }
 
@@ -181,13 +173,8 @@ static void LoadCode(LoadState* S, Proto* f)
 {
  int n=LoadInt(S);
  Align4(S);
- if (!luaZ_direct_mode(S->Z)) {
-  f->code=luaM_newvector(S->L,n,Instruction);
-  LoadVector(S,f->code,n,sizeof(Instruction));
- } else {
-  f->code=(Instruction*)luaZ_get_crt_address(S->Z);
-  LoadVector(S,NULL,n,sizeof(Instruction));
- }
+ f->code=luaM_newvector(S->L,n,Instruction);
+ LoadVector(S,f->code,n,sizeof(Instruction));
  f->sizecode=n;
 }
 
@@ -236,28 +223,12 @@ static void LoadDebug(LoadState* S, Proto* f)
  n=LoadInt(S);
  Align4(S);
 
-#ifdef LUA_OPTIMIZE_DEBUG
  if(n) {
-   if (!luaZ_direct_mode(S->Z)) {
-     f->packedlineinfo=luaM_newvector(S->L,n,unsigned char);
-     LoadBlock(S,f->packedlineinfo,n);
-   } else {
-     f->packedlineinfo=(unsigned char*)luaZ_get_crt_address(S->Z);
-     LoadBlock(S,NULL,n);
-   }
+   f->packedlineinfo=luaM_newvector(S->L,n,unsigned char);
+   LoadBlock(S,f->packedlineinfo,n);
  } else {
    f->packedlineinfo=NULL;
  }
-#else
- if (!luaZ_direct_mode(S->Z)) {
-   f->lineinfo=luaM_newvector(S->L,n,int);
-   LoadVector(S,f->lineinfo,n,sizeof(int));
- } else {
-   f->lineinfo=(int*)luaZ_get_crt_address(S->Z);
-   LoadVector(S,NULL,n,sizeof(int));
- }
- f->sizelineinfo=n;
- #endif
  n=LoadInt(S);
  f->locvars=luaM_newvector(S->L,n,LocVar);
  f->sizelocvars=n;
@@ -280,7 +251,6 @@ static Proto* LoadFunction(LoadState* S, TString* p)
  Proto* f;
  if (++S->L->nCcalls > LUAI_MAXCCALLS) error(S,"code too deep");
  f=luaF_newproto(S->L);
- if (luaZ_direct_mode(S->Z)) proto_readonly(f);
  setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
  f->source=LoadString(S); if (f->source==NULL) f->source=p;
  f->linedefined=LoadInt(S);
@@ -309,7 +279,7 @@ static void LoadHeader(LoadState* S)
  S->numsize=h[10]=s[10]; /* length of lua_Number */
  S->toflt=(s[11]>intck); /* check if conversion from int lua_Number to flt is needed */
  if(S->toflt) s[11]=h[11];
- IF (c_memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
+ IF (memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
 }
 
 /*
@@ -338,7 +308,7 @@ Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 void luaU_header (char* h)
 {
  int x=1;
- c_memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
+ memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
  h+=sizeof(LUA_SIGNATURE)-1;
  *h++=(char)LUAC_VERSION;
  *h++=(char)LUAC_FORMAT;

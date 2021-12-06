@@ -1,6 +1,6 @@
 /*
  * Module for interfacing with cheap rotary switches that
- * are much used in the automtive industry as the cntrols for 
+ * are much used in the automtive industry as the cntrols for
  * CD players and the like.
  *
  * Philip Gladstone, N1DQ
@@ -9,10 +9,11 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include "task/task.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "user_interface.h"
 #include "driver/rotary.h"
-#include "../libc/c_stdlib.h"
 
 #define MASK(x)		(1 << ROTARY_ ## x ## _INDEX)
 
@@ -55,7 +56,7 @@ static task_handle_t tasknumber;
 static void lrotary_timer_done(void *param);
 static void lrotary_check_timer(DATA *d, uint32_t time_us, bool dotimer);
 
-static void callback_free_one(lua_State *L, int *cb_ptr) 
+static void callback_free_one(lua_State *L, int *cb_ptr)
 {
   if (*cb_ptr != LUA_NOREF) {
     luaL_unref(L, LUA_REGISTRYINDEX, *cb_ptr);
@@ -63,7 +64,7 @@ static void callback_free_one(lua_State *L, int *cb_ptr)
   }
 }
 
-static void callback_free(lua_State* L, unsigned int id, int mask) 
+static void callback_free(lua_State* L, unsigned int id, int mask)
 {
   DATA *d = data[id];
 
@@ -77,9 +78,9 @@ static void callback_free(lua_State* L, unsigned int id, int mask)
   }
 }
 
-static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number) 
+static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number)
 {
-  if (lua_type(L, arg_number) == LUA_TFUNCTION || lua_type(L, arg_number) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, arg_number)) {
     lua_pushvalue(L, arg_number);  // copy argument (func) to the top of stack
     callback_free_one(L, cb_ptr);
     *cb_ptr = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -89,7 +90,7 @@ static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number)
   return -1;
 }
 
-static int callback_set(lua_State* L, int id, int mask, int arg_number) 
+static int callback_set(lua_State* L, int id, int mask, int arg_number)
 {
   DATA *d = data[id];
   int result = 0;
@@ -104,7 +105,7 @@ static int callback_set(lua_State* L, int id, int mask, int arg_number)
   return result;
 }
 
-static void callback_callOne(lua_State* L, int cb, int mask, int arg, uint32_t time) 
+static void callback_callOne(lua_State* L, int cb, int mask, int arg, uint32_t time)
 {
   if (cb != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, cb);
@@ -113,11 +114,11 @@ static void callback_callOne(lua_State* L, int cb, int mask, int arg, uint32_t t
     lua_pushinteger(L, arg);
     lua_pushinteger(L, time);
 
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
 }
 
-static void callback_call(lua_State* L, DATA *d, int cbnum, int arg, uint32_t time) 
+static void callback_call(lua_State* L, DATA *d, int cbnum, int arg, uint32_t time)
 {
   if (d) {
     callback_callOne(L, d->callback[cbnum], 1 << cbnum, arg, time);
@@ -129,11 +130,13 @@ int platform_rotary_exists( unsigned int id )
   return (id < ROTARY_CHANNEL_COUNT);
 }
 
+#include "pm/swtimer.h"
+
 // Lua: setup(id, phase_a, phase_b [, press])
 static int lrotary_setup( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( rotary, id );
 
@@ -143,17 +146,24 @@ static int lrotary_setup( lua_State* L )
   callback_free(L, id, ROTARY_ALL);
 
   if (!data[id]) {
-    data[id] = (DATA *) c_zalloc(sizeof(DATA));
+    data[id] = (DATA *) calloc(1, sizeof(DATA));
     if (!data[id]) {
       return -1;
-    } 
+    }
   }
 
   DATA *d = data[id];
   memset(d, 0, sizeof(*d));
 
+  d->id = id;
+
   os_timer_setfn(&d->timer, lrotary_timer_done, (void *) d);
-  
+  SWTIMER_REG_CB(lrotary_timer_done, SWTIMER_RESUME);
+    //lrotary_timer_done checks time elapsed since last event
+    //My guess: Since proper functionality relies on some variables to be reset via timer callback and state would be invalid anyway.
+      //It is probably best to resume this timer so it can reset it's state variables
+
+
   int i;
   for (i = 0; i < CALLBACK_COUNT; i++) {
     d->callback[i] = LUA_NOREF;
@@ -187,14 +197,14 @@ static int lrotary_setup( lua_State* L )
   if (rotary_setup(id, phase_a, phase_b, press, tasknumber)) {
     return luaL_error(L, "Unable to setup rotary switch.");
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: close( id )
 static int lrotary_close( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( rotary, id );
   callback_free(L, id, ROTARY_ALL);
@@ -202,13 +212,13 @@ static int lrotary_close( lua_State* L )
   DATA *d = data[id];
   if (d) {
     data[id] = NULL;
-    c_free(d);
+    free(d);
   }
 
   if (rotary_close( id )) {
     return luaL_error( L, "Unable to close switch." );
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: on( id, mask[, cb] )
@@ -228,7 +238,7 @@ static int lrotary_on( lua_State* L )
     callback_free(L, id, mask);
   }
 
-  return 0;  
+  return 0;
 }
 
 // Lua: getpos( id ) -> pos, PRESS/RELEASE
@@ -244,10 +254,10 @@ static int lrotary_getpos( lua_State* L )
     return 0;
   }
 
-  lua_pushnumber(L, (pos << 1) >> 1);
-  lua_pushnumber(L, (pos & 0x80000000) ? MASK(PRESS) : MASK(RELEASE));
+  lua_pushinteger(L, (pos << 1) >> 1);
+  lua_pushinteger(L, (pos & 0x80000000) ? MASK(PRESS) : MASK(RELEASE));
 
-  return 2;  
+  return 2;
 }
 
 // Returns TRUE if there maybe/is more stuff to do
@@ -349,7 +359,7 @@ static void lrotary_check_timer(DATA *d, uint32_t time_us, bool dotimer)
   }
 }
 
-static void lrotary_task(os_param_t param, uint8_t prio) 
+static void lrotary_task(os_param_t param, uint8_t prio)
 {
   (void) param;
   (void) prio;
@@ -372,34 +382,34 @@ static void lrotary_task(os_param_t param, uint8_t prio)
       }
     }
   }
-  
+
   if (need_to_post) {
     // If there is pending stuff, queue another task
     task_post_medium(tasknumber, 0);
   }
 }
 
-static int rotary_open(lua_State *L) 
+static int rotary_open(lua_State *L)
 {
   tasknumber = task_get_id(lrotary_task);
   return 0;
 }
 
 // Module function map
-static const LUA_REG_TYPE rotary_map[] = {
-  { LSTRKEY( "setup" ),    LFUNCVAL( lrotary_setup ) },
-  { LSTRKEY( "close" ),    LFUNCVAL( lrotary_close ) },
-  { LSTRKEY( "on" ),       LFUNCVAL( lrotary_on    ) },
-  { LSTRKEY( "getpos" ),   LFUNCVAL( lrotary_getpos) },
-  { LSTRKEY( "TURN" ),     LNUMVAL( MASK(TURN)    ) },
-  { LSTRKEY( "PRESS" ),    LNUMVAL( MASK(PRESS)   ) },
-  { LSTRKEY( "RELEASE" ),  LNUMVAL( MASK(RELEASE) ) },
-  { LSTRKEY( "LONGPRESS" ),LNUMVAL( MASK(LONGPRESS) ) },
-  { LSTRKEY( "CLICK" ),    LNUMVAL( MASK(CLICK)   ) },
-  { LSTRKEY( "DBLCLICK" ), LNUMVAL( MASK(DBLCLICK)) },
-  { LSTRKEY( "ALL" ),      LNUMVAL( ROTARY_ALL     ) },
+LROT_BEGIN(rotary, NULL, 0)
+  LROT_FUNCENTRY( setup, lrotary_setup )
+  LROT_FUNCENTRY( close, lrotary_close )
+  LROT_FUNCENTRY( on, lrotary_on )
+  LROT_FUNCENTRY( getpos, lrotary_getpos )
+  LROT_NUMENTRY( TURN, MASK(TURN) )
+  LROT_NUMENTRY( PRESS, MASK(PRESS) )
+  LROT_NUMENTRY( RELEASE, MASK(RELEASE) )
+  LROT_NUMENTRY( LONGPRESS, MASK(LONGPRESS) )
+  LROT_NUMENTRY( CLICK, MASK(CLICK) )
+  LROT_NUMENTRY( DBLCLICK, MASK(DBLCLICK) )
+  LROT_NUMENTRY( ALL, ROTARY_ALL )
 
-  { LNILKEY, LNILVAL }
-};
+LROT_END(rotary, NULL, 0)
 
-NODEMCU_MODULE(ROTARY, "rotary", rotary_map, rotary_open);
+
+NODEMCU_MODULE(ROTARY, "rotary", rotary, rotary_open);

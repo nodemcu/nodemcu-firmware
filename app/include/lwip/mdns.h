@@ -32,8 +32,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LWIP_DNS_H__
-#define __LWIP_DNS_H__
+#ifndef __LWIP_MDNS_H__
+#define __LWIP_MDNS_H__
 
 #include "lwip/opt.h"
 

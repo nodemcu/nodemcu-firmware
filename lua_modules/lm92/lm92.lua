@@ -3,7 +3,7 @@
 --
 -- Written by Levente Tamas <levente.tamas@navicron.com>
 --
--- modify by Garberoglio Leonardo <leogarberoglio@gmail.com> 
+-- modify by Garberoglio Leonardo <leogarberoglio@gmail.com>
 --
 -- GNU LGPL, see https://www.gnu.org/copyleft/lesser.html
 -- ******************************************************
@@ -24,7 +24,6 @@ local address = 0
 local function read_reg(reg_addr, len)
 	local ret={}
 	local c
-	local x
 	i2c.start(id)
 	i2c.address(id, address ,i2c.TRANSMITTER)
 	i2c.write(id,reg_addr)
@@ -32,13 +31,13 @@ local function read_reg(reg_addr, len)
 	i2c.start(id)
 	i2c.address(id, address,i2c.RECEIVER)
 	c=i2c.read(id,len)
-	for x=1,len,1 do
-		tc=string.byte(c,x)
-		table.insert(ret,tc)
+	for x = 1, len, 1 do
+		local tc = string.byte(c, x)
+		table.insert(ret, tc)
 	end
 	i2c.stop(id)
 	return ret
-end 
+end
 
 --write reg with data table
 local function write_reg(reg_addr, data)
@@ -47,7 +46,7 @@ local function write_reg(reg_addr, data)
 	i2c.write(id, reg_addr)
 	i2c.write(id, data)
 	i2c.stop(id)
-end 
+end
 
 --write comparison reg with 2 bytes
 local function write_comp_reg(reg_addr, msb, lsb)
@@ -55,29 +54,24 @@ local function write_comp_reg(reg_addr, msb, lsb)
     i2c.address(id, address, i2c.TRANSMITTER)
     i2c.write(id, reg_addr)
     i2c.write(id, msb)
-    i2c.write(id, lsb)  
+    i2c.write(id, lsb)
     i2c.stop(id)
-end 
+end
 -- initialize i2c
--- d: sda
--- c: scl
 -- a: i2c addr 0x48|A1<<1|A0 (A0-A1: chip pins)
-function M.init(d,c,a)
-if (d ~= nil) and (c ~= nil) and (d >= 0) and (d <= 11) and (c >= 0) and ( c <= 11) and (d ~= l) and (a ~= nil) and (a >= 0x48) and (a <= 0x4b ) then
-		sda = d
-		scl = c 
+function M.setup(a)
+  if (a ~= nil) and (a >= 0x48) and (a <= 0x4b ) then
 		address = a
 		i2c.start(id)
-		res = i2c.address(id, address, i2c.TRANSMITTER) --verify that the address is valid
+		local res = i2c.address(id, address, i2c.TRANSMITTER) --verify that the address is valid
 		i2c.stop(id)
 		if (res == false) then
 			print("device not found")
 			return nil
 		end
-		else 
-        print("i2c configuration failed") return nil
-      end
-	i2c.setup(id,sda,scl,i2c.SLOW)
+  else
+     print("wrong i2c address") return nil
+  end
 end
 
 -- Return the temperature data

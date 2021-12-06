@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -7,11 +8,8 @@ function M.run()
 
     print("Running component color_test...")
 
-    local mx
     local c, x
-    mx = disp:getWidth() / 2
-    --my = disp:getHeight() / 2
-  
+
     disp:setColor(0, 0, 0, 0)
     disp:drawBox(0, 0, disp:getWidth(), disp:getHeight())
 

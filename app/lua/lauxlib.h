@@ -8,15 +8,12 @@
 #ifndef lauxlib_h
 #define lauxlib_h
 
-
 #include "lua.h"
-
-#ifdef LUA_CROSS_COMPILER
-#include <stdio.h>
-#else
-#include "c_stdio.h"
+#ifdef LUA_LIB
+#include "lnodemcu.h"
 #endif
 
+#include <stdio.h>
 
 #if defined(LUA_COMPAT_GETN)
 LUALIB_API int (luaL_getn) (lua_State *L, int t);
@@ -47,7 +44,7 @@ LUALIB_API void (luaI_openlib) (lua_State *L, const char *libname,
 LUALIB_API void (luaL_register) (lua_State *L, const char *libname,
                                 const luaL_Reg *l);
 LUALIB_API void (luaL_register_light) (lua_State *L, const char *libname,
-                                const luaL_Reg *l);                                
+                                const luaL_Reg *l);
 LUALIB_API int (luaL_getmetafield) (lua_State *L, int obj, const char *e);
 LUALIB_API int (luaL_callmeta) (lua_State *L, int obj, const char *e);
 LUALIB_API int (luaL_typerror) (lua_State *L, int narg, const char *tname);
@@ -66,11 +63,10 @@ LUALIB_API lua_Integer (luaL_optinteger) (lua_State *L, int nArg,
 LUALIB_API void (luaL_checkstack) (lua_State *L, int sz, const char *msg);
 LUALIB_API void (luaL_checktype) (lua_State *L, int narg, int t);
 LUALIB_API void (luaL_checkany) (lua_State *L, int narg);
-LUALIB_API void (luaL_checkanyfunction) (lua_State *L, int narg);
-LUALIB_API void (luaL_checkanytable) (lua_State *L, int narg);
 
 LUALIB_API int   (luaL_newmetatable) (lua_State *L, const char *tname);
-LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, void *p);
+LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, const ROTable *p);
+LUALIB_API void *(luaL_testudata) (lua_State *L, int ud, const char *tname);
 LUALIB_API void *(luaL_checkudata) (lua_State *L, int ud, const char *tname);
 
 LUALIB_API void (luaL_where) (lua_State *L, int lvl);
@@ -81,12 +77,11 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
+#define luaL_unref2(l,t,r) do {luaL_unref(L, (t), (r)); r = LUA_NOREF;} while (0)
+LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref);
 
-#ifdef LUA_CROSS_COMPILER
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
-#else
-LUALIB_API int (luaL_loadfsfile) (lua_State *L, const char *filename);
-#endif
+
 LUALIB_API int (luaL_loadbuffer) (lua_State *L, const char *buff, size_t sz,
                                   const char *name);
 LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s);
@@ -116,7 +111,11 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #define luaL_checkint(L,n)	((int)luaL_checkinteger(L, (n)))
 #define luaL_optint(L,n,d)	((int)luaL_optinteger(L, (n), (d)))
 #define luaL_checklong(L,n)	((long)luaL_checkinteger(L, (n)))
+#define luaL_checkunsigned(L,a)	((lua_Unsigned)luaL_checkinteger(L,a))
 #define luaL_optlong(L,n,d)	((long)luaL_optinteger(L, (n), (d)))
+#define luaL_optunsigned(L,a,d)	((lua_Unsigned)luaL_optinteger(L,a,(lua_Integer)(d)))
+#define luaL_checktable(L,n)	luaL_checktype(L, (n), LUA_TTABLE)
+#define luaL_checkfunction(L,n)	luaL_checktype(L, (n), LUA_TFUNCTION)
 
 #define luaL_typename(L,i)	lua_typename(L, lua_type(L,(i)))
 
@@ -125,7 +124,7 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 	(luaL_loadfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
 #else
 #define luaL_dofile(L, fn) \
-  (luaL_loadfsfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
+  (luaL_loadfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
 #endif
 
 #define luaL_dostring(L, s) \
@@ -169,6 +168,18 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
 /* }====================================================== */
 
+LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsmodule) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsdts) (lua_State *L);
+
+LUALIB_API void (luaL_lfsreload) (lua_State *L);
+LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
+LUALIB_API int  (luaL_posttask) ( lua_State* L, int prio );
+#define  LUA_TASK_LOW    0
+#define  LUA_TASK_MEDIUM 1
+#define  LUA_TASK_HIGH   2
+
+/* }====================================================== */
 
 /* compatibility with ref system */
 

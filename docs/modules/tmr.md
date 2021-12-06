@@ -9,54 +9,27 @@ It is aimed at setting up regularly occurring tasks, timing out operations, and 
 
 What the tmr module is *not* however, is a time keeping module. While most timeouts are expressed in milliseconds or even microseconds, the accuracy is limited and compounding errors would lead to rather inaccurate time keeping. Consider using the [rtctime](rtctime.md) module for "wall clock" time.
 
-NodeMCU provides 7 static timers, numbered 0-6, and dynamic timer creation function [`tmr.create()`](#tmrcreate).
-
 !!! attention
 
-    Static timers are deprecated and will be removed later.
-
-## tmr.alarm()
-
-This is a convenience function combining [`tmr.register()`](#tmrregister) and [`tmr.start()`](#tmrstart) into a single call.
-
-To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
-
-#### Parameters
-- `id`/`ref` timer id (0-6) or object
-- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
-- `mode` timer mode:
-	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
-	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrstart) to restart)
-	- `tmr.ALARM_AUTO` automatically repeating alarm
-
-#### Returns
-`true` if the timer was started, `false` on error
-
-#### Example
-```lua
-if not tmr.alarm(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end) then print("whoopsie") end
-```
-#### See also
-- [`tmr.create()`](#tmrcreate)
-- [`tmr.register()`](#tmrregister)
-- [`tmr.start()`](#tmrstart)
-- [`tmr.unregister()`](#tmrunregister)
+    NodeMCU formerly provided 7 static timers, numbered 0-6, which could be
+    used instead of OO API timers initiated with [`tmr.create()`](#tmrcreate).
+    After a long period of deprecation, these were removed in 2019 Q1.
 
 ## tmr.create()
 
-Creates a dynamic timer object.
+Creates a dynamic timer object; see below for its method table.
 
 Dynamic timer can be used instead of numeric ID in control functions. Also can be controlled in object-oriented way.
 
 Functions supported in timer object:
 
-- [`t:alarm()`](#tmralarm)
-- [`t:register()`](#tmrregister)
-- [`t:start()`](#tmrstart)
-- [`t:stop()`](#tmrstop)
-- [`t:unregister()`](#tmrunregister)
-- [`t:state()`](#tmrstate)
-- [`t:interval()`](#tmrinterval)
+- [`t:alarm()`](#tobjalarm)
+- [`t:interval()`](#tobjinterval)
+- [`t:register()`](#tobjregister)
+- [`t:start()`](#tobjstart)
+- [`t:state()`](#tobjstate)
+- [`t:stop()`](#tobjstop)
+- [`t:unregister()`](#tobjunregister)
 
 #### Parameters
 none
@@ -67,14 +40,8 @@ none
 #### Example
 ```lua
 local mytimer = tmr.create()
-
--- oo calling
 mytimer:register(5000, tmr.ALARM_SINGLE, function (t) print("expired"); t:unregister() end)
 mytimer:start()
-
--- with self parameter
-tmr.register(mytimer, 5000, tmr.ALARM_SINGLE, function (t) print("expired"); tmr.unregister(t) end)
-tmr.start(mytimer)
 ```
 
 ## tmr.delay()
@@ -99,26 +66,6 @@ Also note that the actual amount of time delayed for may be noticeably greater, 
 tmr.delay(100)
 ```
 
-## tmr.interval()
-
-Changes a registered timer's expiry interval.
-
-#### Syntax
-`tmr.interval(id/ref, interval_ms)`
-
-#### Parameters
-- `id`/`ref` timer id (0-6) or object
-- `interval_ms` new timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-tmr.interval(0, 3000) -- actually, 3 seconds is better!
-```
-
 ## tmr.now()
 
 Returns the system counter, which counts in microseconds. Limited to 31 bits, after that it wraps around back to zero. That is essential if you use this function to [debounce or throttle GPIO input](https://github.com/hackhitchin/esp8266-co-uk/issues/2).
@@ -137,37 +84,6 @@ the current value of the system counter
 print(tmr.now())
 print(tmr.now())
 ```
-
-## tmr.register()
-
-Configures a timer and registers the callback function to call on expiry.
-
-To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
-
-#### Syntax
-`tmr.register(id/ref, interval_ms, mode, func)`
-
-#### Parameters
-- `id`/`ref` timer id (0-6) or object
-- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
-- `mode` timer mode:
-	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
-	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrunregister) to restart)
-	- `tmr.ALARM_AUTO` automatically repeating alarm
-
-Note that registering does *not* start the alarm.
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-tmr.start(0)
-```
-#### See also
-- [`tmr.create()`](#tmrcreate)
-- [`tmr.alarm()`](#tmralarm)
 
 ## tmr.softwd()
 
@@ -194,72 +110,6 @@ tmr.softwd(5)
 complex_stuff_which_might_never_call_the_callback(on_success_callback)
 ```
 
-## tmr.start()
-
-Starts or restarts a previously configured timer.
-
-#### Syntax
-`tmr.start(id/ref)`
-
-#### Parameters
-`id`/`ref` timer id (0-6) or object
-
-#### Returns
-`true` if the timer was started, `false` on error
-
-#### Example
-```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-if not tmr.start(0) then print("uh oh") end
-```
-#### See also
-- [`tmr.create()`](#tmrcreate)
-- [`tmr.register()`](#tmrregister)
-- [`tmr.stop()`](#tmrstop)
-- [`tmr.unregister()`](#tmrunregister)
-
-## tmr.state()
-
-Checks the state of a timer.
-
-#### Syntax
-`tmr.state(id/ref)`
-
-#### Parameters
-`id`/`ref` timer id (0-6) or object
-
-#### Returns
-(bool, int) or `nil`
-
-If the specified timer is registered, returns whether it is currently started and its mode. If the timer is not registered, `nil` is returned.
-
-#### Example
-```lua
-running, mode = tmr.state(0)
-```
-
-## tmr.stop()
-
-Stops a running timer, but does *not* unregister it. A stopped timer can be restarted with [`tmr.start()`](#tmrstart).
-
-#### Syntax
-`tmr.stop(id/ref)`
-
-#### Parameters
-`id`/`ref` timer id (0-6) or object
-
-#### Returns
-`true` if the timer was stopped, `false` on error
-
-#### Example
-```lua
-if not tmr.stop(2) then print("timer 2 not stopped, not registered?") end
-```
-#### See also
-- [`tmr.register()`](#tmrregister)
-- [`tmr.stop()`](#tmrstop)
-- [`tmr.unregister()`](#tmrunregister)
-
 ## tmr.time()
 
 Returns the system uptime, in seconds. Limited to 31 bits, after that it wraps around back to zero.
@@ -278,28 +128,6 @@ the system uptime, in seconds, possibly wrapped around
 print("Uptime (probably):", tmr.time())
 ```
 
-## tmr.unregister()
-
-Stops the timer (if running) and unregisters the associated callback.
-
-This isn't necessary for one-shot timers (`tmr.ALARM_SINGLE`), as those automatically unregister themselves when fired.
-
-#### Syntax
-`tmr.unregister(id/ref)`
-
-#### Parameters
-`id`/`ref` timer id (0-6) or object
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-tmr.unregister(0)
-```
-#### See also
-[`tmr.register()`](#tmrregister)
-
 ## tmr.wdclr()
 
 Feed the system watchdog.
@@ -316,3 +144,221 @@ none
 
 #### Returns
 `nil`
+
+## tmr.ccount()
+
+Get value of CPU CCOUNT register which contains CPU ticks. The register is 32-bit and rolls over.
+
+Converting the register's CPU ticks to us is done by dividing it to 80 or 160 (CPU80/CPU160) i.e. `tmr.ccount() / node.getcpufreq()`.
+
+Register arithmetic works without need to account for roll over, unlike `tmr.now()`. Because of same reason when CCOUNT is having its 32nd bit set, it appears in Lua as negative number.
+
+#### Syntax
+`tmr.ccount()`
+
+#### Returns
+The current value of CCOUNT register.
+
+#### Example
+```lua
+function timeIt(fnc, cnt)
+   local function loopIt(f2)
+     local t0 = tmr.ccount()
+     for i=1,cnt do
+       f2()
+     end
+     local t1 = tmr.ccount()
+     return math.ceil((t1-t0)/cnt)
+   end
+   assert(type(fnc) == "function", "function to test missing")
+   cnt = cnt or 1000
+   local emptyTime = loopIt(function()end)
+   local deltaCPUTicks = math.abs(loopIt(fnc) - emptyTime)
+   local deltaUS = math.ceil(deltaCPUTicks/node.getcpufreq())
+   return deltaCPUTicks, deltaUS
+end
+
+print( timeIt(function() tmr.ccount() end) )
+```
+
+## Timer Object Methods
+
+### tobj:alarm()
+
+This is a convenience function combining [`tobj:register()`](#tobjregister) and [`tobj:start()`](#tobjstart) into a single call. This is the reason why this method has the same parameters as `tobj:register()`.
+If `tobj:alarm()` is invoked on an already running timer the timer is stopped, new parameters are set and timer is (re)started (similar to call `tobj:start(true)`).
+
+To free up the resources with this timer when done using it, call [`tobj:unregister()`](#tobjunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
+
+#### Syntax
+`tobj:alarm(interval_ms, mode, func())`
+
+#### Parameters
+- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
+- `mode` timer mode:
+	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`unregister()`](#tobjunregister))
+	- `tmr.ALARM_SEMI` manually repeating alarm (call [`start()`](#tobjstart) to restart)
+	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
+
+#### Returns
+`true` if the timer was started, `false` on error
+
+#### Example
+```lua
+if not tmr.create():alarm(5000, tmr.ALARM_SINGLE, function()
+  print("hey there")
+end)
+then
+  print("whoopsie")
+end
+```
+#### See also
+- [`tobj:create()`](#tobjcreate)
+- [`tobj:register()`](#tobjregister)
+- [`tobj:start()`](#tobjstart)
+- [`tobj:unregister()`](#tobjunregister)
+
+### tobj:interval()
+
+Changes a registered timer's expiry interval.
+
+#### Syntax
+`tobj:interval(interval_ms)`
+
+#### Parameters
+- `interval_ms` new timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+mytimer = tmr.create()
+mytimer:register(10000, tmr.ALARM_AUTO, function() print("hey there") end)
+mytimer:interval(3000) -- actually, 3 seconds is better!
+mytimer:start()
+```
+
+### tobj:register()
+
+Configures a timer and registers the callback function to call on expiry.
+
+To free up the resources with this timer when done using it, call [`tobj:unregister()`](#tobjunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
+
+#### Syntax
+`tobj:register(interval_ms, mode, func())`
+
+#### Parameters
+- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
+- `mode` timer mode:
+	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tobj:unregister()`](#tobjunregister))
+	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tobj:start()`](#tobjunregister) to restart)
+	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
+
+Note that registering does *not* start the alarm.
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+mytimer = tmr.create()
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+mytimer:start()
+```
+#### See also
+- [`tobj:create()`](#tobjcreate)
+- [`tobj:alarm()`](#tobjalarm)
+
+### tobj:start()
+
+Starts or restarts a previously configured timer. If the timer is running the timer is restarted only when `restart` parameter is `true`. Otherwise `false` is returned signaling error.
+
+#### Syntax
+`tobj:start([restart])`
+
+#### Parameters
+- `restart` optional boolean parameter forcing to restart already running timer
+
+#### Returns
+`true` if the timer was (re)started, `false` on error
+
+#### Example
+```lua
+mytimer = tmr.create()
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+if not mytimer:start() then print("uh oh") end
+```
+#### See also
+- [`tobj:create()`](#tobjcreate)
+- [`tobj:register()`](#tobjregister)
+- [`tobj:stop()`](#tobjstop)
+- [`tobj:unregister()`](#tobjunregister)
+
+### tobj:state()
+
+Checks the state of a timer.
+
+#### Syntax
+`tobj:state()`
+
+#### Parameters
+None
+
+#### Returns
+(bool, int) or `nil`
+
+If the specified timer is registered, returns whether it is currently started and its mode. If the timer is not registered, `nil` is returned.
+
+#### Example
+```lua
+mytimer = tmr.create()
+print(mytimer:state()) -- nil
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+running, mode = mytimer:state()
+print("running: " .. tostring(running) .. ", mode: " .. mode) -- running: false, mode: 0
+```
+
+### tobj:stop()
+
+Stops a running timer, but does *not* unregister it. A stopped timer can be restarted with [`tobj:start()`](#tobjstart).
+
+#### Syntax
+`tobj:stop()`
+
+#### Parameters
+None
+
+#### Returns
+`true` if the timer was stopped, `false` on error
+
+#### Example
+```lua
+mytimer = tmr.create()
+if not mytimer:stop() then print("timer not stopped, not registered?") end
+```
+#### See also
+- [`tobj:register()`](#tobjregister)
+- [`tobj:stop()`](#tobjstop)
+- [`tobj:unregister()`](#tobjunregister)
+
+### tobj:unregister()
+
+Stops the timer (if running) and unregisters the associated callback.
+
+This isn't necessary for one-shot timers (`tmr.ALARM_SINGLE`), as those automatically unregister themselves when fired.
+
+#### Syntax
+`tobj:unregister()`
+
+#### Parameters
+None
+
+#### Returns
+`nil`
+
+#### See also
+[`tobj:register()`](#tobjregister)
+

@@ -20,16 +20,6 @@
 #define FLASH_SIZE_8MBYTE   (FLASH_SIZE_64MBIT / 8)
 #define FLASH_SIZE_16MBYTE  (FLASH_SIZE_128MBIT/ 8)
 
-#define FLASH_SAFEMODE_ENTER() \
-do { \
-    extern SpiFlashChip * flashchip; \
-    flashchip->chip_size = FLASH_SIZE_16MBYTE
-
-
-#define FLASH_SAFEMODE_LEAVE() \
-    flashchip->chip_size = flash_rom_get_size_byte(); \
-} while(0)
-
 /******************************************************************************
  * ROM Function definition
  * Note: It is unsafe to use ROM function, but it may efficient.
@@ -89,23 +79,14 @@ typedef struct
     uint32_t segment_size;
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
-uint32_t flash_detect_size_byte(void);
-uint32_t flash_safe_get_size_byte(void);
-uint16_t flash_safe_get_sec_num(void);
-SpiFlashOpResult flash_safe_read(uint32 src_addr, uint32 *des_addr, uint32 size);
-SpiFlashOpResult flash_safe_write(uint32 des_addr, uint32 *src_addr, uint32 size);
-SpiFlashOpResult flash_safe_erase_sector(uint16 sec);
-SPIFlashInfo flash_rom_getinfo(void);
+SPIFlashInfo *flash_rom_getinfo(void);
 uint8_t flash_rom_get_size_type(void);
 uint32_t flash_rom_get_size_byte(void);
-bool flash_rom_set_size_type(uint8_t);
-bool flash_rom_set_size_byte(uint32_t);
+uint32_t flash_detect_size_byte(void);
 uint16_t flash_rom_get_sec_num(void);
 uint8_t flash_rom_get_mode(void);
 uint32_t flash_rom_get_speed(void);
 uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
 uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index);
-// uint8_t flash_rom_get_checksum(void);
-// uint8_t flash_rom_calc_checksum(void);
 
 #endif // __FLASH_API_H__

@@ -1,7 +1,7 @@
 /*
  * FILE:	sha2.c
  * AUTHOR:	Aaron D. Gifford - http://www.aarongifford.com/
- * 
+ *
  * Copyright (c) 2000-2001, Aaron D. Gifford
  * Copyright (c) 2015, DiUS Computing Pty Ltd (jmattsson@dius.com.au)
  * All rights reserved.
@@ -17,7 +17,7 @@
  * 3. Neither the name of the copyright holder nor the names of contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -31,6 +31,8 @@
  * SUCH DAMAGE.
  *
  */
+
+/* ESP8266-specific tweaks by Johny Mattsson <jmattsson@dius.com.au> */
 
 #include "user_config.h"
 
@@ -422,11 +424,11 @@ void ICACHE_FLASH_ATTR SHA256_Transform(SHA256_CTX* context, const sha2_word32* 
 		/* Part of the message block expansion: */
 		s0 = W256[(j+1)&0x0f];
 		s0 = sigma0_256(s0);
-		s1 = W256[(j+14)&0x0f];	
+		s1 = W256[(j+14)&0x0f];
 		s1 = sigma1_256(s1);
 
 		/* Apply the SHA-256 compression function to update a..h */
-		T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] + 
+		T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] +
 		     (W256[j&0x0f] += s1 + W256[(j+9)&0x0f] + s0);
 		T2 = Sigma0_256(a) + Maj(a, b, c);
 		h = g;
@@ -491,7 +493,14 @@ void ICACHE_FLASH_ATTR SHA256_Update(SHA256_CTX* context, const sha2_byte *data,
 	}
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA256_Transform(context, (sha2_word32*)data);
+    if ((int)data & (sizeof(sha2_word32)-1))
+    {
+      // have to bounce via buffer, otherwise we'll hit unaligned load exception
+      MEMCPY_BCOPY(context->buffer, data, SHA256_BLOCK_LENGTH);
+			SHA256_Transform(context, (sha2_word32*)context->buffer);
+    }
+    else
+      SHA256_Transform(context, (sha2_word32*)data);
 		context->bitcount += SHA256_BLOCK_LENGTH << 3;
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
@@ -782,7 +791,14 @@ void ICACHE_FLASH_ATTR SHA512_Update(SHA512_CTX* context, const sha2_byte *data,
 	}
 	while (len >= SHA512_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA512_Transform(context, (sha2_word64*)data);
+    if ((int)data & (sizeof(sha2_word64)-1))
+    {
+      // have to bounce via buffer, otherwise we'll hit unaligned load exception
+      MEMCPY_BCOPY(context->buffer, data, SHA512_BLOCK_LENGTH);
+			SHA512_Transform(context, (sha2_word64*)context->buffer);
+    }
+    else
+      SHA512_Transform(context, (sha2_word64*)data);
 		ADDINC128(context->bitcount, SHA512_BLOCK_LENGTH << 3);
 		len -= SHA512_BLOCK_LENGTH;
 		data += SHA512_BLOCK_LENGTH;

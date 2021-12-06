@@ -1,8 +1,7 @@
-
 #include "platform.h"
 #include "driver/spi.h"
-#include "c_types.h"
-
+#include <stdint.h>
+#include "user_interface.h"
 #include "sdcard.h"
 
 

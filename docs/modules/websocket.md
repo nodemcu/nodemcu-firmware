@@ -5,11 +5,11 @@
 
 A websocket *client* module that implements [RFC6455](https://tools.ietf.org/html/rfc6455) (version 13) and provides a simple interface to send and receive messages.
 
-The implementation supports fragmented messages, automatically respondes to ping requests and periodically pings if the server isn't communicating.
+The implementation supports fragmented messages, automatically responds to ping requests and periodically pings if the server isn't communicating.
 
 **SSL/TLS support**
 
-Take note of constraints documented in the [net module](net.md). 
+Take note of constraints documented in the [net module](net.md).
 
 
 ## websocket.createClient()
@@ -40,7 +40,7 @@ ws = nil
 
 ## websocket.client:close()
 
-Closes a websocket connection. The client issues a close frame and attemtps to gracefully close the websocket.
+Closes a websocket connection. The client issues a close frame and attempts to gracefully close the websocket.
 If server doesn't reply, the connection is terminated after a small timeout.
 
 This function can be called even if the websocket isn't connected.
@@ -62,7 +62,7 @@ ws = websocket.createClient()
 ws:close()
 ws:close() -- nothing will happen
 
-ws = nil -- fully dispose the client as lua will now gc it
+ws = nil -- fully dispose the client as Lua will now gc it
 ```
 
 
@@ -89,7 +89,7 @@ ws:config({headers={['User-Agent']='NodeMCU'}})
 
 ## websocket.client:connect()
 
-Attempts to estabilish a websocket connection to the given URL.
+Attempts to establish a websocket connection to the given URL.
 
 #### Syntax
 `websocket:connect(url)`
@@ -137,7 +137,7 @@ ws:on("receive", function(_, msg, opcode)
 end)
 ws:on("close", function(_, status)
   print('connection closed', status)
-  ws = nil -- required to lua gc the websocket client
+  ws = nil -- required to Lua gc the websocket client
 end)
 
 ws:connect('ws://echo.websocket.org')
@@ -164,7 +164,7 @@ The status code for the close, if not 0 then it represents an error, as describe
 | -17          | Server is not switching protocols |
 | -18          | Connect timeout |
 | -19          | Server is not responding to health checks nor communicating |
-| -99 to -999  | Well, something bad has happenned |
+| -99 to -999  | Well, something bad has happened |
 
 
 ## websocket.client:send()

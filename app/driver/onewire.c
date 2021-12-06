@@ -122,15 +122,29 @@ uint8_t onewire_reset(uint8_t pin)
 // Write a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-static void onewire_write_bit(uint8_t pin, uint8_t v)
+static void onewire_write_bit(uint8_t pin, uint8_t v, uint8_t power)
 {
 	if (v & 1) {
-        onewire_read_bit(pin);
+		noInterrupts();
+		DIRECT_WRITE_LOW(pin);
+		delayMicroseconds(5);
+		if (power) {
+			DIRECT_WRITE_HIGH(pin);
+		} else {
+			DIRECT_MODE_INPUT(pin);	// drive output high by the pull-up
+		}
+		delayMicroseconds(8);
+		interrupts();
+		delayMicroseconds(52);
 	} else {
 		noInterrupts();
 		DIRECT_WRITE_LOW(pin);
 		delayMicroseconds(65);
-		DIRECT_MODE_INPUT(pin);	// drive output high by the pull-up
+		if (power) {
+			DIRECT_WRITE_HIGH(pin);
+		} else {
+			DIRECT_MODE_INPUT(pin);	// drive output high by the pull-up
+		}
 		interrupts();
 		delayMicroseconds(5);
 	}
@@ -157,9 +171,10 @@ static uint8_t onewire_read_bit(uint8_t pin)
 }
 
 //
-// Write a byte. The writing code uses the active drivers to raise the
+// Write a byte. The writing code uses the external pull-up to raise the
 // pin high, if you need power after the write (e.g. DS18S20 in
-// parasite power mode) then set 'power' to 1, otherwise the pin will
+// parasite power mode) then set 'power' to 1 and the output driver will
+// be activated at the end of the write. Otherwise the pin will
 // go tri-state at the end of the write to avoid heating in a short or
 // other mishap.
 //
@@ -167,26 +182,15 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
   uint8_t bitMask;
 
   for (bitMask = 0x01; bitMask; bitMask <<= 1) {
-	  onewire_write_bit(pin, (bitMask & v)?1:0);
-  }
-  if ( power ) {
-  	noInterrupts();
-  	DIRECT_WRITE_HIGH(pin);
-
-  	interrupts();
+    // send last bit with requested power mode
+    onewire_write_bit(pin, (bitMask & v)?1:0, bitMask & 0x80 ? power : 0);
   }
 }
 
 void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
   uint16_t i;
   for (i = 0 ; i < count ; i++)
-    onewire_write(pin, buf[i], owDefaultPower);
-  if ( power ) {
-    noInterrupts();
-    DIRECT_WRITE_HIGH(pin);
-
-    interrupts();
-  }
+    onewire_write(pin, buf[i], i < count-1 ? owDefaultPower : power);
 }
 
 //
@@ -360,7 +364,7 @@ uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
               ROM_NO[pin][rom_byte_number] &= ~rom_byte_mask;
 
             // serial number search direction write bit
-            onewire_write_bit(pin, search_direction);
+            onewire_write_bit(pin, search_direction, 0);
 
             // increment the byte counter id_bit_number
             // and shift the mask rom_byte_mask

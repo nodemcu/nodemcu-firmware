@@ -7,9 +7,9 @@ Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE 
 
 !!! attention
 
-    It is **not** possible to execute concurrent HTTP requests using this module. 
+    It is **not** possible to execute concurrent HTTP requests using this module.
 
-Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
+Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 60 seconds).
 
 For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `ESP8266`. Note, however, that the `Connection` header *can not* be overridden! It is always set to `close`.
 
@@ -20,7 +20,10 @@ to make it easy to access. If there are multiple headers of the same name, then 
 
 **SSL/TLS support**
 
-Take note of constraints documented in the [net module](net.md). 
+!!! attention
+
+    Secure (`https`) connections come with quite a few limitations.  Please see
+    the warnings in the [tls module](tls.md)'s documentation.
 
 ## http.delete()
 
@@ -33,7 +36,7 @@ Executes a HTTP DELETE request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -62,7 +65,7 @@ Executes a HTTP GET request. Note that concurrent requests are not supported.
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -89,7 +92,7 @@ Executes a HTTP POST request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -119,7 +122,7 @@ Executes a HTTP PUT request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -150,14 +153,14 @@ Execute a custom HTTP request for any HTTP method. Note that concurrent requests
 - `method` The HTTP method to use, e.g. "GET", "HEAD", "OPTIONS" etc
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
 
 #### Example
 ```lua
-http.request("http://httpbin.org", "HEAD", "", "", 
+http.request("http://httpbin.org", "HEAD", "", "",
   function(code, data)
     if (code < 0) then
       print("HTTP request failed")

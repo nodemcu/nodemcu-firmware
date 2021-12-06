@@ -29,10 +29,10 @@ Decodes a Base64 representation of a (binary) Lua string back into the original 
 thrown if the string is not a valid base64 encoding.
 
 #### Syntax
-`binary_string = encoder.toBase64(b64)`
+`binary_string = encoder.fromBase64(b64)`
 
 #### Parameters
-`b64` Base64 encoded input string 
+`b64` Base64 encoded input string
 
 #### Return
 The decoded Lua (binary) string.
@@ -64,7 +64,7 @@ print(encoder.toHex(crypto.hash("sha1","abc")))
 ## encoder.fromHex()
 
 Returns the Lua binary string decode of a ASCII hex string. Each byte in the output string is
-represented as two hex characters in the input.  An error is thrown if the string is not a 
+represented as two hex characters in the input.  An error is thrown if the string is not a
 valid base64 encoding.
 
 #### Syntax
@@ -78,5 +78,5 @@ Decoded string of hex representation.
 
 #### Example
 ```lua
-print(encoder.fromHex("6a6a6a")))
+print(encoder.fromHex("6a6a6a"))
 ```

@@ -5,6 +5,9 @@
 -- Tobie Booth <tbooth@hindbra.in>
 --------------------------------------------------------------------------------
 
+require("bit")
+require("i2c")
+
 local moduleName = ...
 local M = {}
 _G[moduleName] = M
@@ -37,21 +40,6 @@ end
 local function addAlarmBit(val,day)
   if day == 1 then return bit.bor(val,64) end
   return bit.bor(val,128)
-end
-
--- initialize i2c
---parameters:
---d: sda
---l: scl
-function M.init(d, l)
-  if (d ~= nil) and (l ~= nil) and (d >= 0) and (d <= 11) and (l >= 0) and ( l <= 11) and (d ~= l) then
-    sda = d
-    scl = l
-  else
-    print("[ERROR] i2c config failed!") return nil
-  end
-  print("[LOG] DS3231 init done")
-  i2c.setup(id, sda, scl, i2c.SLOW)
 end
 
 --get time from DS3231
@@ -126,7 +114,7 @@ function M.reloadAlarms ()
   i2c.write(id, 0x0F)
   i2c.write(id, d)
   i2c.stop(id)
-  print('[LOG] Alarm '..almId..' reloaded')
+  print('[LOG] Alarms reloaded')
 end
 
 -- Enable alarmId bit. Let it to be triggered

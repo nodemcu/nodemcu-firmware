@@ -8,12 +8,6 @@
 #define lmem_h
 
 
-//#ifdef LUA_CROSS_COMPILER
-//#include <stddef.h>
-//#else
-//#include "c_stddef.h"
-//#endif
-
 #include "llimits.h"
 #include "lua.h"
 

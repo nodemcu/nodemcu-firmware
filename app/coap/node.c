@@ -1,14 +1,14 @@
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "node.h"
 
 static inline coap_queue_t *
 coap_malloc_node(void) {
-  return (coap_queue_t *)c_zalloc(sizeof(coap_queue_t));
+  return (coap_queue_t *)calloc(1,sizeof(coap_queue_t));
 }
 
 void coap_free_node(coap_queue_t *node) {
-  c_free(node);
+  free(node);
 }
 
 int coap_insert_node(coap_queue_t **queue, coap_queue_t *node) {
@@ -73,7 +73,7 @@ coap_queue_t * coap_new_node(void) {
     return NULL;
   }
 
-  c_memset(node, 0, sizeof(*node));
+  memset(node, 0, sizeof(*node));
   return node;
 }
 
@@ -101,7 +101,7 @@ coap_queue_t * coap_pop_next( coap_queue_t **queue ) {		// this function is call
 
 int coap_remove_node( coap_queue_t **queue, const coap_tid_t id){
   coap_queue_t *p, *q, *node;
-  if ( !queue ) 
+  if ( !queue )
     return 0;
   if ( !*queue )  // if empty
     return 0;

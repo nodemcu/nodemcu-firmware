@@ -1,7 +1,8 @@
 #ifndef __ONEWIRE_H__
 #define __ONEWIRE_H__
 
-#include "c_types.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 // You can exclude certain features from OneWire.  In theory, this
 // might save some space.  In practice, the compiler automatically
@@ -74,7 +75,7 @@ void onewire_read_bytes(uint8_t pin, uint8_t *buf, uint16_t count);
 
 // Write a bit. The bus is always left powered at the end, see
 // note in write() about that.
-static void onewire_write_bit(uint8_t pin, uint8_t v);
+static void onewire_write_bit(uint8_t pin, uint8_t v, uint8_t power);
 
 // Read a bit.
 static uint8_t onewire_read_bit(uint8_t pin);

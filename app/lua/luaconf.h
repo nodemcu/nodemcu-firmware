@@ -8,14 +8,17 @@
 #ifndef lconfig_h
 #define lconfig_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <limits.h>
 #include <stddef.h>
-#else
-#include "c_limits.h"
-#include "c_stddef.h"
-#endif
+#include <stdbool.h>
 #include "user_config.h"
+
+#ifdef __XTENSA__
+# define LUA_USE_ESP
+#else
+# define LUA_USE_HOST
+#endif
+
 
 /*
 ** ==================================================================
@@ -36,6 +39,11 @@
 
 #if !defined(LUA_ANSI) && defined(_WIN32)
 #define LUA_WIN
+#endif
+
+
+#if defined(LUA_CROSS_COMPILER) && !defined(_MSC_VER) && !defined(__MINGW32__)
+#define LUA_USE_LINUX
 #endif
 
 #if defined(LUA_USE_LINUX)
@@ -59,7 +67,7 @@
 #if defined(LUA_USE_POSIX)
 #define LUA_USE_MKSTEMP
 #define LUA_USE_ISATTY
-#define LUA_USE_POPEN
+//#define LUA_USE_POPEN
 #define LUA_USE_ULONGJMP
 #endif
 
@@ -96,7 +104,7 @@
 //## Modified for eLua
 //## Defaults search modules path to our ROM File System
 #ifndef LUA_RPC
-#define LUA_PATH_DEFAULT  "/rfs/?.lua;/rfs/?.lc;/mmc/?.lua;/mmc/?.lc;/rom/?.lua;/rom/?.lc"
+#define LUA_PATH_DEFAULT  "?.lc;?.lua"
 #define LUA_CPATH_DEFAULT ""
 #else // #ifndef LUA_RPC
 #define LUA_PATH_DEFAULT  \
@@ -167,11 +175,15 @@
 #define LUA_INTEGER ptrdiff_t
 #else
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define LUA_INTEGER	long
+  #define LUA_INTEGER	int
   #else
   #define LUA_INTEGER long long
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #endif // #if !defined LUA_NUMBER_INTEGRAL
+
+#ifdef LUA_NUMBER_64BITS
+#error Lua 5.1 does not support 64 bit inetegers.
+#endif
 
 /*
 @@ LUA_API is a mark for all core API functions.
@@ -257,26 +269,12 @@
 #define lua_stdin_is_tty()	isatty(0)
 #elif defined(LUA_WIN)
 #include <io.h>
-#ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-else
-#include "c_stdio.h"
-#endif
 
 #define lua_stdin_is_tty()	_isatty(_fileno(stdin))
 #else
 #define lua_stdin_is_tty()	1  /* assume stdin is a tty */
 #endif
-
-
-/*
-@@ LUA_PROMPT is the default prompt used by stand-alone Lua.
-@@ LUA_PROMPT2 is the default continuation prompt used by stand-alone Lua.
-** CHANGE them if you want different prompts. (You can also change the
-** prompts dynamically, assigning to globals _PROMPT/_PROMPT2.)
-*/
-#define LUA_PROMPT		"> "
-#define LUA_PROMPT2		">> "
 
 
 /*
@@ -293,7 +291,7 @@ else
 ** CHANGE it if you need longer lines.
 */
 #define LUA_MAXINPUT	256
-               
+
 
 /*
 @@ lua_readline defines how to show a prompt and then read a line from
@@ -303,25 +301,6 @@ else
 ** CHANGE them if you want to improve this functionality (e.g., by using
 ** GNU readline and history facilities).
 */
-#if defined(LUA_USE_STDIO)
-#if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
-#include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
-#define lua_readline(L,b,p)	((void)L, ((b)=readline(p)) != NULL)
-#define lua_saveline(L,idx) \
-	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
-	  add_history(lua_tostring(L, idx));  /* add it to history */
-#define lua_freeline(L,b)	((void)L, c_free(b))
-#else // #if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
-#define lua_readline(L,b,p)	\
-	((void)L, c_fputs(p, c_stdout), c_fflush(c_stdout),  /* show prompt */ \
-	c_fgets(b, LUA_MAXINPUT, c_stdin) != NULL)  /* get line */
-#define lua_saveline(L,idx)	{ (void)L; (void)idx; }
-#define lua_freeline(L,b)	{ (void)L; (void)b; }
-#endif // #if defined(LUA_USE_READLINE)
-
-#else // #if defined(LUA_USE_STDIO)
 
 #define lua_readline(L,b,p)     (readline4lua(p, b, LUA_MAXINPUT))
 #define lua_saveline(L,idx)     { (void)L; (void)idx; }
@@ -329,48 +308,29 @@ else
 
 extern int readline4lua(const char *prompt, char *buffer, int length);
 
-#endif // #if defined(LUA_USE_STDIO)
-
 /*
-@@ luai_writestring/luai_writeline define how 'print' prints its results.
+@@ lua_writestring/luai_writeline define how 'print' prints its results.
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
-#if !defined(LUA_USE_STDIO)
-#define luai_writestring(s, l)  c_puts(s)
-#define luai_writeline()        c_puts("\n")
-#endif // defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
+#define lua_writestring(s,l)  output_redirect((s),(l))
+#else
+#define lua_writestring(s,l)  fwrite((s), sizeof(char), (l), stdout)
+#endif
+#define luai_writeline()      lua_writestring("\n",1)
 
 /*
-@@ luai_writestringerror defines how to print error messages.
+@@ lua_writestringerror defines how to print error messages.
 ** (A format string with one argument is enough for Lua...)
 */
-#if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	dbg_printf((s), (p))
-#endif // defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
+#define lua_writestringerror(s,p)	dbg_printf((s), (p))
+#else
+#define lua_writestringerror(s,p)	fprintf(stderr, (s), (p))
+#endif
 
-
-/* }================================================================== */
-
-
-/*
-@@ LUAI_GCPAUSE defines the default pause between garbage-collector cycles
-@* as a percentage.
-** CHANGE it if you want the GC to run faster or slower (higher values
-** mean larger pauses which mean slower collection.) You can also change
-** this value dynamically.
-*/
-#define LUAI_GCPAUSE	110  /* 110% (wait memory to grow 10% before next gc) */
-
-
-/*
-@@ LUAI_GCMUL defines the default speed of garbage collection relative to
-@* memory allocation as a percentage.
-** CHANGE it if you want to change the granularity of the garbage
-** collection. (Higher values mean coarser collections. 0 represents
-** infinity, where each step performs a full collection.) You can also
-** change this value dynamically.
-*/
+#define LUAI_GCPAUSE   110  /* 110% (wait memory to grow 10% before next gc) */
 #define LUAI_GCMUL	200 /* GC runs 'twice the speed' of memory allocation */
 
 
@@ -487,7 +447,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 /* 16-bit ints */
 #define LUAI_UINT32	unsigned long
 #define LUAI_INT32	long
-#define LUAI_MAXINT32	LONG_MAX
+#define LUAI_MAXINT32	INT_MAX
 #define LUAI_UMEM	unsigned long
 #define LUAI_MEM	long
 #endif
@@ -553,7 +513,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 ** Attention: This value should probably not be set higher than 1K.
 ** The size has direct impact on the C stack size needed be auxlib functions.
-** For example: If set to 4K a call to string.gsub will need more than 
+** For example: If set to 4K a call to string.gsub will need more than
 ** 5k C stack space.
 */
 #define LUAL_BUFFERSIZE		256
@@ -574,10 +534,10 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 
 /* Define LUA_NUMBER_INTEGRAL to produce a system that uses no
    floating point operations by changing the type of Lua numbers from
-   double to long.  It implements division and modulus so that 
+   double to long.  It implements division and modulus so that
 
-   x == (x / y) * y + x % y.  
-   
+   x == (x / y) * y + x % y.
+
    The exponentiation function returns zero for negative exponents.
    Defining LUA_NUMBER_INTEGRAL also removes the difftime function,
    and the math module should not be used.  The string.format function
@@ -590,6 +550,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 #define LUA_NUMBER_DOUBLE
 #define LUA_NUMBER	double
 #endif
+#define LUA_FLOAT	double
 
 /*
 @@ LUAI_UACNUMBER is the result of an 'usual argument conversion'
@@ -607,8 +568,8 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 */
 #if defined LUA_NUMBER_INTEGRAL
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define LUA_NUMBER_SCAN		"%ld"
-  #define LUA_NUMBER_FMT		"%ld"
+  #define LUA_NUMBER_SCAN		"%d"
+  #define LUA_NUMBER_FMT		"%d"
   #else
   #define LUA_NUMBER_SCAN   "%lld"
   #define LUA_NUMBER_FMT    "%lld"
@@ -617,27 +578,23 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 #define LUA_NUMBER_SCAN		"%lf"
 #define LUA_NUMBER_FMT		"%.14g"
 #endif // #if defined LUA_NUMBER_INTEGRAL
-#define lua_number2str(s,n)	c_sprintf((s), LUA_NUMBER_FMT, (n))
+#define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */
 #if defined LUA_NUMBER_INTEGRAL
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define lua_str2number(s,p)	c_strtol((s), (p), 10)
+  #define lua_str2number(s,p)	strtol((s), (p), 10)
   #else
-  #define lua_str2number(s,p) c_strtoll((s), (p), 10)
+  #define lua_str2number(s,p) strtoll((s), (p), 10)
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
-#define lua_str2number(s,p)	c_strtod((s), (p))
+#define lua_str2number(s,p)	strtod((s), (p))
 #endif // #if defined LUA_NUMBER_INTEGRAL
 
 /*
 @@ The luai_num* macros define the primitive operations over numbers.
 */
 #if defined(LUA_CORE) || defined(LUA_LIB)
-#ifdef LUA_CROSS_COMPILER
 #include <math.h>
-#else
-#include "c_math.h"
-#endif
 #define luai_numadd(a,b)	((a)+(b))
 #define luai_numsub(a,b)	((a)-(b))
 #define luai_nummul(a,b)	((a)*(b))
@@ -712,8 +669,18 @@ union luai_Cast { double l_d; long l_l; };
 
 /* this option always works, but may be slow */
 #else
-#define lua_number2int(i,d)	((i)=(int)(d))
-#define lua_number2integer(i,d)	((i)=(lua_Integer)(d))
+
+#ifdef LUA_NUMBER_INTEGRAL
+
+#define lua_number2int(i, d) ((i) = (int)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(d))
+
+#else // for floating-point builds, cast to a larger integer first to avoid undefined behavior on overflows.
+
+#define lua_number2int(i, d) ((i) = (int)(long long)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(long long)(d))
+
+#endif // LUA_NUMBER_INTEGRAL
 
 #endif
 
@@ -745,18 +712,18 @@ union luai_Cast { double l_d; long l_l; };
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
-#elif defined(LUA_USE_ULONGJMP)
-/* in Unix, try _longjmp/_setjmp (more efficient) */
-#define LUAI_THROW(L,c)	_longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (_setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
 #else
-/* default handling with long jumps */
-#define LUAI_THROW(L,c)	longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (setjmp((c)->b) == 0) { a }
+#if defined(LUA_USE_ULONGJMP)
+/* in Unix, try _longjmp/_setjmp (more efficient) */
+#define LONGJMP(a,b) _longjmp(a,b)
+#define SETJMP(a) _setjmp(a)
+#else
+#define LONGJMP(a,b) longjmp(a,b)
+#define SETJMP(a) setjmp(a)
+#endif
+#define LUAI_THROW(L,c)	LONGJMP((c)->b, 1)
+#define LUAI_TRY(L,c,a)	if (SETJMP((c)->b) == 0) { a }
 #define luai_jmpbuf	jmp_buf
-
 #endif
 
 
@@ -782,7 +749,7 @@ union luai_Cast { double l_d; long l_l; };
 #include <unistd.h>
 #define LUA_TMPNAMBUFSIZE	32
 #define lua_tmpnam(b,e)	{ \
-	c_strcpy(b, "/tmp/lua_XXXXXX"); \
+	strcpy(b, "/tmp/lua_XXXXXX"); \
 	e = mkstemp(b); \
 	if (e != -1) close(e); \
 	e = (e == -1); }
@@ -802,7 +769,7 @@ union luai_Cast { double l_d; long l_l; };
 */
 #if defined(LUA_USE_POPEN)
 
-#define lua_popen(L,c,m)	((void)L, c_fflush(NULL), popen(c,m))
+#define lua_popen(L,c,m)	((void)L, fflush(NULL), popen(c,m))
 #define lua_pclose(L,file)	((void)L, (pclose(file) != -1))
 
 #elif defined(LUA_WIN)
@@ -891,15 +858,10 @@ union luai_Cast { double l_d; long l_l; };
 ** without modifying the main part of the file.
 */
 
-/* If you define the next macro you'll get the ability to set rotables as
-   metatables for tables/userdata/types (but the VM might run slower)
-*/
-#if (LUA_OPTIMIZE_MEMORY == 2) && !defined(LUA_CROSS_COMPILER)
-#define LUA_META_ROTABLES 
+#if defined(LUA_USE_POPEN)
+#error "Pipes not supported NodeMCU firmware"
 #endif
 
-#if LUA_OPTIMIZE_MEMORY == 2 && defined(LUA_USE_POPEN)
-#error "Pipes not supported in aggresive optimization mode (LUA_OPTIMIZE_MEMORY=2)"
-#endif
+#define LUA_DEBUG_HOOK lua_debugbreak
 
 #endif

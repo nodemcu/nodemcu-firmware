@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
@@ -11,21 +11,21 @@
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission. 
+ *    derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
  * This file is part of the lwIP TCP/IP stack.
- * 
+ *
  * Author: Adam Dunkels <adam@sics.se>
  *
  */
@@ -45,46 +45,53 @@ extern "C" {
 
 typedef size_t mem_size_t;
 
+void *pvPortMalloc (size_t sz, const char *, unsigned, bool);
+void vPortFree (void *p, const char *, unsigned);
+void *pvPortZalloc (size_t sz, const char *, unsigned);
+void *pvPortRealloc (void *p, size_t n, const char *, unsigned);
+void* pvPortCalloc(size_t count,size_t size,const char *,unsigned);
+void* pvPortCallocIram(size_t count,size_t size,const char *,unsigned);
+void *pvPortZallocIram (size_t sz, const char *, unsigned);
+
 /* aliases for C library malloc() */
 #define mem_init()
 /* in case C library malloc() needs extra protection,
  * allow these defines to be overridden.
  */
 #ifndef MEMLEAK_DEBUG
+
 #ifndef mem_free
-#define mem_free vPortFree
+#define mem_free(s)        vPortFree(s, "", __LINE__)
 #endif
 #ifndef mem_malloc
-#define mem_malloc pvPortMalloc
+#define mem_malloc(s)      pvPortMalloc(s, "", __LINE__,false)
 #endif
 #ifndef mem_calloc
-#define mem_calloc pvPortCalloc
+#define mem_calloc(l, s)   pvPortCalloc(l, s, "", __LINE__)
 #endif
 #ifndef mem_realloc
-#define mem_realloc pvPortRealloc
+#define mem_realloc(p, s)  pvPortRealloc(p, s, "", __LINE__)
 #endif
 #ifndef mem_zalloc
-#define mem_zalloc pvPortZalloc
+#define mem_zalloc(s)     pvPortZalloc(s, "", __LINE__)
 #endif
+
 #else
+
 #ifndef mem_free
-#define mem_free(s) \
-do{\
-	const char *file = mem_debug_file;\
-    vPortFree(s, file, __LINE__);\
-}while(0)
+#define mem_free(s)      vPortFree(s, mem_debug_file, __LINE__)
 #endif
 #ifndef mem_malloc
-#define mem_malloc(s) ({const char *file = mem_debug_file; pvPortMalloc(s, file, __LINE__);})
+#define mem_malloc(s)   pvPortMalloc(s, mem_debug_file, __LINE__,false)
 #endif
 #ifndef mem_calloc
-#define mem_calloc(s) ({const char *file = mem_debug_file; pvPortCalloc(s, file, __LINE__);})
+#define mem_calloc(l, s)  pvPortCalloc(l, s, mem_debug_file, __LINE__)
 #endif
 #ifndef mem_realloc
-#define mem_realloc(p, s) ({const char *file = mem_debug_file; pvPortRealloc(p, s, file, __LINE__);})
+#define mem_realloc(p, s) pvPortRealloc(p, s, mem_debug_file, __LINE__)
 #endif
 #ifndef mem_zalloc
-#define mem_zalloc(s) ({const char *file = mem_debug_file; pvPortZalloc(s, file, __LINE__);})
+#define mem_zalloc(s)   pvPortZalloc(s, mem_debug_file, __LINE__)
 #endif
 
 #endif

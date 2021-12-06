@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = coap.a
+GEN_LIBS = libcoap.a
 endif
 
 #############################################################
@@ -22,7 +22,7 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES +=
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -36,10 +36,6 @@ endif
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
-INCLUDES += -I ../lua
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

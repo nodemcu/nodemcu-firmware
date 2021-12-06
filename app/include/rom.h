@@ -3,7 +3,7 @@
 #ifndef _ROM_H_
 #define _ROM_H_
 
-#include "c_types.h"
+#include <stdint.h>
 #include "ets_sys.h"
 
 // SHA1 is assumed to match the netbsd sha1.h headers
@@ -46,7 +46,6 @@ extern void mem_init(void * start_addr);
 
 // Interrupt Service Routine functions
 typedef void (*ets_isr_fn) (void *arg);
-extern int ets_isr_attach (unsigned int interrupt, ets_isr_fn, void *arg);
 extern void ets_isr_mask (unsigned intr);
 extern void ets_isr_unmask (unsigned intr);
 
@@ -119,13 +118,10 @@ void *ets_memset (void *dst, int c, size_t n);
 int ets_memcmp (const void *s1, const void *s2, size_t n);
 
 char *ets_strcpy (char *dst, const char *src);
-size_t ets_strlen (const char *s);
 int ets_strcmp (const char *s1, const char *s2);
 int ets_strncmp (const char *s1, const char *s2, size_t n);
 char *ets_strncpy(char *dest, const char *src, size_t n);
 char *ets_strstr(const char *haystack, const char *needle);
-
-void ets_delay_us (uint32_t us);
 
 int ets_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 
@@ -140,12 +136,8 @@ void Cache_Read_Disable(void);
 void ets_intr_lock(void);
 void ets_intr_unlock(void);
 
-void ets_install_putc1(void *routine);
-
 int rand(void);
 void srand(unsigned int);
-
-void uart_div_modify(int no, unsigned int freq);
 
 /* Returns 0 on success, 1 on failure */
 uint8_t SPIRead(uint32_t src_addr, uint32_t *des_addr, uint32_t size);

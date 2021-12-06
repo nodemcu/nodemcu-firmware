@@ -32,6 +32,11 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
+/*
+ * It is vital that this file is only included once in the entire
+ * system.
+ */
+
 #ifndef _RTCTIME_INTERNAL_H_
 #define _RTCTIME_INTERNAL_H_
 
@@ -181,6 +186,20 @@
 #define CPU_DEFAULT_MHZ   80
 #define CPU_BOOTUP_MHZ    52
 
+#ifdef RTC_DEBUG_ENABLED
+#warn this does not really work....
+#define RTC_DBG(...)         do { if (rtc_dbg_enabled == 'R') { dbg_printf(__VA_ARGS__); } } while (0)
+static char rtc_dbg_enabled;
+#define RTC_DBG_ENABLED()   rtc_dbg_enabled = 'R'
+#define RTC_DBG_NOT_ENABLED()   rtc_dbg_enabled = 0
+#else
+#define RTC_DBG(...)
+#define RTC_DBG_ENABLED()
+#define RTC_DBG_NOT_ENABLED()
+#endif
+
+#define NOINIT_ATTR __attribute__((section(".noinit")))
+
 // RTCTIME storage
 #define RTC_TIME_MAGIC_POS       (RTC_TIME_BASE+0)
 #define RTC_CYCLEOFFSETL_POS     (RTC_TIME_BASE+1)
@@ -190,8 +209,22 @@
 #define RTC_CALIBRATION_POS      (RTC_TIME_BASE+5)
 #define RTC_SLEEPTOTALUS_POS     (RTC_TIME_BASE+6)
 #define RTC_SLEEPTOTALCYCLES_POS (RTC_TIME_BASE+7)
-#define RTC_TODOFFSETUS_POS      (RTC_TIME_BASE+8)
-#define RTC_LASTTODUS_POS        (RTC_TIME_BASE+9)
+//#define RTC_TODOFFSETUS_POS      (RTC_TIME_BASE+8)
+//#define RTC_LASTTODUS_POS        (RTC_TIME_BASE+9)
+#define RTC_USRATE_POS		 (RTC_TIME_BASE+8)
+
+NOINIT_ATTR uint32_t rtc_time_magic;
+NOINIT_ATTR uint64_t rtc_cycleoffset;
+NOINIT_ATTR uint32_t rtc_lastsourceval;
+NOINIT_ATTR uint32_t rtc_sourcecycleunits;
+NOINIT_ATTR uint32_t rtc_calibration;
+NOINIT_ATTR uint32_t rtc_sleeptotalus;
+NOINIT_ATTR uint32_t rtc_sleeptotalcycles;
+NOINIT_ATTR uint64_t rtc_usatlastrate;
+NOINIT_ATTR uint64_t rtc_rateadjustedus;
+NOINIT_ATTR uint32_t rtc_todoffsetus;
+NOINIT_ATTR uint32_t rtc_lasttodus;
+NOINIT_ATTR uint32_t rtc_usrate;
 
 
 struct rtc_timeval
@@ -200,12 +233,78 @@ struct rtc_timeval
   uint32_t tv_usec;
 };
 
+static void bbram_load() {
+  rtc_time_magic = rtc_mem_read(RTC_TIME_MAGIC_POS);
+  rtc_cycleoffset = rtc_mem_read64(RTC_CYCLEOFFSETL_POS);
+  rtc_lastsourceval = rtc_mem_read(RTC_LASTSOURCEVAL_POS);
+  rtc_sourcecycleunits = rtc_mem_read(RTC_SOURCECYCLEUNITS_POS);
+  rtc_calibration = rtc_mem_read(RTC_CALIBRATION_POS);
+  rtc_sleeptotalus = rtc_mem_read(RTC_SLEEPTOTALUS_POS);
+  rtc_sleeptotalcycles = rtc_mem_read(RTC_SLEEPTOTALCYCLES_POS);
+  rtc_usrate = rtc_mem_read(RTC_USRATE_POS);
+}
+
+static void bbram_save() {
+  RTC_DBG("bbram_save\n");
+  rtc_mem_write(RTC_TIME_MAGIC_POS       , rtc_time_magic);
+  rtc_mem_write64(RTC_CYCLEOFFSETL_POS   , rtc_cycleoffset);
+  rtc_mem_write(RTC_LASTSOURCEVAL_POS    , rtc_lastsourceval);
+  rtc_mem_write(RTC_SOURCECYCLEUNITS_POS , rtc_sourcecycleunits);
+  rtc_mem_write(RTC_CALIBRATION_POS      , rtc_calibration);
+  rtc_mem_write(RTC_SLEEPTOTALUS_POS     , rtc_sleeptotalus);
+  rtc_mem_write(RTC_SLEEPTOTALCYCLES_POS , rtc_sleeptotalcycles);
+  rtc_mem_write(RTC_USRATE_POS		 , rtc_usrate);
+}
+
+static inline uint64_t div2080(uint64_t n) {
+  n = n >> 5;
+  uint64_t t = n >> 7;
+
+  uint64_t q = t + (t >> 1) + (t >> 2);
+
+  q += q >> 3;
+  q += q >> 12;
+  q += q >> 24;
+  q += q >> 48;
+
+  uint32_t r = (uint32_t) n - (uint32_t) q * 65;
+
+  uint32_t off = (r - (r >> 6)) >> 6;
+
+  q = q + off;
+
+  return q;
+}
+
+static uint32_t div1m(uint32_t *rem, unsigned long long n) {
+  // 0   -> 0002000000000000 sub
+  // 0 >> 5 - 0 >> 19 + [-1]  -> 00020fffc0000000 add
+  // 0 >> 9 - 0 >> 6 + [-1]  -> 000208ffc0000000 add
+  // 2 >> 12 - 2 >> 23   -> 000000208bea0080 sub
+
+  uint64_t q1 = (n >> 5) - (n >> 19) + n;
+  uint64_t q2 = q1 + (n >> 9) - (n >> 6);
+  uint64_t q3 = (q2 >> 12) - (q2 >> 23);
+
+  uint64_t q = q1 - n + q2 - q3;
+
+  q = q >> 20;
+
+  uint32_t r = (uint32_t) n - (uint32_t) q * 1000000;
+
+  if (r >= 1000000) {
+    r -= 1000000;
+    q++;
+  }
+
+  *rem = r;
+
+  return q;
+}
+
 static inline uint64_t rtc_time_get_now_us_adjusted();
 
-static inline uint32_t rtc_time_get_magic(void)
-{
-  return rtc_mem_read(RTC_TIME_MAGIC_POS);
-}
+#define rtc_time_get_magic()    rtc_time_magic
 
 static inline bool rtc_time_check_sleep_magic(void)
 {
@@ -225,9 +324,11 @@ static inline bool rtc_time_check_magic(void)
   return (magic==RTC_TIME_MAGIC_FRC2 || magic==RTC_TIME_MAGIC_CCOUNT || magic==RTC_TIME_MAGIC_SLEEP);
 }
 
-static inline void rtc_time_set_magic(uint32_t new_magic)
+static void rtc_time_set_magic(uint32_t new_magic)
 {
-  rtc_mem_write(RTC_TIME_MAGIC_POS,new_magic);
+  RTC_DBG("Set magic to %08x\n", new_magic);
+  rtc_time_magic = new_magic;
+  bbram_save();
 }
 
 static inline void rtc_time_set_sleep_magic(void)
@@ -249,7 +350,7 @@ static inline void rtc_time_set_frc2_magic(void)
 
 static inline void rtc_time_unset_magic(void)
 {
-  rtc_mem_write(RTC_TIME_MAGIC_POS,0);
+  rtc_time_set_magic(0);
 }
 
 static inline uint32_t rtc_time_read_raw(void)
@@ -281,16 +382,16 @@ static inline uint64_t rtc_time_source_offset(void)
   case RTC_TIME_MAGIC_FRC2:   raw=rtc_time_read_raw_frc2();   break;
   default: return 0; // We are not in a position to offer time
   }
-  uint32_t multiplier=rtc_mem_read(RTC_SOURCECYCLEUNITS_POS);
-  uint32_t previous=rtc_mem_read(RTC_LASTSOURCEVAL_POS);
+  uint32_t multiplier = rtc_sourcecycleunits;
+  uint32_t previous = rtc_lastsourceval;
   if (raw<previous)
   { // We had a rollover.
     uint64_t to_add=(1ULL<<32)*multiplier;
-    uint64_t base=rtc_mem_read64(RTC_CYCLEOFFSETL_POS);
+    uint64_t base = rtc_cycleoffset;
     if (base)
-      rtc_mem_write64(RTC_CYCLEOFFSETL_POS,base+to_add);
+      rtc_cycleoffset = base + to_add;
   }
-  rtc_mem_write(RTC_LASTSOURCEVAL_POS,raw);
+  rtc_lastsourceval = raw;
   return ((uint64_t)raw)*multiplier;
 }
 
@@ -298,7 +399,7 @@ static inline uint64_t rtc_time_unix_unitcycles(void)
 {
   // Note: The order of these two must be maintained, as the first call might change the outcome of the second
   uint64_t offset=rtc_time_source_offset();
-  uint64_t base=rtc_mem_read64(RTC_CYCLEOFFSETL_POS);
+  uint64_t base = rtc_cycleoffset;
 
   if (!base)
     return 0; // No known time
@@ -308,17 +409,22 @@ static inline uint64_t rtc_time_unix_unitcycles(void)
 
 static inline uint64_t rtc_time_unix_us(void)
 {
+#if UNITCYCLE_MHZ == 2080
+  return div2080(rtc_time_unix_unitcycles());
+#else
+#error UNITCYCLE_MHZ has an odd value
   return rtc_time_unix_unitcycles()/UNITCYCLE_MHZ;
+#endif
 }
 
 static inline void rtc_time_register_time_reached(uint32_t s, uint32_t us)
 {
-  rtc_mem_write(RTC_LASTTODUS_POS,us);
+  rtc_lasttodus = us;
 }
 
 static inline uint32_t rtc_time_us_since_time_reached(uint32_t s, uint32_t us)
 {
-  uint32_t lastus=rtc_mem_read(RTC_LASTTODUS_POS);
+  uint32_t lastus=rtc_lasttodus;
   if (us<lastus)
     us+=1000000;
   return us-lastus;
@@ -334,14 +440,14 @@ static inline bool rtc_time_calibration_is_sane(uint32_t cali)
 
 static inline uint32_t rtc_time_get_calibration(void)
 {
-  uint32_t cal=rtc_time_check_magic()?rtc_mem_read(RTC_CALIBRATION_POS):0;
+  uint32_t cal=rtc_time_check_magic()?rtc_calibration:0;
   if (!cal)
   {
     // Make a first guess, most likely to be rather bad, but better then nothing.
 #ifndef BOOTLOADER_CODE // This will pull in way too much of the system for the bootloader to handle.
     ets_delay_us(200);
     cal=system_rtc_clock_cali_proc();
-    rtc_mem_write(RTC_CALIBRATION_POS,cal);
+    rtc_calibration = cal;
 #else
     cal=6<<12;
 #endif
@@ -351,7 +457,7 @@ static inline uint32_t rtc_time_get_calibration(void)
 
 static inline void rtc_time_invalidate_calibration(void)
 {
-  rtc_mem_write(RTC_CALIBRATION_POS,0);
+  rtc_calibration = 0;
 }
 
 static inline uint64_t rtc_time_us_to_ticks(uint64_t us)
@@ -374,7 +480,7 @@ static inline uint64_t rtc_time_get_now_us_adjusted(void)
   uint64_t raw=rtc_time_get_now_us_raw();
   if (!raw)
     return 0;
-  return raw+rtc_mem_read(RTC_TODOFFSETUS_POS);
+  return raw+rtc_todoffsetus;
 }
 
 
@@ -383,24 +489,23 @@ static inline void rtc_time_add_sleep_tracking(uint32_t us, uint32_t cycles)
   if (rtc_time_check_magic())
   {
     // us is the one that will grow faster...
-    uint32_t us_before=rtc_mem_read(RTC_SLEEPTOTALUS_POS);
+    uint32_t us_before=rtc_sleeptotalus;
     uint32_t us_after=us_before+us;
-    uint32_t cycles_after=rtc_mem_read(RTC_SLEEPTOTALCYCLES_POS)+cycles;
+    uint32_t cycles_after=rtc_sleeptotalcycles+cycles;
 
     if (us_after<us_before) // Give up if it would cause an overflow
     {
       us_after=cycles_after=0xffffffff;
     }
-    rtc_mem_write(RTC_SLEEPTOTALUS_POS,    us_after);
-    rtc_mem_write(RTC_SLEEPTOTALCYCLES_POS,cycles_after);
+    rtc_sleeptotalus = us_after;
+    rtc_sleeptotalcycles = cycles_after;
   }
 }
 
+extern void rtc_time_enter_deep_sleep_final(void);
+
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
-  if (rtc_time_check_wake_magic())
-    rtc_time_set_sleep_magic();
-
   rtc_reg_write(0,0);
   rtc_reg_write(0,rtc_reg_read(0)&0xffffbfff);
   rtc_reg_write(0,rtc_reg_read(0)|0x30);
@@ -426,36 +531,42 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
   uint32_t cycles=rtc_time_us_to_ticks(us);
   rtc_time_add_sleep_tracking(us,cycles);
 
+  if (rtc_time_check_wake_magic())
+    rtc_time_set_sleep_magic();
+  else
+    bbram_save();
+
   rtc_reg_write(RTC_TARGET_ADDR,rtc_time_read_raw()+cycles);
   rtc_reg_write(0x9c,17);
   rtc_reg_write(0xa0,3);
 
-  // Clear bit 0 of DPORT 0x04. Doesn't seem to be necessary
-  // wm(0x3fff0004,bitrm(0x3fff0004),0xfffffffe));
+  volatile uint32_t* dport4=(volatile uint32_t*)0x3ff00004;
+  *dport4&=0xfffffffe;
+
   rtc_reg_write(0x40,-1);
   rtc_reg_write(0x44,32);
   rtc_reg_write(0x10,0);
 
-  rtc_reg_write(0x18,8);
-  rtc_reg_write(0x08,0x00100000); //  go to sleep
+  rtc_time_enter_deep_sleep_final();
 }
 
-static inline void rtc_time_deep_sleep_us(uint32_t us)
+static void rtc_time_deep_sleep_us(uint32_t us)
 {
   if (rtc_time_check_magic())
   {
-    uint32_t to_adjust=rtc_mem_read(RTC_TODOFFSETUS_POS);
+    uint32_t to_adjust=rtc_todoffsetus;
     if (to_adjust)
     {
       us+=to_adjust;
-      rtc_mem_write(RTC_TODOFFSETUS_POS,0);
+      rtc_todoffsetus = 0;
     }
     uint64_t now=rtc_time_get_now_us_raw(); // Now the same as _adjusted()
     if (now)
     { // Need to maintain the clock first. When we wake up, counter will be 0
       uint64_t wakeup=now+us;
       uint64_t wakeup_cycles=wakeup*UNITCYCLE_MHZ;
-      rtc_mem_write64(RTC_CYCLEOFFSETL_POS,wakeup_cycles);
+      // Probly should factor in the rate here TODO
+      rtc_cycleoffset = wakeup_cycles;
     }
   }
   rtc_time_enter_deep_sleep_us(us);
@@ -474,27 +585,32 @@ static inline void rtc_time_deep_sleep_until_aligned(uint32_t align, uint32_t mi
   rtc_time_deep_sleep_us(then-now);
 }
 
-static inline void rtc_time_reset(bool clear_cali)
+static void rtc_time_reset(bool clear_cali)
 {
-  rtc_mem_write64(RTC_CYCLEOFFSETL_POS,0);
-  rtc_mem_write(RTC_SLEEPTOTALUS_POS,0);
-  rtc_mem_write(RTC_SLEEPTOTALCYCLES_POS,0);
-  rtc_mem_write(RTC_TODOFFSETUS_POS,0);
-  rtc_mem_write(RTC_LASTTODUS_POS,0);
-  rtc_mem_write(RTC_SOURCECYCLEUNITS_POS,0);
-  rtc_mem_write(RTC_LASTSOURCEVAL_POS,0);
+  rtc_cycleoffset = 0;
+  rtc_sleeptotalus = 0;
+  rtc_sleeptotalcycles = 0;
+  rtc_todoffsetus = 0;
+  rtc_lasttodus = 0;
+  rtc_sourcecycleunits = 0;
+  rtc_lastsourceval = 0;
+  rtc_usatlastrate = 0;
+  rtc_rateadjustedus = 0;
+  rtc_usrate = 0;
 
   if (clear_cali)
-    rtc_mem_write(RTC_CALIBRATION_POS,0);
+    rtc_calibration = 0;
+
+  bbram_save();
 }
 
 static inline bool rtc_time_have_time(void)
 {
-  return (rtc_time_check_magic() && rtc_mem_read64(RTC_CYCLEOFFSETL_POS)!=0);
+  return (rtc_time_check_magic() && rtc_cycleoffset!=0);
 }
 
 
-static inline void rtc_time_select_frc2_source()
+static void rtc_time_select_frc2_source()
 {
   // FRC2 always runs at 1/256th of the default 80MHz clock, even if the actual clock is different
   uint32_t new_multiplier=(256*UNITCYCLE_MHZ+CPU_DEFAULT_MHZ/2)/CPU_DEFAULT_MHZ;
@@ -513,14 +629,14 @@ static inline void rtc_time_select_frc2_source()
   if (rtc_time_have_time())
   {
     uint64_t offset=(uint64_t)after*new_multiplier;
-    rtc_mem_write64(RTC_CYCLEOFFSETL_POS,now-offset);
-    rtc_mem_write(RTC_LASTSOURCEVAL_POS,after);
+    rtc_cycleoffset = now-offset;
+    rtc_lastsourceval = after;
   }
-  rtc_mem_write(RTC_SOURCECYCLEUNITS_POS,new_multiplier);
-  rtc_mem_write(RTC_TIME_MAGIC_POS,RTC_TIME_MAGIC_FRC2);
+  rtc_sourcecycleunits = new_multiplier;
+  rtc_time_set_magic(RTC_TIME_MAGIC_FRC2);
 }
 
-static inline void rtc_time_select_ccount_source(uint32_t mhz, bool first)
+static void rtc_time_select_ccount_source(uint32_t mhz, bool first)
 {
   uint32_t new_multiplier=(UNITCYCLE_MHZ+mhz/2)/mhz;
 
@@ -530,9 +646,9 @@ static inline void rtc_time_select_ccount_source(uint32_t mhz, bool first)
 
   if (first)
   { // The ccounter has been running at this rate since startup, and the offset is set accordingly
-    rtc_mem_write(RTC_LASTSOURCEVAL_POS,0);
-    rtc_mem_write(RTC_SOURCECYCLEUNITS_POS,new_multiplier);
-    rtc_mem_write(RTC_TIME_MAGIC_POS,RTC_TIME_MAGIC_CCOUNT);
+    rtc_lastsourceval = 0;
+    rtc_sourcecycleunits = new_multiplier;
+    rtc_time_set_magic(RTC_TIME_MAGIC_CCOUNT);
     return;
   }
 
@@ -550,11 +666,11 @@ static inline void rtc_time_select_ccount_source(uint32_t mhz, bool first)
   if (rtc_time_have_time())
   {
     uint64_t offset=(uint64_t)after*new_multiplier;
-    rtc_mem_write64(RTC_CYCLEOFFSETL_POS,now-offset);
-    rtc_mem_write(RTC_LASTSOURCEVAL_POS,after);
+    rtc_cycleoffset = now-offset;
+    rtc_lastsourceval = after;
   }
-  rtc_mem_write(RTC_SOURCECYCLEUNITS_POS,new_multiplier);
-  rtc_mem_write(RTC_TIME_MAGIC_POS,RTC_TIME_MAGIC_CCOUNT);
+  rtc_sourcecycleunits = new_multiplier;
+  rtc_time_set_magic(RTC_TIME_MAGIC_CCOUNT);
 }
 
 
@@ -571,16 +687,17 @@ static inline void rtc_time_switch_to_system_clock(void)
     rtc_time_select_frc2_source();
 }
 
-static inline void rtc_time_tmrfn(void* arg)
-{
-  rtc_time_source_offset();
-}
+static inline void rtc_time_tmrfn(void* arg);
 
-static inline void rtc_time_install_timer(void)
+#include "pm/swtimer.h"
+
+static void rtc_time_install_timer(void)
 {
   static ETSTimer tmr;
 
   os_timer_setfn(&tmr,rtc_time_tmrfn,NULL);
+  SWTIMER_REG_CB(rtc_time_tmrfn, SWTIMER_RESUME);
+    //I believe the function rtc_time_tmrfn compensates for drift in the clock and updates rtc time accordingly, This timer should probably be resumed
   os_timer_arm(&tmr,10000,1);
 }
 
@@ -616,8 +733,10 @@ static inline void rtc_time_install_wrap_handler(void)
 
 // This switches from MAGIC_SLEEP to MAGIC_CCOUNT, with ccount running at bootup frequency (i.e. 52MHz).
 // To be called as early as possible, potententially as the first thing in an overridden entry point.
-static inline void rtc_time_register_bootup(void)
+static void rtc_time_register_bootup(void)
 {
+  RTC_DBG_NOT_ENABLED();
+  bbram_load();
   uint32_t reset_reason=rtc_get_reset_reason();
 #ifndef BOOTLOADER_CODE
   static const bool erase_calibration=true;
@@ -632,14 +751,16 @@ static inline void rtc_time_register_bootup(void)
     if (reset_reason!=2)  // This was *not* a proper wakeup from a deep sleep. All our time keeping is f*cked!
       rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
     rtc_time_select_ccount_source(CPU_BOOTUP_MHZ,true);
+    rtc_todoffsetus = 0;
+    rtc_rateadjustedus = rtc_usatlastrate = rtc_time_get_now_us_adjusted();
+    RTC_DBG_ENABLED();
     return;
   }
 
-  if (rtc_time_check_magic())
-  {
-    // We did not go to sleep properly. All our time keeping is f*cked!
-    rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
-  }
+  // We did not go to sleep properly. All our time keeping is f*cked!
+  rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
+
+  RTC_DBG_ENABLED();
 }
 
 // Call this from the nodemcu entry point, i.e. just before we switch from 52MHz to 80MHz
@@ -662,12 +783,48 @@ static inline void rtc_time_prepare(void)
   rtc_time_select_frc2_source();
 }
 
+static int32_t rtc_time_adjust_delta_by_rate(int32_t delta) {
+  return (delta * ((1ull << 32) + (int) rtc_usrate)) >> 32;
+}
+
+static uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
+  uint64_t usoff = us - rtc_usatlastrate;
+  uint64_t usadj = (usoff * ((1ull << 32) + (int) rtc_usrate)) >> 32;
+  usadj = usadj + rtc_rateadjustedus;
+
+  if (usoff > 1000000000 || force) {
+    rtc_usatlastrate = us;
+    rtc_rateadjustedus = usadj;
+  }
+
+  return usadj;
+}
+
+static inline void rtc_time_set_rate(int32_t rate) {
+  uint64_t now=rtc_time_get_now_us_adjusted();
+  rtc_time_adjust_us_by_rate(now, 1);
+  rtc_usrate = rate;
+}
+
+static inline int32_t rtc_time_get_rate() {
+  return rtc_usrate;
+}
+
+static inline void rtc_time_tmrfn(void* arg)
+{
+  uint64_t now=rtc_time_get_now_us_adjusted();
+  rtc_time_adjust_us_by_rate(now, 0);
+  rtc_time_source_offset();
+}
+
+
 static inline void rtc_time_gettimeofday(struct rtc_timeval* tv)
 {
   uint64_t now=rtc_time_get_now_us_adjusted();
-  uint32_t sec=now/1000000;
-  uint32_t usec=now%1000000;
-  uint32_t to_adjust=rtc_mem_read(RTC_TODOFFSETUS_POS);
+  now = rtc_time_adjust_us_by_rate(now, 0);
+  uint32_t usec;
+  uint32_t sec = div1m(&usec, now);
+  uint32_t to_adjust=rtc_todoffsetus;
   if (to_adjust)
   {
     uint32_t us_passed=rtc_time_us_since_time_reached(sec,usec);
@@ -678,9 +835,8 @@ static inline void rtc_time_gettimeofday(struct rtc_timeval* tv)
         adjust=to_adjust;
       to_adjust-=adjust;
       now-=adjust;
-      now/1000000;
-      now%1000000;
-      rtc_mem_write(RTC_TODOFFSETUS_POS,to_adjust);
+      sec = div1m(&usec, now);
+      rtc_todoffsetus = to_adjust;
     }
   }
   tv->tv_sec=sec;
@@ -688,47 +844,54 @@ static inline void rtc_time_gettimeofday(struct rtc_timeval* tv)
   rtc_time_register_time_reached(sec,usec);
 }
 
-static inline void rtc_time_settimeofday(const struct rtc_timeval* tv)
+static void rtc_time_settimeofday(const struct rtc_timeval* tv)
 {
   if (!rtc_time_check_magic())
     return;
 
 
-  uint32_t sleep_us=rtc_mem_read(RTC_SLEEPTOTALUS_POS);
-  uint32_t sleep_cycles=rtc_mem_read(RTC_SLEEPTOTALCYCLES_POS);
+  uint32_t sleep_us=rtc_sleeptotalus;
+  uint32_t sleep_cycles=rtc_sleeptotalcycles;
   // At this point, the CPU clock will definitely be at the default rate (nodemcu fully booted)
   uint64_t now_esp_us=rtc_time_get_now_us_adjusted();
+  now_esp_us = rtc_time_adjust_us_by_rate(now_esp_us, 1);
   uint64_t now_ntp_us=((uint64_t)tv->tv_sec)*1000000+tv->tv_usec;
   int64_t  diff_us=now_esp_us-now_ntp_us;
 
   // Store the *actual* time.
   uint64_t target_unitcycles=now_ntp_us*UNITCYCLE_MHZ;
   uint64_t sourcecycles=rtc_time_source_offset();
-  rtc_mem_write64(RTC_CYCLEOFFSETL_POS,target_unitcycles-sourcecycles);
+  rtc_cycleoffset = target_unitcycles-sourcecycles;
 
   // calibrate sleep period based on difference between expected time and actual time
   if (sleep_us>0 && sleep_us<0xffffffff &&
-      sleep_cycles>0 && sleep_cycles<0xffffffff)
+      sleep_cycles>0 && sleep_cycles<0xffffffff &&
+      tv->tv_sec)
   {
     uint64_t actual_sleep_us=sleep_us-diff_us;
     uint32_t cali=(actual_sleep_us<<12)/sleep_cycles;
     if (rtc_time_calibration_is_sane(cali))
-      rtc_mem_write(RTC_CALIBRATION_POS,cali);
+      rtc_calibration = cali;
   }
 
-  rtc_mem_write(RTC_SLEEPTOTALUS_POS,0);
-  rtc_mem_write(RTC_SLEEPTOTALCYCLES_POS,0);
+  rtc_sleeptotalus = 0;
+  rtc_sleeptotalcycles = 0;
+
+  rtc_usatlastrate = now_ntp_us;
+  rtc_rateadjustedus = now_ntp_us;
+  rtc_usrate = 0;
 
   // Deal with time adjustment if necessary
-  if (diff_us>0) // Time went backwards. Avoid that....
+  if (diff_us>0 && tv->tv_sec) // Time went backwards. Avoid that....
   {
     if (diff_us>0xffffffffULL)
       diff_us=0xffffffffULL;
     now_ntp_us+=diff_us;
-  }
-  else
+  } else {
     diff_us=0;
-  rtc_mem_write(RTC_TODOFFSETUS_POS,diff_us);
+  }
+
+  rtc_todoffsetus = diff_us;
 
   uint32_t now_s=now_ntp_us/1000000;
   uint32_t now_us=now_ntp_us%1000000;

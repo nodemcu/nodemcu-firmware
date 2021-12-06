@@ -7,7 +7,7 @@ The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of subdirectories/folders.
 
-Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card is [FatFS is enabled](../sdcard.md).
+Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card if [FatFS is enabled](../sdcard.md).
 
 ```lua
 -- open file in flash:
@@ -32,6 +32,10 @@ Change current directory (and drive). This will be used when no drive/directory 
 
 Current directory defaults to the root of internal SPIFFS (`/FLASH`) after system start.
 
+!!! note
+
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware.
+
 #### Syntax
 `file.chdir(dir)`
 
@@ -52,7 +56,7 @@ Determines whether the specified file exists.
 - `filename` file to check
 
 #### Returns
-true of the file exists (even if 0 bytes in size), and false if it does not exist
+true if the file exists (even if 0 bytes in size), and false if it does not exist
 
 #### Example
 
@@ -73,7 +77,9 @@ end
 
 Format the file system. Completely erases any existing file system and writes a new one. Depending on the size of the flash chip in the ESP, this may take several seconds.
 
-Not supported for SD cards.
+!!! note
+
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.format()`
@@ -91,7 +97,9 @@ none
 
 Returns the flash address and physical size of the file system area, in bytes.
 
-Not supported for SD cards.
+!!! note
+
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.fscfg()`
@@ -131,18 +139,43 @@ remaining, used, total=file.fsinfo()
 print("\nFile system info:\nTotal : "..total.." (k)Bytes\nUsed : "..used.." (k)Bytes\nRemain: "..remaining.." (k)Bytes\n")
 ```
 
+## file.getcontents()
+
+Open and read the contents of a file.
+
+#### Syntax
+`file.getcontents(filename)`
+
+#### Parameters
+- `filename` file to be opened and read
+
+#### Returns
+file contents if the file exists. `nil` if the file does not exist.
+
+#### Example (basic model)
+```lua
+print(file.getcontents('welcome.txt'))
+```
+#### See also
+- [`file.putcontents()`](#fileputcontents)
+
+
 ## file.list()
 
 Lists all files in the file system.
 
 #### Syntax
-`file.list()`
+`file.list([pattern])`
 
 #### Parameters
 none
 
 #### Returns
-a lua table which contains the {file name: file size} pairs
+a Lua table which contains all {file name: file size} pairs, if no pattern
+given.  If a pattern is given, only those file names matching the pattern
+(interpreted as a traditional [Lua pattern](https://www.lua.org/pil/20.2.html),
+not, say, a UNIX shell glob) will be included in the resulting table.
+`file.list` will throw any errors encountered during pattern matching.
 
 #### Example
 ```lua
@@ -156,13 +189,15 @@ end
 
 Mounts a FatFs volume on SD card.
 
-Not supported for internal flash.
+!!! note
+
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware and it is not supported for internal flash.
 
 #### Syntax
 `file.mount(ldrv[, pin])`
 
 #### Parameters
-- `ldrv` name of the logical drive, `SD0:`, `SD1:`, etc.
+- `ldrv` name of the logical drive, `/SD0`, `/SD1`, etc.
 - `pin` 1~12, IO index for SS/CS, defaults to 8 if omitted.
 
 #### Returns
@@ -170,7 +205,7 @@ Volume object
 
 #### Example
 ```lua
-vol = file.mount("SD0:")
+vol = file.mount("/SD0")
 vol:umount()
 ```
 
@@ -179,6 +214,7 @@ vol:umount()
 Registers callback functions.
 
 Trigger events are:
+
 - `rtc` deliver current date & time to the file system. Function is expected to return a table containing the fields `year`, `mon`, `day`, `hour`, `min`, `sec` of current date and time. Not supported for internal flash.
 
 #### Syntax
@@ -186,7 +222,7 @@ Trigger events are:
 
 #### Parameters
 - `event` string
-- `function()` callback function. Unregisters the callback if `function()` is omitted.
+- `function()` callback function. Unregisters the callback if `function()` is omitted or `nil`.
 
 #### Returns
 `nil`
@@ -204,7 +240,7 @@ sntp.sync(server_ip,
 ```
 
 #### See also
-[`rtctime.epoch2cal()`](rtctime.md#rtctimepoch2cal)
+[`rtctime.epoch2cal()`](rtctime.md#rtctimeepoch2cal)
 
 ## file.open()
 
@@ -216,7 +252,7 @@ When done with the file, it must be closed using `file.close()`.
 `file.open(filename, mode)`
 
 #### Parameters
-- `filename` file to be opened, directories are not supported
+- `filename` file to be opened
 - `mode`:
     - "r": read mode (the default)
     - "w": write mode
@@ -247,8 +283,8 @@ end
 ```
 
 #### See also
-- [`file.close()`](#fileclose)
-- [`file.readline()`](#filereadline)
+- [`file.close()`](#fileclose-fileobjclose)
+- [`file.readline()`](#filereadline-fileobjreadline)
 
 ## file.remove()
 
@@ -272,6 +308,30 @@ file.remove("foo.lua")
 #### See also
 [`file.open()`](#fileopen)
 
+## file.putcontents()
+
+Open and write the contents of a file.
+
+#### Syntax
+`file.putcontents(filename, contents)`
+
+#### Parameters
+- `filename` file to be created
+- `contents` to be written to the file
+
+#### Returns
+`true` if the write is ok, `nil` on error
+
+#### Example (basic model)
+```lua
+file.putcontents('welcome.txt', [[
+  Hello to new user
+  -----------------
+]])
+```
+#### See also
+- [`file.getcontents()`](#filegetcontents)
+
 ## file.rename()
 
 Renames a file. If a file is currently open, it will be closed first.
@@ -291,6 +351,57 @@ Renames a file. If a file is currently open, it will be closed first.
 ```lua
 -- rename file 'temp.lua' to 'init.lua'.
 file.rename("temp.lua","init.lua")
+```
+
+## file.stat()
+
+Get attribtues of a file or directory in a table. Elements of the table are:
+
+- `size` file size in bytes
+- `name` file name
+- `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
+
+    - `year`
+    - `mon`
+    - `day`
+    - `hour`
+    - `min`
+    - `sec`
+
+- `is_dir` flag `true` if item is a directory, otherwise `false`
+- `is_rdonly` flag `true` if item is read-only, otherwise `false`
+- `is_hidden` flag `true` if item is hidden, otherwise `false`
+- `is_sys` flag `true` if item is system, otherwise `false`
+- `is_arch` flag `true` if item is archive, otherwise `false`
+
+#### Syntax
+`file.stat(filename)`
+
+#### Parameters
+`filename` file name
+
+#### Returns
+table containing file attributes
+
+#### Example
+
+```lua
+s = file.stat("/SD0/myfile")
+print("name: " .. s.name)
+print("size: " .. s.size)
+
+t = s.time
+print(string.format("%02d:%02d:%02d", t.hour, t.min, t.sec))
+print(string.format("%04d-%02d-%02d", t.year, t.mon, t.day))
+
+if s.is_dir then print("is directory") else print("is file") end
+if s.is_rdonly then print("is read-only") else print("is writable") end
+if s.is_hidden then print("is hidden") else print("is not hidden") end
+if s.is_sys then print("is system") else print("is not system") end
+if s.is_arch then print("is archive") else print("is not archive") end
+
+s = nil
+t = nil
 ```
 
 # File access functions
@@ -331,14 +442,13 @@ end
 
 !!! Attention
 
-    It is recommended to use only one single model within the application. Concurrent use of both models can yield unpredictable behavior: Closing the default file from basic model will also close the correspoding file object. Closing a file from object model will also close the default file if they are the same file.
+    It is recommended to use only one single model within the application. Concurrent use of both models can yield unpredictable behavior: Closing the default file from basic model will also close the corresponding file object. Closing a file from object model will also close the default file if they are the same file.
 
 !!! Note
 
     The maximum number of open files on SPIFFS is determined at compile time by `SPIFFS_MAX_OPEN_FILES` in `user_config.h`.
 
-## file.close()
-## file.obj:close()
+## file.close(), file.obj:close()
 
 Closes the open file, if any.
 
@@ -356,10 +466,9 @@ none
 #### See also
 [`file.open()`](#fileopen)
 
-## file.flush()
-## file.obj:flush()
+## file.flush(), file.obj:flush()
 
-Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()` / `fd:close()`](#fileclose) performs an implicit flush as well.
+Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()` / `fd:close()`](#fileclose-fileobjclose) performs an implicit flush as well.
 
 #### Syntax
 `file.flush()`
@@ -386,10 +495,9 @@ end
 ```
 
 #### See also
-[`file.close()` / `file.obj:close()`](#fileclose)
+[`file.close()` / `file.obj:close()`](#fileclose-fileobjclose)
 
-## file.read()
-## file.obj:read()
+## file.read(), file.obj:read()
 
 Read content from the open file.
 
@@ -432,10 +540,9 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.readline()` / `file.obj:readline()`](#filereadline)
+- [`file.readline()` / `file.obj:readline()`](#filereadline-fileobjreadline)
 
-## file.readline()
-## file.obj:readline()
+## file.readline(), file.obj:readline()
 
 Read the next line from the open file. Lines are defined as zero or more bytes ending with a EOL ('\n') byte. If the next line is longer than 1024, this function only returns the first 1024 bytes.
 
@@ -461,12 +568,11 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.close()` / `file.obj:close()`](#fileclose)
-- [`file.read()` / `file.obj:read()`](#fileread)
+- [`file.close()` / `file.obj:close()`](#fileclose-fileobjclose)
+- [`file.read()` / `file.obj:read()`](#fileread-fileobjread)
 
 
-## file.seek()
-## file.obj:seek()
+## file.seek(), file.obj:seek()
 
 Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
 
@@ -499,8 +605,7 @@ end
 #### See also
 [`file.open()`](#fileopen)
 
-## file.write()
-## file.obj:write()
+## file.write(), file.obj:write()
 
 Write a string to the open file.
 
@@ -538,10 +643,9 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.writeline()` / `file.obj:writeline()`](#filewriteline)
+- [`file.writeline()` / `file.obj:writeline()`](#filewriteline-fileobjwriteline)
 
-## file.writeline()
-## file.obj:writeline()
+## file.writeline(), file.obj:writeline()
 
 Write a string to the open file and append '\n' at the end.
 
@@ -568,4 +672,4 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.readline()` / `file.obj:readline()`](#filereadline)
+- [`file.readline()` / `file.obj:readline()`](#filereadline-fileobjreadline)

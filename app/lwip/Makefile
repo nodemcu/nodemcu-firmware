@@ -14,9 +14,9 @@
 ifndef PDIR
 UP_EXTRACT_DIR = ..
 GEN_LIBS = liblwip.a
-COMPONENTS_liblwip = api/liblwipapi.a	\
-						app/liblwipapp.a	\
-						core/liblwipcore.a	\
+COMPONENTS_liblwip =    api/liblwipapi.a	\
+					    app/liblwipapp.a	\
+					    core/liblwipcore.a	\
 						core/ipv4/liblwipipv4.a	\
 						netif/liblwipnetif.a
 endif
@@ -29,7 +29,11 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+# Other potential configuration flags include:
+#	-DTXRX_TXBUF_DEBUG
+#	-DTXRX_RXBUF_DEBUG
+#	-DWLAN_CONFIG_CCX
+CONFIGURATION_DEFINES += -DPBUF_RSV_FOR_WLAN -DEBUF_LWIP
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -43,8 +47,6 @@ endif
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

@@ -4,11 +4,22 @@
 | 2015-01-16 | [Ibrahim Abd Elkader](https://github.com/iabdalkader) |              [Arnim Läuger](https://github.com/devsaurus) | [spi.c](../../app/modules/spi.c)|
 
 All transactions for sending and receiving are most-significant-bit first and least-significant last.
-For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](http://d.av.id.au/blog/tag/hspi/).
+For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](https://web.archive.org/web/20180425205107/http://d.av.id.au:80/blog/tag/hspi/).
 
 !!! note
 
 	The ESP hardware provides two SPI busses, with IDs 0, and 1, which map to pins generally labelled SPI and HSPI. If you are using any kind of development board which provides flash, then bus ID 0 (SPI) is almost certainly used for communicating with the flash chip. You probably want to choose bus ID 1 (HSPI) for your communication, as you will have uncontended use of it.
+
+HSPI signals are fixed to the following IO indices and GPIO pins:
+
+| Signal    | IO index | ESP8266 pin |
+|-----------|----------|-------------|
+| HSPI CLK  |    5     | GPIO14      |
+| HSPI /CS  |    8     | GPIO15      |
+| HSPI MOSI |    7     | GPIO13      |
+| HSPI MISO |    6     | GPIO12      |
+
+See also [spi.setup()](#spisetup).
 
 ## High Level Functions
 The high level functions provide a send & receive API for half- and
@@ -86,6 +97,8 @@ _, _, x = spi.send(1, 0, {255, 255, 255})
 Set up the SPI configuration.
 Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase) for details regarding the clock polarity and phase definition.
 
+Calling `spi.setup()` will route the HSPI signals to the related pins, overriding previous configuration and control by the `gpio` module. It is possible to revert any pin back to gpio control if its HSPI functionality is not needed, just set the desired `gpio.mode()` for it. This is recommended especially for the HSPI /CS pin function in case that SPI slave-select is driven from a different pin by `gpio.write()` - the SPI engine would toggle pin 8 otherwise.
+
 #### Syntax
 `spi.setup(id, mode, cpol, cpha, databits, clock_div[, duplex_mode])`
 
@@ -95,7 +108,7 @@ Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_
 	- `spi.MASTER`
 	- `spi.SLAVE` - **not supported currently**
 - `cpol` clock polarity selection
-	- `spi.CPOL_LOW` 
+	- `spi.CPOL_LOW`
 	- `spi.CPOL_HIGH`
 - `cpha` clock phase selection
 	- `spi.CPHA_LOW`
@@ -109,9 +122,36 @@ Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_
 #### Returns
 Number: 1
 
+#### Example
+```lua
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+-- we won't be using the HSPI /CS line, so disable it again
+gpio.mode(8, gpio.INPUT, gpio.PULLUP)
+```
+
+## spi.set_clock_div()
+Set the SPI clock divider.
+
+#### Syntax
+`old_div = spi.set_clock_div(id, clock_div)`
+
+#### Parameters
+- `id` SPI ID number: 0 for SPI, 1 for HSPI
+- `clock_div` SPI clock divider, f(SPI) = 80 MHz / `clock_div`, 1 .. n
+
+#### Returns
+Number: Old clock divider
+
+#### Example
+```lua
+old_div = spi.set_clock_div(1, 84) --drop to slow clock for slow device
+spi.send(1, 0x0B, 0xFF)
+spi.set_clock_div(1, old_div)
+```
+
 ## Low Level Hardware Functions
 The low level functions provide a hardware-centric API for application
-scenarios that need to excercise more complex SPI transactions. The
+scenarios that need to exercise more complex SPI transactions. The
 programming model is built up around the HW send and receive buffers and SPI
 transactions are initiated with full control over the hardware features.
 
@@ -119,7 +159,10 @@ transactions are initiated with full control over the hardware features.
 Extract data items from MISO buffer after `spi.transaction()`.
 
 #### Syntax
-`data1[, data2[, ..., datan]] = spi.get_miso(id, offset, bitlen, num)`
+```lua
+data1[, data2[, ..., datan]] = spi.get_miso(id, offset, bitlen, num)
+string = spi.get_miso(id, num)
+```
 
 #### Parameters
 - `id` SPI ID number: 0 for SPI, 1 for HSPI
@@ -128,7 +171,7 @@ Extract data items from MISO buffer after `spi.transaction()`.
 - `num` number of data items to retrieve
 
 ####Returns
-`num` data items
+`num` data items or `string`
 
 #### See also
 [spi.transaction()](#spitransaction)
@@ -137,13 +180,17 @@ Extract data items from MISO buffer after `spi.transaction()`.
 Insert data items into MOSI buffer for `spi.transaction()`.
 
 #### Syntax
-`spi.set_mosi(id, offset, bitlen, data1[, data2[, ..., datan]])`
+```lua
+spi.set_mosi(id, offset, bitlen, data1[, data2[, ..., datan]])
+spi.set_mosi(id, string)
+```
 
 ####Parameters
 - `id` SPI ID number: 0 for SPI, 1 for HSPI
 - `offset` bit offset into MOSI buffer for inserting data1 and subsequent items
 - `bitlen` bit length of data1, data2, ...
 - `data` data items where `bitlen` number of bits are considered for the transaction.
+- `string` send data to be copied into MOSI buffer at offset 0, bit length 8
 
 #### Returns
 `nil`

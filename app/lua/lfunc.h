@@ -18,9 +18,6 @@
 #define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
                          cast(int, sizeof(TValue *)*((n)-1)))
 
-#define proto_readonly(p) l_setbit((p)->marked, READONLYBIT)
-#define proto_is_readonly(p) testbit((p)->marked, READONLYBIT)
-
 LUAI_FUNC Proto *luaF_newproto (lua_State *L);
 LUAI_FUNC Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e);
 LUAI_FUNC Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e);

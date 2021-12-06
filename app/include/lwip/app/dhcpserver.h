@@ -21,9 +21,7 @@ typedef struct dhcps_msg {
         uint8_t chaddr[16];
         uint8_t sname[64];
         uint8_t file[128];
-	// Recommendation from Espressif:
-	// To avoid crash in DHCP big packages modify option length from 312 to MTU - IPHEAD(20) - UDPHEAD(8) - DHCPHEAD(236).
-        uint8_t options[IP_FRAG_MAX_MTU - 20 - 8 - 236];
+        uint8_t options[312];
 }dhcps_msg;
 
 #ifndef LWIP_OPEN_SRC
@@ -40,10 +38,23 @@ enum dhcps_offer_option{
 };
 #endif
 
+typedef enum {
+    DHCPS_TYPE_DYNAMIC,
+    DHCPS_TYPE_STATIC
+} dhcps_type_t;
+
+typedef enum {
+    DHCPS_STATE_ONLINE,
+    DHCPS_STATE_OFFLINE
+} dhcps_state_t;
+
 struct dhcps_pool{
 	struct ip_addr ip;
 	uint8 mac[6];
 	uint32 lease_timer;
+    dhcps_type_t type;
+    dhcps_state_t state;
+
 };
 
 typedef struct _list_node{

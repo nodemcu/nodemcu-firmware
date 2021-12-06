@@ -13,21 +13,22 @@
 
 #include "lauxlib.h"
 #include "task/task.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "pcm.h"
 
-static void dispatch_callback( lua_State *L, int self_ref, int cb_ref, int returns )
+static int dispatch_callback( lua_State *L, int self_ref, int cb_ref, int returns )
 {
   if (cb_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, cb_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, self_ref );
-    lua_call( L, 1, returns );
+    return luaL_pcallx( L, 1, returns );
   }
+  return LUA_OK;
 }
 
-void pcm_data_vu_task( task_param_t param, uint8 prio )
+void pcm_data_vu( task_param_t param, uint8 prio )
 {
   cfg_t *cfg = (cfg_t *)param;
   lua_State *L = lua_getstate();
@@ -35,12 +36,12 @@ void pcm_data_vu_task( task_param_t param, uint8 prio )
   if (cfg->cb_vu_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->cb_vu_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->self_ref );
-    lua_pushnumber( L, (LUA_NUMBER)(cfg->vu_peak) );
-    lua_call( L, 2, 0 );
+    lua_pushinteger( L, cfg->vu_peak );
+    luaL_pcallx( L, 2, 0 );
   }
 }
 
-void pcm_data_play_task( task_param_t param, uint8 prio )
+void pcm_data_play( task_param_t param, uint8 prio )
 {
   cfg_t *cfg = (cfg_t *)param;
   pcm_buf_t *buf = &(cfg->bufs[cfg->fbuf_idx]);
@@ -52,15 +53,16 @@ void pcm_data_play_task( task_param_t param, uint8 prio )
   // retrieve new data from callback
   if ((cfg->isr_throttled >= 0) &&
       (cfg->cb_data_ref != LUA_NOREF)) {
-    dispatch_callback( L, cfg->self_ref, cfg->cb_data_ref, 1 );
+    if(dispatch_callback( L, cfg->self_ref, cfg->cb_data_ref, 1 ) != LUA_OK)
+      return;
     need_pop = TRUE;
 
     if (lua_type( L, -1 ) == LUA_TSTRING) {
       data = lua_tolstring( L, -1, &string_len );
       if (string_len > buf->buf_size) {
-        uint8_t *new_data = (uint8_t *) c_malloc( string_len );
+        uint8_t *new_data = (uint8_t *) malloc( string_len );
         if (new_data) {
-          if (buf->data) c_free( buf->data );
+          if (buf->data) free( buf->data );
           buf->buf_size = string_len;
           buf->data = new_data;
         }
@@ -70,7 +72,7 @@ void pcm_data_play_task( task_param_t param, uint8 prio )
 
   if (data) {
     size_t to_copy = string_len > buf->buf_size ? buf->buf_size : string_len;
-    c_memcpy( buf->data, data, to_copy );
+    memcpy( buf->data, data, to_copy );
 
     buf->rpos  = 0;
     buf->len   = to_copy;
@@ -85,7 +87,7 @@ void pcm_data_play_task( task_param_t param, uint8 prio )
         // rerun data callback to get next buffer chunk
         dbg_platform_gpio_write( PLATFORM_GPIO_LOW );
         cfg->fbuf_idx = other_buf;
-        pcm_data_play_task( param, 0 );
+        pcm_data_play( param, 0 );
       }
       // unthrottle ISR
       cfg->isr_throttled = 0;

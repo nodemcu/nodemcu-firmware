@@ -38,7 +38,7 @@
  * relevant functions and expose these instead, through the rtctime.c module.
  */
 
-#include <c_types.h>
+#include <stdint.h>
 #include "sections.h"
 
 #ifndef _RTCTIME_INTERNAL_H_
@@ -62,6 +62,8 @@ struct rtc_tm{
 
 void TEXT_SECTION_ATTR rtctime_early_startup (void);
 void rtctime_late_startup (void);
+void rtctime_adjust_rate (int rate);
+int rtctime_get_rate (void);
 void rtctime_gettimeofday (struct rtc_timeval *tv);
 void rtctime_settimeofday (const struct rtc_timeval *tv);
 bool rtctime_have_time (void);

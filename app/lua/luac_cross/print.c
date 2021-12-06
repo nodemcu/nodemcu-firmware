@@ -6,9 +6,8 @@
 
 #define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
-#include C_HEADER_CTYPE
-#include C_HEADER_STDIO
+#include <ctype.h>
+#include <stdio.h>
 
 #define luac_c
 #define LUA_CORE

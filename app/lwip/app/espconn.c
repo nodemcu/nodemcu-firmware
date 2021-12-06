@@ -33,8 +33,6 @@ espconn_msg *plink_active = NULL;
 espconn_msg *pserver_list = NULL;
 remot_info premot[linkMax];
 
-struct espconn_packet pktinfo[2];
-
 static uint8 espconn_tcp_get_buf_count(espconn_buf *pesp_buf);
 /******************************************************************************
  * FunctionName : espconn_copy_partial
@@ -370,7 +368,7 @@ espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length)
 	espconn_msg *pnode = NULL;
 	bool value = false;
 	err_t error = ESPCONN_OK;
-	
+
     if (espconn == NULL || psent == NULL || length == 0) {
         return ESPCONN_ARG;
     }
@@ -436,31 +434,40 @@ espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length)
     return ESPCONN_ARG;
 }
 
-/******************************************************************************
- * FunctionName : espconn_sendto
- * Description  : send data for UDP
- * Parameters   : espconn -- espconn to set for UDP
- *                psent -- data to send
- *                length -- length of data to send
- * Returns      : error
-*******************************************************************************/
-sint16 ICACHE_FLASH_ATTR
-espconn_sendto(struct espconn *espconn, uint8 *psent, uint16 length)
+sint16 ICACHE_FLASH_ATTR espconn_recv(struct espconn *espconn, void *mem, size_t len)
 {
 	espconn_msg *pnode = NULL;
 	bool value = false;
-	err_t error = ESPCONN_OK;
-
-	if (espconn == NULL || psent == NULL || length == 0) {
+	int bytes_used = 0;
+	struct tcp_pcb *tpcb = NULL;
+	if (espconn == NULL || mem == NULL || len == 0)
 		return ESPCONN_ARG;
-	}
 
 	/*Find the node depend on the espconn message*/
 	value = espconn_find_connection(espconn, &pnode);
-	if (value && espconn->type == ESPCONN_UDP)
-		return espconn_udp_sendto(pnode, psent, length);
-	else
+	if (value && espconn->type == ESPCONN_TCP){
+		if (pnode->readbuf != NULL){
+			bytes_used = ringbuf_bytes_used(pnode->readbuf);
+			if (bytes_used != 0) {
+				if (len > bytes_used) {
+					len = bytes_used;
+				}
+				ringbuf_memcpy_from(mem, pnode->readbuf, len);
+				tpcb = pnode->pcommon.pcb;
+				if (tpcb && tpcb->state == ESTABLISHED)
+				    tcp_recved(pnode->pcommon.pcb, len);
+				return len;
+			} else {
+				return ESPCONN_OK;
+			}
+		} else{
+			return ESPCONN_MEM;
+		}
+	} else{
 		return ESPCONN_ARG;
+	}
+
+	return ESPCONN_ARG;
 }
 
 /******************************************************************************
@@ -475,51 +482,6 @@ espconn_sendto(struct espconn *espconn, uint8 *psent, uint16 length)
 sint8 espconn_send(struct espconn *espconn, uint8 *psent, uint16 length) __attribute__((alias("espconn_sent")));
 
 /******************************************************************************
- * FunctionName : espconn_tcp_get_wnd
- * Description  : get the window size of simulatenously active TCP connections
- * Parameters   : none
- * Returns      : the number of TCP_MSS active TCP connections
-*******************************************************************************/
-uint8 ICACHE_FLASH_ATTR espconn_tcp_get_wnd(void)
-{
-	uint8 tcp_num = 0;
-
-	tcp_num = (TCP_WND / TCP_MSS);
-
-	return tcp_num;
-}
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_con
- * Description  : set the window size simulatenously active TCP connections
- * Parameters   : num -- the number of TCP_MSS
- * Returns      : ESPCONN_ARG -- Illegal argument
- * 				  ESPCONN_OK  -- No error
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_tcp_set_wnd(uint8 num)
-{
-	if (num == 0 || num > linkMax)
-		return ESPCONN_ARG;
-
-	TCP_WND = (num * TCP_MSS);
-	return ESPCONN_OK;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_get_mss
- * Description  : get the mss size of simulatenously active TCP connections
- * Parameters   : none
- * Returns      : the size of TCP_MSS active TCP connections
-*******************************************************************************/
-uint16 ICACHE_FLASH_ATTR espconn_tcp_get_mss(void)
-{
-	uint16 tcp_num = 0;
-
-	tcp_num = TCP_MSS;
-
-	return tcp_num;
-}
-
-/******************************************************************************
  * FunctionName : espconn_tcp_get_max_con
  * Description  : get the number of simulatenously active TCP connections
  * Parameters   : espconn -- espconn to set the connect callback
@@ -532,81 +494,6 @@ uint8 ICACHE_FLASH_ATTR espconn_tcp_get_max_con(void)
 	tcp_num = MEMP_NUM_TCP_PCB;
 
 	return tcp_num;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_con
- * Description  : set the number of simulatenously active TCP connections
- * Parameters   : espconn -- espconn to set the connect callback
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_tcp_set_max_con(uint8 num)
-{
-	if (num == 0 || num > linkMax)
-		return ESPCONN_ARG;
-
-	MEMP_NUM_TCP_PCB = num;
-	return ESPCONN_OK;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_get_max_retran
- * Description  : get the Maximum number of retransmissions of data active TCP connections
- * Parameters   : none
- * Returns      : the Maximum number of retransmissions
-*******************************************************************************/
-uint8 ICACHE_FLASH_ATTR espconn_tcp_get_max_retran(void)
-{
-	uint8 tcp_num = 0;
-
-	tcp_num = TCP_MAXRTX;
-
-	return tcp_num;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_retran
- * Description  : set the Maximum number of retransmissions of data active TCP connections
- * Parameters   : num -- the Maximum number of retransmissions
- * Returns      : result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_tcp_set_max_retran(uint8 num)
-{
-	if (num == 0 || num > 12)
-		return ESPCONN_ARG;
-
-	TCP_MAXRTX = num;
-	return ESPCONN_OK;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_get_max_syn
- * Description  : get the Maximum number of retransmissions of SYN segments
- * Parameters   : none
- * Returns      : the Maximum number of retransmissions
-*******************************************************************************/
-uint8 ICACHE_FLASH_ATTR espconn_tcp_get_max_syn(void)
-{
-	uint8 tcp_num = 0;
-
-	tcp_num = TCP_SYNMAXRTX;
-
-	return tcp_num;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_syn
- * Description  : set the Maximum number of retransmissions of SYN segments
- * Parameters   : num -- the Maximum number of retransmissions
- * Returns      : result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_tcp_set_max_syn(uint8 num)
-{
-	if (num == 0 || num > 12)
-		return ESPCONN_ARG;
-
-	TCP_SYNMAXRTX = num;
-	return ESPCONN_OK;
 }
 
 /******************************************************************************
@@ -627,29 +514,6 @@ sint8 ICACHE_FLASH_ATTR espconn_tcp_get_max_con_allow(struct espconn *espconn)
 			return pget_msg->count_opt;
 		}
 		pget_msg = pget_msg->pnext;
-	}
-	return ESPCONN_ARG;
-}
-
-/******************************************************************************
- * FunctionName : espconn_tcp_set_max_con_allow
- * Description  : set the count of simulatenously active connections on the server
- * Parameters   : espconn -- espconn to set the count
- * Returns      : result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_tcp_set_max_con_allow(struct espconn *espconn, uint8 num)
-{
-	espconn_msg *pset_msg = NULL;
-	if ((espconn == NULL) || (num > MEMP_NUM_TCP_PCB) || (espconn->type == ESPCONN_UDP))
-		return ESPCONN_ARG;
-
-	pset_msg = pserver_list;
-	while (pset_msg != NULL){
-		if (pset_msg->pespconn == espconn){
-			pset_msg->count_opt = num;
-			return ESPCONN_OK;
-		}
-		pset_msg = pset_msg->pnext;
 	}
 	return ESPCONN_ARG;
 }
@@ -954,257 +818,12 @@ espconn_disconnect(struct espconn *espconn)
 
     if (value){
     	/*protect for redisconnection*/
-    	if (espconn->state == ESPCONN_CLOSE)
+    	if (pnode->preverse == NULL && espconn->state == ESPCONN_CLOSE)
     		return ESPCONN_INPROGRESS;
     	espconn_tcp_disconnect(pnode,0);	//1 force, 0 normal
     	return ESPCONN_OK;
     } else
     	return ESPCONN_ARG;
-}
-
-/******************************************************************************
- * FunctionName : espconn_abort
- * Description  : Forcely abort with host
- * Parameters   : espconn -- the espconn used to disconnect the connection
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_abort(struct espconn *espconn)
-{
-	espconn_msg *pnode = NULL;
-	bool value = false;
-
-    if (espconn == NULL) {
-        return ESPCONN_ARG;;
-    } else if (espconn ->type != ESPCONN_TCP)
-    	return ESPCONN_ARG;
-
-    /*Find the node depend on the espconn message*/
-    value = espconn_find_connection(espconn, &pnode);
-
-    if (value){
-    	/*protect for redisconnection*/
-    	if (espconn->state == ESPCONN_CLOSE)
-    		return ESPCONN_INPROGRESS;
-    	espconn_tcp_disconnect(pnode,1);	//1 force, 0 normal
-    	return ESPCONN_OK;
-    } else
-    	return ESPCONN_ARG;
-}
-
-
-/******************************************************************************
- * FunctionName : espconn_get_packet_info
- * Description  : get the packet info with host
- * Parameters   : espconn -- the espconn used to disconnect the connection
- * 				  infoarg -- the packet info
- * Returns      : the errur code
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_get_packet_info(struct espconn *espconn, struct espconn_packet* infoarg)
-{
-	espconn_msg *pnode = NULL;
-	err_t err;
-	bool value = false;
-
-	if (espconn == NULL || infoarg == NULL) {
-		return ESPCONN_ARG;;
-	} else if (espconn->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	/*Find the node depend on the espconn message*/
-	value = espconn_find_connection(espconn, &pnode);
-	if (value) {
-		struct tcp_pcb *pcb = pnode->pcommon.pcb;
-		if (pcb == NULL)
-			return ESPCONN_ARG;
-
-		pnode->pcommon.packet_info.packseq_nxt = pcb->rcv_nxt;
-		pnode->pcommon.packet_info.packseqno = pcb->snd_nxt;
-		pnode->pcommon.packet_info.snd_buf_size = pcb->snd_buf;
-		pnode->pcommon.packet_info.total_queuelen = TCP_SND_QUEUELEN;
-		pnode->pcommon.packet_info.snd_queuelen = pnode->pcommon.packet_info.total_queuelen - pcb->snd_queuelen;
-		os_memcpy(infoarg,(void*)&pnode->pcommon.packet_info, sizeof(struct espconn_packet));
-		return ESPCONN_OK;
-	} else {
-		switch (espconn->state){
-			case ESPCONN_CLOSE:
-				os_memcpy(infoarg,(void*)&pktinfo[0], sizeof(struct espconn_packet));
-				err = ESPCONN_OK;
-				break;
-			case ESPCONN_NONE:
-				os_memcpy(infoarg,(void*)&pktinfo[1], sizeof(struct espconn_packet));
-				err = ESPCONN_OK;
-				break;
-			default:
-				err = ESPCONN_ARG;
-				break;
-		}
-		return err;
-	}
-}
-
-/******************************************************************************
- * FunctionName : espconn_set_opt
- * Description  : set the option for connections so that we don't end up bouncing
- *                all connections at the same time .
- * Parameters   : espconn -- the espconn used to set the connection
- * 				  opt -- the option for set
- * Returns      : the result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_set_opt(struct espconn *espconn, uint8 opt)
-{
-	espconn_msg *pnode = NULL;
-	struct tcp_pcb *tpcb;
-	bool value = false;
-
-	if (espconn == NULL) {
-		return ESPCONN_ARG;;
-	} else if (espconn->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	/*Find the node depend on the espconn message*/
-	value = espconn_find_connection(espconn, &pnode);
-	if (value) {
-		pnode->pcommon.espconn_opt |= opt;
-		tpcb = pnode->pcommon.pcb;
-		if (espconn_delay_disabled(pnode))
-			tcp_nagle_disable(tpcb);
-
-		if (espconn_keepalive_disabled(pnode))
-			espconn_keepalive_enable(tpcb);
-
-		return ESPCONN_OK;
-	} else
-		return ESPCONN_ARG;
-}
-
-/******************************************************************************
- * FunctionName : espconn_clear_opt
- * Description  : clear the option for connections so that we don't end up bouncing
- *                all connections at the same time .
- * Parameters   : espconn -- the espconn used to set the connection
- * 				  opt -- the option for clear
- * Returns      : the result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_clear_opt(struct espconn *espconn, uint8 opt)
-{
-	espconn_msg *pnode = NULL;
-	struct tcp_pcb *tpcb;
-	bool value = false;
-
-	if (espconn == NULL) {
-		return ESPCONN_ARG;;
-	} else if (espconn->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	/*Find the node depend on the espconn message*/
-	value = espconn_find_connection(espconn, &pnode);
-	if (value) {
-		pnode->pcommon.espconn_opt &= ~opt;
-		tpcb = pnode->pcommon.pcb;
-		if (espconn_keepalive_enabled(pnode))
-			espconn_keepalive_disable(tpcb);
-
-		if (espconn_delay_enabled(pnode))
-			tcp_nagle_enable(tpcb);
-
-		return ESPCONN_OK;
-	} else
-		return ESPCONN_ARG;
-}
-
-/******************************************************************************
- * FunctionName : espconn_set_keepalive
- * Description  : access level value for connection so that we set the value for
- * 				  keep alive
- * Parameters   : espconn -- the espconn used to set the connection
- * 				  level -- the connection's level
- * 				  value -- the value of time(s)
- * Returns      : access port value
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_set_keepalive(struct espconn *espconn, uint8 level, void* optarg)
-{
-	espconn_msg *pnode = NULL;
-	bool value = false;
-	sint8 ret = ESPCONN_OK;
-
-	if (espconn == NULL || optarg == NULL) {
-		return ESPCONN_ARG;;
-	} else if (espconn->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	/*Find the node depend on the espconn message*/
-	value = espconn_find_connection(espconn, &pnode);
-	if (value && espconn_keepalive_disabled(pnode)) {
-		struct tcp_pcb *pcb = pnode->pcommon.pcb;
-		switch (level){
-			case ESPCONN_KEEPIDLE:
-				pcb->keep_idle = 1000 * (u32_t)(*(int*)optarg);
-				ret = ESPCONN_OK;
-				break;
-			case ESPCONN_KEEPINTVL:
-				pcb->keep_intvl = 1000 * (u32_t)(*(int*)optarg);
-				ret = ESPCONN_OK;
-				break;
-			case ESPCONN_KEEPCNT:
-				pcb->keep_cnt = (u32_t)(*(int*)optarg);
-				ret = ESPCONN_OK;
-				break;
-			default:
-				ret = ESPCONN_ARG;
-				break;
-		}
-		return ret;
-	} else
-		return ESPCONN_ARG;
-}
-
-/******************************************************************************
- * FunctionName : espconn_get_keepalive
- * Description  : access level value for connection so that we get the value for
- * 				  keep alive
- * Parameters   : espconn -- the espconn used to get the connection
- * 				  level -- the connection's level
- * Returns      : access keep alive value
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_get_keepalive(struct espconn *espconn, uint8 level, void *optarg)
-{
-	espconn_msg *pnode = NULL;
-	bool value = false;
-	sint8 ret = ESPCONN_OK;
-
-	if (espconn == NULL || optarg == NULL) {
-		return ESPCONN_ARG;;
-	} else if (espconn->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	/*Find the node depend on the espconn message*/
-	value = espconn_find_connection(espconn, &pnode);
-	if (value && espconn_keepalive_disabled(pnode)) {
-		struct tcp_pcb *pcb = pnode->pcommon.pcb;
-		switch (level) {
-		case ESPCONN_KEEPIDLE:
-			*(int*)optarg = (int)(pcb->keep_idle/1000);
-			ret = ESPCONN_OK;
-			break;
-		case ESPCONN_KEEPINTVL:
-			*(int*)optarg = (int)(pcb->keep_intvl/1000);
-			ret = ESPCONN_OK;
-			break;
-		case ESPCONN_KEEPCNT:
-			*(int*)optarg = (int)(pcb->keep_cnt);
-			ret = ESPCONN_OK;
-			break;
-		default:
-			ret = ESPCONN_ARG;
-			break;
-		}
-		return ret;
-	} else
-		return ESPCONN_ARG;
 }
 
 /******************************************************************************
@@ -1266,41 +885,3 @@ espconn_port(void)
 
     return port;
 }
-
-/******************************************************************************
- * FunctionName : espconn_gethostbyname
- * Description  : Resolve a hostname (string) into an IP address.
- * Parameters   : pespconn -- espconn to resolve a hostname
- *                hostname -- the hostname that is to be queried
- *                addr -- pointer to a ip_addr_t where to store the address if 
- *                        it is already cached in the dns_table (only valid if
- *                        ESPCONN_OK is returned!)
- *                found -- a callback function to be called on success, failure
- *                         or timeout (only if ERR_INPROGRESS is returned!)
- * Returns      : err_t return code
- *                - ESPCONN_OK if hostname is a valid IP address string or the host
- *                  name is already in the local names table.
- *                - ESPCONN_INPROGRESS enqueue a request to be sent to the DNS server
- *                  for resolution if no errors are present.
- *                - ESPCONN_ARG: dns client not initialized or invalid hostname
-*******************************************************************************/
-err_t ICACHE_FLASH_ATTR
-espconn_gethostbyname(struct espconn *pespconn, const char *hostname, ip_addr_t *addr, dns_found_callback found)
-{
-    return dns_gethostbyname(hostname, addr, found, pespconn);
-}
-
-/******************************************************************************
- * FunctionName : espconn_dns_setserver
- * Description  : Initialize one of the DNS servers.
- * Parameters   : numdns -- the index of the DNS server to set must
- * 				  be < DNS_MAX_SERVERS = 2
- * 			      dnsserver -- IP address of the DNS server to set
- *  Returns     : none
-*******************************************************************************/
-void ICACHE_FLASH_ATTR
-espconn_dns_setserver(u8_t numdns, ip_addr_t *dnsserver)
-{
-	dns_setserver(numdns,dnsserver);
-}
-

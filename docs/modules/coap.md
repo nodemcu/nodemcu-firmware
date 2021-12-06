@@ -170,7 +170,7 @@ none
 
 ## coap.server:var()
 
-Registers a Lua variable as an endpoint in the server. the variable value then can be retrieved by a client via GET method, represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for varialble is '/v1/v/'.
+Registers a Lua variable as an endpoint in the server. the variable value then can be retrieved by a client via GET method, represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for variable is '/v1/v/'.
 
 #### Syntax
 `coap.server:var(name[, content_type])`
@@ -197,7 +197,7 @@ cs:var("all", coap.JSON) -- sets content type to json
 
 ## coap.server:func()
 
-Registers a Lua function as an endpoint in the server. The function then can be called by a client via POST method. represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for function is '/v1/f/'. 
+Registers a Lua function as an endpoint in the server. The function then can be called by a client via POST method. represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for function is '/v1/f/'.
 
 When the client issues a POST request to this URI, the payload will be passed to the function as parameter. The function's return value will be the payload in the message to the client.
 

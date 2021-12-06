@@ -29,8 +29,8 @@
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
-#include "limits.h"
-#include "stdlib.h"
+#include <limits.h>
+#include <stdlib.h>
 
 #if defined(USES_SDK_BEFORE_V140)
 #define espconn_send espconn_sent

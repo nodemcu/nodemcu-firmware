@@ -54,8 +54,8 @@ static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg, enum send_opt opt)
 
     if (psent->pcommon.cntr == 0) {
         psent->pespconn->state = ESPCONN_CONNECT;
-//        sys_timeout(10, espconn_data_sentcb, psent->pespconn);
-        espconn_data_sentcb(psent->pespconn);
+        if (psent->pcommon.err == 0)
+        	espconn_data_sentcb(psent->pespconn);
     } else {
     	if (opt == ESPCONN_SEND){
     		espconn_udp_sent(arg, psent->pcommon.ptrbuf, psent->pcommon.cntr);
@@ -94,8 +94,8 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         return ESPCONN_ARG;
     }
 
-    if (1470 < length) {
-        datalen = 1470;
+    if ((IP_FRAG_MAX_MTU - 20 - 8) < length) {
+        datalen = IP_FRAG_MAX_MTU - 20 - 8;
     } else {
         datalen = length;
     }
@@ -130,7 +130,7 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
 
     struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
     struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		
+
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
     {
     	if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
@@ -157,6 +157,7 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         pbuf_free(p);
         pudp_sent->pcommon.ptrbuf = psent + datalen;
         pudp_sent->pcommon.cntr = length - datalen;
+        pudp_sent->pcommon.err = err;
         espconn_data_sent(pudp_sent, ESPCONN_SEND);
         if (err > 0)
         	return ESPCONN_IF;
@@ -199,8 +200,8 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
         return ESPCONN_ARG;
     }
 
-    if (1470 < length) {
-        datalen = 1470;
+    if ((IP_FRAG_MAX_MTU - 20 - 8) < length) {
+        datalen = IP_FRAG_MAX_MTU - 20 - 8;
     } else {
         datalen = length;
     }
@@ -236,9 +237,10 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
 
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
 	{
-		if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, sta_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, ap_netif)) {
+		if( netif_is_up(sta_netif) && \
+            netif_is_up(ap_netif) && \
+            ip_addr_isbroadcast(&dst_ip, sta_netif) && \
+            ip_addr_isbroadcast(&dst_ip, ap_netif)) {
 
 		  p_temp = pbuf_alloc(PBUF_TRANSPORT, datalen, PBUF_RAM);
 		  if (pbuf_copy (p_temp,p) != ERR_OK) {
@@ -257,8 +259,8 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
     	pbuf_free(p);
     	pudp_sent->pcommon.ptrbuf = psent + datalen;
 		pudp_sent->pcommon.cntr = length - datalen;
-		if (err == ERR_OK)
-			espconn_data_sent(pudp_sent, ESPCONN_SENDTO);
+		pudp_sent->pcommon.err = err;
+		espconn_data_sent(pudp_sent, ESPCONN_SENDTO);
 
 		if (err > 0)
 			return ESPCONN_IF;
@@ -383,41 +385,4 @@ espconn_udp_server(struct espconn *pespconn)
         udp_recv(upcb, espconn_udp_recv, (void *)pserver);
         return ESPCONN_OK;
     }
-}
-
-/******************************************************************************
- * FunctionName : espconn_igmp_leave
- * Description  : leave a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_igmp_leave(ip_addr_t *host_ip, ip_addr_t *multicast_ip)
-{
-    if (igmp_leavegroup(host_ip, multicast_ip) != ERR_OK) {
-        LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("udp_leave_multigrup failed!\n"));
-        return -1;
-    };
-
-    return ESPCONN_OK;
-}
-
-/******************************************************************************
- * FunctionName : espconn_igmp_join
- * Description  : join a multicast group
- * Parameters   : host_ip -- the ip address of udp server
- * 				  multicast_ip -- multicast ip given by user
- * Returns      : none
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR
-espconn_igmp_join(ip_addr_t *host_ip, ip_addr_t *multicast_ip)
-{
-    if (igmp_joingroup(host_ip, multicast_ip) != ERR_OK) {
-        LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("udp_join_multigrup failed!\n"));
-        return -1;
-    };
-
-    /* join to any IP address at the port  */
-    return ESPCONN_OK;
 }

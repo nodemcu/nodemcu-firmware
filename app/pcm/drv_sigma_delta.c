@@ -5,7 +5,7 @@
 #include "platform.h"
 #include "hw_timer.h"
 #include "task/task.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "pcm.h"
 
@@ -33,7 +33,7 @@ static void ICACHE_RAM_ATTR drv_sd_timer_isr( os_param_t arg )
     if (cfg->vu_samples_tmp >= cfg->vu_req_samples) {
       cfg->vu_peak = cfg->vu_peak_tmp;
 
-      task_post_low( cfg->data_vu_task, (os_param_t)cfg );
+      task_post_low( pcm_data_vu_task, (os_param_t)cfg );
 
       cfg->vu_samples_tmp = 0;
       cfg->vu_peak_tmp    = 0;
@@ -44,7 +44,7 @@ static void ICACHE_RAM_ATTR drv_sd_timer_isr( os_param_t arg )
       // buffer data consumed, request to re-fill it
       buf->empty = TRUE;
       cfg->fbuf_idx = cfg->rbuf_idx;
-      task_post_high( cfg->data_play_task, (os_param_t)cfg );
+      task_post_high( pcm_data_play_task, (os_param_t)cfg );
       // switch to next buffer
       cfg->rbuf_idx ^= 1;
       dbg_platform_gpio_write( PLATFORM_GPIO_LOW );
@@ -54,7 +54,7 @@ static void ICACHE_RAM_ATTR drv_sd_timer_isr( os_param_t arg )
     cfg->isr_throttled = 1;
     dbg_platform_gpio_write( PLATFORM_GPIO_LOW );
     cfg->fbuf_idx = cfg->rbuf_idx;
-    task_post_high( cfg->data_play_task, (os_param_t)cfg );
+    task_post_high( pcm_data_play_task, (os_param_t)cfg );
   }
 
 }

@@ -1,6 +1,7 @@
 #include "user_config.h"
-#include "c_types.h"
-#include "c_stdlib.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 #include "coap.h"
 
@@ -51,7 +52,7 @@ size_t coap_server_respond(char *req, unsigned short reqlen, char *rsp, unsigned
 #endif
     }
     if(rsppkt.content.p){
-      c_free(rsppkt.content.p);
+      free(rsppkt.content.p);
       rsppkt.content.p = NULL;
       rsppkt.content.len = 0;
     }

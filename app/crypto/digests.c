@@ -34,11 +34,8 @@
 #include "osapi.h"
 #include "mem.h"
 #include <string.h>
-#include <c_errno.h>
-
-#ifdef MD2_ENABLE
-#include "ssl/ssl_crypto.h"
-#endif
+#include <strings.h>
+#include <errno.h>
 
 #ifdef SHA2_ENABLE
 #include "sha2.h"
@@ -59,9 +56,6 @@ typedef char ensure_int_and_size_t_same[(sizeof(int)==sizeof(size_t)) ? 0 : -1];
 
 static const digest_mech_info_t hash_mechs[] ICACHE_RODATA_ATTR =
 {
-#ifdef MD2_ENABLE
-   MECH(MD2, _ , MD2_SIZE,  16),
-#endif
    MECH(MD5,   , MD5_DIGEST_LENGTH,  64)
   ,MECH(SHA1,  , SHA1_DIGEST_LENGTH, 64)
 #ifdef SHA2_ENABLE
@@ -140,11 +134,13 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
   uint8_t* buffer = (uint8_t*)os_malloc (mi->block_size);
   if (!buffer)
     return ENOMEM;
-  
+
   int read_len = 0;
   do {
     read_len = read(readarg, buffer, mi->block_size);
-    mi->update (ctx, buffer, read_len);
+    if (read_len > 0) {
+      mi->update (ctx, buffer, read_len);
+    }
   } while (read_len == mi->block_size);
 
   // Finish up

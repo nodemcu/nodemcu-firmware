@@ -1,11 +1,11 @@
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "lualib.h"
+#include <stdlib.h>
+#include <string.h>
 #include "lauxlib.h"
-#include "lrotable.h"
 #include "module.h"
 #include "platform.h"
 #include "user_interface.h"
+
+#include "pixbuf.h"
 
 
 #define NOP asm volatile(" nop \n\t")
@@ -81,12 +81,25 @@ static int apa102_write(lua_State* L) {
   MOD_CHECK_ID(gpio, clock_pin);
   uint32_t alt_clock_pin = pin_num[clock_pin];
 
-  size_t buf_len;
-  const char *buf = luaL_checklstring(L, 3, &buf_len);
-  uint32_t nbr_frames = buf_len / 4;
+  const char *buf;
+  uint32_t nbr_frames;
 
-  if (nbr_frames > 100000) {
-    return luaL_error(L, "The supplied buffer is too long, and might cause the callback watchdog to bark.");
+  switch(lua_type(L, 3)) {
+  case LUA_TSTRING: {
+    size_t buf_len;
+    buf = luaL_checklstring(L, 3, &buf_len);
+    nbr_frames = buf_len / 4;
+    break;
+   }
+  case LUA_TUSERDATA: {
+    pixbuf *buffer = pixbuf_from_lua_arg(L, 3);
+    luaL_argcheck(L, buffer->nchan == 4, 3, "Pixbuf not 4-channel");
+    buf = (const char *)buffer->values;
+    nbr_frames = buffer->npix;
+    break;
+   }
+  default:
+    return luaL_argerror(L, 3, "String or pixbuf expected");
   }
 
   // Initialize the output pins
@@ -101,15 +114,9 @@ static int apa102_write(lua_State* L) {
 }
 
 
-const LUA_REG_TYPE apa102_map[] =
-{
-  { LSTRKEY( "write" ), LFUNCVAL( apa102_write )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(apa102, NULL, 0)
+  LROT_FUNCENTRY( write, apa102_write )
+LROT_END(apa102, NULL, 0)
 
-LUALIB_API int luaopen_apa102(lua_State *L) {
-  LREGISTER(L, "apa102", apa102_map);
-  return 0;
-}
 
-NODEMCU_MODULE(APA102, "apa102", apa102_map, luaopen_apa102);
+NODEMCU_MODULE(APA102, "apa102", apa102, NULL);

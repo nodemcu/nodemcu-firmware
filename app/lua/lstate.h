@@ -56,7 +56,7 @@ typedef struct CallInfo {
 
 
 
-#define curr_func(L)	(ttisfunction(L->ci->func) ? clvalue(L->ci->func) : NULL)
+#define curr_func(L)	(ttisclfunction(L->ci->func) ? clvalue(L->ci->func) : NULL)
 #define ci_func(ci)	(ttisfunction((ci)->func) ? clvalue((ci)->func) : NULL)
 #define f_isLua(ci)	(!ttislightfunction((ci)->func) && !ci_func(ci)->c.isC)
 #define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
@@ -82,18 +82,25 @@ typedef struct global_State {
   Mbuffer buff;  /* temporary buffer for string concatentation */
   lu_mem GCthreshold;
   lu_mem totalbytes;  /* number of bytes currently allocated */
-  lu_mem memlimit;  /* maximum number of bytes that can be allocated, 0 = no limit. */
+  l_mem memlimit;  /* maximum number of bytes that can be allocated, 0 = no limit. <0 used with EGC_ON_MEM_LIMIT when free heap falls below -memlimit */
   lu_mem estimate;  /* an estimate of number of bytes actually in use */
   lu_mem gcdept;  /* how much GC is `behind schedule' */
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC `granularity' */
+  int stripdefault;  /* default stripping level for compilation */
   int egcmode;    /* emergency garbage collection operation mode */
   lua_CFunction panic;  /* to be called in unprotected errors */
   TValue l_registry;
   struct lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  struct Table *mt[NUM_TAGS];  /* metatables for basic types */
+  struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
+#ifndef LUA_CROSS_COMPILER
+  stringtable ROstrt;  /* Flash-based hash table for RO strings */
+  Proto *ROpvmain;   /* Flash-based Proto main */
+  int LFSsize;  /* Size of Lua Flash Store */
+  int error_reporter; /* Registry Index of error reporter task */
+#endif
 } global_State;
 
 
@@ -154,7 +161,7 @@ union GCObject {
 #define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, &((o)->u))
 #define gco2u(o)	(&rawgco2u(o)->uv)
 #define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, &((o)->cl))
-#define gco2h(o)	check_exp((o)->gch.tt == LUA_TTABLE, &((o)->h))
+#define gco2h(o)	check_exp(((o)->gch.tt & LUA_TMASK) == LUA_TTABLE, &((o)->h))
 #define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, &((o)->p))
 #define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, &((o)->uv))
 #define ngcotouv(o) \

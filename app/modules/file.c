@@ -4,14 +4,23 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "spiffs/nodemcu_spiffs.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "vfs.h"
-#include "c_string.h"
+#include <string.h>
 
 #include <alloca.h>
 
 #define FILE_READ_CHUNK 1024
+
+// use this time/date in absence of a timestamp
+#define FILE_TIMEDEF_YEAR 1970
+#define FILE_TIMEDEF_MON 01
+#define FILE_TIMEDEF_DAY 01
+#define FILE_TIMEDEF_HOUR 00
+#define FILE_TIMEDEF_MIN 00
+#define FILE_TIMEDEF_SEC 00
 
 static int file_fd = 0;
 static int file_fd_ref = LUA_NOREF;
@@ -20,6 +29,17 @@ static int rtc_cb_ref = LUA_NOREF;
 typedef struct _file_fd_ud {
   int fd;
 } file_fd_ud;
+
+static void do_flash_mount() {
+    if (!vfs_mount("/FLASH", 0)) {
+        // Failed to mount -- try reformat
+        dbg_printf("Formatting file system. Please wait...\n");
+        if (!vfs_format()) {
+            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+    }
+}
 
 static void table2tm( lua_State *L, vfs_time *tm )
 {
@@ -33,12 +53,12 @@ static void table2tm( lua_State *L, vfs_time *tm )
   lua_getfield( L, idx, "min" );
   lua_getfield( L, idx, "sec" );
 
-  tm->year = luaL_optint( L, ++idx, 2016 );
-  tm->mon  = luaL_optint( L, ++idx, 6 );
-  tm->day  = luaL_optint( L, ++idx, 21 );
-  tm->hour = luaL_optint( L, ++idx, 0 );
-  tm->min  = luaL_optint( L, ++idx, 0 );
-  tm->sec  = luaL_optint( L, ++idx, 0 );
+  tm->year = luaL_optint( L, ++idx, FILE_TIMEDEF_YEAR );
+  tm->mon  = luaL_optint( L, ++idx, FILE_TIMEDEF_MON );
+  tm->day  = luaL_optint( L, ++idx, FILE_TIMEDEF_DAY );
+  tm->hour = luaL_optint( L, ++idx, FILE_TIMEDEF_HOUR );
+  tm->min  = luaL_optint( L, ++idx, FILE_TIMEDEF_MIN );
+  tm->sec  = luaL_optint( L, ++idx, FILE_TIMEDEF_SEC );
 
   // remove items from stack
   lua_pop( L, 6 );
@@ -52,7 +72,8 @@ static sint32_t file_rtc_cb( vfs_time *tm )
     lua_State *L = lua_getstate();
 
     lua_rawgeti( L, LUA_REGISTRYINDEX, rtc_cb_ref );
-    lua_call( L, 0, 1 );
+    if (luaL_pcallx( L, 0, 1 ) != LUA_OK)
+      return res;
 
     if (lua_type( L, lua_gettop( L ) ) == LUA_TTABLE) {
       table2tm( L, tm );
@@ -80,15 +101,20 @@ static int file_on(lua_State *L)
   case ON_RTC:
     luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
 
-    if ((lua_type(L, 2) == LUA_TFUNCTION) ||
-        (lua_type(L, 2) == LUA_TLIGHTFUNCTION)) {
+    switch(lua_type(L, 2)) {
+    case LUA_TFUNCTION:
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       vfs_register_rtc_cb(file_rtc_cb);
-    } else {
+      break;
+    case LUA_TNIL:
       rtc_cb_ref = LUA_NOREF;
       vfs_register_rtc_cb(NULL);
+      break;
+    default:
+      luaL_error(L, "Callback should be function or nil");
     }
+
     break;
   default:
     break;
@@ -118,16 +144,17 @@ static int file_close( lua_State* L )
     ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
   }
 
-  // unref default file descriptor
-  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
-  file_fd_ref = LUA_NOREF;
-
   if(ud->fd){
       vfs_close(ud->fd);
       // mark as closed
       ud->fd = 0;
   }
-  return 0;  
+
+  // unref default file descriptor
+  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
+  file_fd_ref = LUA_NOREF;
+
+  return 0;
 }
 
 static int file_obj_free( lua_State *L )
@@ -181,7 +208,7 @@ static int file_open( lua_State* L )
 
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
   const char *mode = luaL_optstring(L, 2, "r");
 
@@ -199,26 +226,60 @@ static int file_open( lua_State* L )
     lua_pushvalue( L, -1 );
     file_fd_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
-  return 1; 
+  return 1;
 }
 
 // Lua: list()
 static int file_list( lua_State* L )
 {
   vfs_dir  *dir;
-  vfs_item *item;
+  const char *pattern;
+  struct vfs_stat stat;
+  int pcres;
 
-  if (dir = vfs_opendir("")) {
-    lua_newtable( L );
-    while (item = vfs_readdir(dir)) {
-      lua_pushinteger(L, vfs_item_size(item));
-      lua_setfield(L, -2, vfs_item_name(item));
-      vfs_closeitem(item);
-    }
-    vfs_closedir(dir);
-    return 1;
+  lua_settop(L, 1);
+  pattern = luaL_optstring(L, 1, NULL);   /* Pattern (arg) or nil (not) at 1 */
+
+  dir = vfs_opendir("");
+  if (dir == NULL) {
+    return 0;
   }
-  return 0;
+
+  lua_newtable( L );                      /* Table at 2 */
+
+  if (pattern) {
+    /*
+     * We know that pattern is a string, and so the "match" method will always
+     * exist.  No need to check return value here
+     */
+    luaL_getmetafield( L, 1, "match" );  /* Function at 3 */
+  }
+
+  while (vfs_readdir(dir, &stat) == VFS_RES_OK) {
+    if (pattern) {
+      lua_settop( L, 3 );                 /* Ensure nothing else on stack */
+
+      /* Construct and pcall(string.match,name,pattern) */
+      lua_pushvalue( L, 3 );
+      lua_pushstring( L, stat.name );
+      lua_pushvalue( L, 1 );
+      pcres = lua_pcall( L, 2, 1, 0 );
+      if (pcres != 0) {
+        vfs_closedir(dir);
+        lua_error( L );
+      }
+      if (lua_isnil( L, -1 )) {
+        continue;
+      }
+    }
+    lua_pushinteger( L, stat.size );
+    lua_setfield( L, 2, stat.name );
+  }
+
+  /* Shed everything back to Table */
+  lua_settop( L, 2 );
+  vfs_closedir(dir);
+  return 1;
 }
 
 static int get_file_obj( lua_State *L, int *argpos )
@@ -258,15 +319,12 @@ static int file_seek (lua_State *L)
 static int file_exists( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );    
+  const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
-  vfs_item *stat = vfs_stat((char *)fname);
-
-  lua_pushboolean(L, stat ? 1 : 0);
-
-  if (stat) vfs_closeitem(stat);
+  struct vfs_stat stat;
+  lua_pushboolean(L, vfs_stat((char *)fname, &stat) == VFS_RES_OK ? 1 : 0);
 
   return 1;
 }
@@ -275,9 +333,9 @@ static int file_exists( lua_State* L )
 static int file_remove( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );    
+  const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
   vfs_remove((char *)fname);
   return 0;
 }
@@ -303,11 +361,11 @@ static int file_rename( lua_State* L )
 
   const char *oldname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( oldname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(oldname) == len, 1, "filename invalid");
-  
-  const char *newname = luaL_checklstring( L, 2, &len );  
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(oldname) == len, 1, "filename invalid");
+
+  const char *newname = luaL_checklstring( L, 2, &len );
   basename = vfs_basename( newname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(newname) == len, 2, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(newname) == len, 2, "filename invalid");
 
   if(0 <= vfs_rename( oldname, newname )){
     lua_pushboolean(L, 1);
@@ -317,71 +375,112 @@ static int file_rename( lua_State* L )
   return 1;
 }
 
+// Lua: stat(filename)
+static int file_stat( lua_State* L )
+{
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );
+  luaL_argcheck( L, strlen(fname) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid" );
+
+  struct vfs_stat stat;
+  if (vfs_stat( (char *)fname, &stat ) != VFS_RES_OK) {
+    lua_pushnil( L );
+    return 1;
+  }
+
+  lua_createtable( L, 0, 7 );
+
+  lua_pushinteger( L, stat.size );
+  lua_setfield( L, -2, "size" );
+
+  lua_pushstring( L, stat.name );
+  lua_setfield( L, -2, "name" );
+
+  lua_pushboolean( L, stat.is_dir );
+  lua_setfield( L, -2, "is_dir" );
+
+  lua_pushboolean( L, stat.is_rdonly );
+  lua_setfield( L, -2, "is_rdonly" );
+
+  lua_pushboolean( L, stat.is_hidden );
+  lua_setfield( L, -2, "is_hidden" );
+
+  lua_pushboolean( L, stat.is_sys );
+  lua_setfield( L, -2, "is_sys" );
+
+  lua_pushboolean( L, stat.is_arch );
+  lua_setfield( L, -2, "is_arch" );
+
+  // time stamp as sub-table
+  lua_createtable( L, 0, 6 );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.year : FILE_TIMEDEF_YEAR );
+  lua_setfield( L, -2, "year" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.mon : FILE_TIMEDEF_MON );
+  lua_setfield( L, -2, "mon" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.day : FILE_TIMEDEF_DAY );
+  lua_setfield( L, -2, "day" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.hour : FILE_TIMEDEF_HOUR );
+  lua_setfield( L, -2, "hour" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.min : FILE_TIMEDEF_MIN );
+  lua_setfield( L, -2, "min" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.sec : FILE_TIMEDEF_SEC );
+  lua_setfield( L, -2, "sec" );
+
+  lua_setfield( L, -2, "time" );
+
+  return 1;
+}
+
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 {
-  static char *heap_mem = NULL;
-  // free leftover memory
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
-  }
-
-  if(n <= 0)
-    n = FILE_READ_CHUNK;
-
-  if(end_char < 0 || end_char >255)
-    end_char = EOF;
-
+  int i, j;
+  luaL_Buffer b;
+  char p[LUAL_BUFFERSIZE/2];
 
   if(!fd)
     return luaL_error(L, "open a file first");
 
-  char *p;
-  int i;
+  luaL_buffinit(L, &b);
 
-  if (n > LUAL_BUFFERSIZE) {
-    // get buffer from heap
-    p = heap_mem = luaM_malloc(L, n);
-  } else {
-    // small chunks go onto the stack
-    p = alloca(n);
-  }
+  for (j = 0; j < n; j += sizeof(p)) {
+    int nwanted = (n - j >= sizeof(p)) ? sizeof(p) : n - j;
+    int nread   = vfs_read(fd, p, nwanted);
 
-  n = vfs_read(fd, p, n);
-  // bypass search if no end character provided
-  if (n > 0 && end_char != EOF) {
-    for (i = 0; i < n; ++i)
-      if (p[i] == end_char)
-      {
-        ++i;
+    if (nread == VFS_RES_ERR || nread == 0) {
+      if (j > 0) {
         break;
       }
-  } else {
-    i = n;
-  }
-
-  if (i == 0 || n == VFS_RES_ERR) {
-    if (heap_mem) {
-      luaM_free(L, heap_mem);
-      heap_mem = NULL;
+      lua_pushnil(L);
+      return 1;
     }
-    return 0;
-  }
 
-  vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-  lua_pushlstring(L, p, i);
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
+    for (i = 0; i < nread; ++i) {
+      luaL_addchar(&b, p[i]);
+      if (p[i] == end_char) {
+        vfs_lseek(fd, -nread + i + 1, VFS_SEEK_CUR); //reposition after end char found
+        nread = 0;   // force break on outer loop
+        break;
+      }
+    }
+
+    if (nread < nwanted)
+      break;
   }
+  luaL_pushresult(&b);
   return 1;
 }
 
 // Lua: read()
-// file.read() will read all byte in file
+// file.read() will read FILE _CHUNK bytes, or EOF is reached.
 // file.read(10) will read 10 byte from file, or EOF is reached.
-// file.read('q') will read until 'q' or EOF is reached. 
+// file.read('q') will read until 'q' or EOF is reached.
 static int file_read( lua_State* L )
 {
   unsigned need_len = FILE_READ_CHUNK;
@@ -411,7 +510,29 @@ static int file_readline( lua_State* L )
 {
   GET_FILE_OBJ;
 
-  return file_g_read(L, LUAL_BUFFERSIZE, '\n', fd);
+  return file_g_read(L, FILE_READ_CHUNK, '\n', fd);
+}
+
+// Lua: getfile(filename)
+static int file_getfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L ,1);
+  // Stack [1] = FD
+  file_open(L);
+  // Stack [1] = filename; [2] = FD or nil
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 1);  // dump filename, so [1] = FD
+    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
+    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd);
+    // Stack [1] = FD; [2] = contents if ret_cnt = 1;
+    file_close(L);     // leaves Stack unchanged if [1] = FD
+    lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
+  }
+  return ret_cnt;
 }
 
 // Lua: write("string")
@@ -454,10 +575,38 @@ static int file_writeline( lua_State* L )
   return 1;
 }
 
+// Lua: getfile(filename)
+static int file_putfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L, 2);
+  lua_pushvalue(L, 2); //dup contents onto the ToS [3]
+  lua_pushliteral(L, "w+");
+  lua_replace(L, 2);
+  // Stack [1] = filename; [2] "w+" [3] contents;
+  file_open(L);
+  // Stack [1] = filename; [2] "w+" [3] contents; [4] FD or nil
+
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 2);  //dump "w+" attribute literal
+    lua_replace(L, 1);
+    // Stack [1] = FD; [2] contents
+    file_write(L);
+    // Stack [1] = FD; [2] contents; [3] result status
+    lua_remove(L, 2);  //dump contents
+    file_close(L);
+    lua_remove(L, 1); // Dump FD leaving status as ToS
+  }
+  return 1;
+}
+
 // Lua: fsinfo()
 static int file_fsinfo( lua_State* L )
 {
-  u32_t total, used;
+  uint32_t total, used;
   if (vfs_fsinfo("", &total, &used)) {
     return luaL_error(L, "file system failed");
   }
@@ -485,7 +634,7 @@ static int file_mount( lua_State *L )
 
   if (vol->vol = vfs_mount( ldrv, num )) {
     /* set its metatable */
-    luaL_getmetatable(L, "vfs.vol");
+    luaL_getmetatable(L, "file.vol");
     lua_setmetatable(L, -2);
     return 1;
   } else {
@@ -517,61 +666,64 @@ static int file_vol_umount( lua_State *L )
 }
 
 
-static const LUA_REG_TYPE file_obj_map[] =
-{
-  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
-  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
-  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
-  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-  { LSTRKEY( "__gc" ),      LFUNCVAL( file_obj_free ) },
-  { LSTRKEY( "__index" ),   LROVAL( file_obj_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(file_obj, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, file_obj_free )
+  LROT_TABENTRY(  __index, file_obj )
+  LROT_FUNCENTRY( close, file_close )
+  LROT_FUNCENTRY( read, file_read )
+  LROT_FUNCENTRY( readline, file_readline )
+  LROT_FUNCENTRY( write, file_write )
+  LROT_FUNCENTRY( writeline, file_writeline )
+  LROT_FUNCENTRY( seek, file_seek )
+  LROT_FUNCENTRY( flush, file_flush )
+LROT_END(file_obj, NULL, LROT_MASK_GC_INDEX)
 
-static const LUA_REG_TYPE file_vol_map[] =
-{
-  { LSTRKEY( "umount" ),   LFUNCVAL( file_vol_umount )},
-  //{ LSTRKEY( "getfree" ),  LFUNCVAL( file_vol_getfree )},
-  //{ LSTRKEY( "getlabel" ), LFUNCVAL( file_vol_getlabel )},
-  //{ LSTRKEY( "__gc" ),     LFUNCVAL( file_vol_free ) },
-  { LSTRKEY( "__index" ),  LROVAL( file_vol_map ) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(file_vol, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, file_vol )
+  LROT_FUNCENTRY( umount, file_vol_umount )
+LROT_END(file_vol, NULL, LROT_MASK_INDEX)
 
 // Module function map
-static const LUA_REG_TYPE file_map[] = {
-  { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
-  { LSTRKEY( "open" ),      LFUNCVAL( file_open ) },
-  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
-  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
-  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
+LROT_BEGIN(file, NULL, 0)
+  LROT_FUNCENTRY( list, file_list )
+  LROT_FUNCENTRY( open, file_open )
+  LROT_FUNCENTRY( close, file_close )
+  LROT_FUNCENTRY( write, file_write )
+  LROT_FUNCENTRY( writeline, file_writeline )
+  LROT_FUNCENTRY( read, file_read )
+  LROT_FUNCENTRY( readline, file_readline )
 #ifdef BUILD_SPIFFS
-  { LSTRKEY( "format" ),    LFUNCVAL( file_format ) },
-  { LSTRKEY( "fscfg" ),     LFUNCVAL( file_fscfg ) },
+  LROT_FUNCENTRY( format, file_format )
+  LROT_FUNCENTRY( fscfg, file_fscfg )
 #endif
-  { LSTRKEY( "remove" ),    LFUNCVAL( file_remove ) },
-  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-  { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
-  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
-  { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
-  { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
+  LROT_FUNCENTRY( remove, file_remove )
+  LROT_FUNCENTRY( seek, file_seek )
+  LROT_FUNCENTRY( flush, file_flush )
+  LROT_FUNCENTRY( rename, file_rename )
+  LROT_FUNCENTRY( exists, file_exists )
+  LROT_FUNCENTRY( getcontents, file_getfile )
+  LROT_FUNCENTRY( putcontents, file_putfile )
+  LROT_FUNCENTRY( fsinfo, file_fsinfo )
+  LROT_FUNCENTRY( on, file_on )
+  LROT_FUNCENTRY( stat, file_stat )
 #ifdef BUILD_FATFS
-  { LSTRKEY( "mount" ),     LFUNCVAL( file_mount ) },
-  { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },
+  LROT_FUNCENTRY( mount, file_mount )
+  LROT_FUNCENTRY( chdir, file_chdir )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END(file, NULL, 0)
+
 
 int luaopen_file( lua_State *L ) {
-  luaL_rometatable( L, "file.vol",  (void *)file_vol_map );
-  luaL_rometatable( L, "file.obj",  (void *)file_obj_map );
+  int startup_option = platform_rcr_get_startup_option();
+  if ((startup_option & STARTUP_OPTION_DELAY_MOUNT) == 0) {
+      do_flash_mount();
+  } else {
+      myspiffs_set_automount(do_flash_mount);
+  }
+  luaL_rometatable( L, "file.vol",  LROT_TABLEREF(file_vol));
+  luaL_rometatable( L, "file.obj",  LROT_TABLEREF(file_obj));
   return 0;
 }
 
-NODEMCU_MODULE(FILE, "file", file_map, luaopen_file);
+NODEMCU_MODULE(FILE, "file", file, luaopen_file);

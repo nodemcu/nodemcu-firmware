@@ -13,6 +13,12 @@
 #define  espconn_keepalive_enable(pcb)   ((pcb)->so_options |= SOF_KEEPALIVE)
 #define  espconn_keepalive_disable(pcb)   ((pcb)->so_options &= ~SOF_KEEPALIVE)
 
+#define   espconn_manual_recv_disabled(espconn)  (((espconn)->pcommon.espconn_opt & ESPCONN_MANUALRECV) != 0)
+#define   espconn_manual_recv_enabled(espconn)  (((espconn)->pcommon.espconn_opt & ESPCONN_MANUALRECV) == 0)
+
+extern int ets_task();
+extern int ets_post();
+
 /******************************************************************************
  * FunctionName : espconn_kill_oldest_pcb
  * Description  : A oldest incoming connection has been killed.
@@ -33,7 +39,7 @@ extern void espconn_tcp_disconnect(espconn_msg *pdiscon,u8 type);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_client
- * Description  : Initialize the client: set up a connect PCB and bind it to 
+ * Description  : Initialize the client: set up a connect PCB and bind it to
  *                the defined port
  * Parameters   : espconn -- the espconn used to build client
  * Returns      : none
@@ -43,7 +49,7 @@ extern sint8 espconn_tcp_client(struct espconn* espconn);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_server
- * Description  : Initialize the server: set up a listening PCB and bind it to 
+ * Description  : Initialize the server: set up a listening PCB and bind it to
  *                the defined port
  * Parameters   : espconn -- the espconn used to build server
  * Returns      : none

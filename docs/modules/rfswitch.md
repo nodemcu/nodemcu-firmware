@@ -4,14 +4,9 @@
 | 2016-12-01 | [Roman Fedorov](https://github.com/ffedoroff) | [Roman Fedorov](https://github.com/ffedoroff) | [rfswitch.c](../../app/modules/rfswitch.c)|
 
 
-Module for operate 433/315Mhz devices like power outlet sockets, relays, etc.
-This will most likely work with all popular low cost power outlet sockets
-with a SC5262 / SC5272, HX2262 / HX2272, PT2262 / PT2272, EV1527,
-RT1527, FP1527 or HS1527 chipset.
+Module to operate 433/315Mhz devices like power outlet sockets, relays, etc. This will most likely work with all popular low cost power outlet sockets with a SC5262 / SC5272, HX2262 / HX2272, PT2262 / PT2272, EV1527, RT1527, FP1527 or HS1527 chipset.
 
-This module using some code from original [rc-switch](https://github.com/sui77/rc-switch/) arduino lib
-but NodeMCU and Arduino are not fully compatible, and it cause
-for full rewrite **rc-switch** into this new **rfswitch** lib for NodeMCU with Lua support.
+This module uses some code from the [original rc-switch Arduino lib](https://github.com/sui77/rc-switch/) but NodeMCU and Arduino are not fully compatible. This required that **rc-switch** was rewritten into  **rfswitch** NodeMCU with Lua support.
 
 ### Connection of transmitter
 
@@ -21,20 +16,19 @@ for full rewrite **rc-switch** into this new **rfswitch** lib for NodeMCU with L
 | ground or - | GND | ground should be connected to ESP8266 and to power source |
 | data pin | 6 | almost any pin on ESP8266 |
 
-You can read more about connection, [here](https://alexbloggt.com/wp-content/uploads/2015/10/nodemcu_433_transmitter.png) or [here](https://alexbloggt.com/funksteckdosensteuerung-mit-esp8266/).
+You can read more about connection [here](https://alexbloggt.com/wp-content/uploads/2015/10/nodemcu_433_transmitter.png).
 
 ### Selecting proper protocol
-Current library supports **transmitting** using 6 different protocols
-and you should use proper one for your needs.
-Current lua library rfswitch doesn't support **receiver** functional yet, so you cannot
-listen radio air and get protocol details using lua.
+This module supports **transmitting** data using 6 different protocols
+and you should use one most suitable for your needs. **Receiving** data is not supported yet. So, you cannot listen radio air and get protocol details using Lua.
 
-The easiest way to get correct protocol is connect radio receiver to your ESP8266 or [Arduino](https://github.com/sui77/rc-switch/wiki/HowTo_Receive),
+The easiest way to get the correct protocol is to connect the radio receiver to your ESP8266 or [Arduino](https://github.com/sui77/rc-switch/wiki/HowTo_Receive),
 then run [ReceiveDemo_Advanced.ino](https://github.com/sui77/rc-switch/blob/master/examples/ReceiveDemo_Advanced/ReceiveDemo_Advanced.ino)
 and view output in serial console ([example1](http://www.instructables.com/id/Control-CoTech-Remote-Switch-With-Arduino-433Mhz/?ALLSTEPS),
 [example2](http://randomnerdtutorials.com/esp8266-remote-controlled-sockets/)).
 
 You should get something like this:
+
 ```
 Decimal: 11001351 (24Bit)
 Binary: 101001111101111000000111
@@ -48,19 +42,18 @@ More detailed about low level protocol specifications could be found [here](http
 You can visualize a telegram copy the raw data by paste it into [http://test.sui.li/oszi/]()
 
 ## rfswitch.send()
-Transmit value ising radio module.
+Transmit data using the radio module.
 
 #### Syntax
 `rfswitch.send(protocol_id, pulse_length, repeat, pin, value, length)`
 
 #### Parameters
 - `protocol_id` positive integer value, from 1-6
-- `pulse_length` length of one pulse in microseconds, usually from 100 till 650
-- `repeat` repeat value, usually from 1 till 5. This is synchronous task.
-Setting the repeat count to a large value will cause problems.
-The recommended limit is about 1-4, if you need more,
+- `pulse_length` length of one pulse in microseconds, usually from 100 to 650
+- `repeat` repeat value, usually from 1 to 5. This is a synchronous task. Setting the repeat count to a large value will cause problems.
+The recommended limit is about 1-4. If you need more,
 then call it asynchronously a few more times (e.g. using [node.task.post](../modules/node/#nodetaskpost))
-- `pin` IO index of pin, example 6 is for GPIO12 [see more](../modules/gpio/)
+- `pin` I/O index of pin, example 6 is for GPIO12, see [details](../modules/gpio/)
 - `value` positive integer value, this is the primary data which will be sent
 - `length` bit length of value, if value length is 3 bytes, then length is 24
 
@@ -69,7 +62,7 @@ then call it asynchronously a few more times (e.g. using [node.task.post](../mod
 
 #### Example
 ```lua
--- lua transmit radio code using protocol #1
+-- Lua transmit radio code using protocol #1
 -- pulse_length 300 microseconds
 -- repeat 5 times
 -- use pin #7 (GPIO13)

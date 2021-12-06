@@ -48,7 +48,7 @@
 #include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
-#include "c_string.h"
+#include <string.h>
 #include "nodemcu_mdns.h"
 
 #if 0
@@ -264,7 +264,7 @@ mdns_compare_name(unsigned char *query, unsigned char *response, unsigned char *
 	return 0;
 }
 
-static int 
+static int
 mdns_namelen(u8_t *p, unsigned int maxlen) {
   u8_t *orig = p;
 
@@ -484,7 +484,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		hdr->numextrarr = htons(1);
 		query = (char*) hdr + SIZEOF_DNS_HDR;
 		query_end = (char *) p->payload + p->tot_len;
-		c_strlcpy(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
+		strlcpy(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
 
 		pHostname = tmpBuf;
 		--pHostname;
@@ -618,9 +618,9 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		ans.type = htons(DNS_RRTYPE_SRV);
 		ans.class = htons(dns_class);
 		ans.ttl = htonl(min(max_ttl, 300));
-		c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
-		c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
-		c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
+		strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
+		strlcat(tmpBuf, ".", sizeof(tmpBuf));
+		strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
 		length = os_strlen(tmpBuf) + MDNS_LENGTH_ADD;
 		ans.len = htons(SIZEOF_MDNS_SERVICE + length);
 		length = 0;
@@ -654,7 +654,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		*query++ = '\0';
 
 		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer + sizeof_mdns_service
-		
+
 		*query++ = 0xc0 + (hostname_offset >> 8);
 		*query++ = hostname_offset & 0xff;
 
@@ -667,9 +667,9 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		/* resize the query */
 		query = query + SIZEOF_DNS_ANSWER;
-		
-		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer 
-		
+
+		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer
+
 
 		/* fill the payload of the mDNS message */
 		/* set the local IP address */
@@ -770,7 +770,7 @@ static char *append_nsec_record(char *query, u32_t actual_rr, int max_ttl) {
  * but the name exists
  */
 
-static void 
+static void
 mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct ip_addr *dst_addr, u16_t dst_port) {
   int max_ttl = dst_addr ? 10 : 7200;
   struct pbuf *p;
@@ -786,7 +786,7 @@ mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct 
     hdr->numextrarr = htons(1);
     char *query = (char*) hdr + SIZEOF_DNS_HDR;
     char *query_end = (char *) p->payload + p->tot_len;
-    // Now copy over the dns name 
+    // Now copy over the dns name
     int len = strlen(name);
 
     if (query_end - query >= len + SIZEOF_DNS_QUERY + 15) {
@@ -806,7 +806,7 @@ mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct 
  * This sends a single A record and the NSEC record as additional
  */
 
-static void 
+static void
 mdns_send_a_rr(struct mdns_hdr *req, const char *name, struct ip_addr *dst_addr, u16_t dst_port) {
   int max_ttl = dst_addr ? 10 : 7200;
   struct pbuf *p;
@@ -823,7 +823,7 @@ mdns_send_a_rr(struct mdns_hdr *req, const char *name, struct ip_addr *dst_addr,
     hdr->numextrarr = htons(1);
     char *query = (char*) hdr + SIZEOF_DNS_HDR;
     char *query_end = (char *) p->payload + p->tot_len;
-    // Now copy over the dns name 
+    // Now copy over the dns name
     int len = strlen(name) + 1;
 
     if (query_end - query >= len + SIZEOF_DNS_QUERY + 4 + 2 + 4 + 15) {
@@ -931,9 +931,9 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		      actual_rr = DNS_RRTYPE_PTR;
 		    }
 		  } else {
-		    c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
-		    c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
-		    c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
+		    strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
+		    strlcat(tmpBuf, ".", sizeof(tmpBuf));
+		    strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
 		    no_rr_name = tmpBuf;
 
 		    if (mdns_compare_name((unsigned char *) tmpBuf,
@@ -944,9 +944,9 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 			actual_rr = DNS_RRTYPE_A;
 		      }
 		    } else {
-		      c_strlcpy(tmpBuf,ms_info->host_desc, sizeof(tmpBuf));
-		      c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
-		      c_strlcat(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
+		      strlcpy(tmpBuf,ms_info->host_desc, sizeof(tmpBuf));
+		      strlcat(tmpBuf, ".", sizeof(tmpBuf));
+		      strlcat(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
 		      if (mdns_compare_name((unsigned char *) tmpBuf,
 				  (unsigned char *) qptr, (unsigned char *) hdr) == 0) {
 			if (qry_type == DNS_RRTYPE_TXT || qry_type == DNS_RRTYPE_SRV || qry_type == DNS_RRTYPE_ANY) {
@@ -1001,9 +1001,9 @@ mdns_set_servicename(const char *name) {
 	char tmpBuf[128];
 	os_sprintf(tmpBuf, "_%s._tcp.local", name);
 	if (service_name_with_suffix) {
-	  os_free(service_name_with_suffix);
+	  os_free((void *) service_name_with_suffix);
 	}
-	service_name_with_suffix = c_strdup(tmpBuf);
+	service_name_with_suffix = strdup(tmpBuf);
 }
 
 static u8_t reg_counter;
@@ -1029,15 +1029,15 @@ mdns_dup_info(const struct nodemcu_mdns_info *info) {
   // calculate length
   int len = sizeof(struct nodemcu_mdns_info);
 
-  len += c_strlen(info->host_name) + 1;
-  len += c_strlen(info->host_desc) + 1;
-  len += c_strlen(info->service_name) + 1;
+  len += strlen(info->host_name) + 1;
+  len += strlen(info->host_desc) + 1;
+  len += strlen(info->service_name) + 1;
   int i;
   for (i = 0; i < sizeof(info->txt_data) / sizeof(info->txt_data[0]) && info->txt_data[i]; i++) {
-    len += c_strlen(info->txt_data[i]) + 1;
+    len += strlen(info->txt_data[i]) + 1;
   }
 
-#define COPY_OVER(dest, src, p)  len = c_strlen(src) + 1; memcpy(p, src, len); dest = p; p += len
+#define COPY_OVER(dest, src, p)  len = strlen(src) + 1; memcpy(p, src, len); dest = p; p += len
 
   result = (struct nodemcu_mdns_info *) os_zalloc(len);
   if (result) {
@@ -1056,10 +1056,11 @@ mdns_dup_info(const struct nodemcu_mdns_info *info) {
   return result;
 }
 
+#include "pm/swtimer.h"
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
  * (NEW IP).
- * 
+ *
  * returns TRUE if it worked, FALSE if it failed.
  */
 bool ICACHE_FLASH_ATTR
@@ -1130,6 +1131,9 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
   //MDNS_DBG("About to start timer\n");
   os_timer_disarm(&mdns_timer);
   os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
+  SWTIMER_REG_CB(mdns_reg, SWTIMER_RESUME);
+    //the function mdns_reg registers the mdns device on the network
+    //My guess: Since wifi connection is restored after waking from light_sleep, the related timer would have no problem resuming it's normal function.
   os_timer_arm(&mdns_timer, 1000 * 280, 1);
   /* kick off the first one right away */
   mdns_reg_handler_restart();

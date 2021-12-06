@@ -15,7 +15,7 @@ ifndef PDIR
 GEN_LIBS = libdriver.a
 endif
 
-STD_CFLAGS=-std=gnu11 -Wimplicit
+STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES +=
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,9 +38,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

@@ -4,7 +4,7 @@
 | 2016-03-01 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [rotary.c](../../app/modules/rotary.c)|
 
 
-This module can read the state of cheap rotary encoder switches. These are available at all the standard places for a dollar or two. They are five pin devices where three are used for a gray code encoder for rotation, and two are used for the push switch. These switches are commonly used in car audio systems. 
+This module can read the state of cheap rotary encoder switches. These are available at all the standard places for a dollar or two. They are five pin devices where three are used for a gray code encoder for rotation, and two are used for the push switch. These switches are commonly used in car audio systems.
 
 These switches do not have absolute positioning, but only encode the number of positions rotated clockwise / anti-clockwise. To make use of this module, connect the common pin on the quadrature encoder to ground and the A and B phases to the NodeMCU. One pin of the push switch should also be grounded and the other pin connected to the NodeMCU.
 
@@ -15,8 +15,8 @@ These switches do not have absolute positioning, but only encode the number of p
 - Adafruit: [rotary encoder](https://www.adafruit.com/products/377)
 - Aliexpress: This [search](http://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20160217173657&SearchText=rotary+encoder+push+button) reveals all sorts of shapes and sizes.
 
-There is also a switch mounted on a board with standard 0.1" pins. 
-This is the KY-040, and can also be found at [lots of places](https://www.google.com/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=ky-040%20rotary%20encoder). 
+There is also a switch mounted on a board with standard 0.1" pins.
+This is the KY-040, and can also be found at [lots of places](https://www.google.com/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=ky-040%20rotary%20encoder).
 Note that the pins are named somewhat eccentrically, and I suspect that it really does need the VCC connected.
 
 ## Constants
@@ -60,12 +60,12 @@ Sets a callback on specific events.
 #### Parameters
 - `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
 - `eventtype` This defines the type of event being registered. This is the logical or of one or more of `PRESS`, `LONGPRESS`, `RELEASE`, `TURN`, `CLICK` or `DBLCLICK`.
-- `callback` This is a function that will be invoked when the specified event happens. 
+- `callback` This is a function that will be invoked when the specified event happens.
 
 If the callback is None or omitted, then the registration is cancelled.
 
-The callback will be invoked with three arguments when the event happens. The first argument is the eventtype, 
-the second is the current position of the rotary switch, and the third is the time when the event happened. 
+The callback will be invoked with three arguments when the event happens. The first argument is the eventtype,
+the second is the current position of the rotary switch, and the third is the time when the event happened.
 
 The position is tracked
 and is represented as a signed 32-bit integer. Increasing values indicate clockwise motion. The time is the number of microseconds represented
@@ -73,14 +73,14 @@ in a 32-bit integer. Note that this wraps every hour or so.
 
 #### Example
 
-    rotary.on(0, rotary.ALL, function (type, pos, when) 
+    rotary.on(0, rotary.ALL, function (type, pos, when)
       print "Position=" .. pos .. " event type=" .. type .. " time=" .. when
     end)
 
 #### Notes
 
-Events will be delivered in order, but there may be missing TURN events. If there is a long 
-queue of events, then PRESS and RELEASE events may also be missed. Multiple pending TURN events 
+Events will be delivered in order, but there may be missing TURN events. If there is a long
+queue of events, then PRESS and RELEASE events may also be missed. Multiple pending TURN events
 are typically dispatched as one TURN callback with the final position as its parameter.
 
 Some switches have 4 steps per detent. This means that, in practice, the application
@@ -98,7 +98,7 @@ If an invalid `eventtype` is supplied, then an error will be thrown.
 Gets the current position and press status of the switch
 
 #### Syntax
-`pos, press, queue = rotary.getpos(channel)`
+`pos, press = rotary.getpos(channel)`
 
 #### Parameters
 - `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
@@ -106,7 +106,6 @@ Gets the current position and press status of the switch
 #### Returns
 - `pos` The current position of the switch.
 - `press` A boolean indicating if the switch is currently pressed.
-- `queue` The number of undelivered callbacks (normally 0).
 
 #### Example
 

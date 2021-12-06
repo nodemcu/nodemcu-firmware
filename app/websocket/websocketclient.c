@@ -26,19 +26,19 @@
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
-#include "limits.h"
-#include "stdlib.h"
-
-#include "c_types.h"
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "c_stdio.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "websocketclient.h"
 
 // Depends on 'crypto' module for sha1
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"
+
+#include "pm/swtimer.h"
 
 #define PROTOCOL_SECURE "wss://"
 #define PROTOCOL_INSECURE "ws://"
@@ -69,19 +69,19 @@
 #define WS_OPCODE_PING 0x9
 #define WS_OPCODE_PONG 0xA
 
-header_t DEFAULT_HEADERS[] = {
+static const header_t DEFAULT_HEADERS[] = {
   {"User-Agent", "ESP8266"},
   {"Sec-WebSocket-Protocol", "chat"},
   {0}
 };
-header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
+static const header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
 
 static char *cryptoSha1(char *data, unsigned int len) {
   SHA1_CTX ctx;
   SHA1Init(&ctx);
   SHA1Update(&ctx, data, len);
-  
-  uint8_t *digest = (uint8_t *) c_zalloc(20);
+
+  uint8_t *digest = (uint8_t *) calloc(1,20);
   SHA1Final(digest, &ctx);
   return (char *) digest; // Requires free
 }
@@ -91,7 +91,7 @@ static const char *bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 static char *base64Encode(char *data, unsigned int len) {
   int blen = (len + 2) / 3 * 4;
 
-  char *out = (char *) c_zalloc(blen + 1);
+  char *out = (char *) calloc(1,blen + 1);
   out[blen] = '\0';
   int j = 0, i;
   for (i = 0; i < len; i += 3) {
@@ -132,7 +132,7 @@ static char *_strcpy(char *dst, char *src) {
     return dst - 1;
 }
 
-static int headers_length(header_t *headers) {
+static int headers_length(const header_t *headers) {
   int length = 0;
   for(; headers->key; headers++)
     length += strlen(headers->key) + strlen(headers->value) + 4;
@@ -186,7 +186,7 @@ static void ws_closeSentCallback(void *arg) {
 static void ws_sendFrame(struct espconn *conn, int opCode, const char *data, unsigned short len) {
   NODE_DBG("ws_sendFrame %d %d\n", opCode, len);
   ws_info *ws = (ws_info *) conn->reverse;
-  
+
   if (ws->connectionState == 4) {
     NODE_DBG("already in closing state\n");
     return;
@@ -195,7 +195,7 @@ static void ws_sendFrame(struct espconn *conn, int opCode, const char *data, uns
     return;
   }
 
-  char *b = c_zalloc(10 + len); // 10 bytes = worst case scenario for framming
+  char *b = calloc(1,10 + len); // 10 bytes = worst case scenario for framming
   if (b == NULL) {
     NODE_DBG("Out of memory when receiving message, disconnecting...\n");
 
@@ -241,7 +241,7 @@ static void ws_sendFrame(struct espconn *conn, int opCode, const char *data, uns
   // Apply mask to encode payload
   int i;
   for (i = 0; i < len; i++) {
-    b[bufOffset + i] ^= b[bufOffset - 4 + i % 4]; 
+    b[bufOffset + i] ^= b[bufOffset - 4 + i % 4];
   }
   bufOffset += len;
 
@@ -299,7 +299,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
   if (ws->frameBuffer != NULL) { // Append previous frameBuffer with new content
     NODE_DBG("Appending new frameBuffer to old one \n");
 
-    ws->frameBuffer = c_realloc(ws->frameBuffer, ws->frameBufferLen + len);
+    ws->frameBuffer = realloc(ws->frameBuffer, ws->frameBufferLen + len);
     if (ws->frameBuffer == NULL) {
       NODE_DBG("Failed to allocate new framebuffer, disconnecting...\n");
 
@@ -356,7 +356,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
       NODE_DBG("INCOMPLETE Frame \n");
       if (ws->frameBuffer == NULL) {
         NODE_DBG("Allocing new frameBuffer \n");
-        ws->frameBuffer = c_zalloc(len);
+        ws->frameBuffer = calloc(1,len);
         if (ws->frameBuffer == NULL) {
           NODE_DBG("Failed to allocate framebuffer, disconnecting... \n");
 
@@ -377,7 +377,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
       NODE_DBG("PARTIAL frame! Should concat payload and later restore opcode\n");
       if(ws->payloadBuffer == NULL) {
         NODE_DBG("Allocing new payloadBuffer \n");
-        ws->payloadBuffer = c_zalloc(payloadLength);
+        ws->payloadBuffer = calloc(1,payloadLength);
         if (ws->payloadBuffer == NULL) {
           NODE_DBG("Failed to allocate payloadBuffer, disconnecting...\n");
 
@@ -393,7 +393,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
         ws->payloadOriginalOpCode = opCode;
       } else {
         NODE_DBG("Appending new payloadBuffer to old one \n");
-        ws->payloadBuffer = c_realloc(ws->payloadBuffer, ws->payloadBufferLen + payloadLength);
+        ws->payloadBuffer = realloc(ws->payloadBuffer, ws->payloadBufferLen + payloadLength);
         if (ws->payloadBuffer == NULL) {
           NODE_DBG("Failed to allocate new framebuffer, disconnecting...\n");
 
@@ -423,7 +423,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
           return;
         }
         // concat buffer with payload
-        payload = c_zalloc(ws->payloadBufferLen + payloadLength);
+        payload = calloc(1,ws->payloadBufferLen + payloadLength);
 
         if (payload == NULL) {
           NODE_DBG("Failed to allocate new framebuffer, disconnecting...\n");
@@ -455,7 +455,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
           extensionDataOffset += 2;
         }
 
-        payload = c_zalloc(payloadLength - extensionDataOffset + 1);
+        payload = calloc(1,payloadLength - extensionDataOffset + 1);
         if (payload == NULL) {
           NODE_DBG("Failed to allocate payload, disconnecting...\n");
 
@@ -509,7 +509,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
       if (ws->frameBuffer != NULL) {
         NODE_DBG("Reallocing frameBuffer to remove consumed frame\n");
 
-        ws->frameBuffer = c_realloc(ws->frameBuffer, ws->frameBufferLen + len);
+        ws->frameBuffer = realloc(ws->frameBuffer, ws->frameBufferLen + len);
         if (ws->frameBuffer == NULL) {
           NODE_DBG("Failed to allocate new frame buffer, disconnecting...\n");
 
@@ -560,6 +560,7 @@ static void ws_initReceiveCallback(void *arg, char *buf, unsigned short len) {
 
   os_timer_disarm(&ws->timeoutTimer);
   os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_sendPingTimeout, conn);
+  SWTIMER_REG_CB(ws_sendPingTimeout, SWTIMER_RESUME)
   os_timer_arm(&ws->timeoutTimer, WS_PING_INTERVAL_MS, true);
 
   espconn_regist_recvcb(conn, ws_receiveCallback);
@@ -595,7 +596,7 @@ static void connect_callback(void *arg) {
 	  {0}
   };
 
-  header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
+  const header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
 
   char buf[WS_INIT_REQUEST_LENGTH + strlen(ws->path) + strlen(ws->hostname) +
 	  headers_length(DEFAULT_HEADERS) + headers_length(headers) + headers_length(extraHeaders) + 2];
@@ -706,6 +707,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   // Set connection timeout timer
   os_timer_disarm(&ws->timeoutTimer);
   os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_connectTimeout, conn);
+  SWTIMER_REG_CB(ws_connectTimeout, SWTIMER_RESUME)
   os_timer_arm(&ws->timeoutTimer, WS_CONNECT_TIMEOUT_MS, false);
 
   if (ws->isSecure) {
@@ -734,12 +736,12 @@ void ws_connect(ws_info *ws, const char *url) {
   }
 
   // Extract protocol - either ws or wss
-  bool isSecure = c_strncasecmp(url, PROTOCOL_SECURE, strlen(PROTOCOL_SECURE)) == 0;
+  bool isSecure = strncasecmp(url, PROTOCOL_SECURE, strlen(PROTOCOL_SECURE)) == 0;
 
   if (isSecure) {
     url += strlen(PROTOCOL_SECURE);
   } else {
-    if (c_strncasecmp(url, PROTOCOL_INSECURE, strlen(PROTOCOL_INSECURE)) != 0) {
+    if (strncasecmp(url, PROTOCOL_INSECURE, strlen(PROTOCOL_INSECURE)) != 0) {
       NODE_DBG("Failed to extract protocol from: %s\n", url);
       if (ws->onFailure) ws->onFailure(ws, -1);
       return;
@@ -748,7 +750,7 @@ void ws_connect(ws_info *ws, const char *url) {
   }
 
   // Extract path - it should start with '/'
-  char *path = c_strchr(url, '/');
+  char *path = strchr(url, '/');
 
   // Extract hostname, possibly including port
   char hostname[256];
@@ -796,9 +798,9 @@ void ws_connect(ws_info *ws, const char *url) {
   // Prepare internal ws_info
   ws->connectionState = 1;
   ws->isSecure = isSecure;
-  ws->hostname = c_strdup(hostname);
+  ws->hostname = strdup(hostname);
   ws->port = port;
-  ws->path = c_strdup(path);
+  ws->path = strdup(path);
   ws->expectedSecKey = NULL;
   ws->knownFailureCode = 0;
   ws->frameBuffer = NULL;
@@ -809,21 +811,21 @@ void ws_connect(ws_info *ws, const char *url) {
   ws->unhealthyPoints = 0;
 
   // Prepare espconn
-  struct espconn *conn = (struct espconn *) c_zalloc(sizeof(struct espconn));
+  struct espconn *conn = (struct espconn *) calloc(1,sizeof(struct espconn));
   conn->type = ESPCONN_TCP;
   conn->state = ESPCONN_NONE;
-  conn->proto.tcp = (esp_tcp *) c_zalloc(sizeof(esp_tcp));
+  conn->proto.tcp = (esp_tcp *) calloc(1,sizeof(esp_tcp));
   conn->proto.tcp->local_port = espconn_port();
   conn->proto.tcp->remote_port = ws->port;
-  
+
   conn->reverse = ws;
   ws->conn = conn;
 
   // Attempt to resolve hostname address
   ip_addr_t  addr;
-  err_t result = espconn_gethostbyname(conn, hostname, &addr, dns_callback);
+  err_t result = dns_gethostbyname(hostname, &addr, dns_callback, conn);
 
-  if (result == ESPCONN_INPROGRESS) {
+  if (result == ERR_INPROGRESS) {
     NODE_DBG("DNS pending\n");
   } else {
     dns_callback(hostname, &addr, conn);
@@ -867,6 +869,7 @@ void ws_close(ws_info *ws) {
 
     os_timer_disarm(&ws->timeoutTimer);
     os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_forceCloseTimeout, ws->conn);
+    SWTIMER_REG_CB(ws_forceCloseTimeout, SWTIMER_RESUME);
     os_timer_arm(&ws->timeoutTimer, WS_FORCE_CLOSE_TIMEOUT_MS, false);
   }
 }

@@ -2,7 +2,7 @@
 #define __MODULE_H__
 
 #include "user_modules.h"
-#include "lrodefs.h"
+#include "lnodemcu.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -18,11 +18,11 @@
  *
  * Then simply put a line like this at the bottom of your module file:
  *
- *   NODEMCU_MODULE(MYNAME, "myname", myname_map, luaopen_myname);
+ *   NODEMCU_MODULE(MYNAME, "myname", myname, luaopen_myname);
  *
  * or perhaps
  *
- *   NODEMCU_MODULE(MYNAME, "myname", myname_map, NULL);
+ *   NODEMCU_MODULE(MYNAME, "myname", myname, NULL);
  *
  * if you don't need an init function.
  *
@@ -38,8 +38,6 @@
 #define MODULE_PASTE_(x,y) x##y
 #define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(s)))
-
 /* For the ROM table, we name the variable according to ( | denotes concat):
  *   cfgname | _module_selected | LUA_USE_MODULES_##cfgname
  * where the LUA_USE_MODULES_XYZ macro is first expanded to yield either
@@ -51,24 +49,9 @@
  * to be linked in.
  */
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
-    luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
-  const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
-    = { luaname, map }
-
-
-/* System module registration support, not using LUA_USE_MODULES_XYZ. */
-#define BUILTIN_LIB_INIT(name, luaname, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
-    luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
-
-#define BUILTIN_LIB(name, luaname, map) \
-  const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map }
-
-#if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
-# error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
-#endif
-
+  const LOCK_IN_SECTION(libs) \
+    ROTable_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
+  const LOCK_IN_SECTION(rotable) \
+    ROTable_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
+    = {luaname, LRO_ROVAL(map)}
 #endif

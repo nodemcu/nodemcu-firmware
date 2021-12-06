@@ -12,10 +12,25 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
+SUBDIRS = luac_cross
 GEN_LIBS = liblua.a
 endif
 
-STD_CFLAGS=-std=gnu11 -Wimplicit
+STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
+
+
+# Validate LUA setting
+ifeq ("$(LUA)","")
+else ifeq ("$(LUA)","51")
+  # ok
+else ifeq ("$(LUA)","53")
+  $(error Your variable LUA="$(LUA)" looks like you probably want \
+    app/lua53/Makefile instead)
+else
+  $(error Unsupported value "$(LUA)" for variable "LUA", \
+    expected empty/unset (recommended) or "51")
+endif
+
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -24,7 +39,8 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES += -DDEVELOPMENT_TOOLS -DDEVELOPMENT_USE_GDB -DDEVELOPMENT_BREAK_ON_STARTUP_PIN=1
+#EXTRA_CCFLAGS += -ggdb -O0
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,12 +54,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../libc
-INCLUDES += -I ../modules
-INCLUDES += -I ../platform
+INCLUDES += -I ../uzlib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

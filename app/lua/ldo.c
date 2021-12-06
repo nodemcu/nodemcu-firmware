@@ -8,10 +8,9 @@
 
 #define ldo_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -144,8 +143,11 @@ static void correctstack (lua_State *L, TValue *oldstack) {
 void luaD_reallocstack (lua_State *L, int newsize) {
   TValue *oldstack = L->stack;
   int realsize = newsize + 1 + EXTRA_STACK;
+  int block_status = is_block_gc(L);
   lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
+  set_block_gc(L);       /* The GC MUST be blocked during stack reallocaiton */
   luaM_reallocvector(L, L->stack, L->stacksize, realsize, TValue);
+  if (!block_status) unset_block_gc(L);  /* Honour the previous block status */
   L->stacksize = realsize;
   L->stack_last = L->stack+newsize;
   correctstack(L, oldstack);
@@ -251,13 +253,13 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   return base;
 }
 
-
 static StkId tryfuncTM (lua_State *L, StkId func) {
   const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
   StkId p;
   ptrdiff_t funcr = savestack(L, func);
-  if (!ttisfunction(tm))
+  if (!ttisfunction(tm)) {
     luaG_typeerror(L, func, "call");
+  }
   /* Open a hole inside the stack at `func' */
   for (p = L->top; p > func; p--) setobjs2s(L, p, p-1);
   incr_top(L);
@@ -276,10 +278,10 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 int luaD_precall (lua_State *L, StkId func, int nresults) {
   ptrdiff_t funcr;
   LClosure *cl = NULL;
-  if (!ttisfunction(func) && !ttislightfunction(func)) /* `func' is not a function? */
+  if (!ttisfunction(func)) /* `func' is not a function? */
     func = tryfuncTM(L, func);  /* check the `function' tag method */
   funcr = savestack(L, func);
-  if (ttisfunction(func))
+  if (!ttislightfunction(func))
     cl = &clvalue(func)->l;
   L->ci->savedpc = L->savedpc;
   if (cl && !cl->isC) {  /* Lua function? prepare its call */
@@ -329,10 +331,10 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     if (L->hookmask & LUA_MASKCALL)
       luaD_callhook(L, LUA_HOOKCALL, -1);
     lua_unlock(L);
-    if (ttisfunction(ci->func))
-      n = (*curr_func(L)->c.f)(L);  /* do the actual call */
-    else
+    if (ttislightfunction(ci->func))
       n = ((lua_CFunction)fvalue(ci->func))(L);  /* do the actual call */
+    else
+      n = (*curr_func(L)->c.f)(L);  /* do the actual call */
     lua_lock(L);
     if (n < 0)  /* yielding? */
       return PCRYIELD;
@@ -381,7 +383,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
 ** The arguments are on the stack, right after the function.
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
-*/ 
+*/
 void luaD_call (lua_State *L, StkId func, int nResults) {
   if (++L->nCcalls >= LUAI_MAXCCALLS) {
     if (L->nCcalls == LUAI_MAXCCALLS)

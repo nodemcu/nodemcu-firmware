@@ -36,10 +36,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#ifdef _MSC_VER
+#include "getopt.h"		/* local copy from MingW project */
+#include <io.h>
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+typedef ptrdiff_t off_t;
+#else
 #include <unistd.h>
-#include <fcntl.h>
 #include <getopt.h>
 #include <sys/mman.h>
+#endif
+#include <fcntl.h>
 #include <errno.h>
 #include "spiffs.h"
 #define NO_CPU_ESP8266_INCLUDE
@@ -143,7 +152,7 @@ static void import (char *src, char *dst)
     if (SPIFFS_write (&fs, fh, buff, n) < 0)
       die ("spiffs_write");
 
-  if (SPIFFS_close (&fs, fh) < 0) 
+  if (SPIFFS_close (&fs, fh) < 0)
     die("spiffs_close");
   close (fd);
 }
@@ -199,7 +208,7 @@ void syntax (void)
   exit (1);
 }
 
-static size_t getsize(const char *s) 
+static size_t getsize(const char *s)
 {
   char *end = 0;
   size_t val = strtoul(s, &end, 0);
@@ -261,6 +270,9 @@ int main (int argc, char *argv[])
     die("Need a filename");
   }
 
+#ifdef _MSC_VER
+  _set_fmode( _O_BINARY );	//change default open mode to binary rather than text
+#endif
   int fd;
 
   if (create)
@@ -326,7 +338,20 @@ int main (int argc, char *argv[])
   if (sz & (0x1000 -1))
     die ("file size not multiple of erase block size");
 
-  flash = mmap (0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#ifdef _MSC_VER
+  //We don't have a mmap(), so we simply allocate a file buffer we write out
+  //at the end of the program.  This also means that we need to let the program
+  //end normally (i.e. not via Ctrl-C) or else that final write will not happen.
+  //If you are in interactive mode, there is not a command for 'exit', however
+  //EOF may be used to end the interactive loop by pressing Ctrl-Z, return.
+  flash = (uint8_t*)malloc( sz );
+  if ( lseek( fd, 0, SEEK_SET ) == -1 )
+	  die( "lseek" );
+  if ( read( fd, flash, sz ) != sz )
+	  die( "write" );
+#else
+  flash = mmap( 0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
+#endif
   if (!flash)
     die ("mmap");
 
@@ -392,7 +417,13 @@ int main (int argc, char *argv[])
       else if (strncmp (line, "import ", 7) == 0)
       {
         char *src = 0, *dst = 0;
+#ifdef _MSC_VER
+        src = (char*)malloc(260 + 1);	//MAX_PATH
+        dst = (char*)malloc( 260 + 1 );
+        if (sscanf (line +7, " %260s %260s", src, dst) != 2)
+#else
         if (sscanf (line +7, " %ms %ms", &src, &dst) != 2)
+#endif
         {
           fprintf (stderr, "SYNTAX ERROR: %s\n", line);
           retcode = 1;
@@ -405,7 +436,13 @@ int main (int argc, char *argv[])
       else if (strncmp (line, "export ", 7) == 0)
       {
         char *src = 0, *dst = 0;
+#ifdef _MSC_VER
+        src = (char*)malloc( 260 + 1 );	//MAX_PATH
+        dst = (char*)malloc( 260 + 1 );
+        if ( sscanf( line + 7, " %260s %260s", src, dst ) != 2 )
+#else
         if (sscanf (line + 7, " %ms %ms", &src, &dst) != 2)
+#endif
         {
           fprintf (stderr, "SYNTAX ERROR: %s\n", line);
           retcode = 1;
@@ -450,7 +487,15 @@ int main (int argc, char *argv[])
   }
 
   SPIFFS_unmount (&fs);
+#ifdef _MSC_VER
+  if ( lseek( fd, 0, SEEK_SET ) == -1 )
+    die( "lseek" );
+  if ( write( fd, flash, sz ) != sz )
+    die( "write" );
+  free( flash );
+#else
   munmap (flash, sz);
+#endif
   close (fd);
   return retcode;
 }

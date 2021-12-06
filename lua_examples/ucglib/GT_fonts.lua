@@ -1,3 +1,4 @@
+-- luacheck: globals  T r disp millis lcg_rnd
 local M, module = {}, ...
 _G[module] = M
 
@@ -13,7 +14,7 @@ function M.run()
     disp:setColor(1, 150, 0, 200)
     disp:setColor(2, 60, 0, 40)
     disp:setColor(3, 0, 160, 160)
-  
+
     disp:drawGradientBox(0, 0, disp:getWidth(), disp:getHeight())
 
     disp:setColor(255, 255, 255)
@@ -34,7 +35,7 @@ function M.run()
     --disp:setPrintPos(2,62+d)
     --disp:print("ABC abc 123")
     disp:drawString(2,62+d, 0, "ABC abc 123") -- test drawString
-  
+
     disp:setFontMode(ucg.FONT_MODE_SOLID)
 
     disp:setColor(255, 200, 170)

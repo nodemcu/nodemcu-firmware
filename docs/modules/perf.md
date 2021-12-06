@@ -8,18 +8,16 @@ This module provides simple performance measurement for an application. It sampl
 of memory to store the histogram, the user can specify which area of code is of interest. The default is the entire flash which contains code. Once the hotspots are identified, then the run can then be repeated with different areas and at different resolutions to get as much information as required.
 
 ## perf.start()
-Starts a performance monitoring session. 
+Starts a performance monitoring session.
 
 #### Syntax
-`perf.start([start[, end[, nbins[, offset]]]])`
+`perf.start([start[, end[, nbins]]])`
 
 #### Parameters
 - `start` (optional) The lowest PC address for the histogram. Default is 0x40000000.
 - `end` (optional) The highest address for the histogram. Default is the end of the used space in the flash memory.
-- `nbins` (optional) The number of bins in the histogram. Keep this reasonable otherwise 
+- `nbins` (optional) The number of bins in the histogram. Keep this reasonable otherwise
 you will run out of memory. Default is 1024.
-- `offset` (Very optional) This specifies the offset of the saved PC value
-on the interrupt stack. It appears that 20 is the correct value.
 
 Note that the number of bins is an upper limit. The size of each bin is set to be the smallest power of two
 such that the number of bins required is less than or equal to the provided number of bins.
@@ -62,4 +60,4 @@ Terminates a performance monitoring session and returns the histogram.
 
 This runs a loop creating strings 100 times and then prints out the histogram (after sorting it).
 This takes around 2,500 samples and provides a good indication of where all the CPU time is
-being spent. 
+being spent.

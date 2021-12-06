@@ -1,6 +1,6 @@
 /*
  * Module for interfacing with Switec instrument steppers (and
- * similar devices). These are the steppers that are used in automotive 
+ * similar devices). These are the steppers that are used in automotive
  * instrument panels and the like. Run off 5 volts at low current.
  *
  * Code inspired by:
@@ -14,16 +14,17 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
-#include "../libc/c_stdlib.h"
-#include "../libc/c_stdio.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "task/task.h"
 #include "driver/switec.h"
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
 #include "hw_timer.h"
 #include "user_interface.h"
-#include "task/task.h"
 
 #define N_STATES 6
 //
@@ -81,7 +82,7 @@ static void ICACHE_RAM_ATTR timer_interrupt(os_param_t);
 
 
 // Just takes the channel number
-int switec_close(uint32_t channel) 
+int switec_close(uint32_t channel)
 {
   if (channel >= sizeof(data) / sizeof(data[0])) {
     return -1;
@@ -101,7 +102,7 @@ int switec_close(uint32_t channel)
   gpio_output_set(0, 0, 0, d->mask);
 
   data[channel] = NULL;
-  c_free(d);
+  free(d);
 
   // See if there are any other channels active
   for (channel = 0; channel < sizeof(data)/sizeof(data[0]); channel++) {
@@ -118,28 +119,28 @@ int switec_close(uint32_t channel)
   return 0;
 }
 
-static __attribute__((always_inline)) inline void write_io(DATA *d) 
+static __attribute__((always_inline)) inline void write_io(DATA *d)
 {
   uint32_t pin_state = d->pinstate[d->current_state];
 
   gpio_output_set(pin_state, d->mask & ~pin_state, 0, 0);
 }
 
-static __attribute__((always_inline)) inline  void step_up(DATA *d) 
+static __attribute__((always_inline)) inline  void step_up(DATA *d)
 {
   d->current_step++;
   d->current_state = (d->current_state + 1) % N_STATES;
   write_io(d);
 }
 
-static __attribute__((always_inline)) inline  void step_down(DATA *d) 
+static __attribute__((always_inline)) inline  void step_down(DATA *d)
 {
   d->current_step--;
   d->current_state = (d->current_state + N_STATES - 1) % N_STATES;
   write_io(d);
 }
 
-static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p) 
+static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p)
 {
   // This function really is running at interrupt level with everything
   // else masked off. It should take as little time as necessary.
@@ -179,9 +180,9 @@ static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p)
     if (d->vel == 0) {
       d->dir = d->current_step < d->target_step ? 1 : -1;
       // do not set to 0 or it could go negative in case 2 below
-      d->vel = 1; 
+      d->vel = 1;
     }
-    
+
     // Move the pointer by one step in the correct direction
     if (d->dir > 0) {
       step_up(d);
@@ -192,7 +193,7 @@ static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p)
     // determine delta, number of steps in current direction to target.
     // may be negative if we are headed away from target
     int delta = d->dir > 0 ? d->target_step - d->current_step : d->current_step - d->target_step;
-    
+
     if (delta > 0) {
       // case 1 : moving towards target (maybe under accel or decel)
       if (delta <= d->vel) {
@@ -208,7 +209,7 @@ static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p)
       // case 2 : at or moving away from target (slow down!)
       d->vel--;
     }
-    
+
     // vel now defines delay
     uint8_t row = 0;
     // this is why vel must not be greater than the last vel in the table.
@@ -232,7 +233,7 @@ static void ICACHE_RAM_ATTR timer_interrupt(os_param_t p)
     if (need_to_wait < delay) {
       delay = need_to_wait;
     }
-  } 
+  }
 
   if (delay < 1000000) {
     if (delay < 50) {
@@ -259,7 +260,7 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
     }
   }
 
-  DATA *d = (DATA *) c_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) calloc(1, sizeof(DATA));
   if (!d) {
     return -1;
   }
@@ -269,7 +270,7 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
     // no autoreload
     if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, FALSE)) {
       // Failed to get the timer
-      c_free(d);
+      free(d);
       return -1;
     }
   }
@@ -299,12 +300,12 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
 
 #ifdef SWITEC_DEBUG
   for (i = 0; i < 4; i++) {
-    c_printf("pin[%d]=%d\n", i, pin[i]);
+    printf("pin[%d]=%d\n", i, pin[i]);
   }
 
-  c_printf("Mask=0x%x\n", d->mask);
+  printf("Mask=0x%x\n", d->mask);
   for (i = 0; i < N_STATES; i++) {
-    c_printf("pinstate[%d]=0x%x\n", i, d->pinstate[i]);
+    printf("pinstate[%d]=0x%x\n", i, d->pinstate[i]);
   }
 #endif
 
@@ -367,11 +368,11 @@ int switec_moveto(uint32_t channel, int pos)
     }
   }
 
-  return 0;  
+  return 0;
 }
 
 // Get the current position, direction and target position
-int switec_getpos(uint32_t channel, int32_t *pos, int32_t *dir, int32_t *target) 
+int switec_getpos(uint32_t channel, int32_t *pos, int32_t *dir, int32_t *target)
 {
   if (channel >= sizeof(data) / sizeof(data[0])) {
     return -1;
