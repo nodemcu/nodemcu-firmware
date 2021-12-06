@@ -1021,7 +1021,12 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
   NODE_DBG("\n");
 
-  mqtt_socket_do_connect(mud);
+  if(mqtt_socket_do_connect(mud) != ESPCONN_OK) {
+      NODE_DBG("socket_dns_found, got DNS but connect failed\n");
+      mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
+      mqtt_socket_disconnected(arg);
+      return;
+  }
 }
 
 #include "pm/swtimer.h"
