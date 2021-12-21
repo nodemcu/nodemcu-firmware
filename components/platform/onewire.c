@@ -113,8 +113,8 @@ static int onewire_rmt_init( uint8_t gpio_num )
   }
 
   // acquire an RMT module for TX and RX each
-  if ((ow_rmt.tx = platform_rmt_allocate( 1 )) >= 0) {
-    if ((ow_rmt.rx = platform_rmt_allocate( 1 )) >= 0) {
+  if ((ow_rmt.tx = platform_rmt_allocate( 1, 1 )) >= 0) {
+    if ((ow_rmt.rx = platform_rmt_allocate( 1, 0 )) >= 0) {
 
 #ifdef OW_DEBUG
       ESP_LOGI("ow", "RMT TX channel: %d", ow_rmt.tx);

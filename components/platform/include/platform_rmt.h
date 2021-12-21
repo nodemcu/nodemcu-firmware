@@ -14,13 +14,14 @@
  * @brief Allocate an RMT channel.
  *
  * @param num_mem Number of memory blocks.
+ * @param is_tx Mode of the channel, !=0 allocates a TX channel, ==0 an RX channel.
  *
  * @return
  *     - Channel number when successful
  *     - -1 if no channel available
  *
  */
-int platform_rmt_allocate( uint8_t num_mem );
+int platform_rmt_allocate( uint8_t num_mem, uint8_t is_tx );
 
 /**
  * @brief Release a previously allocated RMT channel.

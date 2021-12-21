@@ -76,7 +76,7 @@ static void dht_deinit( void )
 static int dht_init( uint8_t gpio_num )
 {
   // acquire an RMT module for RX
-  if ((dht_rmt.channel = platform_rmt_allocate( 1 )) >= 0) {
+  if ((dht_rmt.channel = platform_rmt_allocate( 1, 0 )) >= 0) {
 
 #ifdef DHT_DEBUG
     ESP_LOGI("dht", "RMT RX channel: %d", dht_rmt.channel);
