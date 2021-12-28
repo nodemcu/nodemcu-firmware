@@ -12,6 +12,14 @@
 #include "rtc/rtctime.h"
 #include "mem.h"
 
+static const char *CRON_ENTRY_METATABLE = "cron.entry";
+
+#if 0
+# define cron_dbg(...) printf(__VA_ARGS__)
+#else
+# define cron_dbg(...)
+#endif
+
 struct cronent_desc {
   uint64_t min;  // Minutes repeat - bits 0-59
   uint32_t hour; // Hours repeat - bits 0-23
@@ -51,15 +59,14 @@ static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min
     }
   } else {
     uint32_t val;
-    while (1) {
+    do {
       val = strtol(str, end, 10);
       if (val < min || val > max) {
         return luaL_error(L, "invalid spec (val %d out of range %d..%d)", val, min, max);
       }
       res |= (uint64_t)1 << (val - min);
-      if (**end != ',') break;
       str = *end + 1;
-    }
+    } while (**end == ',');
   }
   return res;
 }
@@ -101,7 +108,7 @@ static int lcron_create(lua_State *L) {
   // Allocate userdata onto the stack
   cronent_ud_t *ud = lua_newuserdata(L, sizeof(cronent_ud_t));
   // Set metatable
-  luaL_getmetatable(L, "cron.entry");
+  luaL_getmetatable(L, CRON_ENTRY_METATABLE);
   lua_setmetatable(L, -2);
   // Set callback
   lua_pushvalue(L, 2);
@@ -134,7 +141,7 @@ static size_t lcron_findindex(lua_State *L, cronent_ud_t *ud) {
 }
 
 static int lcron_schedule(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   char *strdesc = (char*)luaL_optstring(L, 2, NULL);
 
   if (strdesc != NULL) {
@@ -145,6 +152,8 @@ static int lcron_schedule(lua_State *L) {
 
   size_t i = lcron_findindex(L, ud);
 
+  cron_dbg("cron: schedule %p at index %d\n", ud, i);
+
   lua_pushvalue(L, 1); // copy ud to top of stack
   lua_rawseti(L, -2, i); // install into table
 
@@ -152,7 +161,7 @@ static int lcron_schedule(lua_State *L) {
 }
 
 static int lcron_handler(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   luaL_checktype(L, 2, LUA_TFUNCTION);
   lua_pushvalue(L, 2);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_ref);
@@ -161,8 +170,10 @@ static int lcron_handler(lua_State *L) {
 }
 
 static int lcron_unschedule(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   size_t i = lcron_findindex(L, ud);
+
+  cron_dbg("cron: unschedule %p at index %d\n", ud, i);
 
   lua_pushnil(L);
   lua_rawseti(L, -2, i);
@@ -172,7 +183,7 @@ static int lcron_unschedule(lua_State *L) {
 
 // scheduled entries are pinned, so we cannot arrive at the __gc metamethod
 static int lcron_delete(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_ref);
   return 0;
 }
@@ -181,6 +192,8 @@ static int lcron_reset(lua_State *L) {
   lua_newtable(L);
   luaL_unref(L, LUA_REGISTRYINDEX, cronent_table_ref);
   cronent_table_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  cron_dbg("cron: cronent_table_ref is %d\n", cronent_table_ref);
 
   return 0;
 }
@@ -198,9 +211,13 @@ static void cron_handle_time(uint8_t mon, uint8_t dom, uint8_t dow, uint8_t hour
   size_t count = lua_objlen(L, -1);
 
   for (size_t i = 1; i <= count; i++) {
+    cron_dbg("cron: handle_time index %d (of %d; top %d)\n", i, count, lua_gettop(L));
+
     lua_rawgeti(L, -1, i);
     cronent_ud_t *ent = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    cron_dbg(" ... is %p\n", ent);
 
     if ((ent->desc.mon  & desc.mon ) == 0) continue;
     if ((ent->desc.dom  & desc.dom ) == 0) continue;
@@ -261,7 +278,7 @@ int luaopen_cron( lua_State *L ) {
     //cron_handle_tmr determines when to execute a scheduled cron job
     //My guess: To be sure to give the other modules required by cron enough time to get to a ready state, restart cron_timer.
   os_timer_arm(&cron_timer, 1000, 0);
-  luaL_rometatable(L, "cron.entry", LROT_TABLEREF(cronent));
+  luaL_rometatable(L, CRON_ENTRY_METATABLE, LROT_TABLEREF(cronent));
 
   cronent_table_ref = LUA_NOREF;
   lcron_reset(L);
