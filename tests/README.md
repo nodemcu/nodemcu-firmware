@@ -19,6 +19,18 @@ NodeMCU DUTs, but there is reason to want to orchestrate DUTs and the
 environment using the host.  Files matching the glob `NTest_*.lua` are intended
 for on-DUT execution.
 
+## Modules Required
+
+Basic test harness functionality depends on having at least the following C
+modules available:
+
+* `crypto`
+* `encoder`
+* `file`
+
+Of course, most of the test functionality itself will require additional
+modules.
+
 ## Manual Test Invocation
 
 At the moment, the testing regime and host-based orchestration is still in
