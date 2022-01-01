@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 static const char *default_fs_label =
   ((CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL &&
@@ -129,6 +130,29 @@ static int file_fsinfo( lua_State* L )
 }
 
 
+static int file_mkdir( lua_State *L )
+{
+  const char *name = luaL_checkstring(L, 1);
+  unsigned mode = luaL_optint(L, 2, 0777);
+  if (mkdir(name, mode) != 0) {
+    return
+      luaL_error(L, "failed to create directory '%s'; code %d", name, errno);
+  }
+  return 0;
+}
+
+
+static int file_rmdir( lua_State *L )
+{
+  const char *name = luaL_checkstring(L, 1);
+  if (rmdir(name) != 0) {
+    return
+      luaL_error(L, "failed to remove directory '%s'; code %d", name, errno);
+  }
+  return 0;
+}
+
+
 // Module function map
 LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( list,      file_list )
@@ -137,6 +161,8 @@ LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( rename,    file_rename )
   LROT_FUNCENTRY( exists,    file_exists )
   LROT_FUNCENTRY( fsinfo,    file_fsinfo )
+  LROT_FUNCENTRY( mkdir,     file_mkdir )
+  LROT_FUNCENTRY( rmdir,     file_rmdir )
 LROT_END(file, NULL, 0)
 
 
