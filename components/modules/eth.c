@@ -230,6 +230,18 @@ static int leth_set_ip( lua_State *L )
   return 0;
 }
 
+static int leth_set_hostname(lua_State *L)
+{
+  const char *hostname = luaL_checkstring(L, 1);
+
+  esp_err_t err = esp_netif_set_hostname(eth, hostname);
+
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to set hostname, code %d", err);
+
+  return 0;
+}
+
 static int leth_on( lua_State *L )
 {
   const char *event_name = luaL_checkstring( L, 1 );
@@ -338,6 +350,7 @@ LROT_BEGIN(eth, NULL, 0)
   LROT_FUNCENTRY( get_mac,    leth_get_mac )
   LROT_FUNCENTRY( set_mac,    leth_set_mac )
   LROT_FUNCENTRY( set_ip,     leth_set_ip )
+  LROT_FUNCENTRY( set_hostname, leth_set_hostname )
 
   LROT_NUMENTRY( PHY_DP83848, ETH_PHY_DP83848 )
   LROT_NUMENTRY( PHY_IP101,   ETH_PHY_IP101 )
