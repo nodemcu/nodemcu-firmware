@@ -200,3 +200,21 @@ eth.set_ip({
   dns = "8.8.8.8"
 })
 ```
+
+## eth.set_hostname()
+Configures the interface specific hostname for the ethernet interface. The ethernet interface must be initialized before the hostname can be configured.
+
+By default the system hostname is used, as configured in the menu config.
+
+#### Syntax
+```lua
+eth.set_hostname(hostname)
+```
+
+#### Parameters
+- `hostname` the hostname to use on the ethernet interface
+
+#### Returns
+`nil`
+
+An error is thrown in case the hostname cannot be set.
