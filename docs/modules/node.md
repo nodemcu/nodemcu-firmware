@@ -340,7 +340,7 @@ Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, bu
 ```lua
 sk:on("receive", function(conn, payload) node.input(payload) end)
 ```
-See [the telnet lua module](../lua_modules/telnet.md) for a worked
+See [the telnet lua module](../lua-modules/telnet.md) for a working
 example.
 
 #### See also
@@ -421,7 +421,7 @@ Redirects the Lua interpreter to a `stdout` pipe when a CB function is specified
 
 #### Example
 
-See [the telnet lua module](../lua_modules/telnet.md) for a worked
+See [the telnet lua module](../lua-modules/telnet.md) for a working
 example.
 
 #### See also
