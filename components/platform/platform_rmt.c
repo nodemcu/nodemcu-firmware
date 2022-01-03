@@ -25,9 +25,9 @@ static bool rmt_channel_check( uint8_t channel, uint8_t num_mem )
 }
 
 #if defined(CONFIG_IDF_TARGET_ESP32C3)
-int platform_rmt_allocate( uint8_t num_mem, uint8_t is_tx )
+int platform_rmt_allocate( uint8_t num_mem, rmt_mode_t mode )
 #else
-int platform_rmt_allocate( uint8_t num_mem, uint8_t is_tx __attribute__((unused)))
+int platform_rmt_allocate( uint8_t num_mem, rmt_mode_t mode __attribute__((unused)))
 #endif
 {
   int channel;
@@ -37,7 +37,7 @@ int platform_rmt_allocate( uint8_t num_mem, uint8_t is_tx __attribute__((unused)
 
 #if defined(CONFIG_IDF_TARGET_ESP32C3)
   /* The ESP32-C3 is limited to TX on channel 0-1 and RX on channel 2-3. */
-  if( is_tx ) {
+  if( mode==RMT_MODE_TX ) {
     alloc_min = 0;
     alloc_max = SOC_RMT_TX_CANDIDATES_PER_GROUP - 1;
   } else {

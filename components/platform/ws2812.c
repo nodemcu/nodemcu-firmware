@@ -138,7 +138,7 @@ int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *dat
 {
   int channel;
 
-  if ((channel = platform_rmt_allocate( num_mem, 1 )) >= 0) {
+  if ((channel = platform_rmt_allocate( num_mem, RMT_MODE_TX )) >= 0) {
     ws2812_chain_t *chain = &(ws2812_chains[channel]);
 
     chain->valid = true;
