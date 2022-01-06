@@ -36,6 +36,26 @@ local config = {name="MyGadget=", services={ myservice, battery }
 ble.init(config)
 ```
 
+## ble.notify()
+
+This notifies the Bluetooth stack that a new value is available to be read from the characteristic.
+
+#### Syntax
+`ble.notify(characteristic)`
+
+#### Parameters
+
+- `characteristic` This is the table that was passed into the `init` method for the particular characteristic.
+
+#### Returns 
+`nil`
+
+#### Example
+
+```lua
+ble.notify(config.services[1].characteristics[1])
+```
+
 ## ble.advertise()
 
 Updates the advertising data field for future advertising frames.
@@ -103,6 +123,7 @@ The characteristic table contains the following keys:
 - `value` This is the actual value of the characteristic. This will be a string of bytes unless a `type` value is set.
 - `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set).
 - `write` This is a function that will be invoked to write the value (and so does not need the `value` entry). It is given a string of bytes (unless `type` is set)
+- `notify` If this attribute is present with the value `true` then notifications are supported on this characteristic.
 
 If the `value` key is present, then the characteristic is read/write. However, if one or `read` or `write` is set to `true`, then it restricts access to that mode.
 

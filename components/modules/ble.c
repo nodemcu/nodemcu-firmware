@@ -65,6 +65,7 @@ static uint8_t *gadget_mfg;
 static size_t gadget_mfg_len;
 
 static const struct ble_gatt_svc_def *gatt_svr_svcs;
+static const uint16_t *notify_handles;
 
 static task_handle_t task_handle;
 static QueueHandle_t response_queue;
@@ -401,7 +402,7 @@ cleanup:
 }
 
 static int
-lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
+lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint16_t **handlep) {
   // We have to first figure out how big the allocated memory is.
   // This is the number of services (ns) + 1 * sizeof(ble_gatt_svc_def)
   // + number of characteristics (nc) + ns * sizeof(ble_gatt_chr_def)
@@ -434,7 +435,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
 
   MODLOG_DFLT(INFO, "Discovered %d services with %d characteristics\n", ns, nc);
 
-  int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t);
+  int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t) + (nc + 1) * sizeof(uint16_t);
 
 
   struct ble_gatt_svc_def *svcs = malloc(size);
@@ -447,6 +448,9 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   void *eom = ((char *) svcs) + size;
   struct ble_gatt_chr_def *chrs = (struct ble_gatt_chr_def *) (svcs + ns + 1);
   ble_uuid_any_t *uuids = (ble_uuid_any_t *) (chrs + ns + nc);
+  uint16_t *handles = (uint16_t *) (uuids + ns + nc);
+
+  handles[0] = 0;  // number of slots used
 
   // Now fill out the data structure
   // -1 is the services list
@@ -496,11 +500,11 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
 
         int flags = 0;
         lua_getfield(L, -2, "read");
-        if (lua_isboolean(L, 1) && lua_toboolean(L, -1)) {
+        if (lua_isboolean(L, -1) && lua_toboolean(L, -1)) {
           flags = BLE_GATT_CHR_F_READ;
         }
         lua_getfield(L, -3, "write");
-        if (lua_isboolean(L, 1) && lua_toboolean(L, -1)) {
+        if (lua_isboolean(L, -1) && lua_toboolean(L, -1)) {
           flags |= BLE_GATT_CHR_F_WRITE;
         }
         if (flags) {
@@ -524,6 +528,16 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
         lua_pop(L, 3); // pop off value, read, write
       }
 
+      if (lua_getfield(L, -1, "notify") != LUA_TNIL) {
+	  chr->flags |= BLE_GATT_CHR_F_NOTIFY;
+
+          handles[0]++;
+	  lua_pushinteger(L, handles[0]);
+          lua_setfield(L, -2, "notify");
+          chr->val_handle = &handles[handles[0]];
+      }
+      lua_pop(L, 1);
+
       // -1 is now the characteristic again
       chr->arg = (void *) luaL_ref(L, LUA_REGISTRYINDEX);
       chr->access_cb = lble_access_cb;
@@ -534,6 +548,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp) {
   lua_pop(L, 1);
 
   *resultp = result;
+  *handlep = handles;
 
   return 0;
 }
@@ -546,7 +561,7 @@ gatt_svr_init(lua_State *L) {
 
 
     struct ble_gatt_svc_def *svcs = NULL;
-    lble_build_gatt_svcs(L, &svcs);
+    lble_build_gatt_svcs(L, &svcs, &notify_handles);
     //free_gatt_svcs(L, gatt_svr_svcs);
     gatt_svr_svcs = svcs;
 
@@ -736,7 +751,7 @@ lble_gap_event(struct ble_gap_event *event, void *arg)
   return 0;
 }
 
-static int 
+static int
 lble_update_adv_fields() {
   struct ble_hs_adv_fields fields;
   const char *name = gadget_name;
@@ -785,7 +800,7 @@ lble_update_adv_fields() {
     fields.name_len = fields.name_len - 1;
     fields.name_is_complete = 0;
   }
-  
+
   if (!fields.name_is_complete) {
     struct ble_hs_adv_fields scan_response_fields;
     memset(&scan_response_fields, 0, sizeof scan_response_fields);
@@ -886,7 +901,7 @@ gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
     }
 }
 
-static int 
+static int
 lble_update_adv_change(lua_State *L) {
   free((void *) gadget_mfg);
   gadget_mfg = NULL;
@@ -906,7 +921,7 @@ lble_update_adv_change(lua_State *L) {
   return 0;
 }
 
-static int 
+static int
 lble_update_adv(lua_State *L) {
   lua_pushvalue(L, 1);
   lble_update_adv_change(L);
@@ -918,6 +933,23 @@ lble_update_adv(lua_State *L) {
   return 0;
 }
 
+static int lble_notify(lua_State *L) {
+  if (inited != RUNNING) {
+    return luaL_error(L, "ble is not yet running");
+  }
+  int handle = luaL_checkinteger(L, 1);
+
+  luaL_argcheck(L, handle <= 0 || handle > notify_handles[0], 1, "handle out of range");
+
+  ble_gatts_chr_updated(notify_handles[handle]);
+
+/*
+  if (rc) {
+    return luaL_error(L, "Must supply a valid handle");
+  }
+*/
+  return 0;
+}
 
 static int lble_init(lua_State *L) {
   if (inited != STOPPED) {
@@ -1020,6 +1052,7 @@ static int lble_shutdown(lua_State *L) {
 
 LROT_BEGIN(lble, NULL, 0)
   LROT_FUNCENTRY( init, lble_init )
+  LROT_FUNCENTRY( notify, lble_notify )
   LROT_FUNCENTRY( advertise, lble_update_adv )
   LROT_FUNCENTRY( shutdown, lble_shutdown )
 LROT_END(lble, NULL, 0)
