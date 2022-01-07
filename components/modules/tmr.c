@@ -233,6 +233,15 @@ static int tmr_create( lua_State *L ) {
 }
 
 
+// Lua: tmr.wdclr()
+static int tmr_wdclr( lua_State *L )
+{
+  // Suspend ourselves momentarily to let the IDLE task do its thing
+  vTaskDelay(1);
+  return 0;
+}
+
+
 // Module function map
 
 LROT_BEGIN(tmr_dyn, NULL, LROT_MASK_GC_INDEX)
@@ -249,6 +258,7 @@ LROT_END(tmr_dyn, NULL, LROT_MASK_GC_INDEX)
 
 LROT_BEGIN(tmr, NULL, 0)
   LROT_FUNCENTRY( create,       tmr_create )
+  LROT_FUNCENTRY( wdclr,        tmr_wdclr )
   LROT_NUMENTRY ( ALARM_SINGLE, TIMER_MODE_SINGLE )
   LROT_NUMENTRY ( ALARM_SEMI,   TIMER_MODE_SEMI )
   LROT_NUMENTRY ( ALARM_AUTO,   TIMER_MODE_AUTO )

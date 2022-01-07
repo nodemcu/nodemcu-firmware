@@ -73,6 +73,8 @@ menu "NodeMCU modules"
     config NODEMCU_CMODULE_FILE
         bool "File module"
         default "y"
+        select VFS_SUPPORT_IO
+        select VFS_SUPPORT_DIR
         help
             Includes the file module (recommended).
 
@@ -125,6 +127,7 @@ menu "NodeMCU modules"
     config NODEMCU_CMODULE_NET
         bool "Net module"
         default "y"
+        select VFS_SUPPORT_IO
         help
             Includes the net module (recommended).
 

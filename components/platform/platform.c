@@ -116,12 +116,6 @@ static void task_uart( void *pvParameters ){
     if(xQueueReceive(uart_status[id].queue, (void * )&event, (portTickType)portMAX_DELAY)) {
       switch(event.type) {
         case UART_DATA: {
-          post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
-          if(post == NULL) {
-            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
-            // reboot here?
-            continue;
-          }
           // Attempt to coalesce received bytes to reduce risk of overrunning
           // the task event queue.
           size_t len;
@@ -129,6 +123,13 @@ static void task_uart( void *pvParameters ){
             len = event.size;
           if (len == 0)
             continue; // we already gobbled all the bytes
+
+          post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
+          if(post == NULL) {
+            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
+            // reboot here?
+            continue;
+          }
           post->data = malloc(len);
           if(post->data == NULL) {
             ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");

@@ -212,3 +212,37 @@ none
 
 #### See also
 [`tmr.obj:register()`](#tmrobjregister)
+
+
+## tmr.wdclr()
+
+Resets the watchdog timer to prevent a reboot due to a perceived hung task.
+
+Use with caution, as this could prevent a reboot to recover from a
+genuinely hung task.
+
+On the ESP32, the `tmr.wdclr()` function is implemented as a task yield
+to let the system "IDLE" task do the necessary watchdog maintenance.
+Overuse of this function is likely to result in degraded performance.
+
+#### Syntax
+`tmr.wdclr()`
+
+#### Parameters
+none
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+function long_running_function()
+  while 1
+  do
+    if some_condition then break end
+    -- do some heavy calculation here, for example
+    tmr.wdclr()
+  end
+end
+```
+
