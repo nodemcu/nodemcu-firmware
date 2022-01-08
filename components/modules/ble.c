@@ -392,6 +392,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       lua_pop(L, 1);  // Throw away the null write pointer
     }
     lua_pop(L, 1);	// THrow away the value
+    message.errcode = 0;
   }
 
 cleanup:
@@ -533,7 +534,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
 
           handles[0]++;
 	  lua_pushinteger(L, handles[0]);
-          lua_setfield(L, -2, "notify");
+          lua_setfield(L, -3, "notify");
           chr->val_handle = &handles[handles[0]];
       }
       lua_pop(L, 1);
@@ -939,7 +940,7 @@ static int lble_notify(lua_State *L) {
   }
   int handle = luaL_checkinteger(L, 1);
 
-  luaL_argcheck(L, handle <= 0 || handle > notify_handles[0], 1, "handle out of range");
+  luaL_argcheck(L, handle > 0 && handle <= notify_handles[0], 1, "handle out of range");
 
   ble_gatts_chr_updated(notify_handles[handle]);
 
