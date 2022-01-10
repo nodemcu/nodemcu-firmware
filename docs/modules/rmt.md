@@ -38,46 +38,6 @@ This optional table consists of a number of keys that control various aspects of
 - `carrier_duty` specifies the duty cycle of the carrier. Defaults to 50%
 - `idle_level` specifies what value to send when the transmission completes.
 
-## channel:send(data, cb)
-
-This is a (default) blocking call that transmits the data using the parameters specified on the `txsetup` call.
-
-#### Syntax
-`channel:send(data[, cb])`
-
-#### Parameters
-- `data` This is either a string or a table of strings.
-- `cb` THis is an optional callback when the transmission is actually complete. If specified, then the `send` call is non-blocking, and the callback invoked when the transmission is complete. Otherwise the `send` call is synchronous and does not return until transmission is complete.
-
-#### Data Encoding
-
-If the `data` supplied is a table, then the elements of the table are concatenated together and sent.
-
-If the item being sent is a string, then it contains 16 bit packed integers. The top bit of the integer controls the output level.
-
-
-#### Returns
-`nil`
-
-#### Example
-
-```
-channel:send(struct.pack("HHHHH", 65535, 32767, 65535, 32767, 65535))
-```
-This sends three pulse, each of width 32767 * bittime. This is visible if you set the bit time to something like 2000000 (i.e. 2&micro;S) and then the pulse width is around 60mS and the gap is 60mS as well.
-
-## channel:close()
-
-This shuts down the RMT channel and makes it available for other uses (e.g. ws2812). The channel cannot be used after this call returns. The channel
-is also released when the garbage collector frees it up. However you should always `close` the channel explicitly as otherwise you can run out of RMT channels
-before the garbage collector frees some up.
-
-#### Syntax
-`channel:close()`
-
-#### Returns
-`nil`
-
 ## rmt.rxsetup(gpio, bitrate, options)
 
 This sets up a receive channel on the specified gpio pin at the specified rate. Various options described below
@@ -112,21 +72,52 @@ This optional table consists of a number of keys that control various aspects of
 
 ## channel:on(method, callback)
 
-This is establishes a callback to use when data is received and it also starts the data reception process.
+This is establishes a callback to use when data is received and it also starts the data reception process. It can only be called once per receive
+channel.
 
 #### Syntax
 `channel:on(event, callback)`
 
 #### Parameters
 - `event` This must be the string 'data' and it sets the callback that gets invoked when data is received.
-- `callback` This is invoked with a single argument that is a string that contains the data received in the format described for transmit above.
+- `callback` This is invoked with a single argument that is a string that contains the data received in the format described for transmit above. `struct.unpack` is your friend.
 
 #### Returns
 `nil`
 
+## channel:send(data, cb)
+
+This is a (default) blocking call that transmits the data using the parameters specified on the `txsetup` call.
+
+#### Syntax
+`channel:send(data[, cb])`
+
+#### Parameters
+- `data` This is either a string or a table of strings.
+- `cb` THis is an optional callback when the transmission is actually complete. If specified, then the `send` call is non-blocking, and the callback invoked when the transmission is complete. Otherwise the `send` call is synchronous and does not return until transmission is complete.
+
+#### Data Encoding
+
+If the `data` supplied is a table, then the elements of the table are concatenated together and sent.
+
+If the item being sent is a string, then it contains 16 bit packed integers. The top bit of the integer controls the output level.
+
+
+#### Returns
+`nil`
+
+#### Example
+
+```
+channel:send(struct.pack("HHHHH", 65535, 32767, 65535, 32767, 65535))
+```
+This sends three pulse, each of width 32767 * bittime. This is visible if you set the bit time to something like 2000000 (i.e. 2&micro;S) and then the pulse width is around 60mS and the gap is 60mS as well.
+
 ## channel:close()
 
-This shuts down the RMT channel and makes it available for other uses (e.g. ws2812). The channel cannot be used after this call returns.
+This shuts down the RMT channel and makes it available for other uses (e.g. ws2812). The channel cannot be used after this call returns. The channel
+is also released when the garbage collector frees it up. However you should always `close` the channel explicitly as otherwise you can run out of RMT channels
+before the garbage collector frees some up.
 
 #### Syntax
 `channel:close()`
