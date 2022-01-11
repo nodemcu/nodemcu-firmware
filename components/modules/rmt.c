@@ -242,7 +242,9 @@ static int lrmt_on(lua_State *L) {
     return luaL_error(L, "Cannot receive on a TX channel");
   }
 
-  luaL_argcheck(L, lua_type(L, 2) == LUA_TFUNCTION, 2, "Must be a function");
+  luaL_argcheck(L, !strcmp(lua_tostring(L, 2), "data") , 2, "Must be 'data'");
+
+  luaL_argcheck(L, lua_type(L, 3) == LUA_TFUNCTION, 3, "Must be a function");
 
   if (ud->rx_params) {
     return luaL_error(L, "Can only call 'on' once");
@@ -255,7 +257,7 @@ static int lrmt_on(lua_State *L) {
   }
   memset(params, 0, sizeof(*params));
 
-  lua_pushvalue(L, 2);
+  lua_pushvalue(L, 3);
   params->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   ud->rx_params = params;
   params->channel = ud->channel;
