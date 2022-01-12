@@ -148,7 +148,7 @@ device:transfer(txdata)
 `trans` table containing the elements of the transaction:
 
 - `command` data for command phase, amount of bits was defined during device creation, optional
-- `address` data for address phase, amount of bits was defined during device creation, optional
+- `addr` data for address phase, amount of bits was defined during device creation, optional
 - `txdata` string of data to be sent to the device, optional
 - `rxlen` number of bytes to be received, optional
 - `mode` optional, one of
