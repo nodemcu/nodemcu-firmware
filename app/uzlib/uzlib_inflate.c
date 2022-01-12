@@ -525,7 +525,7 @@ static int uncompress_stream (UZLIB_DATA *d) {
 }
 
 /*
- * This implementation has a different usecase to Paul Sokolovsky's
+ * This implementation has a different use case to Paul Sokolovsky's
  * uzlib implementation, in that it is designed to target IoT devices
  * such as the ESP8266.  Here clarity and compact code size is an
  * advantage, but the ESP8266 only has 40-45Kb free heap, and has to
@@ -533,14 +533,14 @@ static int uncompress_stream (UZLIB_DATA *d) {
  * implementation is essential.
  *
  * I have taken the architectural decision to hide the implementation
- * detials from the uncompress routines and the caller must provide
+ * details from the uncompress routines and the caller must provide
  * three support routines to handle the streaming:
  *
  *   void get_byte(void)
  *   void put_byte(uchar b)
  *   uchar recall_byte(uint offset)
  *
- * This last must be able to recall an output byte with an offet up to
+ * This last must be able to recall an output byte with an offset up to
  * the maximum dictionary size.
  */
 

@@ -275,7 +275,7 @@ If you are used coding in a procedural paradigm then it is understandable that y
 
 If you look at the `app/modules/tmr.c` code for this function, then you will see that it executes a low level  `ets_delay_us(delay)`. This function isn't part of the NodeMCU code or the SDK; it's actually part of the xtensa-lx106 boot ROM, and is a simple timing loop which polls against the internal CPU clock. `tmr.delay()` is really intended to be used where you need to have more precise timing control on an external hardware I/O (e.g. lifting a GPIO pin high for 20  μSec). It does this with interrupts enabled, because so there is no guarantee that the delay will be as requested, and the Lua RTS itself may inject operations such as GC, so if you do this level of precise control then you should encode your application as a C library.
 
-It will achieve no functional purpose in pretty much every other usecase, as any other system code-based activity will be blocked from execution; at worst it will break your application and create hard-to-diagnose timeout errors. We therefore deprecate its general use.
+It will achieve no functional purpose in pretty much every other use case, as any other system code-based activity will be blocked from execution; at worst it will break your application and create hard-to-diagnose timeout errors. We therefore deprecate its general use.
 
 ### How do I avoid a PANIC loop in init.lua?
 

@@ -122,7 +122,7 @@ The same Lua51 ROTable functionality and limitations also apply to Lua53 in orde
 
 ### Proto Structures
 
-Standard Lua 5.3 contains a new peep hole optimisation relating to closures: the Proto structure now contains one RW field pointing to the last closure created, and the GC adopts a lazy approach to recovering these closures. When a new closure is created, if the old one exists _and the upvals are the same_ then it is reused instead of creating a new one. This allows peephole optimisation of a usecase where a function closure is embedded in a do loop, so the higher cost closure creation is done once rather than `n` times.
+Standard Lua 5.3 contains a new peep hole optimisation relating to closures: the Proto structure now contains one RW field pointing to the last closure created, and the GC adopts a lazy approach to recovering these closures. When a new closure is created, if the old one exists _and the upvals are the same_ then it is reused instead of creating a new one. This allows peephole optimisation of a use case where a function closure is embedded in a do loop, so the higher cost closure creation is done once rather than `n` times.
 
 This reduces runtime at the cost of RAM overhead.  However for RAM limited IoTs this change introduced two major issues: first, LFS relies on Protos being read-only and this RW `cache` field breaks this assumption; second closures can now exist past their lifetime, and this delays their GC.  Memory constrained NodeMCU applications rely on the fact that dead closed upvals can be GCed once the closure is complete.  This optimisation changes this behaviour.  Not good.
 
