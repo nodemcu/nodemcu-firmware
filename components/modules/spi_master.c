@@ -6,6 +6,7 @@
 #include "lextra.h"
 
 #include "driver/spi_master.h"
+#include "driver/gpio.h"
 #include "esp_heap_caps.h"
 
 #include "esp_log.h"
@@ -107,6 +108,7 @@ static int lspi_device_transfer( lua_State *L )
     //
     lua_getfield( L, stack, "mode" );
     trans.flags |= options_flags[ luaL_checkoption( L, -1, options[0], options ) ];
+    lua_pop(L, 1);
     //
     data_len = 0;
     data = opt_checklstring( L, "txdata", "", &data_len );
@@ -296,6 +298,19 @@ static int lspi_host_device( lua_State *L )
   CONFIG_DEVICE_FROM_BOOL_FIELD(halfduplex, SPI_DEVICE_HALFDUPLEX);
   CONFIG_DEVICE_FROM_BOOL_FIELD(clk_as_cs, SPI_DEVICE_CLK_AS_CS);
   lua_settop( L, stack );
+
+  //
+  if (config.spics_io_num >= 0) {
+    // Configure the gpio
+    gpio_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.mode = GPIO_MODE_OUTPUT;
+    cfg.pin_bit_mask = 1ULL << config.spics_io_num;
+    if (!no_err(gpio_config (&cfg)) ||
+        !no_err(gpio_set_level (config.spics_io_num, (config.flags & SPI_DEVICE_POSITIVE_CS) ? 0 : 1))) {
+      return luaL_error(L, "failed to configure gpio");
+    }
+  }
   //
   // fill remaining config entries
   config.queue_size = 1;
