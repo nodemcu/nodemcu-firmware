@@ -82,7 +82,7 @@ Essentially testing any eLua compiler or runtime changes are a total pain, becau
 
 I tested my patch in standard Lua built with "make generic" and against the [Lua 5.1 suite](http://lua-users.org/lists/lua-l/2006-03/msg00723.html). The test suite was an excellent testing tool, and it revealed a number of cases that exposed logic flaws in my approach, resulting from Lua's approach of not carrying out inline status testing by instead implementing a throw / catch strategy.  In fact I realised that I had to redesign the vector generation algorithm to handle this robustly.
 
-As with all eLua builds the patch assumes Lua will not be executing in a multithreaded environment with OS threads running different lua_States. (This is also the case for the NodeMCU firmware). It executes the full test suite cleanly as maximum test levels and I also added some specific tests to cover new **stripdebug** usecases.
+As with all eLua builds the patch assumes Lua will not be executing in a multithreaded environment with OS threads running different lua_States. (This is also the case for the NodeMCU firmware). It executes the full test suite cleanly as maximum test levels and I also added some specific tests to cover new **stripdebug** use cases.
 
 Once this testing was completed, I then ported the patch to the NodeMCU build.  This was pretty straight forward as this code is essentially independent of the NodeMCU functional changes. The only real issue as to ensure that the NodeMCU `c_strlen()` calls replaced the standard `strlen()`, etc.
 

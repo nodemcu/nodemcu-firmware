@@ -84,7 +84,7 @@ file system will start on a 64k boundary. A newly formatted file system will sta
 system will survive lots of reflashing and at least 64k of firmware growth.
 
 The standard build process for the firmware builds the `spiffsimg` tool (found in the `tools/spiffsimg` subdirectory).
-The top level Makfile also checks if
+The top level Makefile also checks if
 there is any data in the `local/fs` directory tree, and it will then copy these files
 into the flash disk image. Two images will normally be created -- one for the 512k flash part and the other for the 4M flash part. If the data doesn't
 fit into the 512k part after the firmware is included, then the file will not be generated.
