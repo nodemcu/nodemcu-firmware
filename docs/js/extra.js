@@ -1,4 +1,3 @@
-var nodemcu = nodemcu || {};
 (function () {
   'use strict';
 
@@ -11,10 +10,10 @@ var nodemcu = nodemcu || {};
    * Adds a TOC-style table to each page in the 'Modules' section.
    */
   function addToc() {
-    var func, intro, tocHtmlTable;
+    let func, intro, tocHtmlTable;
     if (isModulePage()) {
       tocHtmlTable = '<table class="docutils">';
-      $('h2').each(function (index) {
+      $('h2').each(function () {
         // 'slice' cuts off the single permalink character at the end of the text (e.g. '¶')
         func = $(this).text().slice(0, -1);
         // get the first sentence of the paragraph directly below h2
@@ -32,8 +31,8 @@ var nodemcu = nodemcu || {};
     function createTocTableRow(func, intro) {
       // fragile attempt to auto-create the in-page anchor
       // good tests: file.md,
-      var href = func.replace(/[\.:\(\)]/g, '').replace(/ --|, | /g, '-');
-      var link = '<a href="#' + href.toLowerCase() + '">' + func + '</a>';
+      const href = func.replace(/[\.:\(\)]/g, '').replace(/ --|, | /g, '-');
+      const link = '<a href="#' + href.toLowerCase() + '">' + func + '</a>';
       return '<tr><td>' + link + '</td><td>' + intro + '</td></tr>';
     }
   }
@@ -45,13 +44,18 @@ var nodemcu = nodemcu || {};
    */
   function replaceRelativeLinksWithStaticGitHubUrl() {
     if (isOnRtd()) {
-      var relativePath = "../..";
-      var gitHubPath = "https://github.com/nodemcu/nodemcu-firmware/tree/" + determineSelectedBranch();
+      const ignoredUrlSegments = ["/lua-modules/", "/modules/"];
+      const relativePath = "../..";
+      const gitHubPath = "https://github.com/nodemcu/nodemcu-firmware/tree/" + determineSelectedBranch();
       // 'div.section' denotes the container into which doc pages are integrated i.e. "the content" w/o navigation,
       // header, breadcrumbs, footer, etc. It's important that only links in this very section are manipulated.
-      var gitHubLinks = $("div.section a[href^='" + relativePath + "']").each(function (index) {
-        var url = $(this).attr('href');
-        $(this).attr('href', url.replace(relativePath, gitHubPath));
+      $("div.section a[href^='" + relativePath + "']").each(function () {
+        const url = $(this).attr('href');
+        // do not change the URL to artifacts that reside inside the /docs folder as they are correctly managed by
+        // MkDocs
+        if (!ignoredUrlSegments.some(segment => url.startsWith(relativePath + segment))) {
+          $(this).attr('href', url.replace(relativePath, gitHubPath));
+        }
       });
     }
   }
@@ -64,27 +68,18 @@ var nodemcu = nodemcu || {};
    * @returns GitHub branch name
    */
   function determineSelectedBranch() {
-    var branch = 'dev', path = window.location.pathname;
+    let branch = 'dev';
+    const path = window.location.pathname;
     if (isOnRtd()) {
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
       // split[0] is an '' because the path starts with the separator
-      var thirdPathSegment = path.split('/')[2];
+      const thirdPathSegment = path.split('/')[2];
       // 'latest' is an alias on RTD for the 'dev' branch - which is the default for 'branch' here
-      if (thirdPathSegment != 'latest') {
+      if (thirdPathSegment !== 'latest') {
         branch = thirdPathSegment;
       }
     }
     return branch;
-  }
-
-  function values(associativeArray) {
-    var values = [];
-    for (var key in associativeArray) {
-      if (associativeArray.hasOwnProperty(key)) {
-        values.push(associativeArray[key]);
-      }
-    }
-    return values;
   }
 
   function isOnRtd() {
