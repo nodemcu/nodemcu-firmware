@@ -140,6 +140,7 @@ static int lrmt_rxsetup(lua_State *L) {
         return luaL_error(L, "filter_ticks must be in the range 0 - 255");
       }
       config.rx_config.filter_ticks_thresh = ticks;
+      config.rx_config.filter_en = true;
     }
     lua_pop(L, 1);
 
@@ -224,7 +225,8 @@ static void handle_receive(void *param) {
       } else {
 	printf("Unable allocate receive data memory\n");
       }
-
+    }
+    if (items) {
       vRingbufferReturnItem(rb, (void *) items);
     }
   }
