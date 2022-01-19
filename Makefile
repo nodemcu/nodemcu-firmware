@@ -333,7 +333,7 @@ $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
 	$(summary) PRUNE libmain.a libc.a
-	echo $(PATH)
+	echo "$(PATH)"
 	$(AR) d $(SDK_DIR)/lib/libmain.a time.o
 	$(AR) d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
