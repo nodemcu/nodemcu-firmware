@@ -119,8 +119,6 @@ static int lrmt_rxsetup(lua_State *L) {
   int gpio = luaL_checkinteger(L, 1);
   int divisor = get_divisor(L, 2);
 
-  // Ignore the table for now
-
   // We will set the channel later
   rmt_config_t config = RMT_DEFAULT_CONFIG_RX(gpio, 0);
   config.clk_div = divisor;
