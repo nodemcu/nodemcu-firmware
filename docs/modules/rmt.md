@@ -34,7 +34,7 @@ An error will be thrown if the bit time cannot be approximated.
 This optional table consists of a number of keys that control various aspects of the RMT transmission.
 
 - `invert` if true, then the output is inverted.
-- `carrier_hz` specifies that the signal is to module the carrier at the specified frequency. This is useful for IR transmissions.
+- `carrier_hz` specifies that the signal is to modulate the carrier at the specified frequency. This is useful for IR transmissions.
 - `carrier_duty` specifies the duty cycle of the carrier. Defaults to 50%
 - `idle_level` specifies what value to send when the transmission completes.
 

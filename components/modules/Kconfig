@@ -168,7 +168,7 @@ menu "NodeMCU modules"
         bool "Remote Control pulse generator/receiver"
         default "n"
         help
-            Includes the RMT module to use the ESP32's built-in 
+            Includes the rmt module to use the ESP32's built-in 
             remote control hardware.
 
     config NODEMCU_CMODULE_SDMMC
