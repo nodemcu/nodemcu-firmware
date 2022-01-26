@@ -19,6 +19,7 @@ CONDITIONS OF ANY KIND, either express or implied.
 #include "platform.h"
 #include "task/task.h"
 #include "driver/pcnt.h"
+#include "soc/pcnt_struct.h"
 #include "esp_log.h"
 #include "lextra.h"
 
@@ -135,17 +136,17 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
   /*0: positive value to zero; 1: negative value to zero; 2: counter value negative ; 3: counter value positive*/
   // uint8_t moving_to = status & 0x00000003u; // get first two bits
 
-  if (status & PCNT_STATUS_THRES1_M) {
+  if (status & PCNT_EVT_THRES_1) {
       // printf("THRES1 EVT\n");
       thr1 = true;
       // evt_count = pc->thresh1;
   }
-  if (status & PCNT_STATUS_THRES0_M) {
+  if (status & PCNT_EVT_THRES_0) {
       // printf("THRES0 EVT\n");
       thr0 = true;
       // evt_count = pc->thresh0;
   }
-  if (status & PCNT_STATUS_L_LIM_M) {
+  if (status & PCNT_EVT_L_LIM) {
       // printf("L_LIM EVT\n");
       l_lim = true;
       /*
@@ -164,7 +165,7 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
       }
       */
   }
-  if (status & PCNT_STATUS_H_LIM_M) {
+  if (status & PCNT_EVT_H_LIM) {
       // printf("H_LIM EVT\n");
       h_lim = true;
       /*
@@ -183,7 +184,7 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
       }
       */
   }
-  if (status & PCNT_STATUS_ZERO_M) {
+  if (status & PCNT_EVT_ZERO) {
       // printf("ZERO EVT\n");
       zero = true;
       // evt_count = 0;
