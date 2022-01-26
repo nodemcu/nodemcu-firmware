@@ -35,6 +35,24 @@ int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_G
 #define PLATFORM_UART_EVENT_BREAK    (UART_EVENT_MAX + 4)
 
 typedef struct {
+  unsigned rx_buf_sz;
+  unsigned tx_buf_sz;
+} uart_buf_sz_cfg_t;
+
+static const uart_buf_sz_cfg_t uart_buf_sz_cfg[] = {
+{ .rx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_RX0 +0,
+  .tx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_TX0 +0 },
+#if NUM_UART > 1
+{ .rx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_RX1 +0,
+  .tx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_TX1 +0 },
+#endif
+#if NUM_UART > 2
+{ .rx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_RX2 +0,
+  .tx_buf_sz = CONFIG_NODEMCU_UART_DRIVER_BUF_SIZE_TX2 +0 },
+#endif
+};
+
+typedef struct {
   unsigned id;
   int type;
   size_t size;
@@ -295,7 +313,7 @@ int platform_uart_start( unsigned id )
 
   uart_status_t *us = & uart_status[id];
 
-  esp_err_t ret = uart_driver_install(id, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 3, & us->queue, 0);
+  esp_err_t ret = uart_driver_install(id, uart_buf_sz_cfg[id].rx_buf_sz, uart_buf_sz_cfg[id].tx_buf_sz, 3, & us->queue, 0);
   if(ret != ESP_OK) {
     return -1;
   }

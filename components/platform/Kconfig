@@ -64,4 +64,82 @@ menu "NodeMCU platform config"
             Embedded LUA Flash Store size. Set to zero to use an LFS partition
             instead of embedding the LFS within the NodeMCU firmware itself.
 
+    menu "UART buffer size configuration"
+
+        config NODEMCU_UART_AT_LEAST_2
+            bool
+            default y if IDF_TARGET_ESP32
+            default y if IDF_TARGET_ESP32S2
+            default y if IDF_TARGET_ESP32S3
+            default y if IDF_TARGET_ESP32C3
+            default y if IDF_TARGET_ESP32H2
+
+        config NODEMCU_UART_AT_LEAST_3
+            bool
+            default y if IDF_TARGET_ESP32
+            default y if IDF_TARGET_ESP32S3
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_RX0
+            int "RX buffer size for UART0"
+            default 512
+            help
+                The rx buffer size to use for UART0.
+                This is a buffer used to/from the UART ISR. For high-speed scenarios,
+                it can be very helpful to increase the rx size.  The ISR trying
+                to write to a full rx buffer results in lost data and an error
+                event posted.
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_TX0
+            int "TX buffer size for UART0"
+            default 512
+            help
+                The tx buffer size to use for UART0.
+                This is a buffer used to/from the UART ISR. In some scenarios it
+                can be helpful to increase the tx size. Writing to a full tx buffer
+                blocks the calling RTOS task.
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_RX1
+            int "RX buffer size for UART1"
+            depends on NODEMCU_UART_AT_LEAST_2
+            default 512
+            help
+                The rx buffer size to use for UART1.
+                This is a buffer used to/from the UART ISR. For high-speed scenarios,
+                it can be very helpful to increase the rx size.  The ISR trying
+                to write to a full rx buffer results in lost data and an error
+                event posted.
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_TX1
+            int "TX buffer size for UART1"
+            depends on NODEMCU_UART_AT_LEAST_2
+            default 512
+            help
+                The tx buffer size to use for UART1.
+                This is a buffer used to/from the UART ISR. In some scenarios it
+                can be helpful to increase the tx size. Writing to a full tx buffer
+                blocks the calling RTOS task.
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_RX2
+            int "RX buffer size for UART2"
+            depends on NODEMCU_UART_AT_LEAST_3
+            default 512
+            help
+                The rx buffer size to use for UART2.
+                This is a buffer used to/from the UART ISR. For high-speed scenarios,
+                it can be very helpful to increase the rx size.  The ISR trying
+                to write to a full rx buffer results in lost data and an error
+                event posted.
+
+        config NODEMCU_UART_DRIVER_BUF_SIZE_TX2
+            int "TX buffer size for UART2"
+            depends on NODEMCU_UART_AT_LEAST_3
+            default 512
+            help
+                The tx buffer size to use for UART2.
+                This is a buffer used to/from the UART ISR. In some scenarios it
+                can be helpful to increase the tx size. Writing to a full tx buffer
+                blocks the calling RTOS task.
+
+    endmenu
+
 endmenu
