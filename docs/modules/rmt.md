@@ -108,10 +108,15 @@ If the item being sent is a string, then it contains 16 bit packed integers. The
 
 #### Example
 
+This example sends a single R character at 19200 bps. You wouldn't actually want to do it this way.... In some applications this would be inverted.
+
 ```
-channel:send(struct.pack("HHHHH", 65535, 32767, 65535, 32767, 65535))
+channel = rmt.txsetup(25, 1000000000 / 19200, {idle_level=1})
+one = struct.pack("H", 32768 + 1000)
+zero = struct.pack("H", 1000)
+-- Send start bit, then R = 0x52 (reversed) then stop bit
+channel:send(zero .. zero .. one .. zero .. zero .. one .. zero .. one .. zero .. one)
 ```
-This sends three pulse, each of width 32767 * bittime. This is visible if you set the bit time to something like 2000000 (i.e. 2&micro;S) and then the pulse width is around 60mS and the gap is 60mS as well.
 
 ## channel:close()
 
