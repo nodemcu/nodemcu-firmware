@@ -97,11 +97,11 @@ This is a (default) blocking call that transmits the data using the parameters s
 
 #### Parameters
 - `data` This is either a string or a table of strings.
-- `cb` THis is an optional callback when the transmission is actually complete. If specified, then the `send` call is non-blocking, and the callback invoked when the transmission is complete. Otherwise the `send` call is synchronous and does not return until transmission is complete.
+- `cb` This is an optional callback when the transmission is actually complete. If specified, then the `send` call is non-blocking, and the callback invoked when the transmission is complete. Otherwise the `send` call is synchronous and does not return until transmission is complete.
 
 #### Data Encoding
 
-If the `data` supplied is a table, then the elements of the table are concatenated together and sent. The elements of the table must be strings.
+If the `data` supplied is a table (really an array), then the elements of the table are concatenated together and sent. The elements of the table must be strings.
 
 If the item being sent is a string, then it contains 16 bit packed integers. The top bit of the integer controls the output level.
 `struct.pack("H", value)` generates a suitable value to output a zero bit. `struct.pack("H", 32768 + value)` generates a one bit of the specified width.
