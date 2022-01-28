@@ -41,6 +41,40 @@ static int get_divisor(lua_State *L, int index) {
   return divisor;
 }
 
+static int configure_channel(lua_State *L, rmt_config_t *config, rmt_mode_t mode) {
+  lrmt_channel_t ud = (lrmt_channel_t)lua_newuserdata(L, sizeof(*ud));
+  if (!ud) return luaL_error(L, "not enough memory");
+  memset(ud, 0, sizeof(*ud));
+  luaL_getmetatable(L, "rmt.channel");
+  lua_setmetatable(L, -2);
+
+  // We have allocated the channel -- must free it if the rest of this method fails
+  int channel = platform_rmt_allocate(1, mode);
+
+  if (channel < 0) {
+    return luaL_error(L, "no spare RMT channel");
+  }
+
+  config->channel = channel;
+
+  ud->channel = channel;
+  ud->tx = mode == RMT_MODE_TX;
+
+  int rc = rmt_config(config);
+  if (rc) {
+    platform_rmt_release(config->channel);
+    return luaL_error(L, "Failed to configure RMT");
+  }
+
+  rc = rmt_driver_install(config->channel, 0, 0);
+  if (rc) {
+    platform_rmt_release(config->channel);
+    return luaL_error(L, "Failed to install RMT driver");
+  }
+
+  return 1;
+}
+
 static int lrmt_txsetup(lua_State *L) {
   int gpio = luaL_checkinteger(L, 1);
   int divisor = get_divisor(L, 2);
@@ -80,38 +114,8 @@ static int lrmt_txsetup(lua_State *L) {
     lua_pop(L, 1);
   }
 
-  lrmt_channel_t ud = (lrmt_channel_t)lua_newuserdata(L, sizeof(*ud));
-  if (!ud) return luaL_error(L, "not enough memory");
-  memset(ud, 0, sizeof(*ud));
-  luaL_getmetatable(L, "rmt.channel");
-  lua_setmetatable(L, -2);
-
-  // We have allocated the channel -- must free it if the rest of this method fails
-  int channel = platform_rmt_allocate(1, RMT_MODE_TX);
-
-  if (channel < 0) {
-    return luaL_error(L, "no spare RMT channel");
-  }
-
-  config.channel = channel;
-
-  ud->channel = channel;
-  ud->tx = true;
-
-  int rc = rmt_config(&config);
-  if (rc) {
-    platform_rmt_release(config.channel);
-    return luaL_error(L, "Failed to configure RMT");
-  }
-
-  rc = rmt_driver_install(config.channel, 0, 0);
-  if (rc) {
-    platform_rmt_release(config.channel);
-    return luaL_error(L, "Failed to install RMT driver");
-  }
-
+  configure_channel(L, &config, RMT_MODE_TX);
   lua_pushinteger(L, divisor * 12500);
-
   return 2;
 }
 
@@ -153,38 +157,8 @@ static int lrmt_rxsetup(lua_State *L) {
     lua_pop(L, 1);
   }
 
-  lrmt_channel_t ud = (lrmt_channel_t)lua_newuserdata(L, sizeof(*ud));
-  if (!ud) return luaL_error(L, "not enough memory");
-  memset(ud, 0, sizeof(*ud));
-  luaL_getmetatable(L, "rmt.channel");
-  lua_setmetatable(L, -2);
-
-  // We have allocated the channel -- must free it if the rest of this method fails
-  int channel = platform_rmt_allocate(1, RMT_MODE_RX);
-
-  if (channel < 0) {
-    return luaL_error(L, "no spare RMT channel");
-  }
-
-  config.channel = channel;
-
-  ud->channel = channel;
-  ud->tx = false;
-
-  int rc = rmt_config(&config);
-  if (rc) {
-    platform_rmt_release(config.channel);
-    return luaL_error(L, "Failed to configure RMT");
-  }
-
-  rc = rmt_driver_install(config.channel, 1000, 0);
-  if (rc) {
-    platform_rmt_release(config.channel);
-    return luaL_error(L, "Failed to install RMT driver");
-  }
-
+  configure_channel(L, &config, RMT_MODE_RX);
   lua_pushinteger(L, divisor * 12500);
-
   return 2;
 }
 
@@ -216,7 +190,7 @@ static void handle_receive(void *param) {
         memset(rx_params, 0, sizeof(*rx_params));
 	memcpy(rx_params + 1, items, length);
         rx_params->cb_ref = p->cb_ref;
-	rx_params->data = (void *) items;
+	rx_params->data = (void *) (rx_params + 1);
 	rx_params->len = length;
         rx_params->channel = p->channel;
         task_post_high(cb_task_id, (task_param_t) rx_params);
@@ -304,7 +278,8 @@ static int lrmt_send(lua_State *L) {
   }
 
   if (len & 3) {
-    // Just tack on a "\0\0"
+    // Just tack on a "\0\0" -- this is needed as the hardware can
+    // only deal with multiple of 4 bytes.
     luaL_Buffer b;
     luaL_buffinit(L, &b);
     luaL_addlstring(&b, data, len);
@@ -368,7 +343,10 @@ static void cb_task(task_param_t param, task_prio_t prio) {
       lua_pushinteger(L, p->rc);
     }
 
-    lua_call(L, 1, 0);
+    int res = luaL_pcallx(L, 1, 0);
+    if (res) {
+      printf("rmt callback threw an error\n");
+    }
   }
 
   if (p->rx_shutting_down) {
