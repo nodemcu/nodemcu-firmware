@@ -116,6 +116,8 @@ one = struct.pack("H", 32768 + 1000)
 zero = struct.pack("H", 1000)
 -- Send start bit, then R = 0x52 (reversed) then stop bit
 channel:send(zero .. zero .. one .. zero .. zero .. one .. zero .. one .. zero .. one)
+-- or using the table interface
+channel:send({zero, zero, one, zero, zero, one, zero, one, zero, one})
 ```
 
 ## channel:close()
