@@ -60,13 +60,13 @@ static int configure_channel(lua_State *L, rmt_config_t *config, rmt_mode_t mode
   ud->channel = channel;
   ud->tx = mode == RMT_MODE_TX;
 
-  int rc = rmt_config(config);
+  esp_err_t rc = rmt_config(config);
   if (rc) {
     platform_rmt_release(config->channel);
     return luaL_error(L, "Failed to configure RMT");
   }
 
-  rc = rmt_driver_install(config->channel, 0, 0);
+  rc = rmt_driver_install(config->channel, 1000, 0);
   if (rc) {
     platform_rmt_release(config->channel);
     return luaL_error(L, "Failed to install RMT driver");
