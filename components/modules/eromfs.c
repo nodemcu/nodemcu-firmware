@@ -86,11 +86,13 @@ extern const char eromfs_bin_start[] asm("_binary_eromfs_bin_start");
   do { \
     const record_t *entry_ = (const record_t *)(start_void_p); \
     const record_t *end_ = end_of(record_t, entry_); \
+    unsigned xname_len = strlen(xname); \
     for (; entry_ < end_; \
          entry_ = (const record_t *)(((char *)entry_) + entry_->rec_len)) \
     { \
       uint8_t name_len = entry_->rec_len - sizeof(record_t); \
-      if (strncmp(xname, entry_->name, name_len) == 0) \
+      if (xname_len == name_len && \
+          strncmp(xname, entry_->name, name_len) == 0) \
       { \
         out = entry_; \
         break; \
