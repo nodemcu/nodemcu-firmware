@@ -69,11 +69,11 @@ An error will be thrown if the bit time cannot be approximated.
 This optional table consists of a number of keys that control various aspects of the RMT transmission.
 
 - `invert` if true, then the input is inverted.
-- `filter_ticks` If specified, then any pulse shorter than this will be ignored.
+- `filter_ticks` If specified, then any pulse shorter than this will be ignored. This is in units of the bit time.
 - `idle_threshold` If specified, then any level longer than this will set the receiver as idle. The default is 65535 bit times.
 
 
-## channel:on(method, callback)
+## channel:on(event, callback)
 
 This is establishes a callback to use when data is received and it also starts the data reception process. It can only be called once per receive
 channel.
