@@ -172,6 +172,13 @@ menu "NodeMCU modules"
             Includes the QR Code Generator from
             https://www.nayuki.io/page/qr-code-generator-library
 
+    config NODEMCU_CMODULE_RMT
+        bool "Remote Control pulse generator/receiver"
+        default "n"
+        help
+            Includes the rmt module to use the ESP32's built-in 
+            remote control hardware.
+
     config NODEMCU_CMODULE_SDMMC
         depends on IDF_TARGET_ESP32
         bool "SD-MMC module"
