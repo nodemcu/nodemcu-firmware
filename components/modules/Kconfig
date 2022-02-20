@@ -20,7 +20,7 @@ menu "NodeMCU modules"
 	select NODEMCU_CMODULE_STRUCT
         select BT_ENABLED
         help
-            Includes the simple Bluetooth GAP/GATT module.
+            Includes the simple Bluetooth GAP/GATT module. You must enable the Nimble BLE module as well.
 
     config NODEMCU_CMODULE_BTHCI
         bool "Bluetooth HCI interface module"
