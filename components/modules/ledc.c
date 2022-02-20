@@ -43,6 +43,8 @@ static int lledc_new_channel( lua_State *L )
 
   channel_config.gpio_num = opt_checkint_range(L, "gpio", -1, 0, GPIO_NUM_MAX-1);
 
+  channel_config.flags.output_invert = opt_checkbool(L, "invert", 0);
+
   lua_settop(L, top);
 
   esp_err_t timerErr = ledc_timer_config(&ledc_timer);
