@@ -118,6 +118,7 @@ LUALIB_API int luaL_posttask( lua_State* L, int prio ) {          // [-1, +0, -]
 }
 #else
 LUALIB_API int luaL_posttask( lua_State* L, int prio ) { 
+  (void)L; (void)prio;
   return 0;
 } /* Dummy stub on host */
 #endif

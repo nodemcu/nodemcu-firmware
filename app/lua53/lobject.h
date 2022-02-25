@@ -80,7 +80,7 @@
 ** wo is the offset of aligned word in bytes 0,4,8,..
 ** bo is the field within the word in bits 0..31
 */
-#ifdef LUA_USE_ESP
+#if defined(LUA_USE_ESP8266)
 #define GET_BYTE_FN(name,t,wo,bo) \
 static inline lu_int32 get ## name(const void *o) { \
   lu_int32 res;  /* extract named field */ \

@@ -421,7 +421,7 @@ static int ll_loadlib (lua_State *L) {
 ** =======================================================
 */
 
-#ifdef LUA_USE_ESP8266
+#ifdef LUA_USE_ESP
 #define file_t int
 #undef fopen
 #undef fclose

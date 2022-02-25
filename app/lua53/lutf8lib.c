@@ -258,6 +258,7 @@ LROT_END(utf8, LROT_TABLEREF(utf8_meta), 0)
 
 
 LUAMOD_API int luaopen_utf8 (lua_State *L) {
+  (void)L;
   return 0;
 }
 

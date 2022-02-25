@@ -24,7 +24,7 @@
 ** model but changing `fputs' to put the strings at a proper place
 ** (a console window or a log file, for instance).
 */
-#ifdef LUA_CROSS_COMPILER
+#if defined(LUA_USE_ESP8266)
 #undef puts
 #define puts(s) printf("%s",s)
 #endif

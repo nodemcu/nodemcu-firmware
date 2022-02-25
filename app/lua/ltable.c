@@ -336,6 +336,7 @@ static Node *find_prev_node(Node *mp, Node *next) {
 ** (colliding node is in its main position), moving node goes to an empty position.
 */
 static int move_node (lua_State *L, Table *t, Node *node) {
+  (void)L;
   Node *mp = mainposition(t, key2tval(node));
   /* if node is in it's main position, don't need to move node. */
   if (mp == node) return 1;
@@ -374,6 +375,7 @@ static int move_node (lua_State *L, Table *t, Node *node) {
 
 
 static int move_number (lua_State *L, Table *t, Node *node) {
+  (void)L;
   int key;
   lua_Number n = nvalue(key2tval(node));
   lua_number2int(key, n);

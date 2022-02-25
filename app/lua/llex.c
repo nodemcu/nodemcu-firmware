@@ -61,6 +61,7 @@ static void save (LexState *ls, int c) {
 
 
 void luaX_init (lua_State *L) {
+  (void)L;
 }
 
 

@@ -277,5 +277,6 @@ LROT_BEGIN(tab_funcs, NULL, 0)
 LROT_END(tab_funcs, NULL, 0)
 
 LUALIB_API int luaopen_table (lua_State *L) {
+  (void)L;
   return 1;
 }

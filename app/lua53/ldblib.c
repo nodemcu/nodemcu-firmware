@@ -464,6 +464,7 @@ LROT_BEGIN(dblib, NULL, 0)
 LROT_END(dblib, NULL, 0)
 
 LUAMOD_API int luaopen_debug (lua_State *L) {
+  (void)L;
   return 0;
 }
 

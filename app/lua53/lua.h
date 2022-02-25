@@ -465,6 +465,8 @@ struct lua_Debug {
   struct CallInfo *i_ci;  /* active function */
 };
 
+int lua_main(void);
+
 /* }====================================================================== */
 
 /* NodeMCU extensions to the standard API */

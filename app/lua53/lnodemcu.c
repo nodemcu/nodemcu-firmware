@@ -296,7 +296,7 @@ LUA_API void lua_getlfsconfig (lua_State *L, int *config) {
   }
 }
 
-LUA_API int  (lua_pushlfsindex) (lua_State *L) {
+LUA_API int lua_pushlfsindex(lua_State *L) {
   lua_lock(L);
   setobj2n(L, L->top, &G(L)->LFStable);
   api_incr_top(L);
@@ -309,7 +309,7 @@ LUA_API int  (lua_pushlfsindex) (lua_State *L) {
  * one upvalue that must be the set to the _ENV variable when its closure is
  * created, and as such this parallels some ldo.c processing.
  */
-LUA_API int  (lua_pushlfsfunc) (lua_State *L) {
+LUA_API int lua_pushlfsfunc(lua_State *L) {
   lua_lock(L);
   const TValue *t = &G(L)->LFStable;
   if (ttisstring(L->top-1) && ttistable(t)) {
@@ -341,7 +341,7 @@ LUA_API int  (lua_pushlfsfunc) (lua_State *L) {
 /*
  * Return an array of functions in LFS
  */
-LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L) {
+LUALIB_API int luaL_pushlfsmodules(lua_State *L) {
   int i = 1;
   if (lua_pushlfsindex(L) == LUA_TNIL)
     return 0;                                 /* return nil if LFS not loaded */
@@ -357,7 +357,7 @@ LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L) {
   return 1;
 }
 
-LUALIB_API int  (luaL_pushlfsdts) (lua_State *L) {
+LUALIB_API int luaL_pushlfsdts(lua_State *L) {
   int config[5];
   lua_getlfsconfig(L, config);
   lua_pushinteger(L, config[4]);
@@ -427,7 +427,9 @@ static const char *readF (lua_State *L, void *ud, size_t *size) {
 
 static void eraseLFS(LFSflashState *F) {
   lu_int32 i;
+#ifdef LUA_USE_ESP
   printf("\nErasing LFS from flash addr 0x%06x", F->addrPhys);
+#endif
   unlockFlashWrite();
   for (i = 0; i < F->size; i += FLASH_PAGE_SIZE) {
     size_t *f = cast(size_t *, F->addr + i/sizeof(*f));
@@ -436,11 +438,13 @@ static void eraseLFS(LFSflashState *F) {
 #ifdef LUA_USE_ESP
     if (*f == ~0 && !memcmp(f, f + 1, FLASH_PAGE_SIZE - sizeof(*f)))
       continue;
+    printf(".");
 #endif
     platform_flash_erase_sector(s);
-    printf(".");
   }
+#ifdef LUA_USE_ESP
   printf(" to 0x%06x\n", F->addrPhys + F->size-1);
+#endif
   flush_icache(F);
   lockFlashWrite();
 }
@@ -623,7 +627,6 @@ LUALIB_API void luaL_lfsreload (lua_State *L) {
 
 
 #ifdef LUA_USE_ESP
-extern void lua_main(void);
 /*
 ** Task callback handler. Uses luaN_call to do a protected call with full traceback
 */
@@ -634,7 +637,7 @@ static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
     return;
   }
   if (prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
-    luaL_error(L, "invalid posk task");
+    luaL_error(L, "invalid post task");
 /* Pop the CB func from the Reg */
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
   luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -662,7 +665,7 @@ LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
     }
     return task_fn_ref;
   } else {
-    return luaL_error(L, "invalid posk task");
+    return luaL_error(L, "invalid post task");
   }
 }
 #else
@@ -670,6 +673,7 @@ LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
 ** Task execution isn't supported on HOST builds so returns a -1 status
 */
 LUALIB_API int luaL_posttask( lua_State* L, int prio ) {            // [-1, +0, -]
+  (void)L; (void)prio;
   return -1;
 }
 #endif

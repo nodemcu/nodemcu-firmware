@@ -42,12 +42,15 @@
 ** created; the seed is used to randomize hashes.
 */
 #if !defined(luai_makeseed)
-#if defined(LUA_USE_ESP)
+#if defined(LUA_USE_ESP8266)
 static inline unsigned int luai_makeseed(void) {
   unsigned int r;
   asm volatile("rsr %0, ccount" : "=r"(r));
   return r;
 }
+#elif defined(LUA_USE_ESP)
+# include "esp_random.h"
+# define luai_makeseed()    esp_random()
 #else
 #include <time.h>
 #define luai_makeseed()		cast(unsigned int, time(NULL))
