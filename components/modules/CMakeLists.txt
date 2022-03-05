@@ -51,6 +51,7 @@ if(IDF_TARGET STREQUAL "esp32")
     "eth.c"
     "i2s.c"
     "pulsecnt.c"
+    "rmt.c"
     "sdmmc.c"
     "touch.c"
   )
