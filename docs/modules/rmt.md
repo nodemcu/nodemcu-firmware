@@ -5,7 +5,7 @@
 
 The RMT module provides a simple interface onto the ESP32 RMT peripheral. This allows the generation of
 arbitrary pulse trains with good timing accuracy. This can be used to generate IR remote control signals, or
-servo control pulses, or pretty much any hiigh speed signalling system.  It isn't good for low speed stuff as the maximum
+servo control pulses, or pretty much any high speed signalling system.  It isn't good for low speed stuff as the maximum
 pulse time is under 200ms -- though you can get longer by having multiple large values in a row. See the Data Encoding
 below for more details.
 
