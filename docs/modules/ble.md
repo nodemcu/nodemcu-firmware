@@ -120,10 +120,12 @@ The characteristic table contains the following keys:
 
 - `uuid` The UUID of the characteristics. This can be either a 16 byte string or a 2 byte string that identifies the particular characteristic. Typically, 2 byte strings are used for well-known characteristics.
 - `type` This is the optional type of the value. It has the same value as a unpack code in the `struct` module.
-- `value` This is the actual value of the characteristic. This will be a string of bytes unless a `type` value is set.
+- `value` This is the actual value of the characteristic. This will be a string of bytes (unless `type` is set).
 - `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set).
 - `write` This is a function that will be invoked to write the value (and so does not need the `value` entry). It is given a string of bytes (unless `type` is set)
 - `notify` If this attribute is present then notifications are supported on this characteristic. The value of the `notify` attribute is updated to be an integer which is the value to be passed into `ble.notify()`
+
+In the above functions, the value is that passed to/from the write/read functions is of the type specified by the `type` key. If this key is missing, then the default type is a string of bytes. For example, if `type` is `'B'` then the value is an integer (in the range 0 - 255) and the bluetooth client will see a single byte containing that value.
 
 If the `value` key is present, then the characteristic is read/write. However, if one or `read` or `write` is set to `true`, then it restricts access to that mode.
 

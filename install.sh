@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "Installing IDF prerequisites..."
 
 IDF_DIR=./sdk/esp32-esp-idf

@@ -34,6 +34,10 @@
 #include <esp_log.h>
 #define TAG "ble"
 
+#ifndef CONFIG_BT_NIMBLE_ENABLED
+#error You must enable NIMBLE if you want the Lua ble module. Hopefully this can be made automatic some day.
+#endif
+
 /* BLE */
 #include "esp_nimble_hci.h"
 #include "nimble/nimble_port.h"
@@ -196,7 +200,8 @@ free_gatt_svcs(lua_State *L, const struct ble_gatt_svc_def * svcs) {
 
 static int
 lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
-  // Actually the only thing we care about is the arg and the ctxt
+  UNUSED(conn_handle);
+  UNUSED(attr_handle);
 
   size_t task_block_size = sizeof(task_block_t);
 
@@ -220,6 +225,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
     task_block->length = OS_MBUF_PKTLEN(ctxt->om);
     uint16_t outlen;
     if (ble_hs_mbuf_to_flat(ctxt->om, task_block->buffer, task_block->length, &outlen)) {
+      free(task_block);
       return BLE_ATT_ERR_UNLIKELY;
     }
   }
@@ -232,7 +238,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   response_message_t message;
 
   while (1) {
-    if (xQueueReceive(response_queue, &message, (TickType_t) (10000/portTICK_PERIOD_MS) ) != pdPASS) {
+    if (xQueueReceive(response_queue, &message, (TickType_t) (2000/portTICK_PERIOD_MS) ) != pdPASS) {
       free(task_block);
       return BLE_ATT_ERR_UNLIKELY;
     }
@@ -270,6 +276,8 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
   message.errcode = BLE_ATT_ERR_UNLIKELY;
 
   lua_State *L = lua_getstate();
+  int top = lua_gettop(L);
+
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_block->arg);
   // Now we have the characteristic table in -1
   lua_getfield(L, -1, "type");
@@ -391,12 +399,12 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     } else {
       lua_pop(L, 1);  // Throw away the null write pointer
     }
-    lua_pop(L, 1);	// THrow away the value
+    lua_pop(L, 1);	// Throw away the value
     message.errcode = 0;
   }
 
 cleanup:
-  lua_pop(L, 2);
+  lua_settop(L, top);
   message.seqno = task_block->seqno;
 
   xQueueSend(response_queue, &message, (TickType_t) 0);
@@ -563,7 +571,6 @@ gatt_svr_init(lua_State *L) {
 
     struct ble_gatt_svc_def *svcs = NULL;
     lble_build_gatt_svcs(L, &svcs, &notify_handles);
-    //free_gatt_svcs(L, gatt_svr_svcs);
     gatt_svr_svcs = svcs;
 
     rc = ble_gatts_count_cfg(gatt_svr_svcs);
@@ -944,11 +951,6 @@ static int lble_notify(lua_State *L) {
 
   ble_gatts_chr_updated(notify_handles[handle]);
 
-/*
-  if (rc) {
-    return luaL_error(L, "Must supply a valid handle");
-  }
-*/
   return 0;
 }
 
