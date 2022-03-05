@@ -106,14 +106,17 @@ static int node_bootreason( lua_State *L)
     case EXT_CPU_RESET:
 #endif
     case DEEPSLEEP_RESET:
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
     case SDIO_RESET:
 #endif
-#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
     case GLITCH_RTC_RESET:
 #endif
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
     case EFUSE_RESET:
+    case USB_UART_CHIP_RESET:
+    case USB_JTAG_CHIP_RESET:
+    case POWER_GLITCH_RESET:
 #endif
     case TG0WDT_SYS_RESET:
     case TG1WDT_SYS_RESET:

@@ -48,8 +48,6 @@ int platform_gpio_output_exists( unsigned gpio );
 // *****************************************************************************
 // UART subsection
 
-#define UART_BUFFER_SIZE    512
-
 enum 
 {
 	PLATFORM_UART_MODE_UART = 0x0,

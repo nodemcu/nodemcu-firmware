@@ -4,7 +4,7 @@
 #include "sdkconfig.h"
 #include "esp_spi_flash.h"
 
-#define NUM_UART 3
+#define NUM_UART SOC_UART_NUM
 
 #define INTERNAL_FLASH_SECTOR_SIZE      SPI_FLASH_SEC_SIZE
 #define INTERNAL_FLASH_WRITE_UNIT_SIZE  4
