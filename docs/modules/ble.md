@@ -30,9 +30,9 @@ function read_battery_level()
   -- This ought to do something better!
   return 50
 end
-local battery = { uuid="180f", characteristics={ {uuid="2a19", type='B', read=read_battery_level} } }
-local myservice = {uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}
-local config = {name="MyGadget=", services={ myservice, battery }
+battery = { uuid="180f", characteristics={ {uuid="2a19", type='B', read=read_battery_level} } }
+myservice = {uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}
+config = {name="MyGadget", services={ myservice, battery } }
 ble.init(config)
 ```
 
