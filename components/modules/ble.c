@@ -19,7 +19,6 @@
 
 #include "sdkconfig.h"
 #ifdef CONFIG_NODEMCU_CMODULE_BLE
-#include "nvs_flash.h"
 #include <assert.h>
 #include <errno.h>
 
@@ -615,18 +614,6 @@ lble_print_conn_desc(struct ble_gap_conn_desc *desc)
 
 static int
 lble_sys_init(lua_State *L) {
-  int rc = nvs_flash_init();
-  if (rc == ESP_ERR_NVS_NO_FREE_PAGES || rc == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    rc = nvs_flash_erase();
-    if (rc) {
-      return luaL_error(L, "Failed to erase flash: %d", rc);
-    }
-    rc = nvs_flash_init();
-  }
-  if (rc) {
-    return luaL_error(L, "Failed to init flash: %d", rc);
-  }
-
   task_handle = task_get_id(lble_task_cb);
   response_queue = xQueueCreate(2, sizeof(response_message_t));
 

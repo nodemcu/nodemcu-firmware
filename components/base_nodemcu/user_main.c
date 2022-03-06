@@ -160,7 +160,13 @@ void __attribute__((noreturn)) app_main(void)
 
   nodemcu_init ();
 
-  nvs_flash_init ();
+  // This is the standard flash init sequence
+  int rc = nvs_flash_init();
+  if (rc == ESP_ERR_NVS_NO_FREE_PAGES || rc == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    nvs_flash_erase();
+    nvs_flash_init();
+  }
+
   esp_netif_init ();
 
   start_lua ();
