@@ -244,7 +244,23 @@ static int wifi_sta_config (lua_State *L)
     len = sizeof (cfg.sta.password);
   strncpy ((char *)cfg.sta.password, str, len);
 
-  lua_getfield (L, 1, "bssid");
+  lua_getfield(L, 1, "scan_mode");
+  int sm = luaL_optint(L, -1, WIFI_ALL_CHANNEL_SCAN);
+  cfg.sta.scan_method  = sm & WIFI_ALL_CHANNEL_SCAN;
+
+  lua_getfield(L, 1, "sort_method");
+  sm = luaL_optint(L, -1, WIFI_CONNECT_AP_BY_SECURITY);
+  cfg.sta.sort_method  = sm & WIFI_CONNECT_AP_BY_SECURITY;
+
+  lua_getfield(L, 1, "threshold_rssi");
+  const int rssi = luaL_optint(L, -1, -60);
+  cfg.sta.threshold.rssi  = rssi;
+
+  lua_getfield(L, 1, "threshold_authmode");
+  const int am = luaL_optint(L, -1, WIFI_AUTH_WPA2_PSK);
+  cfg.sta.threshold.authmode  = am > WIFI_AUTH_MAX ? WIFI_AUTH_WPA2_PSK : am;
+
+  lua_getfield(L, 1, "bssid");
   cfg.sta.bssid_set = false;
   if (lua_isstring (L, -1))
   {
