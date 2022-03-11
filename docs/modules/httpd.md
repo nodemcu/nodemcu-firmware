@@ -256,6 +256,44 @@ end
 httpd.dynamic(httpd.PUT, "/foo", put_foo)
 ```
 
+## httpd.websocket()
+
+Registers a websocket route handler.
+
+#### Syntax
+```lua
+httpd.websocket(route, handler)
+```
+
+#### Parameters
+- `route` The route prefix. Be mindful of any trailing "/" as that may interact
+with the `auto_index` functionality.
+- `handler` The route handler function - `handler(req, ws)`. The `req` object is
+the same as for a regular dynamic route. The provided websocket
+object `ws` has the following fields/functions:
+  - `on` This allows registration of handlers when data is received. This is invoked with
+  two arguments -- the name of the event and the handler for that event. The allowable names are:
+    - `text` The handler is called with a single string argument whenever a text message is received.
+    - `binary` The handler is called with a single string argument whenever a binary message is received.
+    - `close` The handler is called when the client wants to close the connection.
+  - `text` This can be called with a string argument and it sends a text message.
+  - `binary` This can be called with a string argument and it sends a binary message.
+  - `close` The connection to the client is closed.
+
+#### Returns
+nil
+
+#### Example
+```lua
+httpd.start({ webroot = "web" })
+
+function echo_ws(req, ws)
+  ws:on('text', function(data) ws:text(data) end)
+end
+
+httpd.websocket("/echo", echo_ws)
+```
+
 ## httpd.unregister()
 
 Unregisters a previously registered handler. The default handlers may be
