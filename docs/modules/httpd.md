@@ -258,7 +258,7 @@ httpd.dynamic(httpd.PUT, "/foo", put_foo)
 
 ## httpd.websocket()
 
-Registers a websocket route handler.
+Registers a websocket route handler. This is optional, and must be selected explicitly in the configuration.
 
 #### Syntax
 ```lua
@@ -285,13 +285,35 @@ nil
 
 #### Example
 ```lua
-httpd.start({ webroot = "web" })
+httpd.start({
+  webroot = "<static file prefix>",
+  max_handlers = 20,
+  auto_index = httpd.INDEX_NONE + httpd.INDEX_ROOT + httpd.INDEX_ALL,
+})
 
 function echo_ws(req, ws)
-  ws:on('text', function(data) ws:text(data) end)
+  ws:on('text', function(data) print(data) ws:text(data) end)
 end
 
 httpd.websocket("/echo", echo_ws)
+
+function tick(ws, n) 
+  ws:text("tick: " .. n)
+  n = n + 1
+  if n < 6 then
+    tmr.create():alarm(1000, tmr.ALARM_SINGLE, function () 
+       tick(ws ,n)
+    end)
+  else
+    ws:close()
+  end
+end
+
+function heartbeat(req, ws) 
+  tick(ws, 0)
+end
+
+httpd.websocket("/beat", heartbeat)
 ```
 
 ## httpd.unregister()
