@@ -265,7 +265,12 @@ static esp_err_t auto_index_handler(httpd_req_t *req)
 
 static esp_err_t dynamic_handler_httpd(httpd_req_t *req)
 {
+#ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
   size_t query_len = req->method != HTTP_WEBSOCKET ? httpd_req_get_url_query_len(req) : 0;
+#else
+  size_t query_len = httpd_req_get_url_query_len(req);
+#endif
+
   char *query = query_len ? malloc(query_len + 1) : NULL;
   if (query_len)
     httpd_req_get_url_query_str(req, query, query_len + 1);
