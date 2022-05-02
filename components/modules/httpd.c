@@ -415,6 +415,20 @@ static void free_sess_ctx(void *ctx) {
   xSemaphoreGive(done);
 }
 
+static void ws_clear(lua_State *L, ws_connection_t *ws) 
+{
+  luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_ref);
+  if (ws->text_fn_ref > 0) {
+    luaL_unref2(L, LUA_REGISTRYINDEX, ws->text_fn_ref);
+  }
+  if (ws->binary_fn_ref > 0) {
+    luaL_unref2(L, LUA_REGISTRYINDEX, ws->binary_fn_ref);
+  }
+  if (ws->close_fn_ref > 0) {
+    luaL_unref2(L, LUA_REGISTRYINDEX, ws->close_fn_ref);
+  }
+}
+
 #endif
 
 
@@ -558,8 +572,8 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
       }
     }
 
-    luaL_unref(L, LUA_REGISTRYINDEX, ws->self_ref);
-    ws->self_ref = LUA_NOREF;
+    ws_clear(L, ws);
+
     tr.request_type = SEND_OK;
   } else if (req_info->method == HTTP_WEBSOCKET) {
     printf("Handling websocket callbacks\n");
@@ -621,8 +635,7 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
           int err = luaL_pcallx(L, 2, 0);
           if (err) {
             tr.request_type = SEND_ERROR;
-            luaL_unref(L, LUA_REGISTRYINDEX, ws->self_ref);
-            ws->self_ref = LUA_NOREF;
+            ws_clear(L, ws);
           } else {
             tr.request_type = SEND_OK;
           }
@@ -966,6 +979,8 @@ static esp_err_t trigger_async_send(ws_connection_t *ws, int type, const char *d
 static void ws_async_close(void *arg) {
   async_send_t *async_close = arg;
 
+  printf("About to trigger close on %d\n", async_close->fd);
+
   httpd_sess_trigger_close(async_close->hd, async_close->fd);
   free(async_close);
 }
@@ -979,6 +994,8 @@ static int ws_close(lua_State *L) {
     async_close->hd = ws->handle;
     async_close->fd = ws->fd;
     httpd_queue_work(ws->handle, ws_async_close, async_close);
+  } else {
+    printf("ws_close called when already closed\n");
   }
   return 0;
 }
