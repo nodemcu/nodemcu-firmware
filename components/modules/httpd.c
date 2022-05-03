@@ -124,7 +124,8 @@ typedef struct {
   bool closed;
   httpd_handle_t handle;
   int fd;
-  int self_ref;
+  int self_ref;       // only present if at least one callback registered
+  int self_weak_ref;
   int text_fn_ref;
   int binary_fn_ref;
   int close_fn_ref;
@@ -392,6 +393,48 @@ static esp_err_t dynamic_handler_httpd(httpd_req_t *req)
 }
 
 #ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
+// returns a reference to a table with the [1] value being a weak
+// ref to the top of the stack
+static int register_weak_ref(lua_State *L)
+{
+  lua_newtable(L);
+
+  lua_newtable(L); // metatable={}
+
+  lua_pushliteral(L, "__mode");
+  lua_pushliteral(L, "v");
+  lua_rawset(L, -3); // metatable._mode='v'
+
+  lua_setmetatable(L, -2); // setmetatable(new_table,metatable)
+
+  lua_pushvalue(L, -2); // push the previous top of stack
+  lua_rawseti(L, -2, 1); // new_table[1]=original value on top of the stack
+
+  lua_remove(L, -2);   // Remove the original ivalue
+
+  return luaL_ref(L, LUA_REGISTRYINDEX); // this pops the new_table
+}
+
+// Returns the value of the weak ref on the stack
+// but returns false with nothing on the stack has been GC'ed
+static bool deref_weak_ref(lua_State *L, int ref)
+{
+  lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+  if (lua_isnil(L, -1)) {
+    lua_pop(L, 1);
+    return false;
+  }
+  lua_rawgeti(L, -1, 1);
+
+  // Either we have nil, or we have the underlying object
+  if (lua_isnil(L, -1)) {
+    lua_pop(L, 1);
+    return false;
+  }
+
+  return true;
+}
+
 static esp_err_t websocket_handler_httpd(httpd_req_t *req)
 {
   if (req->method == HTTP_GET) {
@@ -415,9 +458,9 @@ static void free_sess_ctx(void *ctx) {
   xSemaphoreGive(done);
 }
 
-static void ws_clear(lua_State *L, ws_connection_t *ws) 
+static void ws_clear(lua_State *L, ws_connection_t *ws)
 {
-  luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_ref);
+  luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_weak_ref);
   if (ws->text_fn_ref > 0) {
     luaL_unref2(L, LUA_REGISTRYINDEX, ws->text_fn_ref);
   }
@@ -559,20 +602,21 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
 #ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
   if (req_info->method == FREE_WS_OBJECT) {
     printf("Freeing WS Object %d\n", req_info->reference);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, req_info->reference);
-    ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
+    if (deref_weak_ref(L, req_info->reference)) {
+      ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
 
-    if (!ws->closed) {
-      printf("FIrst close\n");
-      ws->closed = true;
-      if (ws->close_fn_ref > 0) {
-        printf("Calling close handler\n");
-        lua_rawgeti(L, LUA_REGISTRYINDEX, ws->close_fn_ref);
-        luaL_pcallx(L, 0, 0);
+      if (!ws->closed) {
+        printf("First close\n");
+        ws->closed = true;
+        if (ws->close_fn_ref > 0) {
+          printf("Calling close handler\n");
+          lua_rawgeti(L, LUA_REGISTRYINDEX, ws->close_fn_ref);
+          luaL_pcallx(L, 0, 0);
+        }
       }
-    }
 
-    ws_clear(L, ws);
+      ws_clear(L, ws);
+    }
 
     tr.request_type = SEND_OK;
   } else if (req_info->method == HTTP_WEBSOCKET) {
@@ -581,26 +625,27 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
     if (req_info->req->sess_ctx) {
       // Websocket event arrived
       printf("Sess_ctx = %d\n", (int) req_info->req->sess_ctx);
-      lua_rawgeti(L, LUA_REGISTRYINDEX, (int) req_info->req->sess_ctx);
-      ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
-      int fn = 0;
-    
-      if (req_info->ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
-        fn = ws->text_fn_ref;
-      } else if (req_info->ws_pkt.type == HTTPD_WS_TYPE_BINARY) {
-        fn = ws->binary_fn_ref;
-      }
-  
-      if (fn) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, fn);
+      if (deref_weak_ref(L, (int) req_info->req->sess_ctx)) {
+        ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
+        int fn = 0;
 
-        lua_pushlstring(L, (const char *) req_info->ws_pkt.payload, (size_t) req_info->ws_pkt.len);
+        if (req_info->ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
+          fn = ws->text_fn_ref;
+        } else if (req_info->ws_pkt.type == HTTPD_WS_TYPE_BINARY) {
+          fn = ws->binary_fn_ref;
+        }
 
-        luaL_pcallx(L, 1, 0);
+        if (fn) {
+          lua_rawgeti(L, LUA_REGISTRYINDEX, fn);
+
+          lua_pushlstring(L, (const char *) req_info->ws_pkt.payload, (size_t) req_info->ws_pkt.len);
+
+          luaL_pcallx(L, 1, 0);
+        }
       }
-    }  
+    }
     tr.request_type = SEND_OK;
-  } else  
+  } else
 #endif
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, dynamic_handlers_table_ref); // +1
@@ -624,12 +669,13 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
           luaL_getmetatable(L, WS_METATABLE);
           lua_setmetatable(L, -2);
           lua_pushvalue(L, -1);
-          ws->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+          ws->self_weak_ref = register_weak_ref(L);
           ws->handle = req_info->req->handle;
           ws->fd = httpd_req_to_sockfd(req_info->req);
+          ws->self_ref = LUA_NOREF;
 
           // Set the session context so we know what is going on.
-          req_info->req->sess_ctx = (void *) ws->self_ref;
+          req_info->req->sess_ctx = (void *) ws->self_weak_ref;
           req_info->req->free_ctx = free_sess_ctx;
 
           int err = luaL_pcallx(L, 2, 0);
@@ -639,8 +685,8 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
           } else {
             tr.request_type = SEND_OK;
           }
-        } 
-      } else 
+        }
+      } else
 #endif
       {
         int err = luaL_pcallx(L, 1, 1); // -1 +1
@@ -981,7 +1027,9 @@ static void ws_async_close(void *arg) {
 
   printf("About to trigger close on %d\n", async_close->fd);
 
-  httpd_sess_trigger_close(async_close->hd, async_close->fd);
+  if (httpd_sess_trigger_close(async_close->hd, async_close->fd) != ESP_OK) {
+    printf("Failed to trigger close\n");
+  }
   free(async_close);
 }
 
@@ -1000,7 +1048,7 @@ static int ws_close(lua_State *L) {
   return 0;
 }
 
-// event types: text, binary, close 
+// event types: text, binary, close
 static int ws_on(lua_State *L) {
   ws_connection_t *ws = (ws_connection_t*)luaL_checkudata(L, 1, WS_METATABLE);
   const char *event = lua_tostring(L, 2);
@@ -1025,6 +1073,16 @@ static int ws_on(lua_State *L) {
     luaL_checkfunction(L, 3);
     lua_pushvalue(L, 3);
     *slot = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+
+  if (ws->text_fn_ref || ws->binary_fn_ref || ws->close_fn_ref) {
+    // We need a self_ref
+    if (ws->self_ref <= 0) {
+      lua_pushvalue(L, 1);
+      ws->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    }
+  } else {
+    luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_ref);
   }
 
   return 0;
