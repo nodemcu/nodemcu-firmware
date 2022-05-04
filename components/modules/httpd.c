@@ -116,6 +116,7 @@ typedef struct {
 } req_udata_t;
 
 #ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
+#define WS_DEBUG(...) 
 #define WS_METATABLE "httpd.ws"
 #define HTTP_WEBSOCKET 1234
 #define HTTP_WEBSOCKET_GET 1235
@@ -288,7 +289,7 @@ static esp_err_t dynamic_handler_httpd(httpd_req_t *req)
 #ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
   memset(&req_data.ws_pkt, 0, sizeof(httpd_ws_frame_t));
   if (req->method == HTTP_WEBSOCKET) {
-    printf("Handling callback for websocket\n");
+    WS_DEBUG("Handling callback for websocket\n");
     req_data.ws_pkt.type = HTTPD_WS_TYPE_TEXT;
     /* Set max_len = 0 to get the frame len */
     esp_err_t ret = httpd_ws_recv_frame(req, &req_data.ws_pkt, 0);
@@ -296,7 +297,7 @@ static esp_err_t dynamic_handler_httpd(httpd_req_t *req)
         return ret;
     }
 
-    printf("About to allocate %d bytes for buffer\n", req_data.ws_pkt.len);
+    WS_DEBUG("About to allocate %d bytes for buffer\n", req_data.ws_pkt.len);
     char *buf = malloc(req_data.ws_pkt.len);
     if (!buf) {
       return ESP_ERR_NO_MEM;
@@ -601,15 +602,15 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
 
 #ifdef CONFIG_NODEMCU_CMODULE_HTTPD_WS
   if (req_info->method == FREE_WS_OBJECT) {
-    printf("Freeing WS Object %d\n", req_info->reference);
+    WS_DEBUG("Freeing WS Object %d\n", req_info->reference);
     if (deref_weak_ref(L, req_info->reference)) {
       ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
 
       if (!ws->closed) {
-        printf("First close\n");
+        WS_DEBUG("First close\n");
         ws->closed = true;
         if (ws->close_fn_ref > 0) {
-          printf("Calling close handler\n");
+          WS_DEBUG("Calling close handler\n");
           lua_rawgeti(L, LUA_REGISTRYINDEX, ws->close_fn_ref);
           luaL_pcallx(L, 0, 0);
         }
@@ -620,11 +621,11 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
 
     tr.request_type = SEND_OK;
   } else if (req_info->method == HTTP_WEBSOCKET) {
-    printf("Handling websocket callbacks\n");
+    WS_DEBUG("Handling websocket callbacks\n");
     // Just handle the callbacks here
     if (req_info->req->sess_ctx) {
       // Websocket event arrived
-      printf("Sess_ctx = %d\n", (int) req_info->req->sess_ctx);
+      WS_DEBUG("Sess_ctx = %d\n", (int) req_info->req->sess_ctx);
       if (deref_weak_ref(L, (int) req_info->req->sess_ctx)) {
         ws_connection_t *ws = (ws_connection_t *) luaL_checkudata(L, -1, WS_METATABLE);
         int fn = 0;
@@ -1025,10 +1026,10 @@ static esp_err_t trigger_async_send(ws_connection_t *ws, int type, const char *d
 static void ws_async_close(void *arg) {
   async_send_t *async_close = arg;
 
-  printf("About to trigger close on %d\n", async_close->fd);
+  WS_DEBUG("About to trigger close on %d\n", async_close->fd);
 
   if (httpd_sess_trigger_close(async_close->hd, async_close->fd) != ESP_OK) {
-    printf("Failed to trigger close\n");
+    WS_DEBUG("Failed to trigger close\n");
   }
   free(async_close);
 }
@@ -1043,7 +1044,7 @@ static int ws_close(lua_State *L) {
     async_close->fd = ws->fd;
     httpd_queue_work(ws->handle, ws_async_close, async_close);
   } else {
-    printf("ws_close called when already closed\n");
+    WS_DEBUG("ws_close called when already closed\n");
   }
   return 0;
 }
