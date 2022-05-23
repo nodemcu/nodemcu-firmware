@@ -603,7 +603,7 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
   if (!file)
     return 1;
 
-  if (size != 0 && (size != fwrite((const char *)p, size, 1, file)) )
+  if (size != 0 && (fwrite((const char *)p, size, 1, file) != 1) )
     return 1;
 
   return 0;
