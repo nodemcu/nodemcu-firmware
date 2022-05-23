@@ -31,8 +31,8 @@ bool lfs_get_location(lfs_location_info_t *out)
     return false; // Nothing to do if no LFS partition available
 
   out->size      = part->size; // in bytes
-  out->addr_mem  = spi_flash_phys2cache(out->addr_phys, SPI_FLASH_MMAP_DATA);
   out->addr_phys = part->address;
+  out->addr_mem  = spi_flash_phys2cache(out->addr_phys, SPI_FLASH_MMAP_DATA);
   if (!out->addr_mem) { // not already mmap'd, have to do it ourselves
     spi_flash_mmap_handle_t ignored;
     esp_err_t err = spi_flash_mmap(
