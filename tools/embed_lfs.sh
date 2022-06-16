@@ -15,7 +15,7 @@ if [ ! -f "${LUAC_CROSS}" ]; then
 	exit 1
 fi
 
-LFS_ADDR_SIZE=$(grep -E "0x[0-9a-f]+[ ]+0x[0-9a-f]+[ ]+esp-idf/embedded_lfs/libembedded_lfs.a\(lua.flash.store.reserved.S.obj\)" "${MAP_FILE}" | grep -v -w 0x0 | tr -s ' ')
+LFS_ADDR_SIZE=$(grep -E "0x[0-9a-f]+[ ]+0x[0-9a-f]+[ ]+esp-idf/embedded_lfs/libembedded_lfs.a\(lua.flash.store.reserved.S.obj\)" "${MAP_FILE}" | grep -v -w 0x0 | grep -v -w 0x24 | tr -s ' ')
 if [ -z "${LFS_ADDR_SIZE}" ]; then
 	echo "Error: LFS segment not found. Use 'make clean; make' perhaps?"
 	exit 1
