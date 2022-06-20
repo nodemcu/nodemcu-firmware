@@ -53,6 +53,7 @@ pages:
       - 'gpio': 'modules/gpio.md'
       - 'heaptrace': 'modules/heaptrace.md'
       - 'http': 'modules/http.md'
+      - 'httpd': 'modules/httpd.md'
       - 'i2c': 'modules/i2c.md'
       - 'i2s': 'modules/i2s.md'
       - 'ledc': 'modules/ledc.md'
