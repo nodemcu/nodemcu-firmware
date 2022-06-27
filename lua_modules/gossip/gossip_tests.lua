@@ -24,6 +24,7 @@ file.putcontents = dummy
 
 local Ip_1 = '192.168.0.1';
 local Ip_2 = '192.168.0.2';
+local Ip_own = '192.168.0.3';
 
 -- test runner
 
@@ -186,20 +187,19 @@ function Test.utils_getMinus()
     state = constants.nodeState.SUSPECT;
   };
 
-  --local diff1 = utils.getMinus(data1, data2);
+  local diff1 = utils.getMinus(data1, data2);
   local diff2 = utils.getMinus(data2, data1);
 
-  --assert(diff1[Ip_1] ~= nil and diff1[Ip_2] == nil);
+  assert(diff1[Ip_1] ~= nil and diff1[Ip_2] == nil);
   assert(diff2[Ip_1] == nil and diff2[Ip_2] ~= nil);
-
 end
 
 -- state
 
 function Test.state_setRev()
-  gossip.ip = Ip_1;
-  gossip.networkState[Ip_1] = {};
-  gossip.networkState[Ip_1].revision = -1;
+  gossip.ip = Ip_own;
+  gossip.networkState[Ip_own] = {};
+  gossip.networkState[Ip_own].revision = -1;
   assert(state.setRev() == 0, 'Revision not initialized to 0.');
 end
 
@@ -223,6 +223,7 @@ end
 -- network
 
 function Test.network_updateNetworkState_no_callback()
+  gossip.ip = Ip_own;
   local updateData = {}
   updateData[Ip_1] = {
     revision = 1,
@@ -232,7 +233,12 @@ function Test.network_updateNetworkState_no_callback()
   updateData[Ip_2] = {
     revision = 1,
     heartbeat = 700,
-    state = constants.nodeState.UP
+    state = constants.nodeState.DOWN
+  };
+  updateData[Ip_own] = {
+    revision = 1,
+    heartbeat = 800,
+    state = constants.nodeState.DOWN
   };
   network.updateNetworkState(updateData);
   -- send duplicate data

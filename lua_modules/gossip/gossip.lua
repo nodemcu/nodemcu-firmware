@@ -101,6 +101,14 @@ state.start = function()
     return;
   end
 
+  -- sending to own IP makes no sense
+  for index, value in ipairs(gossip.config.seedList) do
+      if value == gossip.ip then
+          table.remove(gossip.config.seedList, index)
+          utils.debug('removing own ip from seed list')
+      end
+  end
+
   gossip.networkState[gossip.ip] = {};
   local localState = gossip.networkState[gossip.ip];
   localState.revision = state.setRev();
@@ -148,7 +156,9 @@ network.updateNetworkState = function(updateData)
     if not utils.contains(gossip.config.seedList, ip) then
       table.insert(gossip.config.seedList, ip);
     end
-    gossip.networkState[ip] = data;
+    if ip ~= gossip.ip then
+      gossip.networkState[ip] = data;
+    end
   end
 end
 
