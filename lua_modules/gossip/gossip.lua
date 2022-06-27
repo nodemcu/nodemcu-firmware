@@ -15,11 +15,7 @@ end
 
 utils.debug = function(message)
   if gossip.config.debug then
-    if gossip.config.debugOutput then
-      gossip.config.debugOutput(message);
-    else
-      print(message);
-    end
+    gossip.config.debugOutput(message);
   end
 end
 
@@ -138,6 +134,10 @@ end
 -- Network
 
 network.pushGossip = function(data, ip)
+  if not gossip.started then
+    utils.debug('Gossip not started.');
+    return;
+  end
   gossip.networkState[gossip.ip].data = data;
   network.sendSyn(nil, ip);
 end
@@ -235,7 +235,8 @@ constants.defaultConfig = {
   seedList = {},
   roundInterval = 15000,
   comPort = 5000,
-  debug = false
+  debug = false,
+  debugOutput = print
 };
 
 constants.comparisonFields = {'revision', 'heartbeat', 'state'};
