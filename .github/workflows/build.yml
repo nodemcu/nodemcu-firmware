@@ -14,10 +14,20 @@ jobs:
 
     runs-on: windows-latest
 
+
+
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '3.1.x'
+    - name: Build
+      run: |
+        cd msvc
+        dotnet build --configuration Release --no-restore
     - name: Build luac.cross.exe
       run: |
         set
