@@ -30,7 +30,7 @@ jobs:
         echo ############ list "%programfiles(x86)%\Microsoft Visual Studio" 
         ls "%programfiles(x86)%\Microsoft Visual Studio"
         echo ############ list "%programfiles(x86)%\Microsoft Visual Studio 14.0" 
-        ls -r "%programfiles(x86)%\Microsoft Visual Studio 14.0"
+        ls -R "%programfiles(x86)%\Microsoft Visual Studio 14.0"
         ls -l "%programfiles(x86)%\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe"
         "%programfiles(x86)%\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
         mv luac-cross/x64/Release/luac.cross.exe ..
