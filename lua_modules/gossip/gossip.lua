@@ -115,9 +115,9 @@ state.start = function()
   localState.heartbeat = tmr.time();
   localState.state = constants.nodeState.UP;
 
-  gossip.inboundSocket = net.createUDPSocket();
-  gossip.inboundSocket:listen(gossip.config.comPort);
-  gossip.inboundSocket:on('receive', network.receiveData);
+  gossip.socket = net.createUDPSocket();
+  gossip.socket:listen(gossip.config.comPort);
+  gossip.socket:on('receive', network.receiveData);
 
   gossip.started = true;
 
@@ -185,12 +185,11 @@ network.pickRandomNode = function()
 end
 
 network.sendData = function(ip, data, sendType)
-  local outboundSocket = net.createUDPSocket();
-  data.type = sendType;
-  local dataToSend = sjson.encode(data);
-  data.type = nil;
-  outboundSocket:send(gossip.config.comPort, ip, dataToSend);
-  outboundSocket:close();
+  data.type = sendType
+  local dataToSend = sjson.encode(data)
+  data.type = nil
+  gossip.socket:send(gossip.config.comPort, ip, dataToSend)
+  utils.debug("Sent "..#dataToSend.." bytes")
 end
 
 network.receiveSyn = function(ip, synData)
