@@ -22,6 +22,8 @@ jobs:
         submodules: true
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
+      with:
+        msbuild-architecture: x64
     - name: Build luac.cross.exe
       run: |
         set
