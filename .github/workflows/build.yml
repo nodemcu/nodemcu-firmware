@@ -20,14 +20,8 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '3.1.x'
-    - name: Build
-      run: |
-        cd msvc
-        dotnet build --configuration Release --no-restore
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
     - name: Build luac.cross.exe
       run: |
         set
@@ -42,7 +36,7 @@ jobs:
         echo ############ list "%programfiles(x86)%\Microsoft Visual Studio 14.0" 
         ls -R "%programfiles(x86)%\Microsoft Visual Studio 14.0"
         ls -l "%programfiles(x86)%\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe"
-        "%programfiles(x86)%\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x64
+        msbuild.exe /p:Configuration=Release /p:Platform=x64
         mv luac-cross/x64/Release/luac.cross.exe ..
       shell: cmd
     - name: Upload luac.cross
