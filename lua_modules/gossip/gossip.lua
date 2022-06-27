@@ -132,9 +132,13 @@ end
 state.tickNodeState = function(ip)
   if gossip.networkState[ip] then
     local nodeState = gossip.networkState[ip].state;
+    local oldNodeState = nodeState;
     if nodeState < constants.nodeState.REMOVE then
       nodeState = nodeState + constants.nodeState.TICK;
       gossip.networkState[ip].state = nodeState;
+    end
+    if oldNodeState == constants.nodeState.DOWN then
+      if gossip.updateCallback then gossip.updateCallback(gossip.networkState[ip]); end
     end
   end
 end
