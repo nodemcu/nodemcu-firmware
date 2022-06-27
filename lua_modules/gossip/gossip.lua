@@ -144,6 +144,7 @@ state.tickNodeState = function(ip)
 end
 
 -- Network
+network.broadcastIp = "255.255.255.255"
 
 network.pushGossip = function(data, ip)
   if not gossip.started then
@@ -157,7 +158,7 @@ end
 network.updateNetworkState = function(updateData)
   if gossip.updateCallback then gossip.updateCallback(updateData); end
   for ip, data in pairs(updateData) do
-    if not utils.contains(gossip.config.seedList, ip) then
+    if not utils.contains(gossip.config.seedList, ip) and ip ~= network.broadcastIp and ip ~= gossip.ip then
       table.insert(gossip.config.seedList, ip);
     end
     if ip ~= gossip.ip then
@@ -184,8 +185,8 @@ network.pickRandomNode = function()
     return gossip.config.seedList[randomListPick];
   end
   utils.debug(
-      'Seedlist is empty. Please provide one or wait for node to be contacted.');
-  return nil;
+      'Seedlist is empty. Using broadcast IP '..network.broadcastIp..' to discover.');
+  return network.broadcastIp;
 end
 
 network.sendData = function(ip, data, sendType)
