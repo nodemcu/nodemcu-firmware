@@ -34,6 +34,16 @@ int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_G
 #define PLATFORM_UART_EVENT_RX       (UART_EVENT_MAX + 3)
 #define PLATFORM_UART_EVENT_BREAK    (UART_EVENT_MAX + 4)
 
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+#define ADJUST_IDR(id,retval)   if (id-- == 0) return retval
+#define ADJUST_ID(id)   if (id-- == 0) return
+#define UNADJUST_ID(id)   id++
+#else
+#define ADJUST_IDR(id, retval)
+#define ADJUST_ID(id)
+#define AUNDJUST_ID(id)
+#endif
+
 typedef struct {
   unsigned rx_buf_sz;
   unsigned tx_buf_sz;
@@ -65,41 +75,49 @@ uart_status_t uart_status[NUM_UART];
 task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+static uart_status_t usbcdc;
+SemaphoreHandle_t usbcdc_sem = NULL;
+#endif
+
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
+
+static void handle_uart_data(unsigned int id, uart_event_post_t *post, uart_status_t *us) {
+  size_t i = 0;
+  while (i < post->size) {
+    if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+      unsigned used = feed_lua_input(post->data + i, post->size - i);
+      i += used;
+    } else {
+      char ch = post->data[i];
+      us->line_buffer[us->line_position] = ch;
+      us->line_position++;
+
+      uint16_t need_len = us->need_len;
+      int16_t end_char = us->end_char;
+      size_t max_wanted =
+        (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
+      bool at_end = (us->line_position >= max_wanted);
+      bool end_char_found =
+        (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
+      if (at_end || end_char_found) {
+        uart_on_data_cb(id, us->line_buffer, us->line_position);
+        us->line_position = 0;
+      }
+      ++i;
+    }
+  }
+}
 
 void uart_event_task( task_param_t param, task_prio_t prio ) {
   uart_event_post_t *post = (uart_event_post_t *)param;
   unsigned id = post->id;
   uart_status_t *us = &uart_status[id];
+  UNADJUST_ID(id);
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    size_t i = 0;
-    while (i < post->size)
-    {
-      if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
-        unsigned used = feed_lua_input(post->data + i, post->size - i);
-        i += used;
-      }
-      else {
-        char ch = post->data[i];
-        us->line_buffer[us->line_position] = ch;
-        us->line_position++;
-
-        uint16_t need_len = us->need_len;
-        int16_t end_char = us->end_char;
-        size_t max_wanted =
-          (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
-        bool at_end = (us->line_position >= max_wanted);
-        bool end_char_found =
-          (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
-        if (at_end || end_char_found) {
-          uart_on_data_cb(id, us->line_buffer, us->line_position);
-          us->line_position = 0;
-        }
-        ++i;
-      }
-    }
+    handle_uart_data(id, post, us);
     free(post->data);
   } else {
     const char *err;
@@ -118,6 +136,20 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   }
   free(post);
 }
+
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+static void task_usbcdc(void *pvParameters) {
+  // 4 chosen as a number smaller than the number of nodemcu task slots
+  // available, to make it unlikely we encounter a task_post failing
+  if (usbcdc_sem == NULL)
+    usbcdc_sem = xSemaphoreCreateCounting(4, 4);
+
+  for (;;) {
+    // Get input characters
+  }
+
+}
+#endif
 
 static void task_uart( void *pvParameters ){
   unsigned id = (unsigned)pvParameters;
@@ -207,6 +239,7 @@ static void task_uart( void *pvParameters ){
 // pins must not be null for non-console uart
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
+  ADJUST_IDR(id, baud);
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
   if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
   if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
@@ -259,6 +292,8 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 void platform_uart_setmode(unsigned id, unsigned mode)
 {
 	uart_mode_t uartMode;
+
+  ADJUST_IDR(id,);
 	
 	switch(mode)
 	{
@@ -285,6 +320,7 @@ void platform_uart_send_multi( unsigned id, const char *data, size_t len )
         putchar (data[ i ]);
     }
   } else {
+    ADJUST_ID(id);
     uart_write_bytes(id, data, len);
   }
 }
@@ -293,16 +329,20 @@ void platform_uart_send( unsigned id, uint8_t data )
 {
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     putchar (data);
-  else
+  else {
+    ADJUST_ID(id);
     uart_write_bytes(id, (const char *)&data, 1);
+  }
 }
 
 void platform_uart_flush( unsigned id )
 {
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     fflush (stdout);
-  else
+  else {
+    ADJUST_ID(id);
     uart_tx_flush(id);
+  }
 }
 
 
@@ -310,6 +350,26 @@ int platform_uart_start( unsigned id )
 {
   if(uart_event_task_id == 0)
     uart_event_task_id = task_get_id( uart_event_task );
+
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+  if (id == 0) {
+    usbcdc.line_buffer = malloc(LUA_MAXINPUT);
+    usbcdc.line_position = 0;
+    if(usbcdc.line_buffer == NULL) {
+      return -1;
+    }
+
+    const char *pcName = "usbcdc";
+    if(xTaskCreate(task_usbcdc, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, &usbcdc.taskHandle) != pdPASS) {
+      free(usbcdc.line_buffer);
+      usbcdc.line_buffer = NULL;
+      return -1;
+    }
+    return 0;
+  }
+#endif
+
+  ADJUST_IDR(id, -1);
 
   uart_status_t *us = & uart_status[id];
 
@@ -342,6 +402,7 @@ void platform_uart_stop( unsigned id )
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
     ;
   else {
+    ADJUST_IDR(id,);
     uart_status_t *us = & uart_status[id];  
     uart_driver_delete(id);
     if(us->line_buffer) free(us->line_buffer);
@@ -353,6 +414,16 @@ void platform_uart_stop( unsigned id )
 
 int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {
     int err;
+
+  if (id == 0 && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) {
+    // Return dummy values
+    *baudp = 115200;
+    *databitsp = 8;
+    *parityp = PLATFORM_UART_PARITY_NONE;
+    *stopbitsp = PLATFORM_UART_STOPBITS_1;
+    return 0;
+  }
+
 
     err = uart_get_baudrate(id, baudp);
     if (err != ESP_OK) return -1;
@@ -403,6 +474,7 @@ int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, 
 
 int platform_uart_set_wakeup_threshold(unsigned id, unsigned threshold)
 {
+  ADJUST_IDR(id, 0);
   esp_err_t err = uart_set_wakeup_threshold(id, threshold);
   return (err == ESP_OK) ? 0 : -1;
 }
