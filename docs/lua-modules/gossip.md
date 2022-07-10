@@ -68,7 +68,7 @@ gossip.setConfig(config)
 
 Sets the configuration for gossip. The available options are:
 
-`seedList` : the list of seeds gossip will start with; this will be updated as new nodes are discovered. Note that it's enough for all nodes to start with the same IP in the seedList, as once they have one seed in common, the data will propagate
+`seedList` : the list of seeds gossip will start with; this will be updated as new nodes are discovered. Note that it's enough for all nodes to start with the same IP in the seedList, as once they have one seed in common, the data will propagate. If the seedList is empty a broadcast is sent, so this can be used for automatic discovery of nodes.
 
 `roundInterval`: interval in milliseconds at which gossip will pick a random node from the seed list and send a `SYN` request
 
