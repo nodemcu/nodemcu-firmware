@@ -54,10 +54,10 @@ end)
 -- apikey must be -> string <-
 -- e.g. xxx.init(00000,00000,"123j12b3jkb12k4b23bv54i2b5b3o4")
 --========================================
-function M.init(_device, _sensor, _apikey)
-    device = tostring(_device)
-    sensor = tostring(_sensor)
-    apikey = _apikey
+function M.init(device_, sensor_, apikey_)
+    device = tostring(device_)
+    sensor = tostring(sensor_)
+    apikey = apikey_
     if dns == "0.0.0.0" then
       tmr.create():alarm(5000,tmr.ALARM_AUTO,function ()
         if dns == "0.0.0.0" then
@@ -90,9 +90,9 @@ end
 --
 --e.g. xxx.update(233.333)
 --============================================================
-function M.update(_datapoint)
+function M.update(datapoint_)
 
-    datapoint = tostring(_datapoint)
+    datapoint = tostring(datapoint_)
 
     sk:on("connection", function()
 

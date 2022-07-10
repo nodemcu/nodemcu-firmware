@@ -58,7 +58,7 @@ jobs:
 
   build_luac_cross_win:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v2

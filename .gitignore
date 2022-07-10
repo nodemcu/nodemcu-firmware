@@ -28,6 +28,8 @@ uz_zip
 
 # ignore VS Code files
 .vscode/**
+# ignore VS files
+.vs/**
 
 # ignore IDEA files
 .idea
