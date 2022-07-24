@@ -2,10 +2,15 @@
 #include "driver/sigmadelta.h"
 #include "driver/adc.h"
 #include "driver/uart.h"
+#include "driver/usb_serial_jtag.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "esp_vfs_dev.h"
 #include "soc/uart_reg.h"
 #include <stdio.h>
 #include <string.h>
 #include <freertos/semphr.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
@@ -76,7 +81,8 @@ task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
 #if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
-static uart_status_t usbcdc;
+task_handle_t usbcdc_event_task_id = 0;
+static uart_status_t usbcdc_status;
 SemaphoreHandle_t usbcdc_sem = NULL;
 #endif
 
@@ -110,27 +116,32 @@ static void handle_uart_data(unsigned int id, uart_event_post_t *post, uart_stat
   }
 }
 
-void uart_event_task( task_param_t param, task_prio_t prio ) {
+void uart_event_task(task_param_t param, task_prio_t prio)
+{
   uart_event_post_t *post = (uart_event_post_t *)param;
   unsigned id = post->id;
   uart_status_t *us = &uart_status[id];
   UNADJUST_ID(id);
   xSemaphoreGive(sem);
-  if(post->type == PLATFORM_UART_EVENT_DATA) {
+  if (post->type == PLATFORM_UART_EVENT_DATA)
+  {
     handle_uart_data(id, post, us);
     free(post->data);
-  } else {
+  }
+  else
+  {
     const char *err;
-    switch(post->type) {
-      case PLATFORM_UART_EVENT_OOM:
-        err = "out_of_memory";
-        break;
-      case PLATFORM_UART_EVENT_BREAK:
-        err = "break";
-        break;
-      case PLATFORM_UART_EVENT_RX:
-      default:
-        err = "rx_error";
+    switch (post->type)
+    {
+    case PLATFORM_UART_EVENT_OOM:
+      err = "out_of_memory";
+      break;
+    case PLATFORM_UART_EVENT_BREAK:
+      err = "break";
+      break;
+    case PLATFORM_UART_EVENT_RX:
+    default:
+      err = "rx_error";
     }
     uart_on_error_cb(id, err, strlen(err));
   }
@@ -138,16 +149,56 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
 }
 
 #if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+void usbcdc_event_task(task_param_t param, task_prio_t prio)
+{
+  uart_event_post_t *post = (uart_event_post_t *)param;
+  xSemaphoreGive(usbcdc_sem);
+  handle_uart_data(0, post, &usbcdc_status);
+  free(post);
+}
+
 static void task_usbcdc(void *pvParameters) {
   // 4 chosen as a number smaller than the number of nodemcu task slots
   // available, to make it unlikely we encounter a task_post failing
   if (usbcdc_sem == NULL)
     usbcdc_sem = xSemaphoreCreateCounting(4, 4);
 
-  for (;;) {
-    // Get input characters
-  }
+  uart_event_post_t *post = NULL;
 
+  for (;;) {
+    if (post == NULL) {
+      post = (uart_event_post_t *)malloc(sizeof(uart_event_post_t) + 64 * sizeof(char));
+      if (post == NULL) {
+        ESP_LOGE(UART_TAG, "Can not alloc memory in task_usbcdc()");
+        // reboot here?
+        continue;
+      }
+    }
+
+    post->data = (void *)(post + 1);
+    post->type = PLATFORM_UART_EVENT_DATA;
+
+    int len = usb_serial_jtag_read_bytes(post->data, 64, portMAX_DELAY);
+
+    if (len > 0) {
+      for (int i = 0; i < len; i++) {
+        if (post->data[i] == '\r') {
+          post->data[i] = '\n';
+        }
+      }
+      post->size = len;
+      xSemaphoreTake(usbcdc_sem, portMAX_DELAY);
+      if (!task_post_medium(usbcdc_event_task_id, (task_param_t)post))
+      {
+        ESP_LOGE(UART_TAG, "Task event overrun in task_usbcdc()");
+        xSemaphoreGive(usbcdc_sem);
+      } else {
+        post = NULL;
+      }
+    } else if (len < 0) {
+      printf("Error %d: %s\n", errno, strerror(errno));
+    }
+  }
 }
 #endif
 
@@ -353,16 +404,48 @@ int platform_uart_start( unsigned id )
 
 #if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
   if (id == 0) {
-    usbcdc.line_buffer = malloc(LUA_MAXINPUT);
-    usbcdc.line_position = 0;
-    if(usbcdc.line_buffer == NULL) {
+    if (usbcdc_event_task_id == 0) {
+      usbcdc_event_task_id = task_get_id(usbcdc_event_task);
+
+      /* Disable buffering on stdin */
+      setvbuf(stdin, NULL, _IONBF, 0);
+
+      /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
+      esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
+      /* Move the caret to the beginning of the next line on '\n' */
+      esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+
+      /* Enable blocking mode on stdin and stdout */
+      fcntl(fileno(stdout), F_SETFL, 0);
+      fcntl(fileno(stdin), F_SETFL, 0);
+
+      //printf("flags = 0x%x\n", fcntl(fileno(stdin), F_GETFL, 0));
+
+      usb_serial_jtag_driver_config_t usb_serial_jtag_config;
+      usb_serial_jtag_config.rx_buffer_size = 1024;
+      usb_serial_jtag_config.tx_buffer_size = 1024;
+
+      esp_err_t ret = ESP_OK;
+      /* Install USB-SERIAL-JTAG driver for interrupt-driven reads and writes */
+      ret = usb_serial_jtag_driver_install(&usb_serial_jtag_config);
+      if (ret != ESP_OK)
+      {
+        return -1;
+      }
+
+      /* Tell vfs to use usb-serial-jtag driver */
+      esp_vfs_usb_serial_jtag_use_driver();
+    }
+    usbcdc_status.line_buffer = malloc(LUA_MAXINPUT);
+    usbcdc_status.line_position = 0;
+    if(usbcdc_status.line_buffer == NULL) {
       return -1;
     }
 
     const char *pcName = "usbcdc";
-    if(xTaskCreate(task_usbcdc, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, &usbcdc.taskHandle) != pdPASS) {
-      free(usbcdc.line_buffer);
-      usbcdc.line_buffer = NULL;
+    if(xTaskCreate(task_usbcdc, pcName, 4096, (void*)id, ESP_TASK_MAIN_PRIO + 1, &usbcdc_status.taskHandle) != pdPASS) {
+      free(usbcdc_status.line_buffer);
+      usbcdc_status.line_buffer = NULL;
       return -1;
     }
     return 0;
