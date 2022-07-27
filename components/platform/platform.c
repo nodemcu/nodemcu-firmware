@@ -46,7 +46,7 @@ int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_G
 #else
 #define ADJUST_IDR(id, retval)
 #define ADJUST_ID(id)
-#define AUNDJUST_ID(id)
+#define UNADJUST_ID(id)
 #endif
 
 typedef struct {
