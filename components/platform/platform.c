@@ -498,15 +498,18 @@ void platform_uart_stop( unsigned id )
 int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {
     int err;
 
-  if (id == 0 && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) {
-    // Return dummy values
-    *baudp = 115200;
-    *databitsp = 8;
-    *parityp = PLATFORM_UART_PARITY_NONE;
-    *stopbitsp = PLATFORM_UART_STOPBITS_1;
-    return 0;
-  }
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+    if (id == 0) {
+      // Return dummy values
+      *baudp = 115200;
+      *databitsp = 8;
+      *parityp = PLATFORM_UART_PARITY_NONE;
+      *stopbitsp = PLATFORM_UART_STOPBITS_1;
+      return 0;
+    }
+#endif
 
+    ADJUST_ID(id);
 
     err = uart_get_baudrate(id, baudp);
     if (err != ESP_OK) return -1;
