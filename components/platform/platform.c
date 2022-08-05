@@ -2,20 +2,23 @@
 #include "driver/sigmadelta.h"
 #include "driver/adc.h"
 #include "driver/uart.h"
-#include "driver/usb_serial_jtag.h"
-#include "esp_vfs_usb_serial_jtag.h"
-#include "esp_vfs_dev.h"
 #include "soc/uart_reg.h"
 #include <stdio.h>
 #include <string.h>
 #include <freertos/semphr.h>
-#include <fcntl.h>
-#include <errno.h>
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
 #include "task/task.h"
 #include "linput.h"
+
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+#include "driver/usb_serial_jtag.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "esp_vfs_dev.h"
+#include <fcntl.h>
+#include <errno.h>
+#endif
 
 int platform_init (void)
 {
@@ -173,10 +176,9 @@ static void task_usbcdc(void *pvParameters) {
         // reboot here?
         continue;
       }
+      post->data = (void *)(post + 1);
+      post->type = PLATFORM_UART_EVENT_DATA;
     }
-
-    post->data = (void *)(post + 1);
-    post->type = PLATFORM_UART_EVENT_DATA;
 
     int len = usb_serial_jtag_read_bytes(post->data, 64, portMAX_DELAY);
 
@@ -195,8 +197,6 @@ static void task_usbcdc(void *pvParameters) {
       } else {
         post = NULL;
       }
-    } else if (len < 0) {
-      printf("Error %d: %s\n", errno, strerror(errno));
     }
   }
 }
@@ -407,6 +407,7 @@ int platform_uart_start( unsigned id )
     if (usbcdc_event_task_id == 0) {
       usbcdc_event_task_id = task_get_id(usbcdc_event_task);
 
+
       /* Disable buffering on stdin */
       setvbuf(stdin, NULL, _IONBF, 0);
 
@@ -418,8 +419,6 @@ int platform_uart_start( unsigned id )
       /* Enable blocking mode on stdin and stdout */
       fcntl(fileno(stdout), F_SETFL, 0);
       fcntl(fileno(stdin), F_SETFL, 0);
-
-      //printf("flags = 0x%x\n", fcntl(fileno(stdin), F_GETFL, 0));
 
       usb_serial_jtag_driver_config_t usb_serial_jtag_config;
       usb_serial_jtag_config.rx_buffer_size = 1024;
@@ -509,7 +508,7 @@ int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, 
     }
 #endif
 
-    ADJUST_ID(id);
+    ADJUST_IDR(id, -1);
 
     err = uart_get_baudrate(id, baudp);
     if (err != ESP_OK) return -1;
