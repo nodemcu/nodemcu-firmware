@@ -434,18 +434,19 @@ int platform_uart_start( unsigned id )
 
       /* Tell vfs to use usb-serial-jtag driver */
       esp_vfs_usb_serial_jtag_use_driver();
-    }
-    usbcdc_status.line_buffer = malloc(LUA_MAXINPUT);
-    usbcdc_status.line_position = 0;
-    if(usbcdc_status.line_buffer == NULL) {
-      return -1;
-    }
 
-    const char *pcName = "usbcdc";
-    if(xTaskCreate(task_usbcdc, pcName, 4096, (void*)id, ESP_TASK_MAIN_PRIO + 1, &usbcdc_status.taskHandle) != pdPASS) {
-      free(usbcdc_status.line_buffer);
-      usbcdc_status.line_buffer = NULL;
-      return -1;
+      usbcdc_status.line_buffer = malloc(LUA_MAXINPUT);
+      usbcdc_status.line_position = 0;
+      if(usbcdc_status.line_buffer == NULL) {
+        return -1;
+      }
+
+      const char *pcName = "usbcdc";
+      if(xTaskCreate(task_usbcdc, pcName, 4096, (void*)id, ESP_TASK_MAIN_PRIO + 1, &usbcdc_status.taskHandle) != pdPASS) {
+        free(usbcdc_status.line_buffer);
+        usbcdc_status.line_buffer = NULL;
+        return -1;
+      }
     }
     return 0;
   }
