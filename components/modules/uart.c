@@ -144,12 +144,10 @@ static int uart_setup( lua_State* L )
   databits = luaL_checkinteger( L, 3 );
   parity = luaL_checkinteger( L, 4 );
   stopbits = luaL_checkinteger( L, 5 );
-  if(id == CONFIG_ESP_CONSOLE_UART_NUM){
-    if (!lua_isnoneornil(L, 6)) {
+  if (!lua_isnoneornil(L, 6)) {
+    if(id == CONFIG_ESP_CONSOLE_UART_NUM){
       input_echo = luaL_checkinteger(L, 6) > 0;
-    }
-  } else {
-    if (!lua_isnoneornil(L, 6)) {
+    } else {
       luaL_checktable(L, 6);
 
       lua_getfield (L, 6, "tx");
