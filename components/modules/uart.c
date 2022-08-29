@@ -135,7 +135,9 @@ static int uart_setup( lua_State* L )
   unsigned id, databits, parity, stopbits, echo = 1;
   uint32_t baud, res;
   uart_pins_t pins;
+  uart_pins_t* pins_to_use = NULL;
   
+  memset(&pins, 0, sizeof(pins));
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
   baud = luaL_checkinteger( L, 2 );
@@ -169,9 +171,11 @@ static int uart_setup( lua_State* L )
       
       lua_getfield (L, 6, "flow_control");
       pins.flow_control = luaL_optint(L, -1, PLATFORM_UART_FLOW_NONE);
+
+      pins_to_use = &pins;
   }
 
-  res = platform_uart_setup( id, baud, databits, parity, stopbits, &pins );
+  res = platform_uart_setup( id, baud, databits, parity, stopbits, pins_to_use );
   lua_pushinteger( L, res );
   return 1;
 }
