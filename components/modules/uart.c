@@ -10,6 +10,10 @@
 
 static lua_State *gL = NULL;
 
+bool uart_has_on_data_cb(unsigned id){
+  return uart_status[id].receive_rf != LUA_NOREF;
+}
+
 bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
@@ -140,7 +144,7 @@ static int uart_setup( lua_State* L )
   databits = luaL_checkinteger( L, 3 );
   parity = luaL_checkinteger( L, 4 );
   stopbits = luaL_checkinteger( L, 5 );
-  if(id == CONFIG_ESP_CONSOLE_UART_NUM){
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM) {
     if (!lua_isnoneornil(L, 6)) {
       input_echo = luaL_checkinteger(L, 6) > 0;
     }

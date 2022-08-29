@@ -65,6 +65,7 @@ uart_status_t uart_status[NUM_UART];
 task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
+extern bool uart_has_on_data_cb(unsigned id);
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
 
@@ -81,7 +82,7 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
         unsigned used = feed_lua_input(post->data + i, post->size - i);
         i += used;
       }
-      else {
+      if (uart_has_on_data_cb(id)) {
         char ch = post->data[i];
         us->line_buffer[us->line_position] = ch;
         us->line_position++;
@@ -208,9 +209,11 @@ static void task_uart( void *pvParameters ){
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
-  if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
-  if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
-  
+  if (pins != NULL) {
+	if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+	if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+  }
+
   uart_config_t cfg = {
      .baud_rate = baud,
      .flow_ctrl = flow_control,
