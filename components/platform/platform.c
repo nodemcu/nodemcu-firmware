@@ -209,9 +209,11 @@ static void task_uart( void *pvParameters ){
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
-  if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
-  if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
-  
+  if (pins != NULL) {
+	if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+	if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+  }
+
   uart_config_t cfg = {
      .baud_rate = baud,
      .flow_ctrl = flow_control,
