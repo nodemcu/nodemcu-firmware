@@ -10,6 +10,10 @@
 
 static lua_State *gL = NULL;
 
+bool uart_has_on_data_cb(unsigned id){
+  return uart_status[id].receive_rf != LUA_NOREF;
+}
+
 bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
