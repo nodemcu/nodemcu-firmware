@@ -23,6 +23,7 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rtcmem.c"
   "qrcodegen.c"
   "sigma_delta.c"
   "sjson.c"
