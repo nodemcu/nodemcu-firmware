@@ -75,14 +75,18 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   uart_status_t *us = &uart_status[id];
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    size_t i = 0;
-    while (i < post->size)
-    {
-      if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+    if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+      size_t i = 0;
+      while (i < post->size)
+      {
         unsigned used = feed_lua_input(post->data + i, post->size - i);
         i += used;
       }
-      if (uart_has_on_data_cb(id)) {
+    }
+    if (uart_has_on_data_cb(id)) {
+      size_t i = 0;
+      while (i < post->size)
+      {
         char ch = post->data[i];
         us->line_buffer[us->line_position] = ch;
         us->line_position++;
