@@ -245,7 +245,7 @@ have a badly matched antenna.
 - `power` The maximum transmit power in dBm. This must have the range 2dBm - 20dBm. This value is a float.
 
 #### Returns
-`ok` -- a Boolean where `true` is OK.
+A `boolean` where `true` is OK.
 
 #### Example
 
