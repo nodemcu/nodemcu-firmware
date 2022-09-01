@@ -235,7 +235,7 @@ Disconnects from AP in station mode.
 
 ## wifi.sta.settxpower
 
-Allows adjusting the maximum TX power for the wifi. This is (unfortunately) needed for some boards which 
+Allows adjusting the maximum TX power for the WiFi. This is (unfortunately) needed for some boards which 
 have a badly matched antenna.
 
 #### Syntax
