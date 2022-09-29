@@ -1,13 +1,15 @@
 # RTC User Memory Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2015-06-25 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [Johny Mattsson](https://github.com/jmattsson) | [rtcmem.c](../../app/modules/rtcmem.c)|
+| 2015-06-25 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [PJSG](https://github.com/pjsg) | [rtcmem.c](../../app/modules/rtcmem.c)|
 
-The rtcmem module provides basic access to the battery backed memory.
+The rtcmem module provides basic access to the RTC memory. 
 
-This memory is preserved while power is applied, making them highly useful for keeping state across sleep cycles. Some of this memory is reserved for system use, but 128 slots (each 32bit wide) are available for application use. This module provides read and write access to these.
+This memory is preserved while power is applied, making them highly useful for keeping state across sleep cycles. Some of this memory is reserved for system use, 
+and, for compatibility with NodeMCU on the ESP8266, 128 slots (each 32bit wide) of RTC memory are reserved by this module.
+This module then provides read and write access to these slots.
 
-Due to the very limited amount of memory available, there is no mechanism for arbitrating use of particular slots. It is up to the end user to be aware of which memory is used for what, and avoid conflicts. Note that some Lua modules lay claim to certain slots.
+This module is 100% compatible with the ESP8266 version, and this means that, there is no mechanism for arbitrating use of particular slots. It is up to the end user to be aware of which memory is used for what, and avoid conflicts. Unlike the ESP8266 version, no other NodeMCU module uses any of these slots.
 
 Note that this memory is not necessary preserved across reflashing the firmware. It is the responsibility of the
 developer to deal with getting inconsistent data.
