@@ -226,7 +226,7 @@ menu "NodeMCU modules"
             remote control hardware.
 
     config NODEMCU_CMODULE_RTCMEM
-        bool "Access to a limited amount of battery backed memory"
+        bool "Access to a limited amount of battery backed memory (rtcmem)"
         default "n"
         help
             Includes the rtcmem module to allow access to 
