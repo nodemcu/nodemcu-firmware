@@ -233,6 +233,27 @@ Disconnects from AP in station mode.
 - [`wifi.sta.connect()`](#wifistaconnect)
 
 
+## wifi.sta.settxpower
+
+Allows adjusting the maximum TX power for the WiFi. This is (unfortunately) needed for some boards which 
+have a badly matched antenna.
+
+#### Syntax
+`wifi.sta.settxpower(power)`
+
+#### Parameters
+- `power` The maximum transmit power in dBm. This must have the range 2dBm - 20dBm. This value is a float.
+
+#### Returns
+A `boolean` where `true` is OK.
+
+#### Example
+
+```
+# Needed for the WEMOS C3 Mini
+wifi.sta.settxpower(8.5)
+```
+
 ## wifi.sta.on()
 
 Registers callbacks for WiFi station status events.
