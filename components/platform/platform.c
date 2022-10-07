@@ -189,11 +189,6 @@ static void task_usbcdc(void *pvParameters) {
     int len = usb_serial_jtag_read_bytes(post->data, 64, portMAX_DELAY);
 
     if (len > 0) {
-      for (int i = 0; i < len; i++) {
-        if (post->data[i] == '\r') {
-          post->data[i] = '\n';
-        }
-      }
       post->size = len;
       xSemaphoreTake(usbcdc_sem, portMAX_DELAY);
       if (!task_post_medium(usbcdc_event_task_id, (task_param_t)post))
@@ -419,7 +414,7 @@ int platform_uart_start( unsigned id )
       /* Disable buffering on stdin */
       setvbuf(stdin, NULL, _IONBF, 0);
 
-      /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
+      /* Minicom, screen, idf_monitor, esplorer send CR when ENTER key is pressed */
       esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
       /* Move the caret to the beginning of the next line on '\n' */
       esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
