@@ -40,6 +40,7 @@
 #include "nodemcu_esp_event.h"
 #include <string.h>
 #include "esp_netif.h"
+#include <math.h>
 
 static esp_netif_t *wifi_sta = NULL;
 static int scan_cb_ref = LUA_NOREF;
@@ -205,6 +206,20 @@ static int wifi_sta_setip(lua_State *L)
   esp_netif_set_dns_info(wifi_sta, ESP_NETIF_DNS_MAIN, &dns_info);
 
   return 0;
+}
+
+static int wifi_sta_settxpower(lua_State *L)
+{
+  lua_Number max_power = luaL_checknumber(L, 1);
+
+  esp_err_t err = esp_wifi_set_max_tx_power(floor(max_power * 4 + 0.5));
+
+  if (err != ESP_OK)
+    return luaL_error(L, "failed to set transmit power, code %d", err);
+
+  lua_pushboolean(L, err == ESP_OK);
+
+  return 1;
 }
 
 static int wifi_sta_sethostname(lua_State *L)
@@ -440,8 +455,9 @@ static int wifi_sta_scan (lua_State *L)
 
 LROT_BEGIN(wifi_sta, NULL, 0)
   LROT_FUNCENTRY( setip,       wifi_sta_setip )
-  LROT_FUNCENTRY( sethostname, wifi_sta_sethostname )
-  LROT_FUNCENTRY( config,      wifi_sta_config )
+  LROT_FUNCENTRY( sethostname, wifi_sta_sethostname)
+  LROT_FUNCENTRY( settxpower,  wifi_sta_settxpower)
+  LROT_FUNCENTRY( config,      wifi_sta_config)
   LROT_FUNCENTRY( connect,     wifi_sta_connect )
   LROT_FUNCENTRY( disconnect,  wifi_sta_disconnect )
   LROT_FUNCENTRY( getconfig,   wifi_sta_getconfig )

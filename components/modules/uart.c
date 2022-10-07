@@ -10,6 +10,10 @@
 
 static lua_State *gL = NULL;
 
+bool uart_has_on_data_cb(unsigned id){
+  return uart_status[id].receive_rf != LUA_NOREF;
+}
+
 bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
@@ -128,23 +132,24 @@ static int uart_on( lua_State* L )
 // Lua: actualbaud = setup( id, baud, databits, parity, stopbits, echo )
 static int uart_setup( lua_State* L )
 {
-  unsigned id, databits, parity, stopbits, echo = 1;
+  unsigned id, databits, parity, stopbits;
   uint32_t baud, res;
   uart_pins_t pins;
+  uart_pins_t* pins_to_use = NULL;
   
+  memset(&pins, 0, sizeof(pins));
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
   baud = luaL_checkinteger( L, 2 );
   databits = luaL_checkinteger( L, 3 );
   parity = luaL_checkinteger( L, 4 );
   stopbits = luaL_checkinteger( L, 5 );
-  if(id == CONFIG_ESP_CONSOLE_UART_NUM && lua_isnumber(L,6)){
-    echo = lua_tointeger(L,6);
-    if(echo!=0)
-      input_echo = true;
-    else
-      input_echo = false;
-  } else if(id != CONFIG_ESP_CONSOLE_UART_NUM && lua_istable( L, 6 )) {
+  if (!lua_isnoneornil(L, 6)) {
+    if(id == CONFIG_ESP_CONSOLE_UART_NUM){
+      input_echo = luaL_checkinteger(L, 6) > 0;
+    } else {
+      luaL_checktable(L, 6);
+
       lua_getfield (L, 6, "tx");
       pins.tx_pin = luaL_checkint(L, -1);
       lua_getfield (L, 6, "rx");
@@ -165,9 +170,12 @@ static int uart_setup( lua_State* L )
       
       lua_getfield (L, 6, "flow_control");
       pins.flow_control = luaL_optint(L, -1, PLATFORM_UART_FLOW_NONE);
+
+      pins_to_use = &pins;
+    }
   }
 
-  res = platform_uart_setup( id, baud, databits, parity, stopbits, &pins );
+  res = platform_uart_setup( id, baud, databits, parity, stopbits, pins_to_use );
   lua_pushinteger( L, res );
   return 1;
 }

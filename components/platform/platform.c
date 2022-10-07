@@ -89,16 +89,22 @@ static uart_status_t usbcdc_status;
 SemaphoreHandle_t usbcdc_sem = NULL;
 #endif
 
+extern bool uart_has_on_data_cb(unsigned id);
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
 
 static void handle_uart_data(unsigned int id, uart_event_post_t *post, uart_status_t *us) {
-  size_t i = 0;
-  while (i < post->size) {
-    if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+    size_t i = 0;
+    while (i < post->size) {
       unsigned used = feed_lua_input(post->data + i, post->size - i);
       i += used;
-    } else {
+    }
+  } 
+  if (uart_has_on_data_cb(id)) {
+    size_t i = 0;
+    while (i < post->size)
+    {
       char ch = post->data[i];
       us->line_buffer[us->line_position] = ch;
       us->line_position++;
@@ -106,13 +112,13 @@ static void handle_uart_data(unsigned int id, uart_event_post_t *post, uart_stat
       uint16_t need_len = us->need_len;
       int16_t end_char = us->end_char;
       size_t max_wanted =
-        (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
+	(end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
       bool at_end = (us->line_position >= max_wanted);
       bool end_char_found =
-        (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
+	(end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
       if (at_end || end_char_found) {
-        uart_on_data_cb(id, us->line_buffer, us->line_position);
-        us->line_position = 0;
+	uart_on_data_cb(id, us->line_buffer, us->line_position);
+	us->line_position = 0;
       }
       ++i;
     }
@@ -292,9 +298,11 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 {
   ADJUST_IDR(id, baud);
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
-  if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
-  if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
-  
+  if (pins != NULL) {
+	if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+	if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+  }
+
   uart_config_t cfg = {
      .baud_rate = baud,
      .flow_ctrl = flow_control,

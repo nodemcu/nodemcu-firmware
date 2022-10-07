@@ -225,6 +225,13 @@ menu "NodeMCU modules"
             Includes the rmt module to use the ESP32's built-in 
             remote control hardware.
 
+    config NODEMCU_CMODULE_RTCMEM
+        bool "Access to a limited amount of battery backed memory (rtcmem)"
+        default "n"
+        help
+            Includes the rtcmem module to allow access to 
+            the battery backed memory.
+
     config NODEMCU_CMODULE_SDMMC
         depends on IDF_TARGET_ESP32
         bool "SD-MMC module"

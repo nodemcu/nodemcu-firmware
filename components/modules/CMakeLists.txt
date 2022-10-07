@@ -23,6 +23,7 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rtcmem.c"
   "qrcodegen.c"
   "sigma_delta.c"
   "sjson.c"
@@ -58,12 +59,17 @@ if(IDF_TARGET STREQUAL "esp32")
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
+    "rmt.c"
+    "pulsecnt.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32s3")
   list(APPEND module_srcs
+    "rmt.c"
+    "pulsecnt.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
+    "rmt.c"
   )
 endif()
 
