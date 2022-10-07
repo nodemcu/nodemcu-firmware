@@ -33,7 +33,11 @@ srv = net.createServer(net.TCP)
 srv:listen(80, function(conn)
 	conn:on("receive", function(sck, payload)
 		print(payload)
-		sck:send("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1> Hello, NodeMCU.</h1>")
+		local content = "<html><body><h1>Hello, NodeMCU.</h1></body></html>\0"
+		sck:send(string.format(
+				"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\nContent-Length: %d\r\n\r\n",
+				string.len(content)))
+		sck:send(content)
 	end)
 	conn:on("sent", function(sck) sck:close() end)
 end)
