@@ -145,10 +145,10 @@ static int node_bootreason( lua_State *L)
   return 2;
 }
 
+#if defined(CONFIG_IDF_TARGET_ESP32)
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
 {
-#ifdef EFUSE_BLK0_RDATA1_REG
   // This matches the way esptool.py generates a chipid for the ESP32 as of
   // esptool commit e9e9179f6fc3f2ecfc568987d3224b5e53a05f06
   // Oddly, this drops the lowest byte what's effectively the MAC address, so
@@ -157,18 +157,12 @@ static int node_chipid( lua_State *L )
   uint64_t word17 = REG_READ(EFUSE_BLK0_RDATA2_REG);
   const uint64_t MAX_UINT24 = 0xffffff;
   uint64_t cid = ((word17 & MAX_UINT24) << 24) | ((word16 >> 8) & MAX_UINT24);
-#else
-  // This makes the chipid the same as the mac on parts which don't have the 
-  // EFUSE layout defined.
-  uint8_t mac[8];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-  uint64_t cid = ((uint64_t) mac[0] << 40) | ((uint64_t) mac[1] << 32) | (mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5];
-#endif
   char chipid[17] = { 0 };
   sprintf(chipid, "0x%llx", cid);
   lua_pushstring(L, chipid);
   return 1;
 }
+#endif
 
 // Lua: node.heap()
 static int node_heap( lua_State* L )
@@ -856,7 +850,9 @@ LROT_END(node_wakeup, NULL, 0)
 
 LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( bootreason, node_bootreason )
+#if defined(CONFIG_IDF_TARGET_ESP32)
   LROT_FUNCENTRY( chipid,     node_chipid )
+#endif
   LROT_FUNCENTRY( compile,    node_compile )
   LROT_FUNCENTRY( dsleep,     node_dsleep )
 #if defined(CONFIG_LUA_VERSION_51)
