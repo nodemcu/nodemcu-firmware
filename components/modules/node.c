@@ -148,16 +148,18 @@ static int node_bootreason( lua_State *L)
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
 {
-#ifdef EFUSE_BLK0_DATA1_REG
+#ifdef EFUSE_BLK0_RDATA1_REG
   // This matches the way esptool.py generates a chipid for the ESP32 as of
   // esptool commit e9e9179f6fc3f2ecfc568987d3224b5e53a05f06
   // Oddly, this drops the lowest byte what's effectively the MAC address, so
   // it would seem plausible to encounter up to 256 chips with the same chipid
-  uint64_t word16 = REG_READ(EFUSE_BLK0_DATA1_REG);
-  uint64_t word17 = REG_READ(EFUSE_BLK0_DATA2_REG);
+  uint64_t word16 = REG_READ(EFUSE_BLK0_RDATA1_REG);
+  uint64_t word17 = REG_READ(EFUSE_BLK0_RDATA2_REG);
   const uint64_t MAX_UINT24 = 0xffffff;
   uint64_t cid = ((word17 & MAX_UINT24) << 24) | ((word16 >> 8) & MAX_UINT24);
 #else
+  // This makes the chipid the same as the mac on parts which don't have the 
+  // EFUSE layout defined.
   uint8_t mac[8];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   uint64_t cid = ((uint64_t) mac[0] << 40) | ((uint64_t) mac[1] << 32) | (mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5];
