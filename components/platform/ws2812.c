@@ -30,122 +30,183 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "soc/periph_defs.h"
+#include "soc/rmt_reg.h"
 
 #undef WS2812_DEBUG
 
 
 // divider to generate 100ns base period from 80MHz APB clock
 #define WS2812_CLKDIV (100 * 80 /1000)
-// bit H & L durations in multiples of 100ns
-#define WS2812_DURATION_T0H 4
-#define WS2812_DURATION_T0L 7
-#define WS2812_DURATION_T1H 8
-#define WS2812_DURATION_T1L 6
-#define WS2812_DURATION_RESET (50000 / 100)
-
-// 0 bit in rmt encoding
-const rmt_item32_t ws2812_rmt_bit0 = {
-  .level0    = 1,
-  .duration0 = WS2812_DURATION_T0H,
-  .level1    = 0,
-  .duration1 = WS2812_DURATION_T0L
-};
-// 1 bit in rmt encoding
-const rmt_item32_t ws2812_rmt_bit1 = {
-  .level0    = 1,
-  .duration0 = WS2812_DURATION_T1H,
-  .level1    = 0,
-  .duration1 = WS2812_DURATION_T1L
-};
-
-#define ws2812_rmt_reset {.level0 = 0, .duration0 = 4, .level1 = 0, .duration1 = 4}
-// reset signal, spans one complete buffer block
-const rmt_item32_t ws2812_rmt_reset_block[64] = { [0 ... 63] = ws2812_rmt_reset };
-
 
 // descriptor for a ws2812 chain
 typedef struct {
   bool valid;
   uint8_t gpio;
+  bool sendreset;
+  rmt_item32_t reset;
+  rmt_item32_t bits[2];
   const uint8_t *data;
   size_t len;
-  size_t tx_offset;
+  uint8_t bitpos;
 } ws2812_chain_t;
 
 
 // chain descriptor array
 static ws2812_chain_t ws2812_chains[RMT_CHANNEL_MAX];
 
-// interrupt handler for ws2812 ISR
-static intr_handle_t ws2812_intr_handle;
-
-
-static void ws2812_fill_memory_encoded( rmt_channel_t channel, const uint8_t *data, size_t len, size_t tx_offset )
+// Callback function to convert GRB data to pulse lengths.
+static void ws2812_convert(const void *src, rmt_item32_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num)
 {
-  for (size_t idx = 0; idx < len; idx++) {
-    uint8_t byte = data[idx];
+  size_t cnt_in;
+  size_t cnt_out;
+  const uint8_t *pucData;
+  uint8_t ucData;
+  uint8_t ucBitPos;
+  esp_err_t tStatus;
+  void *pvContext;
+  ws2812_chain_t *ptContext;
+  uint8_t ucBit;
 
-    for (uint8_t i = 0; i < 8; i++) {
-      RMTMEM.chan[channel].data32[tx_offset + idx*8 + i].val = byte & 0x80 ? ws2812_rmt_bit1.val : ws2812_rmt_bit0.val;
+  cnt_in = 0;
+  cnt_out = 0;
+  if( dest!=NULL && wanted_num>0 )
+  {
+    tStatus = rmt_translator_get_context(item_num, &pvContext);
+    if( tStatus==ESP_OK )
+    {
+      ptContext = (ws2812_chain_t *)pvContext;
 
-      byte <<= 1;
+      if( ptContext->sendreset==true )
+      {
+        dest[cnt_out++] = ptContext->reset;
+        ptContext->sendreset = false;
+      }
+      if( src!=NULL && src_size>0 )
+      {
+        ucBitPos = ptContext->bitpos;
+
+        /* Each bit of the input data is converted into one RMT item. */
+
+        pucData = (const uint8_t*)src;
+        /* Get the current byte. */
+        ucData = pucData[cnt_in] << ucBitPos;
+
+        while( cnt_in<src_size && cnt_out<wanted_num )
+        {
+          /* Get the current bit. */
+          ucBit = (ucData & 0x80U) >> 7U;
+          /* Translate the bit to a WS2812 input code. */
+          dest[cnt_out++] = ptContext->bits[ucBit];
+          /* Move to the next bit. */
+          ++ucBitPos;
+          if( ucBitPos<8U )
+          {
+            ucData <<= 1;
+          }
+          else
+          {
+            ucBitPos = 0U;
+            ++cnt_in;
+            ucData = pucData[cnt_in];
+          }
+        }
+
+        ptContext->bitpos = ucBitPos;
+      }
     }
   }
+  *translated_size = cnt_in;
+  *item_num = cnt_out;
 }
 
-
-static void ws2812_isr(void *arg)
-{
-  uint32_t intr_st = RMT.int_st.val;
-
-  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
-
-    if ((intr_st & (BIT(channel+24))) && (ws2812_chains[channel].valid)) {
-      RMT.int_clr.val = BIT(channel+24);
-
-      ws2812_chain_t *chain = &(ws2812_chains[channel]);
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)
-      uint32_t data_sub_len = RMT.tx_lim_ch[channel].limit/8;
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-      uint32_t data_sub_len = RMT.chn_tx_lim[channel].tx_lim_chn/8;
-#else
-      uint32_t data_sub_len = RMT.tx_lim[channel].limit/8;
-#endif
-
-      if (chain->len >= data_sub_len) {
-        ws2812_fill_memory_encoded( channel, chain->data, data_sub_len, chain->tx_offset );
-        chain->data += data_sub_len;
-        chain->len -= data_sub_len;
-      } else if (chain->len == 0) {
-        RMTMEM.chan[channel].data32[chain->tx_offset].val = 0;
-      } else {
-        ws2812_fill_memory_encoded( channel, chain->data, chain->len, chain->tx_offset );
-        RMTMEM.chan[channel].data32[chain->tx_offset + chain->len*8].val = 0;
-        chain->data += chain->len;
-        chain->len = 0;
-      }
-      if (chain->tx_offset == 0) {
-        chain->tx_offset = data_sub_len * 8;
-      } else {
-        chain->tx_offset = 0;
-      }
-    }
-  }
-}
-
-
-int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *data, size_t len )
+int platform_ws2812_setup( uint8_t gpio_num, uint32_t reset, uint32_t t0h, uint32_t t0l, uint32_t t1h, uint32_t t1l, const uint8_t *data, size_t len )
 {
   int channel;
 
-  if ((channel = platform_rmt_allocate( num_mem, RMT_MODE_TX )) >= 0) {
+  if ((channel = platform_rmt_allocate( 1, RMT_MODE_TX )) >= 0) {
     ws2812_chain_t *chain = &(ws2812_chains[channel]);
+    rmt_item32_t tRmtItem;
+    uint32_t half;
 
     chain->valid = true;
     chain->gpio = gpio_num;
     chain->len = len;
     chain->data = data;
-    chain->tx_offset = 0;
+    chain->bitpos = 0;
+
+    // Send a reset if "reset" is not 0.
+    chain->sendreset = (reset != 0);
+
+    // Construct the RMT item for a reset.
+    tRmtItem.level0 = 0;
+    tRmtItem.level1 = 0;
+    // The reset duration must fit into one RMT item. This leaves 2*15 bit,
+    // which results in a maximum of 0xfffe .
+    if (reset>0xfffe)
+    {
+      reset = 0xfffe;
+    }
+    if (reset>0x7fff)
+    {
+      tRmtItem.duration0 = 0x7fff;
+      tRmtItem.duration1 = reset - 0x7fff;
+    }
+    else
+    {
+      half = reset >> 1U;
+      tRmtItem.duration0 = half;
+      tRmtItem.duration1 = reset - half;
+    }
+    chain->reset = tRmtItem;
+
+    // Limit the bit times to the available 15 bits.
+    // The values must not be 0.
+    if( t0h==0 )
+    {
+      t0h = 1;
+    }
+    else if( t0h>0x7fffU )
+    {
+      t0h = 0x7fffU;
+    }
+    if( t0l==0 )
+    {
+      t0l = 1;
+    }
+    else if( t0l>0x7fffU )
+    {
+      t0l = 0x7fffU;
+    }
+    if( t1h==0 )
+    {
+      t1h = 1;
+    }
+    else if( t1h>0x7fffU )
+    {
+      t1h = 0x7fffU;
+    }
+    if( t1l==0 )
+    {
+      t1l = 1;
+    }
+    else if( t1l>0x7fffU )
+    {
+      t1l = 0x7fffU;
+    }
+
+    // Construct the RMT item for a 0 bit.
+    tRmtItem.level0 = 1;
+    tRmtItem.duration0 = t0h;
+    tRmtItem.level1 = 0;
+    tRmtItem.duration1 = t0l;
+    chain->bits[0] = tRmtItem;
+
+    // Construct the RMT item for a 1 bit.
+    tRmtItem.level0 = 1;
+    tRmtItem.duration0 = t1h;
+    tRmtItem.level1 = 0;
+    tRmtItem.duration1 = t1l;
+    chain->bits[1] = tRmtItem;
 
 #ifdef WS2812_DEBUG
     ESP_LOGI("ws2812", "Setup done for gpio %d on RMT channel %d", gpio_num, channel);
@@ -193,6 +254,7 @@ int platform_ws2812_send( void )
   rmt_tx.tx_config.idle_level = 0;
   rmt_tx.tx_config.idle_output_en = true;
   rmt_tx.rmt_mode = RMT_MODE_TX;
+  rmt_tx.flags = 0;
 
   // configure selected RMT channels
   for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
@@ -203,26 +265,38 @@ int platform_ws2812_send( void )
         res = PLATFORM_ERR;
         break;
       }
-      if (rmt_driver_install( channel, 0, PLATFORM_RMT_INTR_FLAGS ) != ESP_OK) {
+      if (rmt_driver_install( channel, 0, 0 /*PLATFORM_RMT_INTR_FLAGS*/ ) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+      if (rmt_translator_init( channel, ws2812_convert) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+      if (rmt_translator_set_context( channel, &(ws2812_chains[channel])) != ESP_OK) {
         res = PLATFORM_ERR;
         break;
       }
     }
   }
 
-
-  // hook-in our shared ISR
-  esp_intr_alloc( ETS_RMT_INTR_SOURCE, PLATFORM_RMT_INTR_FLAGS, ws2812_isr, NULL, &ws2812_intr_handle );
-
+#if SOC_RMT_SUPPORT_TX_SYNCHRO
+  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
+    if (ws2812_chains[channel].valid) {
+      if (rmt_add_channel_to_group( channel ) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+    }
+  }
+#endif
 
   // start selected channels one by one
   for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
     if (ws2812_chains[channel].valid) {
-      // we just feed a single block for generating the reset to the rmt driver
-      // the actual payload data is handled by our private shared ISR
-      if (rmt_write_items( channel,
-                           (rmt_item32_t *)ws2812_rmt_reset_block,
-                           64,
+      if (rmt_write_sample( channel,
+                           ws2812_chains[channel].data,
+                           ws2812_chains[channel].len,
                            false ) != ESP_OK) {
         res = PLATFORM_ERR;
         break;
@@ -237,10 +311,16 @@ int platform_ws2812_send( void )
     }
   }
 
-
-  // un-hook our ISR
-  esp_intr_free( ws2812_intr_handle );
-
+#if SOC_RMT_SUPPORT_TX_SYNCHRO
+  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
+    if (ws2812_chains[channel].valid) {
+      if (rmt_remove_channel_from_group( channel ) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+    }
+  }
+#endif
 
   return res;
 }
