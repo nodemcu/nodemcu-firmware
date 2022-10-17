@@ -132,4 +132,35 @@ menu "Lua configuration"
       select NODEMCU_CMODULE_UART
       select LUA_BUILTIN_DEBUG
 
+    choice LUA_INIT_STRING
+        prompt "Boot command"
+        default LUA_INIT_STRING_INIT_LUA
+        help
+            Command to run on boot. This can be a .lua file, an LFS module, or
+            any valid Lua expression. By default init.lua is loaded and run
+            from the SPIFFS filesystem.
+        config LUA_INIT_STRING_INIT_LUA
+            bool "init.lua from SPIFFS"
+        config LUA_INIT_STRING_INIT_LFS
+            bool "init module from LFS"
+        config LUA_INIT_STRING_CUSTOM
+            bool "Custom"
+    endchoice
+
+    config LUA_INIT_STRING_CUSTOM_STRING
+        string "Custom boot command" if LUA_INIT_STRING_CUSTOM
+        default ""
+        help
+            Run a custom command on boot.
+
+            Specify @filename.lua to load "filename.lua" from SPIFFS.
+            Specify node.LFS.get('foo')() to load the module "foo" from LFS.
+            Or specify any other valid Lua expression to execute that on boot.
+
+    config LUA_INIT_STRING
+        string
+        default "@init.lua" if LUA_INIT_STRING_INIT_LUA
+        default "node.LFS.get('init')()" if LUA_INIT_STRING_INIT_LFS
+        default LUA_INIT_STRING_CUSTOM_STRING if LUA_INIT_STRING_CUSTOM
+
 endmenu

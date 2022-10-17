@@ -30,11 +30,7 @@
 #endif
 
 #ifndef LUA_INIT_STRING
-# if defined(CONFIG_NODEMCU_EMBED_LFS)
-#  define LUA_INIT_STRING "node.LFS.get('init')()"
-# else
-#  define LUA_INIT_STRING "@init.lua"
-# endif
+# define LUA_INIT_STRING CONFIG_LUA_INIT_STRING
 #endif
 
 #if !defined(STARTUP_COUNT)
