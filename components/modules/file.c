@@ -37,20 +37,33 @@ static int file_format( lua_State* L )
 // Lua: list()
 static int file_list( lua_State* L )
 {
-  const char *dirname = luaL_optstring(L, 1, ".");
-  
+  const char *dirname = luaL_optstring(L, 1, NULL);
+
   DIR *dir;
-  if ((dir = opendir(dirname))) {
+  if ((dir = opendir(dirname ? dirname : "/"))) {
     lua_newtable( L );
     struct dirent *e;
     while ((e = readdir(dir))) {
-      char *fname;
-      asprintf(&fname, "%s/%s", dirname, e->d_name);
-      if (!fname)
-        return luaL_error(L, "no memory");
+      char *fname = NULL;
+      if (dirname) {
+        asprintf(&fname, "%s/%s", dirname, e->d_name);
+        if (!fname) {
+          closedir(dir);
+          return luaL_error(L, "no memory");
+        }
+      } else {
+        fname = e->d_name;
+      }
       struct stat st = { 0, };
-      stat(fname, &st);
-      free(fname);
+      int err = stat(fname, &st);
+      if (err) {
+        // We historically ignored this error, so just warn (although it
+        // shouldn't really happen now).
+        NODE_ERR("Failed to stat %s err=%d\n", fname, err);
+      }
+      if (dirname) {
+        free(fname);
+      }
       lua_pushinteger(L, st.st_size);
       lua_setfield(L, -2, e->d_name);
     }
