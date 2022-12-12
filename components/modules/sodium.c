@@ -17,7 +17,7 @@ static int l_randombytes_random(lua_State *L)
 {
   check_init(L);
   uint32_t ret = randombytes_random();
-  lua_pushnumber(L, (lua_Number)ret);
+  lua_pushinteger(L, (int32_t)ret);
   return 1;
 }
 
@@ -26,7 +26,7 @@ static int l_randombytes_uniform(lua_State *L)
   check_init(L);
   uint32_t upper_bound = (uint32_t)luaL_checkinteger(L, 1);
   uint32_t ret = randombytes_uniform(upper_bound);
-  lua_pushnumber(L, (lua_Number)ret);
+  lua_pushinteger(L, (int32_t)ret);
   return 1;
 }
 
