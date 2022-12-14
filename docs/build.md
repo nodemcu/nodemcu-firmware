@@ -121,3 +121,28 @@ Partition Table --->
   (components/platform/partitions-2MB.csv) Custom partition CSV file
   (0x10000) Factory app partition offset
 ```
+
+### Using external components
+
+It is possible, and relatively easy, to include external components and modules in NodeMCU. It is not uncommon to have one or more custom modules one wishes to include in the firmware. To enable this NodeMCU leverages the standard IDF `EXTRA_COMPONENT_DIRS` functionality. As such, it is possible to not only add extra Lua C modules, but also other components such as libraries.
+
+To include one (or more) additional IDF components, simply set the `EXTRA_COMPONENT_DIRS` environment variable to the space-separated list of directories of said components. E.g.
+
+```
+export EXTRA_COMPONENT_DIRS="/path/to/mymod /path/to/mylib"
+make menuconfig
+make
+```
+
+To get started, a template directory structure is provided in [extcomp-template/](../extcomp-template) which provides a skeleton for a simple Lua C module, including the build logic in `CMakeLists.txt`, the configuration option in `Kconfig` and the Lua C module code in `mymod.c`. A detailed discussion on the specifics is beyond this document, but the first two are described comprehensively in the [official IDF documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html), and module development is covered in [Programming in NodeMCU](nodemcu-pil.md).
+
+In fact, to quickly try it out it's even possible to include the template itself, as-is:
+
+
+```
+export EXTRA_COMPONENT_DIRS="$PWD/extcomp-template"
+make menuconfig
+make
+```
+
+after which the command `mymod.hello()` is available in the Lua environment.

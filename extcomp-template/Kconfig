@@ -1,0 +1,13 @@
+menu "External modules"
+
+    config NODEMCU_CMODULE_MYMOD
+        bool "Mymod module"
+        default "y"
+        help
+            Includes the mymod module. This module is only an example for
+            showing how to use external modules. Note that the config option
+            name has to be prefixed with NODEMCU_CMODULE_ and the suffix
+            has to match the first argument in the NODEMCU_MODULE() macro
+            in the .c file.
+
+endmenu
