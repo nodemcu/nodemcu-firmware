@@ -11,7 +11,7 @@ local function readout(temps)
     "<b>ESP8266</b></br>"
 
   for addr, temp in pairs(temps) do
-    resp = resp .. string.format("Sensor %s: %s &#8451</br>",
+    resp = resp .. string.format("Sensor %s: %s &#8451;</br>",
       ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X '):format(addr:byte(1,8)), temp)
   end
 
