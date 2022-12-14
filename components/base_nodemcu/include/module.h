@@ -52,25 +52,3 @@
     ROTable_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_NODEMCU_CMODULE_,cfgname))) \
     = {luaname, LRO_ROVAL(map)}
 #endif
-
-
-// helper stringing macros
-#define xstr(s) str(s)
-#define str(s) #s
-
-// EXTMODNAME is injected by the generated component.mk
-#ifdef EXTMODNAME
-#define MODNAME xstr(EXTMODNAME)
-#else
-#define MODNAME "module"
-#endif
-
-// use NODEMCU_MODULE_METATABLE() to generate a unique metatable name for your objects:
-#define NODEMCU_MODULE_METATABLE() MODULE_EXPAND_(MODNAME xstr(__COUNTER__))
-
-// NODEMCU_MODULE_STD() defines the entry points for an external module:
-#define NODEMCU_MODULE_STD()                                             \
-    static const LOCK_IN_SECTION(libs)                                   \
-        ROTable_entry lua_lib_module = {MODNAME, LRO_FUNCVAL(module_init)}; \
-    const const LOCK_IN_SECTION(rotable)                                       \
-        ROTable_entry MODULE_EXPAND_PASTE_(EXTMODNAME, _entry) = {MODNAME, LRO_ROVAL(module_map)};

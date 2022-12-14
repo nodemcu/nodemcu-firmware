@@ -21,11 +21,3 @@ all:
 	$(IDF_PATH)/tools/idf.py $(IDFPY_ARGS) "$@"
 
 endif
-
-# FIXME - needs updating to work in IDF4
-#
-#extmod-update:
-#	@tools/extmod/extmod.sh update
-#
-#extmod-clean:
-##	@tools/extmod/extmod.sh clean
