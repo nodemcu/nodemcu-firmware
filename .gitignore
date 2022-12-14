@@ -8,7 +8,6 @@ build/
 app/
 components/*/.output/
 tools/toolchains
-extmods.ini
 .ccache
 bin
 
