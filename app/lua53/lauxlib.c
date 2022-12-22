@@ -651,7 +651,7 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 }
 
 
-LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
+LUALIB_API void luaL_reref (lua_State *L, int t, int *ref) {
 /*
  * If the ref is positive and the entry in table t exists then
  * overwrite the value otherwise fall through to luaL_ref()
@@ -1100,8 +1100,13 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     free(ptr);
     return NULL;
   }
-  else
-    return realloc(ptr, nsize);
+  else {  /* cannot fail when shrinking a block */
+    void *newptr = realloc(ptr, nsize);
+    if (newptr == NULL && ptr != NULL && nsize <= osize)
+      return ptr;  /* keep the original block */
+    else  /* no fail or not shrinking */
+     return newptr;  /* use the new block */
+  }
 }
 
 
