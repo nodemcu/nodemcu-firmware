@@ -120,8 +120,7 @@ end
 Creates a directory, provided the underlying file system supports directories. SPIFFS does not, but FAT (which you may have on an attached SD card) does.
 
 #### Syntax
-`file.mkdir(path [, mode])
-```
+`file.mkdir(path [, mode])`
 
 #### Parameters
 - `path` the full path name of the directory to create. E.g. "/SD0/MYDIR".
