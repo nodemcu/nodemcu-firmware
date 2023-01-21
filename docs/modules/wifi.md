@@ -161,9 +161,9 @@ being removed in the SDK/IDF. After start-up it is necessary to call
     - `sort_by` optional string value for preferential selection of AP. Must be one of `"rssi"` or `"authmode"` if present.
     - `threshold_rssi` optional integer value to limit APs to only those which have a signal stronger than this value.
     - `threshold_authmode` optional value to limit APs to those with an authentication mode of at least this settings. One of `wifi.AUTH_OPEN`, `wifi.AUTH_WEP`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`.
-    - `rm` optional integer value, set to 1 to enable Radio Measurements
-    - `btm` optional integer value, set to 1 to enable BSS Transition Management
-    - `mbo` optional integer value, set to 1 to enable Multi-Band Operation
+    - `rm` optional boolean, set to `true` to enable Radio Measurements
+    - `btm` optional boolean, set to `true` to enable BSS Transition Management
+    - `mbo` optional boolean, set to `true` to enable Multi-Band Operation
     - `sae_pwe` optional, configures WPA3 SAE Password Element setting. One of `wifi.SAE_PWE_UNSPECIFIED`, `wifi.SAE_PWE_HUNT_AND_PECK`, `wifi.SAE_PWE_HASH_TO_ELEMENT` or `wifi.SAE_PWE_BOTH`.
 
 - `save` Save station configuration to flash. 

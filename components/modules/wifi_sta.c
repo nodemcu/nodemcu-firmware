@@ -344,15 +344,15 @@ static int wifi_sta_config (lua_State *L)
   lua_pop(L, 1);
 
   lua_getfield(L, 1, "rm");
-  cfg.sta.rm_enabled = lua_tointeger(L, -1);
+  cfg.sta.rm_enabled = luaL_totoggle(L, -1);
   lua_pop(L, 1);
 
   lua_getfield(L, 1, "btm");
-  cfg.sta.btm_enabled = lua_tointeger(L, -1);
+  cfg.sta.btm_enabled = luaL_totoggle(L, -1);
   lua_pop(L, 1);
 
   lua_getfield(L, 1, "mbo");
-  cfg.sta.mbo_enabled = lua_tointeger(L, -1);
+  cfg.sta.mbo_enabled = luaL_totoggle(L, -1);
   lua_pop(L, 1);
 
   lua_getfield(L, 1, "sae_pwe");
@@ -449,13 +449,13 @@ static int wifi_sta_getconfig (lua_State *L)
   lua_pushinteger(L, cfg.sta.threshold.authmode);
   lua_setfield(L, -2, "threshold_authmode");
 
-  lua_pushinteger(L, cfg.sta.rm_enabled);
+  lua_pushboolean(L, cfg.sta.rm_enabled);
   lua_setfield(L, -2, "rm");
 
-  lua_pushinteger(L, cfg.sta.btm_enabled);
+  lua_pushboolean(L, cfg.sta.btm_enabled);
   lua_setfield(L, -2, "btm");
 
-  lua_pushinteger(L, cfg.sta.mbo_enabled);
+  lua_pushboolean(L, cfg.sta.mbo_enabled);
   lua_setfield(L, -2, "mbo");
 
   lua_pushinteger(L, cfg.sta.sae_pwe_h2e);
