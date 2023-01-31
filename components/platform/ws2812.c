@@ -30,6 +30,8 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "soc/periph_defs.h"
+#include "rom/gpio.h" // for gpio_matrix_out()
+#include "soc/gpio_periph.h"
 
 #undef WS2812_DEBUG
 

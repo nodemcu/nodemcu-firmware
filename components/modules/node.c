@@ -5,6 +5,7 @@
 #include "platform.h"
 #include "task/task.h"
 #include "esp_system.h"
+#include "esp_timer.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"

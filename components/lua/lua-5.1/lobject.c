@@ -20,9 +20,7 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "lvm.h"
-#ifndef LUA_CROSS_COMPILER
-#include "flash_api.h"
-#else
+#ifdef LUA_CROSS_COMPILER
 #include <limits.h>
 #endif
 const TValue luaO_nilobject_ = {LUA_TVALUE_NIL};
