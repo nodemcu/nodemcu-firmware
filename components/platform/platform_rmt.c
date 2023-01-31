@@ -1,4 +1,3 @@
-
 #include <string.h>
 #include "platform_rmt.h"
 

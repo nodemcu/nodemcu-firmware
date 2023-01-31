@@ -114,7 +114,7 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
   (void)prio;
 
   // we bit packed the unit number and status into 1 int in the IRAM interrupt so need to unpack here
-  uint32_t unit = (uint32_t)param & 0xffu;
+  uint8_t unit = (uint8_t)param & 0xffu;
   int status = ((uint32_t)param >> 8);
   
   // int16_t cur_count, evt_count = 0;
@@ -217,7 +217,7 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
     // lua_pushinteger (L, status);
     luaL_pcallx (L, 6, 0);
   } else {
-    if (pc->is_debug) ESP_LOGI("pulsecnt", "Could not find cb for unit %d with ptr %d", unit, pc->cb_ref);
+    if (pc->is_debug) ESP_LOGI("pulsecnt", "Could not find cb for unit %d with ptr %ld", unit, pc->cb_ref);
   }
 }
 
@@ -599,7 +599,7 @@ static int pulsecnt_create( lua_State *L ) {
     pc->is_debug = true;
   }
 
-  if (pc->is_debug) ESP_LOGI("pulsecnt", "Created obj for unit %d with callback ref of %d", pc->unit, pc->cb_ref );
+  if (pc->is_debug) ESP_LOGI("pulsecnt", "Created obj for unit %d with callback ref of %ld", pc->unit, pc->cb_ref );
 
   return 1;
 }

@@ -1,10 +1,11 @@
-
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
+#include "platform.h"
 #include "driver/i2c.h"
 #include "soc/i2c_reg.h"
 #include "hal/i2c_ll.h"
+#include "rom/gpio.h"
 
 #include "i2c_common.h"
 
@@ -73,7 +74,7 @@ static void vTransferTask( void *pvParameters )
     xQueueReceive( xQueue, job, portMAX_DELAY );
 
     job->err = i2c_master_cmd_begin( job->port, job->cmd,
-                                     job->to_ms > 0 ? job->to_ms / portTICK_RATE_MS : portMAX_DELAY );
+                                     job->to_ms > 0 ? job->to_ms / portTICK_PERIOD_MS : portMAX_DELAY );
 
     task_post_medium( i2c_transfer_task_id, (task_param_t)job );
   }
@@ -202,11 +203,11 @@ int li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl,
   memset( &cfg, 0, sizeof( cfg ) );
   cfg.mode = I2C_MODE_MASTER;
 
-  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(sda), 2, "invalid sda pin" );
+  luaL_argcheck( L, platform_gpio_output_exists(sda), 2, "invalid sda pin" );
   cfg.sda_io_num = sda;
   cfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
 
-  luaL_argcheck( L, GPIO_IS_VALID_OUTPUT_GPIO(scl), 3, "invalid scl pin" );
+  luaL_argcheck( L, platform_gpio_output_exists(scl), 3, "invalid scl pin" );
   cfg.scl_io_num = scl;
   cfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
 
@@ -357,7 +358,7 @@ int li2c_hw_master_transfer( lua_State *L )
     // note that i2c_master_cmd_begin() implements mutual exclusive access
     // if it is currently in progress from the transfer task, it will block here until 
     esp_err_t err = i2c_master_cmd_begin( job->port, job->cmd,
-                                          job->to_ms > 0 ? job->to_ms / portTICK_RATE_MS : portMAX_DELAY );
+                                          job->to_ms > 0 ? job->to_ms / portTICK_PERIOD_MS : portMAX_DELAY );
 
     switch (err) {
     case ESP_OK:

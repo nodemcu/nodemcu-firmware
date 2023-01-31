@@ -77,7 +77,7 @@ Initialize the SDMMC and probe the attached SD card.
         - `sdmmc.W8BIT`, not supported yet
 
 #### Parameters SD SPI Mode
-- `slot` SD SPI slot, one of `sdmmc.HSPI` or `sdmmc.VSPI`
+- `slot` SD SPI slot, one of `sdmmc.SPI2` or `sdmmc.SPI3` (on ESP32 the names`sdmmc.HSPI` or `sdmmc.VSPI` are still available, but deprecated)
 - `cfg` mandatory table containing slot configuration:
     - `sck_pin` SPI SCK pin, mandatory
     - `mosi_pin`, SPI MOSI pin, mandatory
@@ -128,12 +128,10 @@ Table containing the card's OCR, CID, CSD, SCR, and RCA with elements:
 Mount filesystem on SD card.
 
 #### Syntax
-`card:mount(ldrv[, partition])`
+`card:mount(ldrv)`
 
 #### Parameters
 - `ldrv` name of logical drive, "/SD0", "/SD1", etc.
-- `partition` the partition number, default is 0, meaning the first available
-   FAT partition.
 
 #### Returns
 `true` if successful, `false` otherwise

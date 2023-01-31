@@ -29,11 +29,11 @@ typedef struct
 /*
  * Private arrays to hold the 3 event task queues and the dispatch callbacks
  */
-static xQueueHandle task_Q[TASK_PRIORITY_COUNT];
+static QueueHandle_t task_Q[TASK_PRIORITY_COUNT];
 
 /* Rather than using a QueueSet (which requires queues to be empty when created)
  * we use a binary semaphore to unblock the pump whenever something is posted */
-static xSemaphoreHandle pending;
+static SemaphoreHandle_t pending;
 
 static task_callback_t *task_func;
 static int task_count;
