@@ -30,11 +30,11 @@ typedef struct {
 
 typedef struct {
   struct {
-    xTaskHandle taskHandle;
+    TaskHandle_t taskHandle;
     QueueHandle_t queue;
   } tx;
   struct {
-    xTaskHandle taskHandle;
+    TaskHandle_t taskHandle;
     QueueHandle_t queue;
   } rx;
   int cb;
@@ -152,8 +152,8 @@ static int node_i2s_start( lua_State *L )
   //
   i2s_config.channel_format = opt_checkint(L, "channel", I2S_CHANNEL_FMT_RIGHT_LEFT);
   i2s_config.communication_format = opt_checkint(L, "format", I2S_COMM_FORMAT_STAND_I2S);
-  i2s_config.dma_buf_count = opt_checkint_range(L, "buffer_count", 2, 2, 128);
-  i2s_config.dma_buf_len = opt_checkint_range(L, "buffer_len", i2s_config.sample_rate / 100, 8, 1024);
+  i2s_config.dma_desc_num = opt_checkint_range(L, "buffer_count", 2, 2, 128);
+  i2s_config.dma_frame_num = opt_checkint_range(L, "buffer_len", i2s_config.sample_rate / 100, 8, 1024);
   i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
   //
   pin_config.bck_io_num = opt_checkint(L, "bck_pin", I2S_PIN_NO_CHANGE);
@@ -176,9 +176,9 @@ static int node_i2s_start( lua_State *L )
 
   esp_err_t err;
   if (i2s_config.mode & I2S_MODE_RX) {
-    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, &is->rx.queue);
+    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_desc_num, &is->rx.queue);
   } else {
-    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, NULL);
+    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_desc_num, NULL);
   }
   if (err != ESP_OK)
     luaL_error( L, "i2s can not start" );
@@ -265,7 +265,7 @@ static int node_i2s_read( lua_State *L )
   int wait_ms = luaL_optint(L, 3, 0);
   char * data = luaM_malloc( L, bytes );
   size_t read;
-  if (i2s_read(i2s_id, data, bytes, &read, wait_ms / portTICK_RATE_MS) != ESP_OK)
+  if (i2s_read(i2s_id, data, bytes, &read, wait_ms / portTICK_PERIOD_MS) != ESP_OK)
     return luaL_error( L, "I2S driver error" );
 
   lua_pushlstring(L, data, read);

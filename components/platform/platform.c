@@ -5,7 +5,9 @@
 #include "soc/uart_reg.h"
 #include <stdio.h>
 #include <string.h>
-#include <freertos/semphr.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
@@ -22,8 +24,24 @@ int platform_init (void)
 // *****************************************************************************
 // GPIO subsection
 
-int platform_gpio_exists( unsigned gpio ) { return GPIO_IS_VALID_GPIO(gpio); }
-int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_GPIO(gpio); }
+int platform_gpio_exists(unsigned gpio)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+  // Suppress ">= is always true" due to unsigned type here
+  return GPIO_IS_VALID_GPIO(gpio);
+#pragma GCC diagnostic pop
+}
+
+
+int platform_gpio_output_exists(unsigned gpio)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+  // Suppress ">= is always true" due to unsigned type here
+  return GPIO_IS_VALID_OUTPUT_GPIO(gpio);
+#pragma GCC diagnostic pop
+}
 
 
 // ****************************************************************************
@@ -136,7 +154,7 @@ static void task_uart( void *pvParameters ){
   uart_event_t event;
 
   for(;;) {
-    if(xQueueReceive(uart_status[id].queue, (void * )&event, (portTickType)portMAX_DELAY)) {
+    if(xQueueReceive(uart_status[id].queue, (void * )&event, (TickType_t)portMAX_DELAY)) {
       switch(event.type) {
         case UART_DATA: {
           // Attempt to coalesce received bytes to reduce risk of overrunning
@@ -222,6 +240,7 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
      .baud_rate = baud,
      .flow_ctrl = flow_control,
      .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
+     .source_clk = UART_SCLK_DEFAULT,
   };
   
   switch (databits)
@@ -523,14 +542,6 @@ int platform_adc_read( uint8_t adc, uint8_t channel ) {
   return value;
 }
 
-int platform_adc_read_hall_sensor( ) {
-#if defined(CONFIG_IDF_TARGET_ESP32)
-  int value = hall_sensor_read( );
-  return value;
-#else
-  return -1;
-#endif
-}
 // *****************************************************************************
 // I2C platform interface
 

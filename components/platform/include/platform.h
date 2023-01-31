@@ -90,7 +90,7 @@ typedef struct {
 
 typedef struct {
   QueueHandle_t queue;
-  xTaskHandle taskHandle;
+  TaskHandle_t taskHandle;
   int receive_rf;
   int error_rf;
   char *line_buffer;
@@ -137,7 +137,6 @@ int platform_adc_channel_exists( uint8_t adc, uint8_t channel );
 uint8_t platform_adc_set_width( uint8_t adc, int bits );
 uint8_t platform_adc_setup( uint8_t adc, uint8_t channel, uint8_t attn );
 int platform_adc_read( uint8_t adc, uint8_t channel );
-int platform_adc_read_hall_sensor( );
 enum {
     PLATFORM_ADC_ATTEN_0db   = 0,
     PLATFORM_ADC_ATTEN_2_5db = 1,
@@ -220,9 +219,6 @@ int platform_ws2812_send( void );
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size );
 uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size );
-uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size );
-uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size );
-uint32_t platform_flash_get_num_sectors(void);
 int platform_flash_erase_sector( uint32_t sector_id );
 
 

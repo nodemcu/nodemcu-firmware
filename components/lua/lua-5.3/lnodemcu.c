@@ -177,7 +177,7 @@ static void platform_flash_erase_sector(lu_int32 i) {
   lockFlashWrite();
 }
 
-static void platform_s_flash_write(const void *from, lu_int32 to, lu_int32 len) {
+static void platform_flash_write(const void *from, lu_int32 to, lu_int32 len) {
   lua_assert(to >= LFSbase && to + len < LFSbase + LFS_SIZE);  /* DEBUG */
   unlockFlashWrite();
   memcpy(byteptr(LFSregion) + (to-LFSbase), from, len);
@@ -449,7 +449,7 @@ static const char *readF (lua_State *L, void *ud, size_t *size) {
 static void eraseLFS(LFSflashState *F) {
   lu_int32 i;
 #ifdef LUA_USE_ESP
-  printf("\nErasing LFS from flash addr 0x%06x", F->addrPhys);
+  printf("\nErasing LFS from flash addr 0x%06lx", F->addrPhys);
 #endif
   unlockFlashWrite();
   for (i = 0; i < F->size; i += FLASH_PAGE_SIZE) {
@@ -464,7 +464,7 @@ static void eraseLFS(LFSflashState *F) {
     platform_flash_erase_sector(s);
   }
 #ifdef LUA_USE_ESP
-  printf(" to 0x%06x\n", F->addrPhys + F->size-1);
+  printf(" to 0x%06lx\n", F->addrPhys + F->size-1);
 #endif
   flush_icache(F);
   lockFlashWrite();
@@ -483,7 +483,7 @@ LUAI_FUNC void luaN_flushFlash(void *vF) {
   lu_int32 size    = F->oNdx * WORDSIZE;
   lua_assert(start + size < F->addrPhys + F->size); /* is write in bounds? */
 //printf("Flush Buf: %6x (%u)\n", F->oNdx, size);                      //DEBUG
-  platform_s_flash_write(F->oBuff, start, size);
+  platform_flash_write(F->oBuff, start, size);
   F->oChunkNdx += F->oNdx;
   F->oNdx = 0;
 }

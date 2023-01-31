@@ -30,6 +30,18 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "soc/periph_defs.h"
+#include "soc/rmt_struct.h"
+#include "rom/gpio.h" // for gpio_matrix_out()
+#include "soc/gpio_periph.h"
+
+#warning "Needs retargeting to the new API; not sure if direct RMTMEM access is safe at all in IDFv5"
+typedef struct {
+  struct {
+    rmt_item32_t data32[SOC_RMT_MEM_WORDS_PER_CHANNEL];
+  } chan[SOC_RMT_CHANNELS_PER_GROUP];
+} rmt_block_mem_t;
+
+extern rmt_block_mem_t RMTMEM;
 
 #undef WS2812_DEBUG
 
@@ -106,10 +118,8 @@ static void ws2812_isr(void *arg)
       ws2812_chain_t *chain = &(ws2812_chains[channel]);
 #if defined(CONFIG_IDF_TARGET_ESP32)
       uint32_t data_sub_len = RMT.tx_lim_ch[channel].limit/8;
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2)
       uint32_t data_sub_len = RMT.chn_tx_lim[channel].tx_lim_chn/8;
-#elif defined(CONFIG_IDF_TARGET_ESP32S2)
-      uint32_t data_sub_len = RMT.tx_lim_ch[channel].tx_lim/8;
 #else
       uint32_t data_sub_len = RMT.tx_lim[channel].limit/8;
 #endif

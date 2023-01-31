@@ -87,7 +87,7 @@ int16_t ucg_com_nodemcu_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *d
       break;
 
     case UCG_COM_MSG_DELAY:
-      ets_delay_us(arg);
+      esp_rom_delay_us(arg);
       break;
 
     case UCG_COM_MSG_CHANGE_RESET_LINE:

@@ -13,7 +13,7 @@ extern struct {
 
 void rtos_dbg_task_print (const char *file, uint32_t line)
 {
-  printf(">>dbg: %s:%d in RTOS task \"%s\": prio %d\n",
+  printf(">>dbg: %s:%lu in RTOS task \"%s\": prio %u\n",
     file,
     line,
     pxCurrentTCB->pcTaskName,
@@ -30,6 +30,6 @@ void rtos_dbg_stack_print (const char *file, uint32_t line)
   for (;p < pxCurrentTCB->pxTopOfStack && *p == fill; ++p)
     ++nwords; 
 
-  printf(">>dbg: %s:%d in RTOS task \"%s\": %u stack untouched\n",
+  printf(">>dbg: %s:%lu in RTOS task \"%s\": %lu stack untouched\n",
     file, line, pxCurrentTCB->pcTaskName, nwords * 4);
 }

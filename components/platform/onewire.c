@@ -63,6 +63,8 @@ sample code bearing this copyright.
 
 #include "driver/rmt.h"
 #include "driver/gpio.h"
+#include "rom/gpio.h" // for gpio_matrix_out()
+#include "soc/gpio_periph.h"
 #include "esp_log.h"
 
 #define TRUE (1==1)
@@ -108,7 +110,7 @@ static const uint8_t owDefaultPower = 0;
 
 static int onewire_rmt_init( uint8_t gpio_num )
 {
-  if(!GPIO_IS_VALID_GPIO(gpio_num)) {
+  if(!platform_gpio_exists(gpio_num)) {
     return PLATFORM_ERR;
   }
 
@@ -187,7 +189,7 @@ static void onewire_flush_rmt_rx_buf( void )
 // check rmt TX&RX channel assignment and eventually attach them to the requested pin
 static int onewire_rmt_attach_pin( uint8_t gpio_num )
 {
-  if(!GPIO_IS_VALID_GPIO(gpio_num)) {
+  if(!platform_gpio_exists(gpio_num)) {
     return PLATFORM_ERR;
   }
 
