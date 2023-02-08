@@ -216,6 +216,7 @@ static void handle_receive(void *param) {
       vRingbufferReturnItem(rb, (void *) items);
     }
   }
+  rmt_rx_stop(p->channel);
 
   p->dont_call = true;
   task_post_high(cb_task_id, (task_param_t) p);
