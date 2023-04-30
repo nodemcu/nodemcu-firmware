@@ -33,6 +33,11 @@
 
 #undef WS2812_DEBUG
 
+// If either of these fails, the reset logic in ws2812_sample_to_rmt will need revisiting.
+_Static_assert(SOC_RMT_MEM_WORDS_PER_CHANNEL % 8 == 0,
+  "SOC_RMT_MEM_WORDS_PER_CHANNEL is assumed to be a multiple of 8");
+_Static_assert(SOC_RMT_MEM_WORDS_PER_CHANNEL >= 16,
+  "SOC_RMT_MEM_WORDS_PER_CHANNEL is assumed to be >= 16");
 
 // divider to generate 100ns base period from 80MHz APB clock
 #define WS2812_CLKDIV (100 * 80 /1000)
@@ -58,83 +63,66 @@ const rmt_item32_t ws2812_rmt_bit1 = {
   .duration1 = WS2812_DURATION_T1L
 };
 
-#define ws2812_rmt_reset {.level0 = 0, .duration0 = 4, .level1 = 0, .duration1 = 4}
-// reset signal, spans one complete buffer block
-const rmt_item32_t ws2812_rmt_reset_block[64] = { [0 ... 63] = ws2812_rmt_reset };
-
+// This is one eighth of 512 * 100ns, ie in total a bit above the requisite 50us
+const rmt_item32_t ws2812_rmt_reset = { .level0 = 0, .duration0 = 32, .level1 = 0, .duration1 = 32 };
 
 // descriptor for a ws2812 chain
 typedef struct {
   bool valid;
+  bool needs_reset;
   uint8_t gpio;
   const uint8_t *data;
   size_t len;
-  size_t tx_offset;
 } ws2812_chain_t;
-
 
 // chain descriptor array
 static ws2812_chain_t ws2812_chains[RMT_CHANNEL_MAX];
 
-// interrupt handler for ws2812 ISR
-static intr_handle_t ws2812_intr_handle;
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-
-static void ws2812_fill_memory_encoded( rmt_channel_t channel, const uint8_t *data, size_t len, size_t tx_offset )
+static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num)
 {
-  for (size_t idx = 0; idx < len; idx++) {
+  // Note: enabling these commented-out logs will ruin the timing so nothing
+  // will actually work when they're enabled. But I've kept them in as comments
+  // because they were useful in debugging the buffer management.
+  // ESP_DRAM_LOGW("ws2812", "ws2812_sample_to_rmt wanted=%u src_size=%u", wanted_num, src_size);
+
+  void *ctx;
+  rmt_translator_get_context(item_num, &ctx);
+  ws2812_chain_t *chain = (ws2812_chain_t *)ctx;
+
+  size_t reset_num = 0;
+  if (chain->needs_reset) {
+    // Haven't sent reset yet
+
+    // We split the reset into 8 even though it would fit in a single
+    // rmt_item32_t, simply so that dest stays 8-item aligned which means we
+    // don't have to worry about having to split a byte of src across multiple
+    // blocks (assuming the static asserts at the top of this file are true).
+    for (int i = 0; i < 8; i++) {
+      dest[i] = ws2812_rmt_reset;
+    }
+    dest += 8;
+    wanted_num -= 8;
+    reset_num = 8;
+    chain->needs_reset = false;
+  }
+
+  // Now write the actual data from src
+  const uint8_t *data = (const uint8_t *)src;
+  size_t data_num = MIN(wanted_num, src_size * 8) / 8;
+  for (size_t idx = 0; idx < data_num; idx++) {
     uint8_t byte = data[idx];
-
     for (uint8_t i = 0; i < 8; i++) {
-      RMTMEM.chan[channel].data32[tx_offset + idx*8 + i].val = byte & 0x80 ? ws2812_rmt_bit1.val : ws2812_rmt_bit0.val;
-
+      dest[idx * 8 + i] = (byte & 0x80) ? ws2812_rmt_bit1 : ws2812_rmt_bit0;
       byte <<= 1;
     }
   }
+
+  *translated_size = data_num;
+  *item_num = reset_num + data_num * 8;
+  // ESP_DRAM_LOGW("ws2812", "src bytes consumed: %u total rmt items: %u", *translated_size, *item_num);
 }
-
-
-static void ws2812_isr(void *arg)
-{
-  uint32_t intr_st = RMT.int_st.val;
-
-  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
-
-    if ((intr_st & (BIT(channel+24))) && (ws2812_chains[channel].valid)) {
-      RMT.int_clr.val = BIT(channel+24);
-
-      ws2812_chain_t *chain = &(ws2812_chains[channel]);
-#if defined(CONFIG_IDF_TARGET_ESP32)
-      uint32_t data_sub_len = RMT.tx_lim_ch[channel].limit/8;
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-      uint32_t data_sub_len = RMT.chn_tx_lim[channel].tx_lim_chn/8;
-#elif defined(CONFIG_IDF_TARGET_ESP32S2)
-      uint32_t data_sub_len = RMT.tx_lim_ch[channel].tx_lim/8;
-#else
-      uint32_t data_sub_len = RMT.tx_lim[channel].limit/8;
-#endif
-
-      if (chain->len >= data_sub_len) {
-        ws2812_fill_memory_encoded( channel, chain->data, data_sub_len, chain->tx_offset );
-        chain->data += data_sub_len;
-        chain->len -= data_sub_len;
-      } else if (chain->len == 0) {
-        RMTMEM.chan[channel].data32[chain->tx_offset].val = 0;
-      } else {
-        ws2812_fill_memory_encoded( channel, chain->data, chain->len, chain->tx_offset );
-        RMTMEM.chan[channel].data32[chain->tx_offset + chain->len*8].val = 0;
-        chain->data += chain->len;
-        chain->len = 0;
-      }
-      if (chain->tx_offset == 0) {
-        chain->tx_offset = data_sub_len * 8;
-      } else {
-        chain->tx_offset = 0;
-      }
-    }
-  }
-}
-
 
 int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *data, size_t len )
 {
@@ -147,7 +135,7 @@ int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *dat
     chain->gpio = gpio_num;
     chain->len = len;
     chain->data = data;
-    chain->tx_offset = 0;
+    chain->needs_reset = true;
 
 #ifdef WS2812_DEBUG
     ESP_LOGI("ws2812", "Setup done for gpio %d on RMT channel %d", gpio_num, channel);
@@ -209,23 +197,23 @@ int platform_ws2812_send( void )
         res = PLATFORM_ERR;
         break;
       }
+      if (rmt_translator_init(channel, ws2812_sample_to_rmt) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+      if (rmt_translator_set_context(channel, &ws2812_chains[channel]) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
     }
   }
-
-
-  // hook-in our shared ISR
-  esp_intr_alloc( ETS_RMT_INTR_SOURCE, PLATFORM_RMT_INTR_FLAGS, ws2812_isr, NULL, &ws2812_intr_handle );
-
 
   // start selected channels one by one
   for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
     if (ws2812_chains[channel].valid) {
-      // we just feed a single block for generating the reset to the rmt driver
-      // the actual payload data is handled by our private shared ISR
-      if (rmt_write_items( channel,
-                           (rmt_item32_t *)ws2812_rmt_reset_block,
-                           64,
-                           false ) != ESP_OK) {
+      // ws2812_sample_to_rmt takes care of translating the data to rmt_item32_t
+      // format, as well as prepending the reset sequence.
+      if (rmt_write_sample(channel, ws2812_chains[channel].data, ws2812_chains[channel].len, false) != ESP_OK) {
         res = PLATFORM_ERR;
         break;
       }
@@ -238,11 +226,6 @@ int platform_ws2812_send( void )
       rmt_wait_tx_done( channel, portMAX_DELAY );
     }
   }
-
-
-  // un-hook our ISR
-  esp_intr_free( ws2812_intr_handle );
-
 
   return res;
 }
