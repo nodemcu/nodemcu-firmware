@@ -112,7 +112,7 @@ void i2c_sw_master_gpio_init(uint8_t sda, uint8_t scl)
 
   gpio_config_t cfg;
 
-  cfg.pin_bit_mask = 1 << sda | 1 << scl;
+  cfg.pin_bit_mask = 1ULL << sda | 1ULL << scl;
   cfg.mode = GPIO_MODE_INPUT_OUTPUT_OD;
   cfg.pull_up_en = GPIO_PULLUP_ENABLE;
   cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
