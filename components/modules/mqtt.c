@@ -419,7 +419,7 @@ static int mqtt_connect(lua_State* L) {
 
     ESP_LOGD(TAG, "connect: mqtt_context*: %p", mqtt_context);
 
-    if (config.broker.address.uri != NULL)
+    if (config.broker.address.uri == NULL)
     {
       config.broker.address.port = port;
       config.broker.address.transport =
