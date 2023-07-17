@@ -368,14 +368,19 @@ static int mqtt_connect(lua_State* L) {
         if (is_mqtt_uri || is_mqtts_uri)
           return luaL_error(L, "port arg must be nil if giving full uri");
         port = luaL_checknumber(L, n);
+        n++;
+    } else if (lua_type(L, n) == LUA_TNIL) {
+        n++;
     }
-    n++;
 
     if (lua_isnumber(L, n)) {
         if (is_mqtt_uri || is_mqtts_uri)
           return luaL_error(L, "secure on/off determined by uri");
         secure = !!luaL_checkinteger(L, n);
+        n++;
 
+    } else if (lua_type(L, n) == LUA_TNIL) {
+        n++;
     } else {
         if (lua_istable(L, n)) {
             secure = true;
@@ -396,9 +401,10 @@ static int mqtt_connect(lua_State* L) {
                 luaX_set_ref(L, -1, &mqtt_context->client_key_pem);
             }
             lua_pop(L, 1);
+            //
+            n++;
         }
     }
-    n++;
 
     if (lua_isnumber(L, n)) {
         reconnect = !!luaL_checkinteger(L, n);
