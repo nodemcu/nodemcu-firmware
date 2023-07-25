@@ -32,8 +32,8 @@ static int time_get(lua_State *L)
 {
   struct timeval  tv;
   gettimeofday (&tv, NULL);
-  lua_pushnumber (L, tv.tv_sec);
-  lua_pushnumber (L, tv.tv_usec);
+  lua_pushinteger (L, tv.tv_sec);
+  lua_pushinteger (L, tv.tv_usec);
   return 2;
 }
 
