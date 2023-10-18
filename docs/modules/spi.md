@@ -215,7 +215,7 @@ Start an SPI transaction, consisting of up to 5 phases:
 - `cmd_bitlen` bit length of the command phase (0 - 16)
 - `cmd_data` data for command phase
 - `addr_bitlen` bit length for address phase (0 - 32)
-- `addr_data` data for command phase
+- `addr_data` data for address phase
 - `mosi_bitlen` bit length of the MOSI phase (0 - 512)
 - `dummy_bitlen` bit length of the dummy phase (0 - 256)
 - `miso_bitlen` bit length of the MISO phase (0 - 512) for half-duplex.<br />Full-duplex mode is activated with a negative value.
