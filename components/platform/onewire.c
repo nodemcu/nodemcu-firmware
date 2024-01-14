@@ -126,6 +126,7 @@ static int onewire_rmt_init( uint8_t gpio_num )
       rmt_tx.gpio_num = gpio_num;
       rmt_tx.mem_block_num = 1;
       rmt_tx.clk_div = 80;
+      rmt_tx.flags = 0;
       rmt_tx.tx_config.loop_en = false;
       rmt_tx.tx_config.carrier_en = false;
       rmt_tx.tx_config.idle_level = 1;
@@ -138,6 +139,7 @@ static int onewire_rmt_init( uint8_t gpio_num )
           rmt_rx.channel = ow_rmt.rx;
           rmt_rx.gpio_num = gpio_num;
           rmt_rx.clk_div = 80;
+          rmt_rx.flags = 0;
           rmt_rx.mem_block_num = 1;
           rmt_rx.rmt_mode = RMT_MODE_RX;
           rmt_rx.rx_config.filter_en = true;

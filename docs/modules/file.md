@@ -115,6 +115,38 @@ for k,v in pairs(l) do
 end
 ```
 
+## file.mkdir()
+
+Creates a directory, provided the underlying file system supports directories. SPIFFS does not, but FAT (which you may have on an attached SD card) does.
+
+#### Syntax
+`file.mkdir(path [, mode])`
+
+#### Parameters
+- `path` the full path name of the directory to create. E.g. "/SD0/MYDIR".
+- `mode` optional, only used for file systems which use mode permissions. Defaults to 0777 (octal).
+
+#### Returns
+`nil`
+
+Throws an error if the directory could not be created. Error code 134 (at the
+time of writing) indicates that the filesystem at the given path does not
+support directories.
+
+## file.rmdir()
+
+Removes an empty directory, provided the underlying file system supports directories. SPIFFS does not, but FAT (which you may have on an attached SD card) does.
+
+#### Syntax
+`file.rmdir(path)`
+
+#### Parameters
+- `path` the path to the directory to remove. The directory must be empty.
+
+#### Returns
+`nil`
+
+Throws an error if the directory could not be removed.
 
 ## file.remove()
 

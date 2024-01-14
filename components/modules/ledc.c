@@ -30,6 +30,8 @@ static int lledc_new_channel( lua_State *L )
 
   ledc_timer.timer_num = opt_checkint_range(L, "timer", -1, 0, LEDC_TIMER_MAX-1);
 
+  ledc_timer.clk_cfg = LEDC_AUTO_CLK;
+
   /* Setup channel */
   ledc_channel_config_t channel_config = {
     .speed_mode = ledc_timer.speed_mode,
@@ -42,6 +44,8 @@ static int lledc_new_channel( lua_State *L )
   channel_config.duty = opt_checkint_range(L, "duty", -1, 0, 1<<(LEDC_TIMER_BIT_MAX-1));
 
   channel_config.gpio_num = opt_checkint_range(L, "gpio", -1, 0, GPIO_NUM_MAX-1);
+
+  channel_config.flags.output_invert = opt_checkbool(L, "invert", 0);
 
   lua_settop(L, top);
 
