@@ -30,8 +30,8 @@ function read_battery_level()
   -- This ought to do something better!
   return 50
 end
-battery = { uuid="180f", characteristics={ {uuid="2a19", type='B', read=read_battery_level, name="Battery percentage"} } }
-myservice = {uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c'}}}
+battery = { uuid="180f", characteristics={ {uuid="2a19", type='B', read=read_battery_level, description="Battery percentage"} } }
+myservice = {uuid="0123456789abcdef0123456789abcdef", characteristics={{uuid="1234", value=0, type='c', description='Testing123'}}}
 config = {name="MyGadget", services={ myservice, battery } }
 ble.init(config)
 ```
@@ -124,7 +124,7 @@ The characteristic table contains the following keys:
 - `read` This is a function that will be invoked to read the value (and so does not need the `value` entry). It should return a string of bytes (unless `type` is set).
 - `write` This is a function that will be invoked to write the value (and so does not need the `value` entry). It is given a string of bytes (unless `type` is set)
 - `notify` If this attribute is present then notifications are supported on this characteristic. The value of the `notify` attribute is updated to be an integer which is the value to be passed into `ble.notify()`
-- `name` If this attribute is present, then an additional descriptor is added containing the name of the characteristic.
+- `description` If this attribute is present, then an additional descriptor is added containing the description of the characteristic.
 
 In the above functions, the value is that passed to/from the write/read functions is of the type specified by the `type` key. If this key is missing, then the default type is a string of bytes. For example, if `type` is `'B'` then the value is an integer (in the range 0 - 255) and the bluetooth client will see a single byte containing that value.
 

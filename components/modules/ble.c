@@ -260,7 +260,7 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
   int rc = BLE_ATT_ERR_UNLIKELY;
 
   if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR ||
-      ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
+      ctxt->op == BLE_GATT_ACCESS_OP_READ_DSC) {
     rc = message.errcode;
     if (rc == 0) {
       if (os_mbuf_append(ctxt->om, message.buffer, message.length)) {
@@ -343,7 +343,7 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
   }
 
   if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_READ_DSC) {
-    lua_getfield(L, -2, "name");
+    lua_getfield(L, -2, "description");
     // Now we have the name (-1), struct (-2), table (-3)
     data = lua_tolstring(L, -1, &datalen);
   }
@@ -460,7 +460,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
     // Now count the number of descriptors that we need
     for (int j = 1; j <= sccnt; j++) {
       lua_geti(L, -1, j);
-      if (lua_getfield(L, -1, "name") != LUA_TNIL) {
+      if (lua_getfield(L, -1, "description") != LUA_TNIL) {
         nd++;
       }
       lua_pop(L, 2);
@@ -575,11 +575,12 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
       }
       lua_pop(L, 1);
 
+      lua_pushvalue(L, -1);    // duplicate the characteristic
       // -1 is now the characteristic again
       chr->arg = (void *) luaL_ref(L, LUA_REGISTRYINDEX);
       chr->access_cb = lble_access_cb;
 
-      if (lua_getfield(L, -1, "name") != LUA_TNIL) {
+      if (lua_getfield(L, -1, "description") != LUA_TNIL) {
 	  if ((void *) (dsc + 2) > eom) {
 	    free_gatt_svcs(L, result);
 	    return luaL_error(L, "Miscalculated memory requirements");
@@ -596,7 +597,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
 
           dsc += 2;
       }
-      lua_pop(L, 1);
+      lua_pop(L, 2);
     }
     lua_pop(L, 2);
     chrs++;	// terminate the list of characteristics for this service
