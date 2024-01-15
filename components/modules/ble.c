@@ -56,6 +56,16 @@
 
 #define PERROR() MODLOG_DFLT(INFO, "pcall failed: %s\n", lua_tostring(L, -1))
 
+#ifdef CONFIG_LUA_VERSION_51
+#define lua_rawlen   lua_objlen
+static int lua_geti (lua_State *L, int index, lua_Integer i) {
+  index = lua_absindex(L, index);
+  lua_pushinteger(L, i);
+  lua_gettable(L, index);
+  return lua_type(L, -1);
+}
+#endif
+
 extern void ble_hs_lock();
 extern void ble_hs_unlock();
 
@@ -249,7 +259,8 @@ lble_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_acces
 
   int rc = BLE_ATT_ERR_UNLIKELY;
 
-  if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
+  if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR ||
+      ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
     rc = message.errcode;
     if (rc == 0) {
       if (os_mbuf_append(ctxt->om, message.buffer, message.length)) {
@@ -282,6 +293,8 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
   lua_getfield(L, -1, "type");
   // -1 is the struct mapping (if any), -2 is the table
 
+  size_t datalen;
+  const char *data = 0;
   if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
     // if there is a read method, then invoke it
     lua_getfield(L, -2, "read");
@@ -326,20 +339,15 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
       lua_remove(L, -2);   // remove the old value
       // now have string (-1), struct(-2), chrtable (-3)
     }
-    size_t datalen;
-    const char *data = lua_tolstring(L, -1, &datalen);
-
-    if (data) {
-      message.buffer = malloc(datalen);
-      if (message.buffer) {
-	message.length = datalen;
-	memcpy(message.buffer, data, datalen);
-	message.errcode = 0;
-      }
-    }
-    lua_pop(L, 1);
-    message.errcode = 0;
+    data = lua_tolstring(L, -1, &datalen);
   }
+
+  if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_READ_DSC) {
+    lua_getfield(L, -2, "name");
+    // Now we have the name (-1), struct (-2), table (-3)
+    data = lua_tolstring(L, -1, &datalen);
+  }
+
   if (task_block->ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
     // Push the value
     lua_pushlstring(L, task_block->buffer, task_block->length);
@@ -398,9 +406,18 @@ lble_task_cb(task_param_t param, task_prio_t prio) {
     } else {
       lua_pop(L, 1);  // Throw away the null write pointer
     }
-    lua_pop(L, 1);	// Throw away the value
-    message.errcode = 0;
   }
+
+  if (data) {
+    message.buffer = malloc(datalen);
+    if (message.buffer) {
+      message.length = datalen;
+      memcpy(message.buffer, data, datalen);
+    }
+  }
+
+  lua_pop(L, 1);	// Throw away the value
+  message.errcode = 0;
 
 cleanup:
   lua_settop(L, top);
@@ -424,6 +441,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
 
   // -1 is the services list
   int nc = 0;
+  int nd = 0;
   for (int i = 1; i <= ns; i++) {
     MODLOG_DFLT(INFO, "Counting -- service %d (top %d)\n", i, lua_gettop(L));
     lua_geti(L, -1, i);
@@ -437,13 +455,23 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
     lua_pop(L, 1);
     // -1 is the service again
     lua_getfield(L, -1, "characteristics");
-    nc += lua_rawlen(L, -1);
+    int sccnt = lua_rawlen(L, -1);
+    nc += sccnt;
+    // Now count the number of descriptors that we need
+    for (int j = 1; j <= sccnt; j++) {
+      lua_geti(L, -1, j);
+      if (lua_getfield(L, -1, "name") != LUA_TNIL) {
+        nd++;
+      }
+      lua_pop(L, 2);
+    }
+    
     lua_pop(L, 2);
   }
 
-  MODLOG_DFLT(INFO, "Discovered %d services with %d characteristics\n", ns, nc);
+  MODLOG_DFLT(INFO, "Discovered %d services with %d characteristics with %d descriptors\n", ns, nc, nd);
 
-  int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t) + (nc + 1) * sizeof(uint16_t);
+  int size = (ns + 1) * sizeof(struct ble_gatt_svc_def) + (nc + ns) * sizeof(struct ble_gatt_chr_def) + (ns + nc) * sizeof(ble_uuid_any_t) + (nc + 1) * sizeof(uint16_t) + nd * 2 * sizeof(struct ble_gatt_dsc_def);
 
 
   struct ble_gatt_svc_def *svcs = malloc(size);
@@ -456,7 +484,8 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
   void *eom = ((char *) svcs) + size;
   struct ble_gatt_chr_def *chrs = (struct ble_gatt_chr_def *) (svcs + ns + 1);
   ble_uuid_any_t *uuids = (ble_uuid_any_t *) (chrs + ns + nc);
-  uint16_t *handles = (uint16_t *) (uuids + ns + nc);
+  struct ble_gatt_dsc_def *dsc = (struct ble_gatt_dsc_def *) (uuids + ns + nc);
+  uint16_t *handles = (uint16_t *) (dsc + nd * 2);
 
   handles[0] = 0;  // number of slots used
 
@@ -549,6 +578,25 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
       // -1 is now the characteristic again
       chr->arg = (void *) luaL_ref(L, LUA_REGISTRYINDEX);
       chr->access_cb = lble_access_cb;
+
+      if (lua_getfield(L, -1, "name") != LUA_TNIL) {
+	  if ((void *) (dsc + 2) > eom) {
+	    free_gatt_svcs(L, result);
+	    return luaL_error(L, "Miscalculated memory requirements");
+	  }
+
+	  chr->descriptors = dsc;
+
+	  dsc->uuid = (const ble_uuid_t*)(ble_uuid16_t[]) {
+	    BLE_UUID16_INIT(0x2901)
+	  };
+          dsc->att_flags = BLE_ATT_F_READ;
+          dsc->access_cb = lble_access_cb;
+          dsc->arg = chr->arg;
+
+          dsc += 2;
+      }
+      lua_pop(L, 1);
     }
     lua_pop(L, 2);
     chrs++;	// terminate the list of characteristics for this service
