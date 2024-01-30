@@ -61,9 +61,9 @@ typedef void (*nodemcu_esp_event_cb) (esp_event_base_t event_base, int32_t event
 
 // Internal definitions
 typedef struct {
-  esp_event_base_t    *event_base_ptr;
-  int32_t              event_id;
-  nodemcu_esp_event_cb callback;
+  const esp_event_base_t *event_base_ptr;
+  int32_t                 event_id;
+  nodemcu_esp_event_cb    callback;
 } nodemcu_esp_event_reg_t;
 
 extern nodemcu_esp_event_reg_t _esp_event_cb_table_start;
