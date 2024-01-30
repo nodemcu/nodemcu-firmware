@@ -562,7 +562,8 @@ static int mqtt_subscribe(lua_State* L) {
 
     ESP_LOGD(TAG, "MQTT subscribe client %p, topic %s", client, topic);
 
-    esp_err_t err = esp_mqtt_client_subscribe(client, topic, qos);
+    // We have to cast away the const due to _Generic expression :(
+    esp_err_t err = esp_mqtt_client_subscribe(client, (char *)topic, qos);
     lua_pushboolean(L, err == ESP_OK);
 
     return 1;  // one value returned, true on success, false on error.
