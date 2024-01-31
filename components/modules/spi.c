@@ -17,7 +17,9 @@ LROT_BEGIN(lspi, NULL, 0)
 #endif
   LROT_NUMENTRY( SPI1,   SPI1_HOST )
   LROT_NUMENTRY( SPI2,   SPI2_HOST )
+#ifdef SPI3_HOST
   LROT_NUMENTRY( SPI3,   SPI3_HOST )
+#endif
 LROT_END(lspi, NULL, 0)
 
 int luaopen_spi( lua_State *L ) {

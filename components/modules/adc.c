@@ -54,9 +54,9 @@ static int adc_read( lua_State *L )
 // Lua: read_hall_sensor( )
 static int read_hall_sensor( lua_State *L )
 {
-  int sample = platform_adc_read_hall_sensor( );
-  lua_pushinteger( L, ( lua_Integer ) sample );
-  return 1;
+  const char *msg = "ADC hall sensor no longer supported in IDF, sorry";
+  platform_print_deprecation_note("msg", "IDFv5");
+  return luaL_error(L, msg);
 }
 
 // Module function map

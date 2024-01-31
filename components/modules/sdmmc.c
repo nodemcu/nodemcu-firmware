@@ -13,6 +13,7 @@
 #include "driver/sdspi_host.h"
 
 #include "common.h"
+#include "platform.h"
 
 // We're limiting ourselves to the number of FAT volumes configured.
 #define NUM_CARDS FF_VOLUMES
@@ -20,8 +21,12 @@ sdmmc_card_t *lsdmmc_card[NUM_CARDS];
 
 // local definition for SDSPI host
 #define LSDMMC_HOST_SDSPI 100
+#ifdef CONFIG_IDF_TARGET_ESP32
 #define LSDMMC_HOST_HSPI (LSDMMC_HOST_SDSPI + HSPI_HOST)
 #define LSDMMC_HOST_VSPI (LSDMMC_HOST_SDSPI + VSPI_HOST)
+#endif
+#define LSDMMC_HOST_SPI2 (LSDMMC_HOST_SDSPI + SPI2_HOST)
+#define LSDMMC_HOST_SPI3 (LSDMMC_HOST_SDSPI + SPI3_HOST)
 
 typedef struct {
   sdmmc_card_t *card;
@@ -31,24 +36,20 @@ typedef struct {
 } lsdmmc_ud_t;
 
 
-static void choose_partition(uint8_t pdrv, uint8_t part)
+static bool is_field_present(lua_State *L, int idx, const char *field)
 {
-  // Update the volume->partition mapping in FatFS
-  for (unsigned i = 0; i < FF_VOLUMES; ++i)
-  {
-    if (VolToPart[i].pd == pdrv)
-      VolToPart[i].pt = part;
-  }
+  lua_getfield(L, idx, field);
+  bool present = !lua_isnoneornil(L, -1);
+  lua_pop(L, 1);
+  return present;
 }
 
 
-static esp_err_t sdmmc_mount_fat(lsdmmc_ud_t *ud, const char *base_path, uint8_t partition)
+static esp_err_t sdmmc_mount_fat(lsdmmc_ud_t *ud, const char *base_path)
 {
   esp_err_t err = ff_diskio_get_drive(&ud->pdrv);
   if (err != ESP_OK)
     return err;
-
-  choose_partition(ud->pdrv, partition);
 
   ff_diskio_register_sdmmc(ud->pdrv, ud->card);
 
@@ -73,7 +74,6 @@ fail:
     ud->fs = NULL;
   }
   esp_vfs_fat_unregister_path(base_path);
-  choose_partition(ud->pdrv, 0);
   ff_diskio_unregister(ud->pdrv);
 
   return err;
@@ -101,7 +101,10 @@ static int lsdmmc_init( lua_State *L )
 
   int slot = luaL_checkint( L, ++stack );
   luaL_argcheck( L, slot == SDMMC_HOST_SLOT_0 || slot == SDMMC_HOST_SLOT_1 ||
-                    slot == LSDMMC_HOST_HSPI || slot == LSDMMC_HOST_VSPI,
+#ifdef CONFIG_IDF_TARGET_ESP32
+                    slot == LSDMMC_HOST_HSPI || slot == LSDMMC_HOST_VSPI ||
+#endif
+                    slot == LSDMMC_HOST_SPI2 || slot == LSDMMC_HOST_SPI3,
                  stack, "invalid slot" );
 
   bool is_sdspi = false;
@@ -115,10 +118,7 @@ static int lsdmmc_init( lua_State *L )
   int wp_pin   = SDMMC_SLOT_NO_WP;
   int freq_khz = SDMMC_FREQ_DEFAULT;
   int width    = SDMMC_HOST_FLAG_1BIT;
-  // additional entries for SDSPI configuration
-  int sck_pin  = -1;
-  int mosi_pin = -1;
-  int miso_pin = -1;
+  // additional cs for SDSPI configuration
   int cs_pin   = -1;
 
   if (lua_type( L, ++stack ) == LUA_TTABLE) {
@@ -131,9 +131,12 @@ static int lsdmmc_init( lua_State *L )
 
     // mandatory entries for SDSPI configuration
     if (is_sdspi) {
-      sck_pin  = opt_checkint_range( L, "sck_pin", -1, 0, GPIO_NUM_MAX );
-      mosi_pin = opt_checkint_range( L, "mosi_pin", -1, 0, GPIO_NUM_MAX );
-      miso_pin = opt_checkint_range( L, "miso_pin", -1, 0, GPIO_NUM_MAX );
+      if (is_field_present(L, -1, "sck_pin") ||
+          is_field_present(L, -1, "mosi_pin") ||
+          is_field_present(L, -1, "miso_pin"))
+      {
+        platform_print_deprecation_note("SCK/MOSI/MISO ignored; please configure via spimaster instead", "IDFv5");
+      }
       cs_pin   = opt_checkint_range( L, "cs_pin", -1, 0, GPIO_NUM_MAX );
     }
 
@@ -166,16 +169,16 @@ static int lsdmmc_init( lua_State *L )
   }
   if (res == ESP_OK || res == ESP_ERR_INVALID_STATE) {
 
+    sdmmc_host_t sdspi_host_config = SDSPI_HOST_DEFAULT();
+    sdmmc_host_t sdmmc_host_config = SDMMC_HOST_DEFAULT();
+
     if (is_sdspi) {
       // configure SDSPI slot
-      sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
-      slot_config.gpio_miso = miso_pin;
-      slot_config.gpio_mosi = mosi_pin;
-      slot_config.gpio_sck = sck_pin;
-      slot_config.gpio_cs = cs_pin;
-      slot_config.gpio_cd = cd_pin;
-      slot_config.gpio_wp = wp_pin;
-      res = sdspi_host_init_slot( slot, &slot_config );
+      sdspi_device_config_t dev_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+      dev_config.gpio_cs = cs_pin;
+      dev_config.gpio_cd = cd_pin;
+      dev_config.gpio_wp = wp_pin;
+      res = sdspi_host_init_device(&dev_config, &sdspi_host_config.slot);
     } else {
       // configure SDMMC slot
       sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
@@ -184,10 +187,7 @@ static int lsdmmc_init( lua_State *L )
       res = sdmmc_host_init_slot( slot, &slot_config );
     }
     if (res == ESP_OK) {
-
       // initialize card
-      sdmmc_host_t sdspi_host_config = SDSPI_HOST_DEFAULT();
-      sdmmc_host_t sdmmc_host_config = SDMMC_HOST_DEFAULT();
       sdmmc_host_t *host_config = is_sdspi ? &sdspi_host_config : &sdmmc_host_config;
       host_config->slot = slot;
       host_config->flags &= ~SDMMC_HOST_FLAG_8BIT;
@@ -352,13 +352,21 @@ static int lsdmmc_mount( lua_State *L )
   (void)card;
 
   const char *ldrv = luaL_checkstring(L, 2);
-  int part = luaL_optint(L, 3, 0);
+  if (!lua_isnoneornil(L, 3))
+  {
+    // Warn that this feature isn't around
+    platform_print_deprecation_note(
+      "partition selection not supported", "IDFv5");
+    // ...and error if used to select something we can no longer do
+    if (luaL_optint(L, 3, 0) > 1)
+      return luaL_error(L, "only first partition supported since IDFv5");
+  }
 
   lua_settop(L, 2);
 
   if (ud->fs == NULL)
   {
-    esp_err_t err = sdmmc_mount_fat(ud, ldrv, part);
+    esp_err_t err = sdmmc_mount_fat(ud, ldrv);
     if (err == ESP_OK)
     {
       // We need this when we unmount
@@ -408,8 +416,12 @@ LROT_BEGIN(sdmmc, NULL, 0)
   LROT_FUNCENTRY( init,  lsdmmc_init )
   LROT_NUMENTRY(  HS1,   SDMMC_HOST_SLOT_0 )
   LROT_NUMENTRY(  HS2,   SDMMC_HOST_SLOT_1 )
+#ifdef CONFIG_IDF_TARGET_ESP32
   LROT_NUMENTRY(  HSPI,  LSDMMC_HOST_HSPI )
   LROT_NUMENTRY(  VSPI,  LSDMMC_HOST_VSPI )
+#endif
+  LROT_NUMENTRY(  SPI2,  LSDMMC_HOST_SPI2 )
+  LROT_NUMENTRY(  SPI3,  LSDMMC_HOST_SPI3 )
   LROT_NUMENTRY(  W1BIT, SDMMC_HOST_FLAG_1BIT )
   LROT_NUMENTRY(  W4BIT, SDMMC_HOST_FLAG_1BIT |
                          SDMMC_HOST_FLAG_4BIT )

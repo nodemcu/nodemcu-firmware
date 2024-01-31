@@ -60,22 +60,3 @@ the sampled value (number)
 ```lua
 val = adc.read(adc.ADC1, 0)
 ```
-
-## adc.read_hall_sensor()
-
-Read Hall sensor (GPIO36, GPIO39). We recommend using 12-bits width on ADC1.
-
-#### Syntax
-`adc.read_hall_sensor()`
-
-#### Parameters
-none
-
-#### Returns
-the sampled value (number)
-
-#### Example
-```lua
-val = adc.read_hall_sensor()
-```
-

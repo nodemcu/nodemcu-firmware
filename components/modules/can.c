@@ -29,7 +29,7 @@ CAN_device_t CAN_cfg = {
 static task_handle_t can_data_task_id;
 static int can_on_received = LUA_NOREF;
 
-static xTaskHandle  xCanTaskHandle = NULL;
+static TaskHandle_t  xCanTaskHandle = NULL;
 
 // LUA
 static void can_data_task( task_param_t param, task_prio_t prio ) {

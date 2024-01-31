@@ -60,13 +60,14 @@ if(IDF_TARGET STREQUAL "esp32")
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
-    "rmt.c"
     "pulsecnt.c"
+    "rmt.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32s3")
   list(APPEND module_srcs
-    "rmt.c"
     "pulsecnt.c"
+    "rmt.c"
+    "sdmmc.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
@@ -82,9 +83,11 @@ idf_component_register(
     "base_nodemcu"
     "bt"
     "driver_can"
+    "esp_eth"
     "esp_http_client"
-    "fatfs"
     "esp_http_server"
+    "esp_hw_support"
+    "fatfs"
     "libsodium"
     "lua"
     "mbedtls"
@@ -92,10 +95,12 @@ idf_component_register(
     "platform"
     "qrcodegen"
     "sdmmc"
+    "spi_flash"
     "sjson"
     "soc"
     "u8g2"
     "ucg"
+    "vfs"
 )
 
 # Match up all the module source files with their corresponding Kconfig

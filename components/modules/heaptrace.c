@@ -1,7 +1,10 @@
 #include "module.h"
 #include "lauxlib.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
 #include "esp_heap_trace.h"
+#pragma GCC diagnostic pop
 
 static heap_trace_record_t *buffer = NULL;
 

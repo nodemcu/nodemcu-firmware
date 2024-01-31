@@ -17,8 +17,8 @@
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_spiffs.h"
+#include "esp_netif.h"
 #include "nvs_flash.h"
-#include "flash_api.h"
 
 #include "task/task.h"
 #include "sections.h"
@@ -64,7 +64,7 @@ static void relay_default_loop_events(
   if (task_post_medium(relayed_event_task, (intptr_t)&event))
     xSemaphoreTake(relayed_event_handled, portMAX_DELAY);
   else
-    printf("ERROR: failed to forward esp event %s/%d", base, id);
+    printf("ERROR: failed to forward esp event %s/%ld", base, id);
 }
 
 

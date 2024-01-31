@@ -2,7 +2,7 @@ menu "Lua configuration"
 
     choice LUA_VERSION
         prompt "Lua version"
-        default LUA_VERSION_51
+        default LUA_VERSION_53
         help
             The version of Lua interpreter to use.
 
