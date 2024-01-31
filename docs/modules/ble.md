@@ -11,10 +11,6 @@ This allows you to build simple gadgets that can be interrogated and controlled 
 This initializes the Bluetooth stack and starts advertising according to the data in the
 configuration table. See below for a detailed description of this table.
 
-At the present time, you can only call the `init` function once. There is some problem
-in the underlying implementation of the BLE stack that prevents a `init`, `shutdown`, `init`
-sequence from working.
-
 #### Syntax
 `ble.init(ble_config)`
 
@@ -65,7 +61,7 @@ Updates the advertising data field for future advertising frames.
 
 #### Parameters
 
-- `advertisement` This string will be placed in future advertising frames as the manufacturer data field. This overrides the a`advertisement` value from the config block.
+- `advertisement` This string will be placed in future advertising frames as the manufacturer data field. This overrides the `advertisement` value from the config block.
 
 #### Returns
 `nil`
@@ -77,8 +73,7 @@ ble.advertise("foo")
 
 ## ble.shutdown()
 
-Shuts down the Bluetooth controller and returns it to the state where another `init` ought to work (but currently doesn't). And, at the moment, shutting
-it down doesn't work either -- it appears to corrupt some deep data structures.
+Shuts down the Bluetooth controller and returns it to the state where another `init` ought to work.
 
 #### Syntax
 `ble.shutdown()`
@@ -153,4 +148,4 @@ end
 
 ### Type conversions
 
-If the `type` value converts a single item, then that will be the value that is placed into the `value` element. If it converts multiple elements, then the elements will be placed into an array that that will be plaed into the `value` element.
+If the `type` value converts a single item, then that will be the value that is placed into the `value` element. If it converts multiple elements, then the elements will be placed into an array that that will be placed into the `value` element.

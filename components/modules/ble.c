@@ -77,13 +77,13 @@ static const char *gadget_name;
 static uint8_t *gadget_mfg;
 static size_t gadget_mfg_len;
 
+static ble_uuid_t *cud_uuid = BLE_UUID16_DECLARE(0x2901);
+
 static const struct ble_gatt_svc_def *gatt_svr_svcs;
 static const uint16_t *notify_handles;
 
 static task_handle_t task_handle;
 static QueueHandle_t response_queue;
-
-static bool already_inited;
 
 static int struct_pack_index;
 static int struct_unpack_index;
@@ -588,9 +588,7 @@ lble_build_gatt_svcs(lua_State *L, struct ble_gatt_svc_def **resultp, const uint
 
 	  chr->descriptors = dsc;
 
-	  dsc->uuid = (const ble_uuid_t*)(ble_uuid16_t[]) {
-	    BLE_UUID16_INIT(0x2901)
-	  };
+	  dsc->uuid = cud_uuid;
           dsc->att_flags = BLE_ATT_F_READ;
           dsc->access_cb = lble_access_cb;
           dsc->arg = chr->arg;
@@ -666,6 +664,8 @@ lble_sys_init(lua_State *L) {
   task_handle = task_get_id(lble_task_cb);
   response_queue = xQueueCreate(2, sizeof(response_message_t));
 
+  esp_log_level_set("NimBLE", ESP_LOG_WARN);
+
   return 0;
 }
 
@@ -678,15 +678,6 @@ lble_host_task(void *param)
 
 static void
 lble_init_stack(lua_State *L) {
-  static char stack_inited;
-  if (!stack_inited) {
-    stack_inited = 1;
-    int ret = esp_nimble_hci_and_controller_init();
-    if (ret != ESP_OK) {
-      luaL_error(L, "esp_nimble_hci_and_controller_init() failed with error: %d", ret);
-      return;
-    }
-  }
 
   nimble_port_init();
 
@@ -994,10 +985,6 @@ static int lble_init(lua_State *L) {
   if (inited != STOPPED) {
     return luaL_error(L, "ble is already running");
   }
-  if (already_inited) {
-    return luaL_error(L, "Can only call ble.init once. Internal stack problem.");
-  }
-  already_inited = true;
   if (!struct_pack_index) {
     lua_getglobal(L, "struct");
     lua_getfield(L, -1, "pack");
@@ -1066,10 +1053,6 @@ static int lble_init(lua_State *L) {
 }
 
 static int lble_shutdown(lua_State *L) {
-  // It seems that shutting down the stack corrupts some critical data structures
-  // so, for now, don't allow it.
-  luaL_error(L, "Shutting down the BLE stack is currently not possible");
-
   inited = SHUTTING;
 
   ble_gap_adv_stop();
@@ -1079,10 +1062,6 @@ static int lble_shutdown(lua_State *L) {
   }
 
   nimble_port_deinit();
-
-  if (ESP_OK != esp_nimble_hci_and_controller_deinit()) {
-    return luaL_error(L, "Failed to shutdown the BLE controller");
-  }
 
   inited = STOPPED;
 
