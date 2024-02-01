@@ -1063,6 +1063,9 @@ static int lble_shutdown(lua_State *L) {
 
   nimble_port_deinit();
 
+  free_gatt_svcs(L, gatt_svr_svcs);
+  gatt_svr_svcs = NULL;
+
   inited = STOPPED;
 
   return 0;
