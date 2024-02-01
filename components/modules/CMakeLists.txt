@@ -23,6 +23,7 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rtcmem.c"
   "qrcodegen.c"
   "sigma_delta.c"
   "sjson.c"
@@ -51,18 +52,25 @@ if(IDF_TARGET STREQUAL "esp32")
     "eth.c"
     "i2s.c"
     "pulsecnt.c"
+    "rmt.c"
     "sdmmc.c"
     "touch.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
+    "pulsecnt.c"
+    "rmt.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32s3")
   list(APPEND module_srcs
+    "pulsecnt.c"
+    "rmt.c"
+    "sdmmc.c"
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
+    "rmt.c"
   )
 endif()
 
@@ -74,9 +82,11 @@ idf_component_register(
     "base_nodemcu"
     "bt"
     "driver_can"
+    "esp_eth"
     "esp_http_client"
-    "fatfs"
     "esp_http_server"
+    "esp_hw_support"
+    "fatfs"
     "libsodium"
     "lua"
     "mbedtls"
@@ -84,10 +94,12 @@ idf_component_register(
     "platform"
     "qrcodegen"
     "sdmmc"
+    "spi_flash"
     "sjson"
     "soc"
     "u8g2"
     "ucg"
+    "vfs"
 )
 
 # Match up all the module source files with their corresponding Kconfig

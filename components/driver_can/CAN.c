@@ -32,6 +32,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "soc/gpio_sig_map.h"
+#include "rom/gpio.h"
+
 #include "esp_intr_alloc.h"
 #include "soc/dport_reg.h"
 #include <math.h>

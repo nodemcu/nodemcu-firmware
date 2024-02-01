@@ -5,7 +5,9 @@
 #include "soc/uart_reg.h"
 #include <stdio.h>
 #include <string.h>
-#include <freertos/semphr.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
@@ -22,8 +24,24 @@ int platform_init (void)
 // *****************************************************************************
 // GPIO subsection
 
-int platform_gpio_exists( unsigned gpio ) { return GPIO_IS_VALID_GPIO(gpio); }
-int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_GPIO(gpio); }
+int platform_gpio_exists(unsigned gpio)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+  // Suppress ">= is always true" due to unsigned type here
+  return GPIO_IS_VALID_GPIO(gpio);
+#pragma GCC diagnostic pop
+}
+
+
+int platform_gpio_output_exists(unsigned gpio)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+  // Suppress ">= is always true" due to unsigned type here
+  return GPIO_IS_VALID_OUTPUT_GPIO(gpio);
+#pragma GCC diagnostic pop
+}
 
 
 // ****************************************************************************
@@ -65,6 +83,7 @@ uart_status_t uart_status[NUM_UART];
 task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
+extern bool uart_has_on_data_cb(unsigned id);
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
 
@@ -74,14 +93,18 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   uart_status_t *us = &uart_status[id];
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    size_t i = 0;
-    while (i < post->size)
-    {
-      if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+    if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
+      size_t i = 0;
+      while (i < post->size)
+      {
         unsigned used = feed_lua_input(post->data + i, post->size - i);
         i += used;
       }
-      else {
+    }
+    if (uart_has_on_data_cb(id)) {
+      size_t i = 0;
+      while (i < post->size)
+      {
         char ch = post->data[i];
         us->line_buffer[us->line_position] = ch;
         us->line_position++;
@@ -131,7 +154,7 @@ static void task_uart( void *pvParameters ){
   uart_event_t event;
 
   for(;;) {
-    if(xQueueReceive(uart_status[id].queue, (void * )&event, (portTickType)portMAX_DELAY)) {
+    if(xQueueReceive(uart_status[id].queue, (void * )&event, (TickType_t)portMAX_DELAY)) {
       switch(event.type) {
         case UART_DATA: {
           // Attempt to coalesce received bytes to reduce risk of overrunning
@@ -208,13 +231,16 @@ static void task_uart( void *pvParameters ){
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
-  if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
-  if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
-  
+  if (pins != NULL) {
+	if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+	if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+  }
+
   uart_config_t cfg = {
      .baud_rate = baud,
      .flow_ctrl = flow_control,
      .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
+     .source_clk = UART_SCLK_DEFAULT,
   };
   
   switch (databits)
@@ -516,14 +542,6 @@ int platform_adc_read( uint8_t adc, uint8_t channel ) {
   return value;
 }
 
-int platform_adc_read_hall_sensor( ) {
-#if defined(CONFIG_IDF_TARGET_ESP32)
-  int value = hall_sensor_read( );
-  return value;
-#else
-  return -1;
-#endif
-}
 // *****************************************************************************
 // I2C platform interface
 

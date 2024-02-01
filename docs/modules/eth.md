@@ -8,8 +8,10 @@ The eth module provides access to the ethernet PHY chip configuration.
 Your board must contain one of the PHY chips that are supported by ESP-IDF:
 
 - IP101
-- LAN8720
-- TLK110
+- RTL8201
+- LAN8720 (possibly others in the LAN87xx family)
+- DP83848
+- KSZ8001 / KSZ8021 / KSZ8031 / KSZ8041 / KSZ8051 / KSZ8061 / KSZ8081 / KSZ8091
 
 ## eth.get_mac()
 Get MAC address.
@@ -67,9 +69,11 @@ eth.init(cfg)
     - `phy` PHY chip model, one of
         - `PHY_DP83848`
         - `PHY_IP101`
-        - `PHY_KSZ8041`
-        - `PHY_KSZ8081`
-        - `PHY_LAN8720`
+        - `PHY_KSZ80XX`
+        - `PHY_KSZ8041` (deprecated, use `PHY_KSZ80XX` instead)
+        - `PHY_KSZ8081` (deprecated, use `PHY_KSZ80XX` instead)
+        - `PHY_LAN87XX`
+        - `PHY_LAN8720` (deprecated, use `PHY_LAN87XX` instead)
         - `PHY_RTL8201`
     - `power` power enable pin, optional
 

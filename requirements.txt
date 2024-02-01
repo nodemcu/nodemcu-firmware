@@ -1,2 +1,1 @@
 ziglang>=0.8.0
-cryptography>=2.1.4,<35.0.0

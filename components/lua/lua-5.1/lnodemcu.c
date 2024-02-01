@@ -257,3 +257,20 @@ LUA_API int lua_pushlfsindex (lua_State *L) {
   return p ? LUA_TFUNCTION : LUA_TNIL;
 }
 #endif
+
+
+/* luaL_totoggle provides lenient boolean interpretation for feature toggles
+ * true, 1 => true
+ * false, 0, nil => false
+ */
+LUALIB_API int luaL_totoggle(lua_State *L, int idx)
+{
+  if (lua_isboolean(L, idx))
+    return lua_toboolean(L, idx);
+  else if (lua_isnoneornil(L, idx))
+    return 0;
+  else if (lua_isnumber(L, idx))
+    return lua_tonumber(L, idx) != 0;
+  else
+    return luaL_error(L, "unexpected type");
+}

@@ -14,6 +14,7 @@
 #include "esp_eth.h"
 #include "esp_eth_phy.h"
 #include "driver/gpio.h"
+#include "esp_mac.h"
 
 
 typedef esp_eth_phy_t *(*new_eth_phy_fn)(const eth_phy_config_t *config);
@@ -21,9 +22,8 @@ typedef esp_eth_phy_t *(*new_eth_phy_fn)(const eth_phy_config_t *config);
 typedef enum {
   ETH_PHY_DP83848,
   ETH_PHY_IP101,
-  ETH_PHY_KSZ8041,
-  ETH_PHY_KSZ8081,
-  ETH_PHY_LAN8720,
+  ETH_PHY_KSZ80XX,
+  ETH_PHY_LAN87XX,
   ETH_PHY_RTL8201,
   ETH_PHY_MAX
 } eth_phy_t;
@@ -31,9 +31,8 @@ typedef enum {
 static const new_eth_phy_fn new_eth_phy[] = {
   [ETH_PHY_DP83848] = esp_eth_phy_new_dp83848,
   [ETH_PHY_IP101]   = esp_eth_phy_new_ip101,
-  [ETH_PHY_KSZ8041] = esp_eth_phy_new_ksz8041,
-  [ETH_PHY_KSZ8081] = esp_eth_phy_new_ksz8081,
-  [ETH_PHY_LAN8720] = esp_eth_phy_new_lan8720,
+  [ETH_PHY_KSZ80XX] = esp_eth_phy_new_ksz80xx,
+  [ETH_PHY_LAN87XX] = esp_eth_phy_new_lan87xx,
   [ETH_PHY_RTL8201] = esp_eth_phy_new_rtl8201,
 };
 _Static_assert(sizeof(new_eth_phy) == (sizeof(new_eth_phy[0]) * ETH_PHY_MAX),
@@ -273,12 +272,14 @@ static int leth_init( lua_State *L )
   // temporarily copy option table to top of stack for opt_ functions
   lua_pushvalue( L, stack );
 
-  eth_mac_config_t mac_cfg = ETH_MAC_DEFAULT_CONFIG();
+  eth_esp32_emac_config_t emac_cfg = ETH_ESP32_EMAC_DEFAULT_CONFIG();
 
-  mac_cfg.smi_mdc_gpio_num =
+  emac_cfg.smi_mdc_gpio_num =
     opt_checkint_range( L, "mdc",   -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
-  mac_cfg.smi_mdio_gpio_num =
+  emac_cfg.smi_mdio_gpio_num =
     opt_checkint_range( L, "mdio",  -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
+
+  eth_mac_config_t mac_cfg = ETH_MAC_DEFAULT_CONFIG();
 
   eth_phy_config_t phy_cfg = ETH_PHY_DEFAULT_CONFIG();
 
@@ -290,7 +291,7 @@ static int leth_init( lua_State *L )
 
   lua_settop( L, top );
 
-  esp_eth_mac_t *mac = esp_eth_mac_new_esp32(&mac_cfg);
+  esp_eth_mac_t *mac = esp_eth_mac_new_esp32(&emac_cfg, &mac_cfg);
   esp_eth_phy_t *phy = new_eth_phy[phy_type](&phy_cfg);
 
   esp_eth_config_t eth_cfg = ETH_DEFAULT_CONFIG(mac, phy);
@@ -301,10 +302,6 @@ static int leth_init( lua_State *L )
 
   esp_netif_config_t netif_cfg = ESP_NETIF_DEFAULT_ETH();
   esp_netif_t *new_eth = esp_netif_new(&netif_cfg);
-
-  err = esp_eth_set_default_handlers(new_eth);
-  if (err != ESP_OK)
-    goto cleanup_netif;
 
   void *glue = esp_eth_new_netif_glue(eth_handle);
   err = esp_netif_attach(new_eth, glue);
@@ -320,8 +317,6 @@ static int leth_init( lua_State *L )
 
 cleanup_glue:
   esp_eth_del_netif_glue(glue);
-
-cleanup_netif:
   esp_netif_destroy(new_eth);
 
 cleanup_mac_phy:
@@ -354,9 +349,11 @@ LROT_BEGIN(eth, NULL, 0)
 
   LROT_NUMENTRY( PHY_DP83848, ETH_PHY_DP83848 )
   LROT_NUMENTRY( PHY_IP101,   ETH_PHY_IP101 )
-  LROT_NUMENTRY( PHY_KSZ8041, ETH_PHY_KSZ8041 )
-  LROT_NUMENTRY( PHY_KSZ8081, ETH_PHY_KSZ8081 )
-  LROT_NUMENTRY( PHY_LAN8720, ETH_PHY_LAN8720 )
+  LROT_NUMENTRY( PHY_KSZ80XX, ETH_PHY_KSZ80XX )
+  LROT_NUMENTRY( PHY_KSZ8041, ETH_PHY_KSZ80XX ) // deprecated in favour of 80XX
+  LROT_NUMENTRY( PHY_KSZ8081, ETH_PHY_KSZ80XX ) // deprecated in favour of 80XX
+  LROT_NUMENTRY( PHY_LAN87XX, ETH_PHY_LAN87XX )
+  LROT_NUMENTRY( PHY_LAN8720, ETH_PHY_LAN87XX ) // deprecated in favour of 87XX
   LROT_NUMENTRY( PHY_RTL8201, ETH_PHY_RTL8201 )
 LROT_END(eth, NULL, 0)
 

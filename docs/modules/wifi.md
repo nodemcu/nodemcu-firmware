@@ -149,11 +149,22 @@ being removed in the SDK/IDF. After start-up it is necessary to call
         - "AcDc0123c0DE"
     - `pmf` an optional setting to control whether Protected Management Frames
       are supported and/or required. One of:
-          - `wifi.sta.PMF_OFF`
           - `wifi.sta.PMF_AVAILABLE`
           - `wifi.sta.PMF_REQUIRED`.
       Defaults to `wifi.sta.PMF_AVAILABLE`. PMF is required when joining to
-      WPA3-Personal access points.
+      WPA3-Personal access points. The value `wifi.sta.PMF_OFF` is no longer
+      available as it is no longer supported by the wifi stack.
+
+    - `channel` optional integer value, the channel number to start scanning for the AP from, if known.
+    - `scan_method` optional string value, one of `"fast"` or `"all"` do either do a fast scan or all channel scan when looking for the AP to connect to. With fast scan, the first found matching AP is used even if it is not the best/closest one.
+    - `listen_interval` optional listen interval to receive beacon if max wifi power saving mode is enabled. Units is in AP beacon intervals. Defaults to 3.
+    - `sort_by` optional string value for preferential selection of AP. Must be one of `"rssi"` or `"authmode"` if present.
+    - `threshold_rssi` optional integer value to limit APs to only those which have a signal stronger than this value.
+    - `threshold_authmode` optional value to limit APs to those with an authentication mode of at least this settings. One of `wifi.AUTH_OPEN`, `wifi.AUTH_WEP`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`.
+    - `rm` optional boolean, set to `true` to enable Radio Measurements
+    - `btm` optional boolean, set to `true` to enable BSS Transition Management
+    - `mbo` optional boolean, set to `true` to enable Multi-Band Operation
+    - `sae_pwe` optional, configures WPA3 SAE Password Element setting. One of `wifi.SAE_PWE_UNSPECIFIED`, `wifi.SAE_PWE_HUNT_AND_PECK`, `wifi.SAE_PWE_HASH_TO_ELEMENT` or `wifi.SAE_PWE_BOTH`.
 
 - `save` Save station configuration to flash. 
     - `true` configuration **will** be retained through power cycle. 
@@ -189,6 +200,21 @@ wifi.sta.config(station_cfg)
 #### See also
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
+
+
+## wifi.sta.getconfig()
+
+Returns the current station configuration.
+
+#### Syntax
+`wifi.sta.getconfig()`
+
+#### Parameters
+`nil`
+
+#### Returns
+A table with the configuration settings. Refer to [`wifi.sta.config()`](#wifistaconfig) for field details.
+
 
 ## wifi.sta.connect()
 
@@ -233,6 +259,62 @@ Disconnects from AP in station mode.
 - [`wifi.sta.connect()`](#wifistaconnect)
 
 
+## wifi.sta.settxpower
+
+Allows adjusting the maximum TX power for the WiFi. This is (unfortunately) needed for some boards which 
+have a badly matched antenna.
+
+#### Syntax
+`wifi.sta.settxpower(power)`
+
+#### Parameters
+- `power` The maximum transmit power in dBm. This must have the range 2dBm - 20dBm. This value is a float.
+
+#### Returns
+A `boolean` where `true` is OK.
+
+#### Example
+
+```
+# Needed for the WEMOS C3 Mini
+wifi.sta.settxpower(8.5)
+```
+
+## wifi.sta.powersave
+
+Configures power-saving setting in station mode.
+
+#### Syntax
+`wifi.sta.powersave(setting)`
+
+#### Parameters
+- `setting` one of `"none"`, `"min"` or `"max"`. In `"min"` mode, the station wakes up every DTIM period to receive the beacon. In `"max"` mode, the station wakes up at the interval configured in `listen_interval` (see [`wifi.sta.config()`](#wifistaconfig). When set to `"none"` the station does not go to sleep and can receive frames immediately.
+
+#### Returns
+`nil`
+
+#### See also
+- [`wifi.sta.getpowersave()`](#wifistagetpowersave)
+
+
+## wifi.sta.getpowersave
+
+Returns the configured station power-saving mode.
+
+#### Syntax
+`wifi.sta.getpowersave()`
+
+#### Parameters
+`nil`
+
+#### Returns
+
+One of `"none"`, `"min"` or `"max"`. Refer to [`wifi.sta.powersave()`](#wifistapowersave) for details.
+
+#### See also
+- [`wifi.sta.powersave()`](#wifistapowersave)
+
+
 ## wifi.sta.on()
 
 Registers callbacks for WiFi station status events.
@@ -261,7 +343,7 @@ Event information provided for each event is as follows:
     - `ssid`: the SSID of the network
     - `bssid`: the BSSID of the AP
     - `channel`: the primary channel of the network
-    - `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.WPA_WPA2_PSK`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
+    - `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WEP`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
 - `disconnected`: information about the network/AP that was disconnected from:
     - `ssid`: the SSID of the network
     - `bssid`: the BSSID of the AP
@@ -353,7 +435,7 @@ The following fields are provided for each scanned AP:
 - `bssid`: the BSSID of the AP
 - `channel`: primary WiFi channel of the AP
 - `rssi`: Received Signal Strength Indicator value
-- `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
+- `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WEP`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK`, `wifi.AUTH_WPA_WPA2_PSK`, `wifi.AUTH_WPA2_ENTERPRISE`, `wifi.AUTH_WPA3_PSK`, `wifi.AUTH_WPA2_WPA3_PSK`, `wifi.AUTH_WAPI_PSK`
 - `bandwidth`: one of the following constants:
     - `wifi.HT20`
     - `wifi.HT40_ABOVE`

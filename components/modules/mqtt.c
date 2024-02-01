@@ -50,6 +50,13 @@ typedef struct {
     };
 } mqtt_context_t;
 
+
+typedef struct {
+  mqtt_context_t *ctx;
+  esp_mqtt_event_t event;
+} event_info_t;
+
+
 // event_handler_t is the function signature for all events
 typedef void (*event_handler_t)(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event);
 
@@ -64,10 +71,12 @@ task_handle_t event_handler_task_id = 0;
 
 // event_clone makes a copy of the mqtt event received so we can pass it on
 // and the mqtt library can discard it.
-static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
+static event_info_t *event_clone(esp_mqtt_event_handle_t ev, mqtt_context_t *ctx) {
     // allocate memory for the copy
-    esp_mqtt_event_handle_t ev1 = (esp_mqtt_event_handle_t)malloc(sizeof(esp_mqtt_event_t));
+    event_info_t *clone = (event_info_t *)malloc(sizeof(event_info_t));
     ESP_LOGD(TAG, "event_clone(): event %p, event id %d, msg %d", ev, ev->event_id, ev->msg_id);
+    clone->ctx = ctx;
+    esp_mqtt_event_handle_t ev1 = &clone->event;
 
     // make a shallow copy:
     *ev1 = *ev;
@@ -95,11 +104,12 @@ static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
             ev1->topic = NULL;
         }
     }
-    return ev1;
+    return clone;
 }
 
 // event_free deallocates all the memory associated with a cloned event
-static void event_free(esp_mqtt_event_handle_t ev) {
+static void event_free(event_info_t *clone) {
+    esp_mqtt_event_handle_t ev = &clone->event;
     if (ev->data != NULL) {
         ESP_LOGD(TAG, "event_free():free: event %p, msg %d, data %p", ev, ev->msg_id, ev->data);
         free(ev->data);
@@ -108,7 +118,7 @@ static void event_free(esp_mqtt_event_handle_t ev) {
         ESP_LOGD(TAG, "event_free():free: event %p, msg %d, topic %p", ev, ev->msg_id, ev->topic);
         free(ev->topic);
     }
-    free(ev);
+    free(clone);
 }
 
 // event_connected is run when the mqtt client connected
@@ -235,10 +245,9 @@ static void event_data_received(lua_State* L, mqtt_context_t* mqtt_context, esp_
 // event_task_handler takes a nodemcu task message and dispatches it to the appropriate event_xxx callback above.
 static void event_task_handler(task_param_t param, task_prio_t prio) {
     // extract the event data out of the task param
-    esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)param;
-
-    // recover the mqtt context from the event user_context field:
-    mqtt_context_t* mqtt_context = (mqtt_context_t*)event->user_context;
+    event_info_t *info = (event_info_t *)param;
+    esp_mqtt_event_handle_t event = &info->event;
+    mqtt_context_t* mqtt_context = info->ctx;
 
     // Check if this event is about an object that is in the process of garbage collection:
     if (!luaX_valid_ref(mqtt_context->self)) {
@@ -290,14 +299,17 @@ static void event_task_handler(task_param_t param, task_prio_t prio) {
     lua_settop(L, top);  // leave the stack as it was
 
 task_handler_end:
-    event_free(event);  // free the event copy memory
+    event_free(info);  // free the cloned event info
 }
 
 // mqtt_event_handler receives all events from the esp mqtt library and converts them
 // to a task message
-static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
-    task_post_medium(event_handler_task_id, (task_param_t)event_clone(event));
-    return ESP_OK;
+static void mqtt_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data) {
+  (void)base;
+  (void)event_id;
+  event_info_t *clone = event_clone(event_data, handler_arg);
+  if (!task_post_medium(event_handler_task_id, (task_param_t)clone))
+    event_free(clone);
 }
 
 // Lua: on()
@@ -330,7 +342,15 @@ static int mqtt_connect(lua_State* L) {
     memset(&config, 0, sizeof(esp_mqtt_client_config_t));
 
     // process function parameters populating the mqtt config structure
-    config.host = luaL_checkstring(L, 2);
+    const char *host = luaL_checkstring(L, 2);
+    bool is_mqtt_uri = strncmp(host, "mqtt://", 7) == 0;
+    bool is_mqtts_uri = strncmp(host, "mqtts://", 8) == 0;
+    bool is_ws_uri = strncmp(host, "ws://", 5) == 0;
+    bool is_wss_uri = strncmp(host, "wss://", 6) == 0;
+    if (is_mqtt_uri || is_mqtts_uri || is_ws_uri || is_wss_uri)
+      config.broker.address.uri = host;
+    else
+      config.broker.address.hostname = host;
 
     // set defaults:
     int secure = 0;
@@ -340,34 +360,44 @@ static int mqtt_connect(lua_State* L) {
     const char * cert_pem = NULL;
     const char * client_cert_pem = NULL;
     const char * client_key_pem = NULL;
-
+    size_t cert_pem_len = 0;
+    size_t client_cert_pem_len = 0;
+    size_t client_key_pem_len = 0;
 
     if (lua_isnumber(L, n)) {
+        if (is_mqtt_uri || is_mqtts_uri)
+          return luaL_error(L, "port arg must be nil if giving full uri");
         port = luaL_checknumber(L, n);
+        n++;
+    } else if (lua_type(L, n) == LUA_TNIL) {
         n++;
     }
 
     if (lua_isnumber(L, n)) {
+        if (is_mqtt_uri || is_mqtts_uri)
+          return luaL_error(L, "secure on/off determined by uri");
         secure = !!luaL_checkinteger(L, n);
         n++;
 
+    } else if (lua_type(L, n) == LUA_TNIL) {
+        n++;
     } else {
         if (lua_istable(L, n)) {
             secure = true;
             lua_getfield(L, n, "ca_cert");
-            if ((cert_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+            if ((cert_pem = luaL_optlstring(L, -1, NULL, &cert_pem_len)) != NULL) {
                 luaX_set_ref(L, -1, &mqtt_context->cert_pem);
             }
             lua_pop(L, 1);
             //
             lua_getfield(L, n, "client_cert");
-            if ((client_cert_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+            if ((client_cert_pem = luaL_optlstring(L, -1, NULL, &client_cert_pem_len)) != NULL) {
                 luaX_set_ref(L, -1, &mqtt_context->client_cert_pem);
             }
             lua_pop(L, 1);
             //
             lua_getfield(L, n, "client_key");
-            if ((client_key_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+            if ((client_key_pem = luaL_optlstring(L, -1, NULL, &client_key_pem_len)) != NULL) {
                 luaX_set_ref(L, -1, &mqtt_context->client_key_pem);
             }
             lua_pop(L, 1);
@@ -393,24 +423,26 @@ static int mqtt_connect(lua_State* L) {
 
     ESP_LOGD(TAG, "connect: mqtt_context*: %p", mqtt_context);
 
-    config.user_context = mqtt_context;        // store a pointer to our context in the mqtt client user context field
-                                               // this will be useful to identify to which instance events belong to
-    config.event_handle = mqtt_event_handler;  // set the function that will be called by the mqtt client everytime something
-                                               // happens
-
-    config.client_id = mqtt_context->client_id;
-    config.lwt_msg = mqtt_context->lwt_msg;
-    config.lwt_topic = mqtt_context->lwt_topic;
-    config.username = mqtt_context->username;
-    config.password = mqtt_context->password;
-    config.keepalive = mqtt_context->keepalive;
-    config.disable_clean_session = mqtt_context->disable_clean_session;
-    config.port = port;
-    config.disable_auto_reconnect = (reconnect == 0);
-    config.transport = secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
-    config.cert_pem = cert_pem;
-    config.client_cert_pem = client_cert_pem;
-    config.client_key_pem = client_key_pem;
+    if (config.broker.address.uri == NULL)
+    {
+      config.broker.address.port = port;
+      config.broker.address.transport =
+        secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
+    }
+    config.broker.verification.certificate = cert_pem;
+    config.broker.verification.certificate_len = cert_pem_len;
+    config.credentials.authentication.certificate = client_cert_pem;
+    config.credentials.authentication.certificate_len = client_cert_pem_len;
+    config.credentials.authentication.key = client_key_pem;
+    config.credentials.authentication.key_len = client_key_pem_len;
+    config.credentials.authentication.password = mqtt_context->password;
+    config.credentials.client_id = mqtt_context->client_id;
+    config.credentials.username = mqtt_context->username;
+    config.network.disable_auto_reconnect = (reconnect == 0);
+    config.session.disable_clean_session = mqtt_context->disable_clean_session;
+    config.session.keepalive = mqtt_context->keepalive;
+    config.session.last_will.msg = mqtt_context->lwt_msg;
+    config.session.last_will.topic = mqtt_context->lwt_topic;
 
     // create a mqtt client instance
     mqtt_context->client = esp_mqtt_client_init(&config);
@@ -418,6 +450,10 @@ static int mqtt_connect(lua_State* L) {
         luaL_error(L, "MQTT library failed to start");
         return 0;
     }
+
+   // register the event handler with mqtt_context as the handler arg
+   esp_mqtt_client_register_event(
+     mqtt_context->client, ESP_EVENT_ANY_ID, mqtt_event_handler, mqtt_context);
 
     // actually start the mqtt client and connect
     esp_err_t err = esp_mqtt_client_start(mqtt_context->client);

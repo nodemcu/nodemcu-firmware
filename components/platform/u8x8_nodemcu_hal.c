@@ -3,7 +3,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
-#include "rom/ets_sys.h"
+#include "esp_rom_sys.h"
 #include "esp_heap_caps.h"
 #include <string.h>
 
@@ -38,27 +38,27 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
     break;
 
   case U8X8_MSG_DELAY_NANO:           // delay arg_int * 1 nano second
-    ets_delay_us( 1 );
+    esp_rom_delay_us( 1 );
     break;    
 
   case U8X8_MSG_DELAY_100NANO:        // delay arg_int * 100 nano seconds
     temp = arg_int * 100;
     temp /= 1000;
-    ets_delay_us( temp > 0 ? temp : 1 );
+    esp_rom_delay_us( temp > 0 ? temp : 1 );
     break;
 
   case U8X8_MSG_DELAY_10MICRO:        // delay arg_int * 10 micro seconds
-    ets_delay_us( arg_int * 10 );
+    esp_rom_delay_us( arg_int * 10 );
     break;
 
   case U8X8_MSG_DELAY_MILLI:          // delay arg_int * 1 milli second
-    ets_delay_us( arg_int * 1000 );
+    esp_rom_delay_us( arg_int * 1000 );
     break;
 
   case U8X8_MSG_DELAY_I2C:                // arg_int is the I2C speed in 100KHz, e.g. 4 = 400 KHz
     temp = 5000 / arg_int;                // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
     temp /= 1000;
-    ets_delay_us( temp > 0 ? temp : 1 );
+    esp_rom_delay_us( temp > 0 ? temp : 1 );
     break;
 
   case U8X8_MSG_GPIO_D0:              // D0 or SPI clock pin: Output level in arg_int

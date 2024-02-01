@@ -22,6 +22,7 @@ myChannel = ledc.newChannel({
   timer=ledc.TIMER_0 || ledc.TIMER_1 || ledc.TIMER_2 || ledc.TIMER_3,
   channel=ledc.CHANNEL_0 || ledc.CHANNEL_1 || ledc.CHANNEL_2 || ledc.CHANNEL_3 || ledc.CHANNEL_4 || ledc.CHANNEL_5 || ledc.CHANNEL_6 || ledc.CHANNEL_7,
   frequency=x,
+  invert=false,
   duty=x
 });
 ```
@@ -46,6 +47,7 @@ List of configuration tables:
     - ...
     - `ledc.CHANNEL_7`
 - `frequency` Timer frequency(Hz)
+- `invert` Inverts the output. False, with duty 0, is always low.
 - `duty` Channel duty, the duty range is [0, (2**bit_num) - 1]. Example: if ledc.TIMER_13_BIT is used maximum value is 4096 x 2 -1 = 8091
 
 #### Returns
@@ -264,7 +266,7 @@ channel:fadewithstep(1000, 10, 10);
 Set LEDC fade function.
 
 #### Syntax
-`channel:fadewithstep(duty, direction, scale, cycleNum, stepNum [, wait])`
+`channel:fade(duty, direction, scale, cycleNum, stepNum [, wait])`
 
 #### Parameters
 - `duty` Set the start of the gradient duty.

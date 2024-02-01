@@ -1,0 +1,8 @@
+config NODEMCU_CMODULE_MYMOD
+    bool "External NodeMCU module: mymod"
+    default "y"
+    help
+        Includes the mymod module. This module is only an example for
+        showing how to use external modules. Note that the config option
+        name has to be prefixed with NODEMCU_CMODULE_ and the module
+        registered with extmod_register_conditional(MYMOD) in CMakeLists.txt

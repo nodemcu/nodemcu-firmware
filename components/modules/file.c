@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 static const char *default_fs_label =
   ((CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL &&
@@ -37,20 +38,33 @@ static int file_format( lua_State* L )
 // Lua: list()
 static int file_list( lua_State* L )
 {
-  const char *dirname = luaL_optstring(L, 1, ".");
-  
+  const char *dirname = luaL_optstring(L, 1, NULL);
+
   DIR *dir;
-  if ((dir = opendir(dirname))) {
+  if ((dir = opendir(dirname ? dirname : "/"))) {
     lua_newtable( L );
     struct dirent *e;
     while ((e = readdir(dir))) {
-      char *fname;
-      asprintf(&fname, "%s/%s", dirname, e->d_name);
-      if (!fname)
-        return luaL_error(L, "no memory");
+      char *fname = NULL;
+      if (dirname) {
+        asprintf(&fname, "%s/%s", dirname, e->d_name);
+        if (!fname) {
+          closedir(dir);
+          return luaL_error(L, "no memory");
+        }
+      } else {
+        fname = e->d_name;
+      }
       struct stat st = { 0, };
-      stat(fname, &st);
-      free(fname);
+      int err = stat(fname, &st);
+      if (err) {
+        // We historically ignored this error, so just warn (although it
+        // shouldn't really happen now).
+        NODE_ERR("Failed to stat %s err=%d\n", fname, err);
+      }
+      if (dirname) {
+        free(fname);
+      }
       lua_pushinteger(L, st.st_size);
       lua_setfield(L, -2, e->d_name);
     }
@@ -116,6 +130,29 @@ static int file_fsinfo( lua_State* L )
 }
 
 
+static int file_mkdir( lua_State *L )
+{
+  const char *name = luaL_checkstring(L, 1);
+  unsigned mode = luaL_optint(L, 2, 0777);
+  if (mkdir(name, mode) != 0) {
+    return
+      luaL_error(L, "failed to create directory '%s'; code %d", name, errno);
+  }
+  return 0;
+}
+
+
+static int file_rmdir( lua_State *L )
+{
+  const char *name = luaL_checkstring(L, 1);
+  if (rmdir(name) != 0) {
+    return
+      luaL_error(L, "failed to remove directory '%s'; code %d", name, errno);
+  }
+  return 0;
+}
+
+
 // Module function map
 LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( list,      file_list )
@@ -124,6 +161,8 @@ LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( rename,    file_rename )
   LROT_FUNCENTRY( exists,    file_exists )
   LROT_FUNCENTRY( fsinfo,    file_fsinfo )
+  LROT_FUNCENTRY( mkdir,     file_mkdir )
+  LROT_FUNCENTRY( rmdir,     file_rmdir )
 LROT_END(file, NULL, 0)
 
 

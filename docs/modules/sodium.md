@@ -9,13 +9,15 @@ In addition to the flag for enabling this module during ROM build, `Component co
 
 !!! note
 
-    Almost all functions in this module require a working random number generator. On the ESP32 this means that *WiFi must be started* otherwise ALL OF THE CRYPTOGRAPHY WILL SILENTLY BE COMPROMISED. Make sure to call `wifi.start()` before any of the functions in this module. See the [Espressif documentation](https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html#random-number-generation) for more information. The only exception is `sodium.crypto_box.seal_open()` which does not require a random number source to operate.
+    Almost all functions in this module require a working random number generator. On the ESP32 this normally means that *WiFi must be started* otherwise ALL OF THE CRYPTOGRAPHY WILL SILENTLY BE COMPROMISED. Make sure to call `wifi.start()` before any of the functions in this module. See the [Espressif documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/random.html) for more information. The only exception is `sodium.crypto_box.seal_open()` which does not require a random number source to operate. The non-crypto functions in `sodium.random` can be used with WiFi off, providing that pseudo-randomness is acceptable for the purposes they are being used for.
 
 # Random number generation
-See also [https://download.libsodium.org/doc/generating_random_data](https://download.libsodium.org/doc/generating_random_data)
+See also [https://download.libsodium.org/doc/generating_random_data](https://download.libsodium.org/doc/generating_random_data). On the esp32, a custom implementation `esp_random()` is used which (usually) requires WiFi being enabled to be truly random.
 
 ## sodium.random.random()
-Returns a random integer between `0` and `0xFFFFFFFF` inclusive. Note that on a build using `LUA_NUMBER_INTEGRAL`, results may appear negative due to integer overflow. Wifi must be started, by calling `wifi.start()`, before calling this function.
+Returns a random signed 32-bit integer between `INT32_MIN` and `INT32_MAX`. On builds with 64-bit integer support (`5.3-int64-xxx`), you can convert this to an unsigned 32-bit integer with `result % (1 << 32)`, or on builds with only 64-bit double support (`5.1-doublefp`, `5.3-int32-doublefp`), with `result % (2 ^ 32)`.
+
+If WiFi is not started by calling `wifi.start()` before calling this function, then the result will only be pseudo-random, not truly random.
 
 #### Syntax
 `sodium.random.random()`
@@ -24,22 +26,24 @@ Returns a random integer between `0` and `0xFFFFFFFF` inclusive. Note that on a 
 None
 
 #### Returns
-A uniformly-distributed random integer between `0` and `0xFFFFFFFF` inclusive.
+A uniformly-distributed random 32-bit integer.
 
 ## sodium.random.uniform()
-Returns a random integer  `0 <= result < upper_bound`. Unlike `sodium.random.random() % upper_bound`, it guarantees a uniform distribution of the possible output values even when `upper_bound` is not a power of 2. Note that on a build using `LUA_NUMBER_INTEGRAL`, if `upper_bound >= 0x80000000` the result may appear negative due to integer overflow. Wifi must be started, by calling `wifi.start()`, before calling this function.
+Returns a random integer `0 <= result < upper_bound`. Unlike `sodium.random.random() % upper_bound`, it guarantees a uniform distribution of the possible output values even when `upper_bound` is not a power of 2. Specifying an `upper_bound > 0x7FFFFFFF` is not recommended because the behavior will vary depending on the Lua build configuration.
+
+If WiFi is not started by calling `wifi.start()` before calling this function, then the result will only be pseudo-random, not truly random.
 
 #### Syntax
 `sodium.random.uniform(upper_bound)`
 
 #### Parameters
-- `upper_bound` must be an integer `<= 0xFFFFFFFF`.
+- `upper_bound` an integer.
 
 #### Returns
 An integer `>= 0` and `< upper_bound`
 
 ## sodium.random.buf()
-Generates `n` bytes of random data. Wifi must be started, by calling `wifi.start()`, before calling this function.
+Generates `n` bytes of random data. If WiFi is not started by calling `wifi.start()` before calling this function, then the result will only be pseudo-random, not truly random.
 
 #### Syntax
 `sodium.random.buf(n)`
