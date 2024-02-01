@@ -295,6 +295,7 @@ LUALIB_API void (luaL_lfsreload) (lua_State *L);
 LUALIB_API int  (luaL_posttask) (lua_State* L, int prio);
 LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
 #define luaL_pushlfsmodule(l) lua_pushlfsfunc(L)
+LUALIB_API bool (luaL_totoggle) (lua_State *L, int idx);
 
 /* }============================================================ */
 

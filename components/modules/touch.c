@@ -190,7 +190,7 @@ static int touch_create( lua_State *L ) {
   tp->is_intr = opt_checkbool(L, "intrInitAtStart", true);
   tp->thresTrigger = opt_checkint_range(L, "thresTrigger", TOUCH_TRIGGER_BELOW, TOUCH_TRIGGER_BELOW, TOUCH_TRIGGER_MAX);
 
-  if (tp->is_debug) ESP_LOGI(TAG, "isDebug: %d, filterMs: %d, lvolt: %d, hvolt: %d, atten: %d, slope: %d, intrInitAtStart: %d, thresTrigger: %d", 
+  if (tp->is_debug) ESP_LOGI(TAG, "isDebug: %d, filterMs: %lu, lvolt: %d, hvolt: %d, atten: %d, slope: %d, intrInitAtStart: %d, thresTrigger: %d",
     tp->is_debug, tp->filterMs, tp->lvolt, tp->hvolt, tp->atten, tp->slope, tp->is_intr, tp->thresTrigger);
 
   // get the field pad. this can be passed in as int or table of ints. pad = 0 || {0,1,2,3,4,5,6,7,8,9}
@@ -277,7 +277,7 @@ static int touch_create( lua_State *L ) {
     // Initialize and start a software filter to detect slight change of capacitance.
     if (tp->filterMs > 0) {
       touch_pad_filter_start(tp->filterMs);
-      if (tp->is_debug) ESP_LOGI(TAG, "Set filter period to %d ms", tp->filterMs );
+      if (tp->is_debug) ESP_LOGI(TAG, "Set filter period to %lu ms", tp->filterMs );
     }
 
     // Register touch interrupt ISR
@@ -320,7 +320,7 @@ static int touch_create( lua_State *L ) {
     // prevent false triggering when detecting slight change of capacitance. Need to call 
     // touch_pad_filter_start before all touch filter APIs
     if (tp->filterMs > 0) {
-      if (tp->is_debug) ESP_LOGI(TAG, "You provided a filter so turning on filter mode. filterMs: %d", tp->filterMs);
+      if (tp->is_debug) ESP_LOGI(TAG, "You provided a filter so turning on filter mode. filterMs: %lu", tp->filterMs);
       esp_err_t err = touch_pad_filter_start(tp->filterMs);
       if (err == ESP_ERR_INVALID_ARG) {
         ESP_LOGI(TAG, "Filter start parameter error");

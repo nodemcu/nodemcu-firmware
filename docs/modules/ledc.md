@@ -266,7 +266,7 @@ channel:fadewithstep(1000, 10, 10);
 Set LEDC fade function.
 
 #### Syntax
-`channel:fadewithstep(duty, direction, scale, cycleNum, stepNum [, wait])`
+`channel:fade(duty, direction, scale, cycleNum, stepNum [, wait])`
 
 #### Parameters
 - `duty` Set the start of the gradient duty.

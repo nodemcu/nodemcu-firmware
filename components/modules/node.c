@@ -5,6 +5,7 @@
 #include "platform.h"
 #include "task/task.h"
 #include "esp_system.h"
+#include "esp_timer.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"
@@ -111,9 +112,9 @@ static int node_bootreason( lua_State *L)
 #endif
 #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
     case GLITCH_RTC_RESET:
+    case EFUSE_RESET:
 #endif
 #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
-    case EFUSE_RESET:
     case USB_UART_CHIP_RESET:
     case USB_JTAG_CHIP_RESET:
     case POWER_GLITCH_RESET:

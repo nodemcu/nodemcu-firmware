@@ -231,6 +231,17 @@ Equivalent to `luaL_newmetatable()` for ROTable metatables.  Adds key / ROTable 
 
 This macro executes `luaL_unref(L, t, r)` and then assigns `r = LUA_NOREF`.
 
+#### luaL_totoggle
+
+`  bool luaL_totoggle(lua_State *L, int idx)`
+
+There are several ways of indicating a configuration toggle value:
+  - The modern Lua way, with a boolean (`true`/`false`)
+  - The "classic" Lua way, with `1`/`nil`
+  - The "C" way, with `1`/`0`
+
+When implementing C modules for NodeMCU and needing to indicate an on/off setting, the preference is to do it as a boolean. In the interest of ease of use on the other hand, it is however nice to also support the other styles. The `luaL_totoggle` function provides just that.
+
 ### Declaring modules and ROTables in NodeMCU
 
 All NodeMCU C library modules should include the standard header "`module.h`".  This internally includes `lnodemcu.h` and these together provide the macros to enable declaration of NodeMCU modules and ROTables within them.  All ROtable support macros are either prefixed by `LRO_` (Lua Read Only) or in the case of table entries `LROT_`. 

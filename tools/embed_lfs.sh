@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LUA_APP_SRC="$@"
+LUA_APP_SRC=("$@")
 
 MAP_FILE=build/nodemcu.map
 LUAC_OUTPUT=build/luac.out
@@ -15,43 +15,37 @@ if [ ! -f "${LUAC_CROSS}" ]; then
 	exit 1
 fi
 
-LFS_ADDR_SIZE=$(grep -E "0x[0-9a-f]+[ ]+0x[0-9a-f]+[ ]+esp-idf/embedded_lfs/libembedded_lfs.a\(lua.flash.store.reserved.S.obj\)" "${MAP_FILE}" | grep -v -w 0x0 | grep -v -w 0x24 | tr -s ' ')
-if [ -z "${LFS_ADDR_SIZE}" ]; then
-	echo "Error: LFS segment not found. Use 'make clean; make' perhaps?"
-	exit 1
+# Extract the start/end symbols of the LFS object, then calculate the
+# available size from that.
+LFS_ADDR=$(grep -E '0x[0-9a-f]+ +_binary_lua_flash_store_reserved_start' "${MAP_FILE}" | awk '{print $1}')
+LFS_ADDR_END=$(grep -E '0x[0-9a-f]+ +_binary_lua_flash_store_reserved_end' "${MAP_FILE}" | awk '{print $1}')
+if [ "${LFS_ADDR}" = "" ]
+then
+  echo "Error: LFS segment address not found"
+  exit 1
 fi
+LFS_SIZE=$((LFS_ADDR_END - LFS_ADDR))
 
-LFS_ADDR=$(echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 2)
-if [ -z "${LFS_ADDR}" ]; then
-	echo "Error: LFS segment address not found"
-	exit 1
-fi
-# The reported size is +4 due to the length field added by the IDF
-LFS_SIZE=$(( $(echo "${LFS_ADDR_SIZE}" | cut -d ' ' -f 3) - 4 ))
-if [ -z "${LFS_SIZE}" ]; then
-	echo "Error: LFS segment size not found"
-	exit 1
-fi
-
-echo "LFS segment address ${LFS_ADDR}, length ${LFS_SIZE}"
+printf "LFS segment address %s, length %s (0x%x)\n" "${LFS_ADDR}" "${LFS_SIZE}" "${LFS_SIZE}"
 
 if ${LUAC_CROSS} -v | grep -q 'Lua 5.1'
 then
   echo "Generating Lua 5.1 LFS image..."
-  ${LUAC_CROSS} -a ${LFS_ADDR} -m ${LFS_SIZE} -o ${LUAC_OUTPUT} ${LUA_APP_SRC}
+  ${LUAC_CROSS} -a "${LFS_ADDR}" -m ${LFS_SIZE} -o ${LUAC_OUTPUT} "${LUA_APP_SRC[@]}"
 else
   set -e
   echo "Generating intermediate Lua 5.3 LFS image..."
-  ${LUAC_CROSS} -f -m ${LFS_SIZE} -o ${LUAC_OUTPUT}.tmp ${LUA_APP_SRC}
+  ${LUAC_CROSS} -f -m ${LFS_SIZE} -o ${LUAC_OUTPUT}.tmp "${LUA_APP_SRC[@]}"
   echo "Converting to absolute LFS image..."
-  ${LUAC_CROSS} -F ${LUAC_OUTPUT}.tmp -a ${LFS_ADDR} -o ${LUAC_OUTPUT}
+  ${LUAC_CROSS} -F ${LUAC_OUTPUT}.tmp -a "${LFS_ADDR}" -o ${LUAC_OUTPUT}
   rm ${LUAC_OUTPUT}.tmp
 fi
+# shellcheck disable=SC2181
 if [ $? != 0 ]; then
 	echo "Error: luac.cross failed"
 	exit 1
 else
-  echo "Generated $(ls -l ${LUAC_OUTPUT} | cut -f5 -d' ') bytes of LFS data"
+  echo "Generated $(stat -c "%s" ${LUAC_OUTPUT}) bytes of LFS data"
 fi
 # cmake depencies don't seem to pick up the change to luac.out?
 rm -f build/lua.flash.store.reserved

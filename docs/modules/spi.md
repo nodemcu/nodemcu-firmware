@@ -6,6 +6,8 @@
 # SPI Bus
 The ESP32 contains 4 SPI bus hosts called `SPI`, `SPI1`, `HSPI`, and `VSPI`. `SPI` is locked to flash communication and is not available for the application. `SPI1` is currently also tied to flash support, but might be available in the future. Applications can currently only use the `HSPI` and `VSPI` hosts.
 
+On later models in the ESP32 series, the SPI hosts are simply referred to by number, and are available here as `spi.SPI1`, `spi.SPI2` and (if present) `spi.SPI3`.
+
 The host signals can be mapped to any suitable GPIO pins.
 
 !!! note

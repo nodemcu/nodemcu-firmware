@@ -42,6 +42,9 @@
 #include "esp_netif.h"
 #include <math.h>
 
+#define PMF_VAL_AVAILABLE 1
+#define PMF_VAL_REQUIRED  2
+
 static esp_netif_t *wifi_sta = NULL;
 static int scan_cb_ref = LUA_NOREF;
 
@@ -252,16 +255,18 @@ static int wifi_sta_config (lua_State *L)
   if (len > sizeof (cfg.sta.ssid))
     len = sizeof (cfg.sta.ssid);
   strncpy ((char *)cfg.sta.ssid, str, len);
+  lua_pop(L, 1);
 
   lua_getfield (L, 1, "pwd");
   str = luaL_optlstring (L, -1, "", &len);
   if (len > sizeof (cfg.sta.password))
     len = sizeof (cfg.sta.password);
   strncpy ((char *)cfg.sta.password, str, len);
+  lua_pop(L, 1);
 
   lua_getfield (L, 1, "bssid");
   cfg.sta.bssid_set = false;
-  if (lua_isstring (L, -1))
+  if (!lua_isnoneornil(L, -1))
   {
     const char *bssid = luaL_checklstring (L, -1, &len);
     const char *fmts[] = {
@@ -284,18 +289,76 @@ static int wifi_sta_config (lua_State *L)
     if (!cfg.sta.bssid_set)
       return luaL_error (L, "invalid BSSID: %s", bssid);
   }
+  lua_pop(L, 1);
 
   lua_getfield(L, 1, "pmf");
-  if (lua_isnumber(L, -1))
+  if (!lua_isnoneornil(L, -1))
   {
-    int pmf_mode = lua_tointeger(L, -1);
-    if (pmf_mode)
-      cfg.sta.pmf_cfg.capable = true;
-    if (pmf_mode == 2)
-      cfg.sta.pmf_cfg.required = true;
+    int pmf_mode = luaL_checkinteger(L, -1);
+    cfg.sta.pmf_cfg.required = (pmf_mode == PMF_VAL_REQUIRED);
   }
   else
-    cfg.sta.pmf_cfg.capable = true;
+    cfg.sta.pmf_cfg.required = false;
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "channel");
+  if (!lua_isnoneornil(L, -1))
+    cfg.sta.channel = luaL_checkinteger(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "scan_method");
+  if (!lua_isnoneornil(L, -1))
+  {
+    static const wifi_scan_method_t vals[] = {
+      WIFI_FAST_SCAN, WIFI_ALL_CHANNEL_SCAN,
+    };
+    static const char *keys[] = { "fast", "all", };
+    cfg.sta.scan_method = vals[luaL_checkoption(L, -1, NULL, keys)];
+  }
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "listen_interval");
+  if (!lua_isnoneornil(L, -1))
+    cfg.sta.listen_interval = luaL_checkinteger(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "sort_by");
+  if (!lua_isnoneornil(L, -1))
+  {
+    static const wifi_sort_method_t vals[] = {
+      WIFI_CONNECT_AP_BY_SIGNAL, WIFI_CONNECT_AP_BY_SECURITY,
+    };
+    static const char *keys[] = { "rssi", "authmode", };
+    cfg.sta.sort_method = vals[luaL_checkoption(L, -1, NULL, keys)];
+  }
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "threshold_rssi");
+  if (!lua_isnoneornil(L, -1))
+    cfg.sta.threshold.rssi = luaL_checkinteger(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "threshold_authmode");
+  if (!lua_isnoneornil(L, -1))
+    cfg.sta.threshold.authmode = luaL_checkinteger(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "rm");
+  cfg.sta.rm_enabled = luaL_totoggle(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "btm");
+  cfg.sta.btm_enabled = luaL_totoggle(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "mbo");
+  cfg.sta.mbo_enabled = luaL_totoggle(L, -1);
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "sae_pwe");
+  if (!lua_isnoneornil(L, -1))
+    cfg.sta.sae_pwe_h2e = luaL_checkinteger(L, -1);
+  lua_pop(L, 1);
 
   SET_SAVE_MODE(save);
   esp_err_t err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
@@ -323,6 +386,7 @@ static int wifi_sta_disconnect (lua_State *L)
 static int wifi_sta_getconfig (lua_State *L)
 {
   wifi_config_t cfg;
+  memset(&cfg, 0, sizeof(cfg));
   esp_err_t err = esp_wifi_get_config (WIFI_IF_STA, &cfg);
   if (err != ESP_OK)
     return luaL_error (L, "failed to get config, code %d", err);
@@ -343,6 +407,59 @@ static int wifi_sta_getconfig (lua_State *L)
     lua_pushstring (L, bssid_str);
     lua_setfield (L, -2, "bssid");
   }
+
+  lua_pushinteger(L,
+    cfg.sta.pmf_cfg.required ? PMF_VAL_REQUIRED : PMF_VAL_AVAILABLE);
+  lua_setfield(L, -2, "pmf");
+
+  const char *tmp;
+  switch(cfg.sta.scan_method)
+  {
+    case WIFI_FAST_SCAN: tmp = "fast"; break;
+    case WIFI_ALL_CHANNEL_SCAN: tmp = "all"; break;
+    default: tmp = NULL; break;
+  }
+  if (tmp)
+  {
+    lua_pushstring(L, tmp);
+    lua_setfield(L, -2, "scan_method");
+  }
+
+  lua_pushinteger(L, cfg.sta.channel);
+  lua_setfield(L, -2, "channel");
+
+  lua_pushinteger(L, cfg.sta.listen_interval);
+  lua_setfield(L, -2, "listen_interval");
+
+  switch(cfg.sta.sort_method)
+  {
+    case WIFI_CONNECT_AP_BY_SIGNAL: tmp = "rssi"; break;
+    case WIFI_CONNECT_AP_BY_SECURITY: tmp = "authmode"; break;
+    default: tmp = NULL; break;
+  }
+  if (tmp)
+  {
+    lua_pushstring(L, tmp);
+    lua_setfield(L, -2, "sort_by");
+  }
+
+  lua_pushinteger(L, cfg.sta.threshold.rssi);
+  lua_setfield(L, -2, "threshold_rssi");
+
+  lua_pushinteger(L, cfg.sta.threshold.authmode);
+  lua_setfield(L, -2, "threshold_authmode");
+
+  lua_pushboolean(L, cfg.sta.rm_enabled);
+  lua_setfield(L, -2, "rm");
+
+  lua_pushboolean(L, cfg.sta.btm_enabled);
+  lua_setfield(L, -2, "btm");
+
+  lua_pushboolean(L, cfg.sta.mbo_enabled);
+  lua_setfield(L, -2, "mbo");
+
+  lua_pushinteger(L, cfg.sta.sae_pwe_h2e);
+  lua_setfield(L, -2, "sae_pwe");
 
   return 1;
 }
@@ -453,6 +570,43 @@ static int wifi_sta_scan (lua_State *L)
 }
 
 
+static int wifi_sta_powersave(lua_State *L)
+{
+  static const wifi_ps_type_t vals[] = {
+    WIFI_PS_NONE, WIFI_PS_MIN_MODEM, WIFI_PS_MAX_MODEM,
+  };
+  static const char *keys[] = { "none", "min", "max" };
+
+  esp_err_t ret = esp_wifi_set_ps(vals[luaL_checkoption(L, 1, NULL, keys)]);
+  if (ret != ESP_OK)
+    return luaL_error(L, "set powersave failed, code %d", ret);
+
+  return 0;
+}
+
+
+static int wifi_sta_getpowersave(lua_State *L)
+{
+  wifi_ps_type_t ps;
+  esp_err_t ret = esp_wifi_get_ps(&ps);
+  if (ret != ESP_OK)
+    return luaL_error(L, "get powersave failed, code %d", ret);
+
+  const char *mode;
+  switch(ps)
+  {
+    case WIFI_PS_NONE: mode = "none"; break;
+    case WIFI_PS_MIN_MODEM: mode = "min"; break;
+    case WIFI_PS_MAX_MODEM: mode = "max"; break;
+    default:
+      return luaL_error(L, "unknown powersave mode??");
+  }
+  lua_pushstring(L, mode);
+
+  return 1;
+}
+
+
 LROT_BEGIN(wifi_sta, NULL, 0)
   LROT_FUNCENTRY( setip,       wifi_sta_setip )
   LROT_FUNCENTRY( sethostname, wifi_sta_sethostname)
@@ -464,10 +618,11 @@ LROT_BEGIN(wifi_sta, NULL, 0)
   LROT_FUNCENTRY( getmac,      wifi_sta_getmac )
   LROT_FUNCENTRY( on,          wifi_sta_on )
   LROT_FUNCENTRY( scan,        wifi_sta_scan )
+  LROT_FUNCENTRY( powersave,   wifi_sta_powersave )
+  LROT_FUNCENTRY( getpowersave,wifi_sta_getpowersave )
 
-  LROT_NUMENTRY(  PMF_OFF,       0 )
-  LROT_NUMENTRY(  PMF_AVAILABLE, 1 )
-  LROT_NUMENTRY(  PMF_REQUIRED,  2 )
+  LROT_NUMENTRY(  PMF_AVAILABLE, PMF_VAL_AVAILABLE )
+  LROT_NUMENTRY(  PMF_REQUIRED,  PMF_VAL_REQUIRED )
 LROT_END(wifi_sta, NULL, 0)
 
 NODEMCU_ESP_EVENT(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, on_scan_done);

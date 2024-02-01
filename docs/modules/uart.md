@@ -102,7 +102,7 @@ uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 1)
 ```
 
 ```lua
-uart.setup(2, 115200, 8, uart.PARITY_NONE, uart.STOPBITS_1, {tx = 16, rx = 17})
+uart.setup(2, 115200, 8, uart.PARITY_NONE, uart.STOPBITS_1, {tx = 17, rx = 16})
 ```
 
 ## uart.getconfig()

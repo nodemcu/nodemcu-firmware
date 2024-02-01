@@ -37,6 +37,7 @@
 #include "esp_system.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
+#include "spi_flash_mmap.h"
 
 static esp_ota_handle_t ota_handle;
 static const esp_partition_t *next;

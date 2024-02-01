@@ -179,6 +179,7 @@ LUALIB_API int  (luaL_posttask) ( lua_State* L, int prio );
 #define  LUA_TASK_LOW    0
 #define  LUA_TASK_MEDIUM 1
 #define  LUA_TASK_HIGH   2
+LUALIB_API int (luaL_totoggle) (lua_State *L, int idx);
 
 /* }====================================================== */
 
