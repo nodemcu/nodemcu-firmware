@@ -49,7 +49,7 @@ static int configure_channel(lua_State *L, rmt_config_t *config, rmt_mode_t mode
   lua_setmetatable(L, -2);
 
   // We have allocated the channel -- must free it if the rest of this method fails
-  int channel = platform_rmt_allocate(1, mode);
+  int channel = platform_rmt_allocate(config->mem_block_num, mode);
 
   if (channel < 0) {
     return luaL_error(L, "no spare RMT channel");
@@ -66,7 +66,7 @@ static int configure_channel(lua_State *L, rmt_config_t *config, rmt_mode_t mode
     return luaL_error(L, "Failed to configure RMT");
   }
 
-  rc = rmt_driver_install(config->channel, 1000, 0);
+  rc = rmt_driver_install(config->channel, config->mem_block_num * 600, 0);
   if (rc) {
     platform_rmt_release(config->channel);
     return luaL_error(L, "Failed to install RMT driver");
@@ -112,6 +112,13 @@ static int lrmt_txsetup(lua_State *L) {
       config.flags |= RMT_CHANNEL_FLAGS_INVERT_SIG;
     }
     lua_pop(L, 1);
+
+    lua_getfield(L, 3, "slots");
+    int slots = lua_tointeger(L, -1);
+    if (slots > 0 && slots <= 8) {
+      config.mem_block_num = slots;
+    }
+    lua_pop(L, 1);
   }
 
   configure_channel(L, &config, RMT_MODE_TX);
@@ -153,6 +160,13 @@ static int lrmt_rxsetup(lua_State *L) {
         return luaL_error(L, "idle_threshold must be in the range 0 - 65535");
       }
       config.rx_config.idle_threshold = threshold;
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 3, "slots");
+    int slots = lua_tointeger(L, -1);
+    if (slots > 0 && slots <= 8) {
+      config.mem_block_num = slots;
     }
     lua_pop(L, 1);
   }
@@ -202,6 +216,7 @@ static void handle_receive(void *param) {
       vRingbufferReturnItem(rb, (void *) items);
     }
   }
+  rmt_rx_stop(p->channel);
 
   p->dont_call = true;
   task_post_high(cb_task_id, (task_param_t) p);
