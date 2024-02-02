@@ -413,7 +413,9 @@ static int register_weak_ref(lua_State *L)
 
   lua_remove(L, -2);   // Remove the original ivalue
 
-  return luaL_ref(L, LUA_REGISTRYINDEX); // this pops the new_table
+  int result = luaL_ref(L, LUA_REGISTRYINDEX); // this pops the new_table
+  WS_DEBUG("register_weak_ref returning %d\n", result);
+  return result;
 }
 
 // Returns the value of the weak ref on the stack
@@ -423,15 +425,19 @@ static bool deref_weak_ref(lua_State *L, int ref)
   lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);
+    WS_DEBUG("deref_weak_ref(%d) has nothing in registry\n", ref);
     return false;
   }
   lua_rawgeti(L, -1, 1);
 
   // Either we have nil, or we have the underlying object
   if (lua_isnil(L, -1)) {
-    lua_pop(L, 1);
+    lua_pop(L, 2);
+    WS_DEBUG("deref_weak_ref(%d) has nothing in weak table\n", ref);
     return false;
   }
+
+  lua_remove(L, -2);  // remove the table
 
   return true;
 }
@@ -462,6 +468,7 @@ static void free_sess_ctx(void *ctx) {
 static void ws_clear(lua_State *L, ws_connection_t *ws)
 {
   luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_weak_ref);
+  luaL_unref2(L, LUA_REGISTRYINDEX, ws->self_ref);
   if (ws->text_fn_ref > 0) {
     luaL_unref2(L, LUA_REGISTRYINDEX, ws->text_fn_ref);
   }
@@ -666,6 +673,7 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
         if (req_info->method == HTTP_WEBSOCKET_GET) {
           // web socket
           ws_connection_t *ws = (ws_connection_t *) lua_newuserdata(L, sizeof(*ws));
+          WS_DEBUG("Created new WS object\n");
           memset(ws, 0, sizeof(*ws));
           luaL_getmetatable(L, WS_METATABLE);
           lua_setmetatable(L, -2);
@@ -675,16 +683,15 @@ static void dynamic_handler_lvm(task_param_t param, task_prio_t prio)
           ws->fd = httpd_req_to_sockfd(req_info->req);
           ws->self_ref = LUA_NOREF;
 
-          // Set the session context so we know what is going on.
-          req_info->req->sess_ctx = (void *) ws->self_weak_ref;
-          req_info->req->free_ctx = free_sess_ctx;
-
           int err = luaL_pcallx(L, 2, 0);
           if (err) {
             tr.request_type = SEND_ERROR;
             ws_clear(L, ws);
           } else {
             tr.request_type = SEND_OK;
+            // Set the session context so we know what is going on.
+            req_info->req->sess_ctx = (void *)ws->self_weak_ref;
+            req_info->req->free_ctx = free_sess_ctx;
           }
         }
       } else
@@ -1035,18 +1042,24 @@ static void ws_async_close(void *arg) {
 }
 
 static int ws_close(lua_State *L) {
-  ws_connection_t *ws = (ws_connection_t*)luaL_checkudata(L, 1, WS_METATABLE);
+  ws_connection_t *ws = (ws_connection_t *)luaL_checkudata(L, 1, WS_METATABLE);
 
   if (!ws->closed) {
     ws->closed = true;
     async_send_t *async_close = malloc(sizeof(async_send_t));
     async_close->hd = ws->handle;
     async_close->fd = ws->fd;
+    WS_DEBUG("ws_close called and now marked closed\n");
     httpd_queue_work(ws->handle, ws_async_close, async_close);
   } else {
     WS_DEBUG("ws_close called when already closed\n");
   }
   return 0;
+}
+
+static int ws_gcclose(lua_State *L) {
+  WS_DEBUG("gc cleaning up block\n");
+  return ws_close(L);
 }
 
 // event types: text, binary, close
@@ -1113,7 +1126,7 @@ static int ws_binary(lua_State *L) {
 
 LROT_BEGIN(httpd_ws_mt, NULL, LROT_MASK_GC_INDEX)
   LROT_TABENTRY( __index, httpd_ws_mt )
-  LROT_FUNCENTRY( __gc,        ws_close )
+  LROT_FUNCENTRY( __gc,        ws_gcclose )
   LROT_FUNCENTRY( close,       ws_close )
   LROT_FUNCENTRY( on,          ws_on )
   LROT_FUNCENTRY( text,        ws_text )
