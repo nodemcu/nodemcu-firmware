@@ -76,7 +76,7 @@ configured.
 httpd.start({
   webroot = "<static file prefix>",
   max_handlers = 20,
-  auto_index = httpd.INDEX_NONE || httpd.INDEX_ROOT || httpd.INDEX_ALL,
+  auto_index = httpd.INDEX_ALL,
 })
 ```
 
@@ -288,7 +288,7 @@ nil
 httpd.start({
   webroot = "<static file prefix>",
   max_handlers = 20,
-  auto_index = httpd.INDEX_NONE + httpd.INDEX_ROOT + httpd.INDEX_ALL,
+  auto_index = httpd.INDEX_ALL,
 })
 
 function echo_ws(req, ws)
