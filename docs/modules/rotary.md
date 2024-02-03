@@ -35,9 +35,9 @@ Initialize the nodemcu to talk to a rotary encoder switch.
 `switch = rotary.setup(pina, pinb[, pinpress[, longpress_time_ms[, dblclick_time_ms]]])`
 
 #### Parameters
-- `pina` This is a GPIO number (excluding 0) and connects to pin phase A on the rotary switch.
-- `pinb` This is a GPIO number (excluding 0) and connects to pin phase B on the rotary switch.
-- `pinpress` (optional) This is a GPIO number (excluding 0) and connects to the press switch.
+- `pina` This is a GPIO number and connects to pin phase A on the rotary switch.
+- `pinb` This is a GPIO number and connects to pin phase B on the rotary switch.
+- `pinpress` (optional) This is a GPIO number and connects to the press switch.
 - `longpress_time_ms` (optional) The number of milliseconds (default 500) of press to be considered a long press.
 - `dblclick_time_ms` (optional) The number of milliseconds (default 500) between a release and a press for the next release to be considered a double click.
 
@@ -48,6 +48,10 @@ Nothing. If the arguments are in error, or the operation cannot be completed, th
 #### Example
 
     switch = rotary.setup(5, 6, 7)
+
+#### Notes
+
+This module uses pullups on the GPIO pins to detect the key presses. However, not all GPIO pins support pullups and so, if one of those pins is used, then there needs to be a real external resistor pullup.
 
 ## switch:on()
 Sets a callback on specific events.

@@ -145,13 +145,13 @@ static int lrotary_setup( lua_State* L )
   d->longpress_delay_us = LONGPRESS_DELAY_US;
 
   int phase_a = luaL_checkinteger(L, 1);
-  luaL_argcheck(L, platform_gpio_exists(phase_a) && phase_a > 0, 1, "Invalid pin");
+  luaL_argcheck(L, platform_gpio_exists(phase_a), 1, "Invalid pin");
   int phase_b = luaL_checkinteger(L, 2);
-  luaL_argcheck(L, platform_gpio_exists(phase_b) && phase_b > 0, 2, "Invalid pin");
+  luaL_argcheck(L, platform_gpio_exists(phase_b), 2, "Invalid pin");
   int press;
   if (nargs >= 3) {
     press = luaL_checkinteger(L, 3);
-    luaL_argcheck(L, platform_gpio_exists(press) && press > 0, 3, "Invalid pin");
+    luaL_argcheck(L, platform_gpio_exists(press), 3, "Invalid pin");
   } else {
     press = -1;
   }
