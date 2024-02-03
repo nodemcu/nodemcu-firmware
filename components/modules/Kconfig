@@ -228,6 +228,7 @@ menu "NodeMCU modules"
     config NODEMCU_CMODULE_ROTARY
         bool "Rotary switch input device"
         default "n"
+        select NODEMCU_CMODULE_GPIO
         help
             Includes the rotary module which allows easy access to one or more rotary switches.
 

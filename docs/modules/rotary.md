@@ -80,8 +80,8 @@ Events will be delivered in order, but there may be missing TURN events. If ther
 queue of events, then PRESS and RELEASE events may also be missed. Multiple pending TURN events
 are typically dispatched as one TURN callback with the final position as its parameter.
 
-Some switches have 4 steps per detent. This means that, in practice, the application
-should divide the position by 4 and use that to determine the number of clicks. It is
+Some switches have 4 (or 2) steps per detent. This means that, in practice, the application
+should divide the position by 4 (or 2) and use that to determine the number of clicks. It is
 unlikely that a switch will ever reach 30 bits of rotation in either direction -- some
 are rated for under 50,000 revolutions.
 

@@ -231,7 +231,6 @@ static bool lrotary_dequeue_single(lua_State* L, DATA *d)
   bool something_pending = false;
 
   if (d) {
-    // This chnnel is open
     rotary_event_t result;
 
     if (rotary_getevent(d->handle, &result)) {
