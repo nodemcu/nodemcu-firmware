@@ -27,10 +27,12 @@
 
 #include "driver/gpio.h"
 
-
+#define M_DEBUG printf
 
 #define MATRIX_PRESS_INDEX	0
 #define MATRIX_RELEASE_INDEX	1
+
+#define MASK(x) (1 << MATRIX_##x##_INDEX)
 
 #define MATRIX_ALL		0x3
 
@@ -38,25 +40,30 @@
 #define QUEUE_SIZE 8
 
 typedef struct {
+  int32_t character;    // 1 + character for press, -1 - character for release
+  uint32_t time_us;
+} matrix_event_t;
+
+typedef struct {
   uint8_t column_count;
   uint8_t row_count;
   uint8_t *columns;
   uint8_t *rows;
+  bool waiting_for_release;
+  bool open;
   int character_ref;
   int callback[CALLBACK_COUNT];
   esp_timer_handle_t timer_handle;
   int8_t task_queued;
   uint32_t read_offset;   // Accessed by task
   uint32_t write_offset;  // Accessed by ISR
-  uint32_t last_press_change_time;
-  int tasknumber;
+  uint8_t last_character;
   matrix_event_t queue[QUEUE_SIZE];
   void *callback_arg;
 } DATA;
 
 static task_handle_t tasknumber;
 static void lmatrix_timer_done(void *param);
-static void lmatrix_check_timer(DATA *d, uint32_t time_us, bool dotimer);
 //
 //  Queue is empty if read == write.
 //  However, we always want to keep the previous value
@@ -67,10 +74,10 @@ static void lmatrix_check_timer(DATA *d, uint32_t time_us, bool dotimer);
 #define HAS_QUEUED_DATA(d) (d->read_offset < d->write_offset)
 #define HAS_QUEUE_SPACE(d) (d->read_offset + QUEUE_SIZE - 1 > d->write_offset)
 
-#define REPLACE_STATUS(d, x)                            \
+#define REPLACE_IT(d, x)                            \
   (d->queue[(d->write_offset - 1) & (QUEUE_SIZE - 1)] = \
        (matrix_event_t){(x), esp_timer_get_time()})
-#define QUEUE_STATUS(d, x)                            \
+#define QUEUE_IT(d, x)                            \
   (d->queue[(d->write_offset++) & (QUEUE_SIZE - 1)] = \
        (matrix_event_t){(x), esp_timer_get_time()})
 
@@ -79,19 +86,6 @@ static void lmatrix_check_timer(DATA *d, uint32_t time_us, bool dotimer);
   if (d->read_offset < d->write_offset) { \
     d->read_offset++;                     \
   }
-
-typedef struct matrix_driver_handle {
-  int8_t phase_a_pin;
-  int8_t phase_b_pin;
-  int8_t press_pin;
-  int8_t task_queued;
-  uint32_t read_offset;   // Accessed by task
-  uint32_t write_offset;  // Accessed by ISR
-  uint32_t last_press_change_time;
-  int tasknumber;
-  matrix_event_t queue[QUEUE_SIZE];
-  void *callback_arg;
-} *matrix_driver_handle_t;
 
 static void set_gpio_mode_input(int pin, gpio_int_type_t intr) {
   gpio_config_t config = {.pin_bit_mask = 1LL << pin,
@@ -105,7 +99,7 @@ static void set_gpio_mode_input(int pin, gpio_int_type_t intr) {
 
 static void set_gpio_mode_output(int pin) {
   gpio_config_t config = {.pin_bit_mask = 1LL << pin,
-                          .mode = GPIO_MODE_OUTPUT,
+                          .mode = GPIO_MODE_OUTPUT_OD,
                           .pull_up_en = GPIO_PULLUP_DISABLE,
                           .pull_down_en = GPIO_PULLDOWN_DISABLE
                         };
@@ -113,24 +107,28 @@ static void set_gpio_mode_output(int pin) {
   gpio_config(&config);
 }
 
-static void matrix_clear_pin(int pin) {
-  if (pin >= 0) {
-    gpio_isr_handler_remove(pin);
-    set_gpio_mode_input(pin, GPIO_INTR_DISABLE);
-  }
-}
-
-static void set_row_interrupts(DATA *d, bool enable)
-{
-  for (int i = 0; i < d->row_count; i++) {
-    set_gpio_mode_input(d->row[i], enable ? GPIO_INTR_NEGEDGE : GPIO_INTR_DISABLE);
-  }
-}
-
-static int set_columns_as_input(DATA *d)
-{
+static void set_columns(DATA *d, int level) {
   for (int i = 0; i < d->column_count; i++) {
-    set_gpio_mode_input(d->column[i], GPIO_INTR_DISABLE);
+    gpio_set_level(d->columns[i], level);
+  }
+}
+
+static void initialize_pins(DATA *d) {
+  for (int i = 0; i < d->column_count; i++) {
+    set_gpio_mode_output(d->columns[i]);
+  }
+
+  set_columns(d, 0);
+
+  for (int i = 0; i < d->row_count; i++) {
+    set_gpio_mode_input(d->rows[i], d->waiting_for_release ? GPIO_INTR_POSEDGE
+                                                           : GPIO_INTR_NEGEDGE);
+  }
+}
+
+static void disable_row_interrupts(DATA *d) {
+  for (int i = 0; i < d->row_count; i++) {
+    gpio_set_intr_type(d->rows[i], GPIO_INTR_DISABLE);
   }
 }
 
@@ -140,97 +138,90 @@ int matrix_close(DATA *d) {
     return 0;
   }
 
+  disable_row_interrupts(d);
+
   for (int i = 0; i < d->row_count; i++) {
-    matrix_clear_pin(d->row[i]);
+    gpio_isr_handler_remove(d->rows[i]);
   }
 
-  set_columns_as_input(d);
+  for (int i = 0; i < d->column_count; i++) {
+    set_gpio_mode_input(d->columns[i], GPIO_INTR_DISABLE);
+  }
 
   return 0;
+}
+
+// Character returned is 0 .. max if pressed. -1 if not.
+static int matrix_get_character(DATA *d, bool trace)
+{
+  set_columns(d, 1);
+  disable_row_interrupts(d);
+
+  int character = -1;
+
+  // We are either waiting for a negative edge (keypress) or a positive edge
+  // (keyrelease)
+
+  //M_DEBUG("matrix_get_character called\n");
+
+  for (int i = 0; i < d->column_count && character < 0; i++) {
+    gpio_set_level(d->columns[i], 0);
+
+    for (int j = 0; j < d->row_count && character < 0; j++) {
+      if (gpio_get_level(d->rows[j]) == 0) {
+        if (trace) {
+          M_DEBUG("Found keypress at %d %d\n", i, j);
+        }
+        // We found a keypress
+        character = j * d->column_count + i;
+      }
+    }
+
+    gpio_set_level(d->columns[i], 1);
+  }
+
+  //M_DEBUG("returning %d\n", character);
+
+  return character;
+}
+
+static void matrix_queue_character(DATA *d, int character)
+{
+  // If character is >= 0 then we have found the character -- so send it.
+  // M_DEBUG("Skipping queuing\n");
+
+  if (d->waiting_for_release == (character < 0)) {
+    if (character >= 0) {
+      character++;
+      d->last_character = character;
+    } else {
+      character = -d->last_character;
+    }
+
+    if (HAS_QUEUE_SPACE(d)) {
+      QUEUE_IT(d, character);
+      if (!d->task_queued) {
+        if (task_post_medium(tasknumber, (task_param_t)d)) {
+          d->task_queued = 1;
+        }
+      }
+    }
+  }
 }
 
 static void matrix_interrupt(void *arg) {
   // This function runs with high priority
   DATA *d = (DATA *)arg;
 
-  uint32_t now = esp_timer_get_time();
+  int character = matrix_get_character(d, false);
 
-  int i;
+  matrix_queue_character(d, character);
 
-  set_columns_as_input(d);
-  set_row_interrupts(d, false);
-
-  int character = -1;
-
-  for (int i = 0; i < d->column_count && character < 0; i++) {
-    set_gpio_mode_output(d->columns[i]);
-    gpio_set_level(d->columns[i], 0);
-
-    for (int j = 0; i < d->row_count && character < 0; j++) {
-      if (gpio_get_level(d->rows[j]) == 0) {
-        // We found a keypress
-        character = j * d->column_count + i;
-      }
-    }
-
-    set_gpio_mode_input(d->columns[i], GPIO_INTR_DISABLE);
-  }
-
-  
-
-  // If character is >= 0 then we have found the character -- so send it.
-
-  if (last_status != new_status) {
-    // Either we overwrite the status or we add a new one
-    if (!HAS_QUEUED_DATA(d) || STATUS_IS_PRESSED(last_status ^ new_status) ||
-        STATUS_IS_PRESSED(last_status ^ GET_PREV_STATUS(d).pos)) {
-      if (HAS_QUEUE_SPACE(d)) {
-        QUEUE_STATUS(d, new_status);
-        if (!d->task_queued) {
-          if (task_post_medium(d->tasknumber, (task_param_t)d->callback_arg)) {
-            d->task_queued = 1;
-          }
-        }
-      } else {
-        REPLACE_STATUS(d, new_status);
-      }
-    } else {
-      REPLACE_STATUS(d, new_status);
-    }
-  }
+  d->waiting_for_release = character >= 0;
+  esp_timer_start_once(d->timer_handle, 5000);
 }
 
-void matrix_event_handled(matrix_driver_handle_t d) { d->task_queued = 0; }
-
-// The pin numbers are actual platform GPIO numbers
-matrix_driver_handle_t matrix_setup(int phase_a, int phase_b, int press,
-                                    task_handle_t tasknumber, void *arg) {
-  matrix_driver_handle_t d = (matrix_driver_handle_t)calloc(1, sizeof(*d));
-  if (!d) {
-    return NULL;
-  }
-
-  d->tasknumber = tasknumber;
-  d->callback_arg = arg;
-
-  set_gpio_mode(phase_a, GPIO_INTR_ANYEDGE);
-  gpio_isr_handler_add(phase_a, matrix_interrupt, d);
-  d->phase_a_pin = phase_a;
-
-  set_gpio_mode(phase_b, GPIO_INTR_ANYEDGE);
-  gpio_isr_handler_add(phase_b, matrix_interrupt, d);
-  d->phase_b_pin = phase_b;
-
-  if (press >= 0) {
-    set_gpio_mode(press, GPIO_INTR_ANYEDGE);
-    gpio_isr_handler_add(press, matrix_interrupt, d);
-  }
-  d->press_pin = press;
-
-  return d;
-}
-
-bool matrix_has_queued_event(matrix_driver_handle_t d) {
+bool matrix_has_queued_event(DATA *d) {
   if (!d) {
     return false;
   }
@@ -239,7 +230,7 @@ bool matrix_has_queued_event(matrix_driver_handle_t d) {
 }
 
 // Get the oldest event in the queue and remove it (if possible)
-bool matrix_getevent(matrix_driver_handle_t d, matrix_event_t *resultp) {
+static bool matrix_getevent(DATA *d, matrix_event_t *resultp) {
   matrix_event_t result = {0};
 
   if (!d) {
@@ -259,14 +250,6 @@ bool matrix_getevent(matrix_driver_handle_t d, matrix_event_t *resultp) {
   *resultp = result;
 
   return status;
-}
-
-int matrix_getpos(matrix_driver_handle_t d) {
-  if (!d) {
-    return -1;
-  }
-
-  return GET_LAST_STATUS(d).pos;
 }
 
 static void callback_free_one(lua_State *L, int *cb_ptr)
@@ -338,11 +321,18 @@ static void callback_call(lua_State* L, DATA *d, int cbnum, int key, uint32_t ti
   }
 }
 
+static void getpins(lua_State *L, int argno, int count, uint8_t *dest)
+{
+  for (int i = 1; i <= count; i++) {
+    lua_rawgeti(L, argno, i);
+    *dest++ = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
 // Lua: setup({cols}, {rows}, {characters})
 static int lmatrix_setup( lua_State* L )
 {
-  int nargs = lua_gettop(L);
-
   // Get the sizes of the first two tables
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checktype(L, 2, LUA_TTABLE);
@@ -354,7 +344,6 @@ static int lmatrix_setup( lua_State* L )
   if (columns > 255 || rows > 255) {
     return luaL_error(L, "Too many rows or columns");
   }
-
 
   DATA *d = (DATA *)lua_newuserdata(L, sizeof(DATA) + rows + columns);
   if (!d) return luaL_error(L, "not enough memory");
@@ -376,20 +365,21 @@ static int lmatrix_setup( lua_State* L )
 
   esp_timer_create(&timer_args, &d->timer_handle);
 
-  int i;
-  for (i = 0; i < CALLBACK_COUNT; i++) {
+  for (int i = 0; i < CALLBACK_COUNT; i++) {
     d->callback[i] = LUA_NOREF;
   }
-
-  getpins(L, 1, columns, &d->columns);
-  getpins(L, 2, rows, &d->rows);
+  getpins(L, 1, columns, d->columns);
+  getpins(L, 2, rows, d->rows);
   lua_pushvalue(L, 3);
   d->character_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-  d->handle = matrix_setup(phase_a, phase_b, press, tasknumber, d);
-  if (!d->handle) {
-    return luaL_error(L, "Unable to setup matrix switch.");
+  d->open = true;
+
+  for (int i = 0; i < d->row_count; i++) {
+    gpio_isr_handler_add(d->rows[i], matrix_interrupt, d);
   }
+  initialize_pins(d);
+
   return 1;
 }
 
@@ -398,14 +388,18 @@ static int lmatrix_close( lua_State* L )
 {
   DATA *d = (DATA *)luaL_checkudata(L, 1, "matrix.keyboard");
 
-  if (d->handle) {
+  if (d->open) {
     callback_free(L, d, MATRIX_ALL);
 
-    if (matrix_close( d->handle )) {
+    if (matrix_close( d )) {
       return luaL_error( L, "Unable to close switch." );
     }
 
-    d->handle = NULL;
+    esp_timer_stop(d->timer_handle);
+    esp_timer_delete(d->timer_handle);
+    luaL_unref(L, LUA_REGISTRYINDEX, d->character_ref);
+
+    d->open = false;
   }
   return 0;
 }
@@ -436,50 +430,14 @@ static bool lmatrix_dequeue_single(lua_State* L, DATA *d)
   if (d) {
     matrix_event_t result;
 
-    if (matrix_getevent(d->handle, &result)) {
-      int pos = result.pos;
+    if (matrix_getevent(d, &result)) {
+      int character = result.character;
 
-      lmatrix_check_timer(d, result.time_us, 0);
+      callback_call(L, d, character > 0 ? MATRIX_PRESS_INDEX : MATRIX_RELEASE_INDEX, character < 0 ? -character : character, result.time_us);
 
-      if (pos != d->lastpos) {
-        // We have something to enqueue
-        if ((pos ^ d->lastpos) & 0x7fffffff) {
-          // Some turning has happened
-          callback_call(L, d, matrix_TURN_INDEX, (pos << 1) >> 1, result.time_us);
-        }
-        if ((pos ^ d->lastpos) & 0x80000000) {
-          // pressing or releasing has happened
-          callback_call(L, d, (pos & 0x80000000) ? matrix_PRESS_INDEX : matrix_RELEASE_INDEX, (pos << 1) >> 1, result.time_us);
-          if (pos & 0x80000000) {
-            // Press
-            if (d->last_recent_event_was_release && result.time_us - d->last_event_time < d->click_delay_us) {
-              d->possible_dbl_click = 1;
-            }
-            d->last_recent_event_was_press = 1;
-            d->last_recent_event_was_release = 0;
-          } else {
-            // Release
-            d->last_recent_event_was_press = 0;
-            if (d->possible_dbl_click) {
-              callback_call(L, d, matrix_DBLCLICK_INDEX, (pos << 1) >> 1, result.time_us);
-              d->possible_dbl_click = 0;
-              // Do this to suppress the CLICK event
-              d->last_recent_event_was_release = 0;
-            } else {
-              d->last_recent_event_was_release = 1;
-            }
-          }
-          d->last_event_time = result.time_us;
-        }
-
-        d->lastpos = pos;
-      }
-
-      matrix_event_handled(d->handle);
-      something_pending = matrix_has_queued_event(d->handle);
+      d->task_queued = 0;
+      something_pending = matrix_has_queued_event(d);
     }
-
-    lmatrix_check_timer(d, esp_timer_get_time(), 1);
   }
 
   return something_pending;
@@ -489,47 +447,29 @@ static void lmatrix_timer_done(void *param)
 {
   DATA *d = (DATA *) param;
 
-  d->timer_running = 0;
+  // We need to see if the key is still pressed, and if so, enable rising edge interrupts
 
-  lmatrix_check_timer(d, esp_timer_get_time(), 1);
-}
+  int character = matrix_get_character(d, true);
 
-static void lmatrix_check_timer(DATA *d, uint32_t time_us, bool dotimer)
-{
-  uint32_t delay = time_us - d->last_event_time;
-  if (d->timer_running) {
-    esp_timer_stop(d->timer_handle);
-    d->timer_running = 0;
+  M_DEBUG("Timer fired with character %d (waiting for release %d)\n", character, d->waiting_for_release);
+
+  matrix_queue_character(d, character);
+  d->waiting_for_release = (character >= 0);
+
+  M_DEBUG("Timer: Waiting for release is %d\n", d->waiting_for_release);
+
+  for (int i = 0; i < d->row_count; i++) {
+    gpio_set_intr_type(d->rows[i], d->waiting_for_release ? GPIO_INTR_POSEDGE
+                                                          : GPIO_INTR_NEGEDGE);
   }
-
-  int timeout = -1;
-
-  if (d->last_recent_event_was_press) {
-    if (delay > d->longpress_delay_us) {
-      callback_call(lua_getstate(), d, matrix_LONGPRESS_INDEX, (d->lastpos << 1) >> 1, d->last_event_time + d->longpress_delay_us);
-      d->last_recent_event_was_press = 0;
-    } else {
-      timeout = (d->longpress_delay_us - delay) / 1000;
-    }
-  }
-  if (d->last_recent_event_was_release) {
-    if (delay > d->click_delay_us) {
-      callback_call(lua_getstate(), d, matrix_CLICK_INDEX, (d->lastpos << 1) >> 1, d->last_event_time + d->click_delay_us);
-      d->last_recent_event_was_release = 0;
-    } else {
-      timeout = (d->click_delay_us - delay) / 1000;
-    }
-  }
-
-  if (dotimer && timeout >= 0) {
-    d->timer_running = 1;
-    esp_timer_start_once(d->timer_handle, timeout + 1);
-  }
+  set_columns(d, 0);
 }
 
 static void lmatrix_task(task_param_t param, task_prio_t prio)
 {
   (void) prio;
+
+  M_DEBUG("Task invoked\n");
 
   bool need_to_post = false;
   lua_State *L = lua_getstate();
@@ -545,6 +485,8 @@ static void lmatrix_task(task_param_t param, task_prio_t prio)
     // If there is pending stuff, queue another task
     task_post_medium(tasknumber, param);
   }
+
+  M_DEBUG("Task done\n");
 }
 
 
@@ -571,4 +513,4 @@ static int matrix_open(lua_State *L) {
   return 0;
 }
 
-NODEMCU_MODULE(matrix, "matrix", matrix, matrix_open);
+NODEMCU_MODULE(MATRIX, "matrix", matrix, matrix_open);
