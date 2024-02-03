@@ -42,7 +42,7 @@ Initialize the nodemcu to talk to a rotary encoder switch.
 - `dblclick_time_ms` (optional) The number of milliseconds (default 500) between a release and a press for the next release to be considered a double click.
 
 #### Returns
-Nothing. If the arguments are in error, or the operation cannot be completed, then an error is thrown.
+A switch object that can be used for the operations below.
 
 
 #### Example
