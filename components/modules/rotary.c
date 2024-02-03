@@ -38,7 +38,7 @@ typedef struct {
   int last_recent_event_was_release : 1;
   int timer_running : 1;
   int possible_dbl_click : 1;
-  uint8_t id;
+  struct rotary_driver_handle *handle;
   int click_delay_us;
   int longpress_delay_us;
   uint32_t last_event_time;
@@ -46,7 +46,6 @@ typedef struct {
   esp_timer_handle_t timer_handle;
 } DATA;
 
-static DATA *data[ROTARY_CHANNEL_COUNT];
 static task_handle_t tasknumber;
 static void lrotary_timer_done(void *param);
 static void lrotary_check_timer(DATA *d, uint32_t time_us, bool dotimer);
@@ -59,15 +58,13 @@ static void callback_free_one(lua_State *L, int *cb_ptr)
   }
 }
 
-static void callback_free(lua_State* L, unsigned int id, int mask)
+static void callback_free(lua_State* L, DATA *d, int mask)
 {
-  DATA *d = data[id];
-
   if (d) {
     int i;
     for (i = 0; i < CALLBACK_COUNT; i++) {
       if (mask & (1 << i)) {
-	callback_free_one(L, &d->callback[i]);
+        callback_free_one(L, &d->callback[i]);
       }
     }
   }
@@ -85,9 +82,8 @@ static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number)
   return -1;
 }
 
-static int callback_set(lua_State* L, int id, int mask, int arg_number)
+static int callback_set(lua_State* L, DATA *d, int mask, int arg_number)
 {
-  DATA *d = data[id];
   int result = 0;
 
   int i;
@@ -120,35 +116,16 @@ static void callback_call(lua_State* L, DATA *d, int cbnum, int arg, uint32_t ti
   }
 }
 
-int platform_rotary_exists( unsigned int id )
-{
-  return (id < ROTARY_CHANNEL_COUNT);
-}
-
-// Lua: setup(id, phase_a, phase_b [, press])
+// Lua: setup(phase_a, phase_b [, press])
 static int lrotary_setup( lua_State* L )
 {
-  unsigned int id;
+  int nargs = lua_gettop(L);
 
-  id = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( rotary, id );
-
-  if (rotary_close(id)) {
-    return luaL_error( L, "Unable to close switch." );
-  }
-  callback_free(L, id, ROTARY_ALL);
-
-  if (!data[id]) {
-    data[id] = (DATA *) calloc(1, sizeof(DATA));
-    if (!data[id]) {
-      return -1;
-    }
-  }
-
-  DATA *d = data[id];
+  DATA *d = (DATA *)lua_newuserdata(L, sizeof(DATA));
+  if (!d) return luaL_error(L, "not enough memory");
   memset(d, 0, sizeof(*d));
-
-  d->id = id;
+  luaL_getmetatable(L, "rotary.switch");
+  lua_setmetatable(L, -2);
 
   esp_timer_create_args_t timer_args = {
     .callback = lrotary_timer_done,
@@ -167,90 +144,83 @@ static int lrotary_setup( lua_State* L )
   d->click_delay_us = CLICK_DELAY_US;
   d->longpress_delay_us = LONGPRESS_DELAY_US;
 
-  int phase_a = luaL_checkinteger(L, 2);
-  luaL_argcheck(L, platform_gpio_exists(phase_a) && phase_a > 0, 2, "Invalid pin");
-  int phase_b = luaL_checkinteger(L, 3);
-  luaL_argcheck(L, platform_gpio_exists(phase_b) && phase_b > 0, 3, "Invalid pin");
+  int phase_a = luaL_checkinteger(L, 1);
+  luaL_argcheck(L, platform_gpio_exists(phase_a) && phase_a > 0, 1, "Invalid pin");
+  int phase_b = luaL_checkinteger(L, 2);
+  luaL_argcheck(L, platform_gpio_exists(phase_b) && phase_b > 0, 2, "Invalid pin");
   int press;
-  if (lua_gettop(L) >= 4) {
-    press = luaL_checkinteger(L, 4);
-    luaL_argcheck(L, platform_gpio_exists(press) && press > 0, 4, "Invalid pin");
+  if (nargs >= 3) {
+    press = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, platform_gpio_exists(press) && press > 0, 3, "Invalid pin");
   } else {
     press = -1;
   }
 
-  if (lua_gettop(L) >= 5) {
-    d->longpress_delay_us = 1000 * luaL_checkinteger(L, 5);
-    luaL_argcheck(L, d->longpress_delay_us > 0, 5, "Invalid timeout");
+  if (nargs >= 4) {
+    d->longpress_delay_us = 1000 * luaL_checkinteger(L, 4);
+    luaL_argcheck(L, d->longpress_delay_us > 0, 4, "Invalid timeout");
   }
 
-  if (lua_gettop(L) >= 6) {
-    d->click_delay_us = 1000 * luaL_checkinteger(L, 6);
-    luaL_argcheck(L, d->click_delay_us > 0, 6, "Invalid timeout");
+  if (nargs >= 5) {
+    d->click_delay_us = 1000 * luaL_checkinteger(L, 5);
+    luaL_argcheck(L, d->click_delay_us > 0, 5, "Invalid timeout");
   }
 
-  if (rotary_setup(id, phase_a, phase_b, press, tasknumber)) {
+  d->handle = rotary_setup(phase_a, phase_b, press, tasknumber, d);
+  if (!d->handle) {
     return luaL_error(L, "Unable to setup rotary switch.");
   }
-  return 0;
+  return 1;
 }
 
-// Lua: close( id )
+// Lua: close( )
 static int lrotary_close( lua_State* L )
 {
-  unsigned int id;
+  DATA *d = (DATA *)luaL_checkudata(L, 1, "rotary.switch");
 
-  id = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( rotary, id );
-  callback_free(L, id, ROTARY_ALL);
+  if (d->handle) {
+    callback_free(L, d, ROTARY_ALL);
 
-  DATA *d = data[id];
-  if (d) {
-    data[id] = NULL;
-    free(d);
-  }
+    if (rotary_close( d->handle )) {
+      return luaL_error( L, "Unable to close switch." );
+    }
 
-  if (rotary_close( id )) {
-    return luaL_error( L, "Unable to close switch." );
+    d->handle = NULL;
   }
   return 0;
 }
 
-// Lua: on( id, mask[, cb] )
+// Lua: on( mask[, cb] )
 static int lrotary_on( lua_State* L )
 {
-  unsigned int id;
-  id = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( rotary, id );
+  DATA *d = (DATA *)luaL_checkudata(L, 1, "rotary.switch");
 
   int mask = luaL_checkinteger(L, 2);
 
   if (lua_gettop(L) >= 3) {
-    if (callback_set(L, id, mask, 3)) {
+    if (callback_set(L, d, mask, 3)) {
       return luaL_error( L, "Unable to set callback." );
     }
   } else {
-    callback_free(L, id, mask);
+    callback_free(L, d, mask);
   }
 
   return 0;
 }
 
-// Lua: getpos( id ) -> pos, PRESS/RELEASE
+// Lua: getpos( ) -> pos, PRESS/RELEASE
 static int lrotary_getpos( lua_State* L )
 {
-  unsigned int id;
-  id = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( rotary, id );
-
-  int pos = rotary_getpos(id);
+  DATA *d = (DATA *)luaL_checkudata(L, 1, "rotary.switch");
+ 
+  int pos = rotary_getpos(d->handle);
 
   if (pos == -1) {
     return 0;
   }
 
   lua_pushinteger(L, (pos << 1) >> 1);
-  lua_pushinteger(L, (pos & 0x80000000) ? MASK(PRESS) : MASK(RELEASE));
+  lua_pushboolean(L, (pos & 0x80000000));
 
   return 2;
 }
@@ -264,7 +234,7 @@ static bool lrotary_dequeue_single(lua_State* L, DATA *d)
     // This chnnel is open
     rotary_event_t result;
 
-    if (rotary_getevent(d->id, &result)) {
+    if (rotary_getevent(d->handle, &result)) {
       int pos = result.pos;
 
       lrotary_check_timer(d, result.time_us, 0);
@@ -300,10 +270,11 @@ static bool lrotary_dequeue_single(lua_State* L, DATA *d)
           d->last_event_time = result.time_us;
         }
 
-      	d->lastpos = pos;
+        d->lastpos = pos;
       }
 
-      something_pending = rotary_has_queued_event(d->id);
+      rotary_event_handled(d->handle);
+      something_pending = rotary_has_queued_event(d->handle);
     }
 
     lrotary_check_timer(d, esp_timer_get_time(), 1);
@@ -356,49 +327,28 @@ static void lrotary_check_timer(DATA *d, uint32_t time_us, bool dotimer)
 
 static void lrotary_task(task_param_t param, task_prio_t prio)
 {
-  (void) param;
   (void) prio;
 
-  uint8_t *task_queue_ptr = (uint8_t*) param;
-  if (task_queue_ptr) {
-    // Signal that new events may need another task post
-    *task_queue_ptr = 0;
-  }
-
-  int id;
   bool need_to_post = false;
   lua_State *L = lua_getstate();
 
-  for (id = 0; id < ROTARY_CHANNEL_COUNT; id++) {
-    DATA *d = data[id];
-    if (d) {
-      if (lrotary_dequeue_single(L, d)) {
-	      need_to_post = true;
-      }
+  DATA *d = (DATA *) param;
+  if (d) {
+    if (lrotary_dequeue_single(L, d)) {
+      need_to_post = true;
     }
   }
 
   if (need_to_post) {
     // If there is pending stuff, queue another task
-    task_post_medium(tasknumber, 0);
+    task_post_medium(tasknumber, param);
   }
 }
 
-static int rotary_open(lua_State *L)
-{
-  tasknumber = task_get_id(lrotary_task);
-  if (rotary_driver_init() != ESP_OK) {
-    return luaL_error(L, "Initialization fail");
-  }
-  return 0;
-}
 
 // Module function map
 LROT_BEGIN(rotary, NULL, 0)
   LROT_FUNCENTRY( setup, lrotary_setup )
-  LROT_FUNCENTRY( close, lrotary_close )
-  LROT_FUNCENTRY( on, lrotary_on )
-  LROT_FUNCENTRY( getpos, lrotary_getpos )
   LROT_NUMENTRY( TURN, MASK(TURN) )
   LROT_NUMENTRY( PRESS, MASK(PRESS) )
   LROT_NUMENTRY( RELEASE, MASK(RELEASE) )
@@ -406,8 +356,22 @@ LROT_BEGIN(rotary, NULL, 0)
   LROT_NUMENTRY( CLICK, MASK(CLICK) )
   LROT_NUMENTRY( DBLCLICK, MASK(DBLCLICK) )
   LROT_NUMENTRY( ALL, ROTARY_ALL )
-
 LROT_END(rotary, NULL, 0)
 
+// Module function map
+LROT_BEGIN(rotary_switch, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY(__gc, lrotary_close)
+  LROT_TABENTRY(__index, rotary_switch)
+  LROT_FUNCENTRY(on, lrotary_on)
+  LROT_FUNCENTRY(close, lrotary_close)
+  LROT_FUNCENTRY(getpos, lrotary_getpos)
+LROT_END(rotary_switch, NULL, LROT_MASK_GC_INDEX)
+
+static int rotary_open(lua_State *L) {
+  luaL_rometatable(L, "rotary.switch",
+                    LROT_TABLEREF(rotary_switch));  // create metatable
+  tasknumber = task_get_id(lrotary_task);
+  return 0;
+}
 
 NODEMCU_MODULE(ROTARY, "rotary", rotary, rotary_open);

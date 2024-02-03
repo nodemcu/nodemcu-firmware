@@ -40,20 +40,18 @@
 
 #define STATUS_IS_PRESSED(x)	(((x) & 0x80000000) != 0)
 
-typedef struct {
+typedef struct rotary_driver_handle {
   int8_t   phase_a_pin;
   int8_t   phase_b_pin;
   int8_t   press_pin;
+  int8_t   task_queued;
   uint32_t read_offset;  // Accessed by task
   uint32_t write_offset;	// Accessed by ISR
   uint32_t last_press_change_time;
   int	   tasknumber;
   rotary_event_t    queue[QUEUE_SIZE];
-} DATA;
-
-static DATA *data[ROTARY_CHANNEL_COUNT];
-
-static uint8_t task_queued;
+  void *callback_arg;
+} *rotary_driver_handle_t;
 
 static void set_gpio_mode(int pin, gpio_int_type_t intr)
 {
@@ -61,6 +59,7 @@ static void set_gpio_mode(int pin, gpio_int_type_t intr)
     .pin_bit_mask = 1LL << pin,
     .mode = GPIO_MODE_INPUT,
     .pull_up_en = GPIO_PULLUP_ENABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
     .intr_type = intr
   };
 
@@ -76,19 +75,11 @@ static void rotary_clear_pin(int pin)
 }
 
 // Just takes the channel number. Cleans up the resources used.
-int rotary_close(uint32_t channel)
+int rotary_close(rotary_driver_handle_t d)
 {
-  if (channel >= sizeof(data) / sizeof(data[0])) {
-    return -1;
-  }
-
-  DATA *d = data[channel];
-
   if (!d) {
     return 0;
   }
-
-  data[channel] = NULL;
 
   rotary_clear_pin(d->phase_a_pin);
   rotary_clear_pin(d->phase_b_pin);
@@ -102,7 +93,7 @@ int rotary_close(uint32_t channel)
 static void rotary_interrupt(void *arg)
 {
   // This function runs with high priority
-  DATA *d = (DATA *) arg;
+  rotary_driver_handle_t d = (rotary_driver_handle_t)arg;
 
   uint32_t last_status = GET_LAST_STATUS(d).pos;
 
@@ -165,41 +156,35 @@ static void rotary_interrupt(void *arg)
       || STATUS_IS_PRESSED(last_status ^ GET_PREV_STATUS(d).pos)) {
       if (HAS_QUEUE_SPACE(d)) {
         QUEUE_STATUS(d, new_status);
-        if (!task_queued) {
-          if (task_post_medium(d->tasknumber, (task_param_t) &task_queued)) {
-            task_queued = 1;
+        if (!d->task_queued) {
+          if (task_post_medium(d->tasknumber, (task_param_t) d->callback_arg)) {
+            d->task_queued = 1;
           }
         }
       } else {
         REPLACE_STATUS(d, new_status);
       } 
     } else {
-	    REPLACE_STATUS(d, new_status);
+      REPLACE_STATUS(d, new_status);
     }
   }
 }
 
-// The pin numbers are actual platform GPIO numbers
-int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_handle_t tasknumber )
+void rotary_event_handled(rotary_driver_handle_t d)
 {
-  if (channel >= sizeof(data) / sizeof(data[0])) {
-    return -1;
-  }
+  d->task_queued = 0;
+}
 
-  if (data[channel]) {
-    if (rotary_close(channel)) {
-      return -1;
-    }
-  }
-
-  DATA *d = (DATA *) calloc(1, sizeof(DATA));
+// The pin numbers are actual platform GPIO numbers
+rotary_driver_handle_t rotary_setup(int phase_a, int phase_b, int press,
+                                    task_handle_t tasknumber, void *arg) {
+  rotary_driver_handle_t d = (rotary_driver_handle_t )calloc(1, sizeof(*d));
   if (!d) {
-    return -1;
+    return NULL;
   }
-
-  data[channel] = d;
 
   d->tasknumber = tasknumber;
+  d->callback_arg = arg;
 
   set_gpio_mode(phase_a, GPIO_INTR_ANYEDGE);
   gpio_isr_handler_add(phase_a, rotary_interrupt, d);
@@ -215,17 +200,11 @@ int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_han
   }
   d->press_pin = press;
 
-  return 0;
+  return d;
 }
 
-bool rotary_has_queued_event(uint32_t channel)
+bool rotary_has_queued_event(rotary_driver_handle_t d)
 {
-  if (channel >= sizeof(data) / sizeof(data[0])) {
-    return false;
-  }
-
-  DATA *d = data[channel];
-
   if (!d) {
     return false;
   }
@@ -234,15 +213,8 @@ bool rotary_has_queued_event(uint32_t channel)
 }
 
 // Get the oldest event in the queue and remove it (if possible)
-bool rotary_getevent(uint32_t channel, rotary_event_t *resultp)
-{
+bool rotary_getevent(rotary_driver_handle_t d, rotary_event_t *resultp) {
   rotary_event_t result = { 0 };
-
-  if (channel >= sizeof(data) / sizeof(data[0])) {
-    return false;
-  }
-
-  DATA *d = data[channel];
 
   if (!d) {
     return false;
@@ -263,22 +235,10 @@ bool rotary_getevent(uint32_t channel, rotary_event_t *resultp)
   return status;
 }
 
-int rotary_getpos(uint32_t channel)
-{
-  if (channel >= sizeof(data) / sizeof(data[0])) {
-    return -1;
-  }
-
-  DATA *d = data[channel];
-
+int rotary_getpos(rotary_driver_handle_t d) {
   if (!d) {
     return -1;
   }
 
   return GET_LAST_STATUS(d).pos;
-}
-
-esp_err_t rotary_driver_init()
-{
-  return gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
 }

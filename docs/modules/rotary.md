@@ -32,10 +32,9 @@ Note that the pins are named somewhat eccentrically, and I suspect that it reall
 Initialize the nodemcu to talk to a rotary encoder switch.
 
 #### Syntax
-`rotary.setup(channel, pina, pinb[, pinpress[, longpress_time_ms[, dblclick_time_ms]]])`
+`switch = rotary.setup(pina, pinb[, pinpress[, longpress_time_ms[, dblclick_time_ms]]])`
 
 #### Parameters
-- `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
 - `pina` This is a GPIO number (excluding 0) and connects to pin phase A on the rotary switch.
 - `pinb` This is a GPIO number (excluding 0) and connects to pin phase B on the rotary switch.
 - `pinpress` (optional) This is a GPIO number (excluding 0) and connects to the press switch.
@@ -45,20 +44,18 @@ Initialize the nodemcu to talk to a rotary encoder switch.
 #### Returns
 Nothing. If the arguments are in error, or the operation cannot be completed, then an error is thrown.
 
-For all API calls, if the channel number is out of range, then an error will be thrown.
 
 #### Example
 
-    rotary.setup(0, 5,6, 7)
+    switch = rotary.setup(5, 6, 7)
 
-## rotary.on()
+## switch:on()
 Sets a callback on specific events.
 
 #### Syntax
-`rotary.on(channel, eventtype[, callback])`
+`switch:on(eventtype[, callback])`
 
 #### Parameters
-- `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
 - `eventtype` This defines the type of event being registered. This is the logical or of one or more of `PRESS`, `LONGPRESS`, `RELEASE`, `TURN`, `CLICK` or `DBLCLICK`.
 - `callback` This is a function that will be invoked when the specified event happens.
 
@@ -73,8 +70,8 @@ in a 32-bit integer. Note that this wraps every hour or so.
 
 #### Example
 
-    rotary.on(0, rotary.ALL, function (type, pos, when)
-      print "Position=" .. pos .. " event type=" .. type .. " time=" .. when
+    switch:on(rotary.ALL, function (type, pos, when)
+      print("Position=" .. pos .. " event type=" .. type .. " time=" .. when)
     end)
 
 #### Notes
@@ -94,14 +91,11 @@ where this is a short time gap between the middle `RELEASE` and `PRESS`.
 #### Errors
 If an invalid `eventtype` is supplied, then an error will be thrown.
 
-## rotary.getpos()
+## switch:getpos()
 Gets the current position and press status of the switch
 
 #### Syntax
-`pos, press = rotary.getpos(channel)`
-
-#### Parameters
-- `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
+`pos, press = switch:getpos()`
 
 #### Returns
 - `pos` The current position of the switch.
@@ -109,18 +103,15 @@ Gets the current position and press status of the switch
 
 #### Example
 
-    print rotary.getpos(0)
+    print(switch:getpos())
 
-## rotary.close()
+## switch:close()
 Releases the resources associated with the rotary switch.
 
 #### Syntax
-`rotary.close(channel)`
-
-#### Parameters
-- `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
+`switch:close()`
 
 #### Example
 
-    rotary.close(0)
+    switch:close()
 
