@@ -225,6 +225,12 @@ menu "NodeMCU modules"
             Includes the rmt module to use the ESP32's built-in 
             remote control hardware.
 
+    config NODEMCU_CMODULE_ROTARY
+        bool "Rotary switch input device"
+        default "n"
+        help
+            Includes the rotary module which allows easy access to one or more rotary switches.
+
     config NODEMCU_CMODULE_RTCMEM
         bool "Access to a limited amount of battery backed memory (rtcmem)"
         default "n"

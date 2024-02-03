@@ -23,6 +23,8 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rotary_driver.c"
+  "rotary.c"
   "rtcmem.c"
   "qrcodegen.c"
   "sigma_delta.c"
