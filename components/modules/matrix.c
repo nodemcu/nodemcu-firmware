@@ -44,12 +44,18 @@ typedef struct {
   uint32_t time_us;
 } matrix_event_t;
 
+typedef enum {
+  WAITING_FOR_PRESS,
+  WAITING_FOR_RELEASE,
+  WAITING_FOR_DEBOUNCE
+} state_t;
+
 typedef struct {
   uint8_t column_count;
   uint8_t row_count;
   uint8_t *columns;
   uint8_t *rows;
-  bool waiting_for_release;
+  state_t state;
   bool open;
   int character_ref;
   int callback[CALLBACK_COUNT];
@@ -121,8 +127,7 @@ static void initialize_pins(DATA *d) {
   set_columns(d, 0);
 
   for (int i = 0; i < d->row_count; i++) {
-    set_gpio_mode_input(d->rows[i], d->waiting_for_release ? GPIO_INTR_POSEDGE
-                                                           : GPIO_INTR_NEGEDGE);
+    set_gpio_mode_input(d->rows[i], GPIO_INTR_NEGEDGE);
   }
 }
 
@@ -170,7 +175,7 @@ static int matrix_get_character(DATA *d, bool trace)
     for (int j = 0; j < d->row_count && character < 0; j++) {
       if (gpio_get_level(d->rows[j]) == 0) {
         if (trace) {
-          M_DEBUG("Found keypress at %d %d\n", i, j);
+          //M_DEBUG("Found keypress at %d %d\n", i, j);
         }
         // We found a keypress
         character = j * d->column_count + i;
@@ -190,7 +195,7 @@ static void matrix_queue_character(DATA *d, int character)
   // If character is >= 0 then we have found the character -- so send it.
   // M_DEBUG("Skipping queuing\n");
 
-  if (d->waiting_for_release == (character < 0)) {
+  if ((d->state == WAITING_FOR_PRESS && character >= 0) || (d->state == WAITING_FOR_RELEASE && character < 0)) {
     if (character >= 0) {
       character++;
       d->last_character = character;
@@ -217,7 +222,7 @@ static void matrix_interrupt(void *arg) {
 
   matrix_queue_character(d, character);
 
-  d->waiting_for_release = character >= 0;
+  d->state = character >= 0 ? WAITING_FOR_RELEASE : WAITING_FOR_PRESS;
   esp_timer_start_once(d->timer_handle, 5000);
 }
 
@@ -451,25 +456,35 @@ static void lmatrix_timer_done(void *param)
 
   int character = matrix_get_character(d, true);
 
-  M_DEBUG("Timer fired with character %d (waiting for release %d)\n", character, d->waiting_for_release);
+  //M_DEBUG("Timer fired with character %d (waiting for release %d)\n", character, d->state);
 
   matrix_queue_character(d, character);
-  d->waiting_for_release = (character >= 0);
 
-  M_DEBUG("Timer: Waiting for release is %d\n", d->waiting_for_release);
-
-  for (int i = 0; i < d->row_count; i++) {
-    gpio_set_intr_type(d->rows[i], d->waiting_for_release ? GPIO_INTR_POSEDGE
-                                                          : GPIO_INTR_NEGEDGE);
+  if (d->state == WAITING_FOR_RELEASE && character < 0) {
+    d->state = WAITING_FOR_DEBOUNCE;
+  } else if (character >= 0) {
+    d->state = WAITING_FOR_RELEASE;
+  } else {
+    d->state = WAITING_FOR_PRESS;
   }
-  set_columns(d, 0);
+
+  //M_DEBUG("Timer: Waiting for release is %d\n", d->state);
+
+  if (d->state == WAITING_FOR_PRESS) {
+    for (int i = 0; i < d->row_count; i++) {
+      gpio_set_intr_type(d->rows[i], GPIO_INTR_NEGEDGE);
+    }
+    set_columns(d, 0);
+  } else {
+    esp_timer_start_once(d->timer_handle, 40000);
+  }
 }
 
 static void lmatrix_task(task_param_t param, task_prio_t prio)
 {
   (void) prio;
 
-  M_DEBUG("Task invoked\n");
+  //M_DEBUG("Task invoked\n");
 
   bool need_to_post = false;
   lua_State *L = lua_getstate();
@@ -486,7 +501,7 @@ static void lmatrix_task(task_param_t param, task_prio_t prio)
     task_post_medium(tasknumber, param);
   }
 
-  M_DEBUG("Task done\n");
+  //M_DEBUG("Task done\n");
 }
 
 
