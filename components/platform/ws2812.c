@@ -35,19 +35,11 @@
 
 #undef WS2812_DEBUG
 
-// If either of these fails, the reset logic in ws2812_sample_to_rmt will need revisiting.
-_Static_assert(SOC_RMT_MEM_WORDS_PER_CHANNEL % 8 == 0,
-  "SOC_RMT_MEM_WORDS_PER_CHANNEL is assumed to be a multiple of 8");
-_Static_assert(SOC_RMT_MEM_WORDS_PER_CHANNEL >= 16,
-  "SOC_RMT_MEM_WORDS_PER_CHANNEL is assumed to be >= 16");
-
 // divider to generate 100ns base period from 80MHz APB clock
 #define WS2812_CLKDIV (100 * 80 /1000)
-// bit H & L durations in multiples of 100ns
-#define WS2812_DURATION_RESET (50000 / 100)
 
-// This is one eighth of 512 * 100ns, ie in total a bit above the requisite 50us
-const rmt_item32_t ws2812_rmt_reset = { .level0 = 0, .duration0 = 32, .level1 = 0, .duration1 = 32 };
+// This is 512 * 100ns, which is a bit above the requisite 50us
+const rmt_item32_t ws2812_rmt_reset = { .level0 = 0, .duration0 = 256, .level1 = 0, .duration1 = 256 };
 
 // descriptor for a ws2812 chain
 typedef struct {
@@ -57,59 +49,74 @@ typedef struct {
   rmt_item32_t bits[2];
   const uint8_t *data;
   size_t len;
+  uint8_t bitpos;
 } ws2812_chain_t;
 
 // chain descriptor array
 static ws2812_chain_t ws2812_chains[RMT_CHANNEL_MAX];
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num)
 {
+  size_t cnt_in;
+  size_t cnt_out;
+  const uint8_t *pucData;
+  uint8_t ucData;
+  uint8_t ucBitPos;
+  esp_err_t tStatus;
+  void *pvContext;
+  ws2812_chain_t *ptContext;
   uint8_t ucBit;
 
-  // Note: enabling these commented-out logs will ruin the timing so nothing
-  // will actually work when they're enabled. But I've kept them in as comments
-  // because they were useful in debugging the buffer management.
-  // ESP_DRAM_LOGW("ws2812", "ws2812_sample_to_rmt wanted=%u src_size=%u", wanted_num, src_size);
+  cnt_in = 0;
+  cnt_out = 0;
+  if( dest!=NULL && wanted_num>0 )
+  {
+    tStatus = rmt_translator_get_context(item_num, &pvContext);
+    if( tStatus==ESP_OK )
+    {
+      ptContext = (ws2812_chain_t *)pvContext;
 
-  void *ctx;
-  rmt_translator_get_context(item_num, &ctx);
-  ws2812_chain_t *chain = (ws2812_chain_t *)ctx;
+      if( ptContext->needs_reset==true )
+      {
+        dest[cnt_out++] = ws2812_rmt_reset;
+        ptContext->needs_reset = false;
+      }
+      if( src!=NULL && src_size>0 )
+      {
+        ucBitPos = ptContext->bitpos;
 
-  size_t reset_num = 0;
-  if (chain->needs_reset) {
-    // Haven't sent reset yet
+        /* Each bit of the input data is converted into one RMT item. */
 
-    // We split the reset into 8 even though it would fit in a single
-    // rmt_item32_t, simply so that dest stays 8-item aligned which means we
-    // don't have to worry about having to split a byte of src across multiple
-    // blocks (assuming the static asserts at the top of this file are true).
-    for (int i = 0; i < 8; i++) {
-      dest[i] = ws2812_rmt_reset;
+        pucData = (const uint8_t*)src;
+        /* Get the current byte. */
+        ucData = pucData[cnt_in] << ucBitPos;
+
+        while( cnt_in<src_size && cnt_out<wanted_num )
+        {
+          /* Get the current bit. */
+          ucBit = (ucData & 0x80U) >> 7U;
+          /* Translate the bit to a WS2812 input code. */
+          dest[cnt_out++] = ptContext->bits[ucBit];
+          /* Move to the next bit. */
+          ++ucBitPos;
+          if( ucBitPos<8U )
+          {
+            ucData <<= 1;
+          }
+          else
+          {
+            ucBitPos = 0U;
+            ++cnt_in;
+            ucData = pucData[cnt_in];
+          }
+        }
+
+        ptContext->bitpos = ucBitPos;
+      }
     }
-    dest += 8;
-    wanted_num -= 8;
-    reset_num = 8;
-    chain->needs_reset = false;
   }
-
-  // Now write the actual data from src
-  const uint8_t *data = (const uint8_t *)src;
-  size_t data_num = MIN(wanted_num, src_size * 8) / 8;
-  for (size_t idx = 0; idx < data_num; idx++) {
-    uint8_t byte = data[idx];
-    for (uint8_t i = 0; i < 8; i++) {
-      /* Get the current bit. */
-      ucBit = (byte & 0x80U) >> 7U;
-      dest[idx * 8 + i] = chain->bits[ucBit];
-      byte <<= 1;
-    }
-  }
-
-  *translated_size = data_num;
-  *item_num = reset_num + data_num * 8;
-  // ESP_DRAM_LOGW("ws2812", "src bytes consumed: %u total rmt items: %u", *translated_size, *item_num);
+  *translated_size = cnt_in;
+  *item_num = cnt_out;
 }
 
 int platform_ws2812_setup( uint8_t gpio_num, uint32_t t0h, uint32_t t0l, uint32_t t1h, uint32_t t1l, const uint8_t *data, size_t len )
@@ -125,6 +132,7 @@ int platform_ws2812_setup( uint8_t gpio_num, uint32_t t0h, uint32_t t0l, uint32_
     chain->len = len;
     chain->data = data;
     chain->needs_reset = true;
+    chain->bitpos = 0;
 
     // Limit the bit times to the available 15 bits.
     // The values must not be 0.
