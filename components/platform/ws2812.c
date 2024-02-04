@@ -32,6 +32,7 @@
 #include "soc/periph_defs.h"
 #include "rom/gpio.h" // for gpio_matrix_out()
 #include "soc/gpio_periph.h"
+#include "soc/rmt_reg.h"
 
 #undef WS2812_DEBUG
 
@@ -277,6 +278,19 @@ int platform_ws2812_send( void )
     }
   }
 
+  // Try to add all channels to a group. This moves the start of all RMT sequences closer
+  // together.
+#if SOC_RMT_SUPPORT_TX_SYNCHRO
+  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
+    if (ws2812_chains[channel].valid) {
+      if (rmt_add_channel_to_group( channel ) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+    }
+  }
+#endif
+
   // start selected channels one by one
   for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX && res == PLATFORM_OK; channel++) {
     if (ws2812_chains[channel].valid) {
@@ -295,6 +309,17 @@ int platform_ws2812_send( void )
       rmt_wait_tx_done( channel, portMAX_DELAY );
     }
   }
+
+#if SOC_RMT_SUPPORT_TX_SYNCHRO
+  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
+    if (ws2812_chains[channel].valid) {
+      if (rmt_remove_channel_from_group( channel ) != ESP_OK) {
+        res = PLATFORM_ERR;
+        break;
+      }
+    }
+  }
+#endif
 
   return res;
 }
