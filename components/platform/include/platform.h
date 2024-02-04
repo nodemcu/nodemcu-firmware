@@ -209,7 +209,7 @@ int platform_dht_read( uint8_t gpio_num, uint8_t wakeup_ms, uint8_t *data );
 // WS2812 platform interface
 
 void platform_ws2812_init( void );
-int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *data, size_t len );
+int platform_ws2812_setup( uint8_t gpio_num, const uint8_t *data, size_t len );
 int platform_ws2812_release( void );
 int platform_ws2812_send( void );
 

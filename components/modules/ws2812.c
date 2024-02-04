@@ -83,7 +83,7 @@ static int ws2812_write( lua_State* L )
     lua_pop( L, 1 );
 
     // prepare channel
-    if (platform_ws2812_setup( gpio_num, 1, (const uint8_t *)data, length ) != PLATFORM_OK) {
+    if (platform_ws2812_setup( gpio_num, (const uint8_t *)data, length ) != PLATFORM_OK) {
       ws2812_cleanup( L, 0 );
       return luaL_argerror( L, stack, "can't set up chain" );
     }
