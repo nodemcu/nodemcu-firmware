@@ -38,14 +38,12 @@
 // divider to generate 100ns base period from 80MHz APB clock
 #define WS2812_CLKDIV (100 * 80 /1000)
 
-// This is 512 * 100ns, which is a bit above the requisite 50us
-const rmt_item32_t ws2812_rmt_reset = { .level0 = 0, .duration0 = 256, .level1 = 0, .duration1 = 256 };
-
 // descriptor for a ws2812 chain
 typedef struct {
   bool valid;
   bool needs_reset;
   uint8_t gpio;
+  rmt_item32_t reset;
   rmt_item32_t bits[2];
   const uint8_t *data;
   size_t len;
@@ -78,7 +76,7 @@ static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src
 
       if( ptContext->needs_reset==true )
       {
-        dest[cnt_out++] = ws2812_rmt_reset;
+        dest[cnt_out++] = ptContext->reset;
         ptContext->needs_reset = false;
       }
       if( src!=NULL && src_size>0 )
@@ -119,20 +117,45 @@ static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src
   *item_num = cnt_out;
 }
 
-int platform_ws2812_setup( uint8_t gpio_num, uint32_t t0h, uint32_t t0l, uint32_t t1h, uint32_t t1l, const uint8_t *data, size_t len )
+int platform_ws2812_setup( uint8_t gpio_num, uint32_t reset, uint32_t t0h, uint32_t t0l, uint32_t t1h, uint32_t t1l, const uint8_t *data, size_t len )
 {
   int channel;
 
   if ((channel = platform_rmt_allocate( 1, RMT_MODE_TX )) >= 0) {
     ws2812_chain_t *chain = &(ws2812_chains[channel]);
     rmt_item32_t tRmtItem;
+    uint32_t half;
 
     chain->valid = true;
     chain->gpio = gpio_num;
     chain->len = len;
     chain->data = data;
-    chain->needs_reset = true;
     chain->bitpos = 0;
+
+    // Send a reset if "reset" is not 0.
+    chain->needs_reset = (reset != 0);
+
+    // Construct the RMT item for a reset.
+    tRmtItem.level0 = 0;
+    tRmtItem.level1 = 0;
+    // The reset duration must fit into one RMT item. This leaves 2*15 bit,
+    // which results in a maximum of 0xfffe .
+    if (reset>0xfffe)
+    {
+      reset = 0xfffe;
+    }
+    if (reset>0x7fff)
+    {
+      tRmtItem.duration0 = 0x7fff;
+      tRmtItem.duration1 = reset - 0x7fff;
+    }
+    else
+    {
+      half = reset >> 1U;
+      tRmtItem.duration0 = half;
+      tRmtItem.duration1 = reset - half;
+    }
+    chain->reset = tRmtItem;
 
     // Limit the bit times to the available 15 bits.
     // The values must not be 0.

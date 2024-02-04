@@ -16,6 +16,8 @@
 #define WS2812_DURATION_T0L 7
 #define WS2812_DURATION_T1H 8
 #define WS2812_DURATION_T1L 6
+// The default reset duration in multiples of 100ns.
+#define WS2812_DURATION_RESET 512
 
 
 typedef struct {
@@ -61,6 +63,26 @@ static int ws2812_write( lua_State* L )
       return luaL_argerror( L, stack, "invalid pin" );
     }
     int gpio_num = luaL_checkint( L, -1 );
+    lua_pop( L, 1 );
+
+    //
+    // retrieve reset
+    // This is an optional parameter which defaults to WS2812_DURATION_RESET.
+    //
+    int reset = WS2812_DURATION_RESET;
+    type = lua_getfield( L, stack, "reset" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid reset" );
+      }
+      reset = luaL_checkint( L, -1 );
+      if ((reset<0) || (reset>0xfffe)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "reset must be 0<=reset<=65534" );
+      }
+    }
     lua_pop( L, 1 );
 
     //
@@ -170,7 +192,7 @@ static int ws2812_write( lua_State* L )
     lua_pop( L, 1 );
 
     // prepare channel
-    if (platform_ws2812_setup( gpio_num, t0h, t0l, t1h, t1l, (const uint8_t *)data, length ) != PLATFORM_OK) {
+    if (platform_ws2812_setup( gpio_num, reset, t0h, t0l, t1h, t1l, (const uint8_t *)data, length ) != PLATFORM_OK) {
       ws2812_cleanup( L, 0 );
       return luaL_argerror( L, stack, "can't set up chain" );
     }
