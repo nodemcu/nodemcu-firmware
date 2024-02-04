@@ -44,26 +44,7 @@ _Static_assert(SOC_RMT_MEM_WORDS_PER_CHANNEL >= 16,
 // divider to generate 100ns base period from 80MHz APB clock
 #define WS2812_CLKDIV (100 * 80 /1000)
 // bit H & L durations in multiples of 100ns
-#define WS2812_DURATION_T0H 4
-#define WS2812_DURATION_T0L 7
-#define WS2812_DURATION_T1H 8
-#define WS2812_DURATION_T1L 6
 #define WS2812_DURATION_RESET (50000 / 100)
-
-// 0 bit in rmt encoding
-const rmt_item32_t ws2812_rmt_bit0 = {
-  .level0    = 1,
-  .duration0 = WS2812_DURATION_T0H,
-  .level1    = 0,
-  .duration1 = WS2812_DURATION_T0L
-};
-// 1 bit in rmt encoding
-const rmt_item32_t ws2812_rmt_bit1 = {
-  .level0    = 1,
-  .duration0 = WS2812_DURATION_T1H,
-  .level1    = 0,
-  .duration1 = WS2812_DURATION_T1L
-};
 
 // This is one eighth of 512 * 100ns, ie in total a bit above the requisite 50us
 const rmt_item32_t ws2812_rmt_reset = { .level0 = 0, .duration0 = 32, .level1 = 0, .duration1 = 32 };
@@ -73,6 +54,7 @@ typedef struct {
   bool valid;
   bool needs_reset;
   uint8_t gpio;
+  rmt_item32_t bits[2];
   const uint8_t *data;
   size_t len;
 } ws2812_chain_t;
@@ -84,6 +66,8 @@ static ws2812_chain_t ws2812_chains[RMT_CHANNEL_MAX];
 
 static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num)
 {
+  uint8_t ucBit;
+
   // Note: enabling these commented-out logs will ruin the timing so nothing
   // will actually work when they're enabled. But I've kept them in as comments
   // because they were useful in debugging the buffer management.
@@ -116,7 +100,9 @@ static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src
   for (size_t idx = 0; idx < data_num; idx++) {
     uint8_t byte = data[idx];
     for (uint8_t i = 0; i < 8; i++) {
-      dest[idx * 8 + i] = (byte & 0x80) ? ws2812_rmt_bit1 : ws2812_rmt_bit0;
+      /* Get the current bit. */
+      ucBit = (byte & 0x80U) >> 7U;
+      dest[idx * 8 + i] = chain->bits[ucBit];
       byte <<= 1;
     }
   }
@@ -126,18 +112,68 @@ static void ws2812_sample_to_rmt(const void *src, rmt_item32_t *dest, size_t src
   // ESP_DRAM_LOGW("ws2812", "src bytes consumed: %u total rmt items: %u", *translated_size, *item_num);
 }
 
-int platform_ws2812_setup( uint8_t gpio_num, const uint8_t *data, size_t len )
+int platform_ws2812_setup( uint8_t gpio_num, uint32_t t0h, uint32_t t0l, uint32_t t1h, uint32_t t1l, const uint8_t *data, size_t len )
 {
   int channel;
 
   if ((channel = platform_rmt_allocate( 1, RMT_MODE_TX )) >= 0) {
     ws2812_chain_t *chain = &(ws2812_chains[channel]);
+    rmt_item32_t tRmtItem;
 
     chain->valid = true;
     chain->gpio = gpio_num;
     chain->len = len;
     chain->data = data;
     chain->needs_reset = true;
+
+    // Limit the bit times to the available 15 bits.
+    // The values must not be 0.
+    if( t0h==0 )
+    {
+      t0h = 1;
+    }
+    else if( t0h>0x7fffU )
+    {
+      t0h = 0x7fffU;
+    }
+    if( t0l==0 )
+    {
+      t0l = 1;
+    }
+    else if( t0l>0x7fffU )
+    {
+      t0l = 0x7fffU;
+    }
+    if( t1h==0 )
+    {
+      t1h = 1;
+    }
+    else if( t1h>0x7fffU )
+    {
+      t1h = 0x7fffU;
+    }
+    if( t1l==0 )
+    {
+      t1l = 1;
+    }
+    else if( t1l>0x7fffU )
+    {
+      t1l = 0x7fffU;
+    }
+
+    // Construct the RMT item for a 0 bit.
+    tRmtItem.level0 = 1;
+    tRmtItem.duration0 = t0h;
+    tRmtItem.level1 = 0;
+    tRmtItem.duration1 = t0l;
+    chain->bits[0] = tRmtItem;
+
+    // Construct the RMT item for a 1 bit.
+    tRmtItem.level0 = 1;
+    tRmtItem.duration0 = t1h;
+    tRmtItem.level1 = 0;
+    tRmtItem.duration1 = t1l;
+    chain->bits[1] = tRmtItem;
 
 #ifdef WS2812_DEBUG
     ESP_LOGI("ws2812", "Setup done for gpio %d on RMT channel %d", gpio_num, channel);
