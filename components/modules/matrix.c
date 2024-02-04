@@ -7,7 +7,7 @@
  * Then we disable all the columns and then drive each column low in turn. Hopefully
  * one of the rows will go low. This is a keypress. We only report the first keypress found.
  * we start a timer to handle debounce.
- * On timer expiry, see if any key is pressed, if so, just wait agin (maybe should use interrupts)
+ * On timer expiry, see if any key is pressed, if so, just wait again
  * If no key is pressed, run timer again. On timer expiry, re-enable interrupts.
  *
  * Philip Gladstone, N1DQ
@@ -21,13 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
-
-#include <stdio.h>
-
 #include "driver/gpio.h"
-
-#define M_DEBUG printf
 
 #define MATRIX_PRESS_INDEX	0
 #define MATRIX_RELEASE_INDEX	1
@@ -65,7 +59,6 @@ typedef struct {
   uint32_t write_offset;  // Accessed by ISR
   uint8_t last_character;
   matrix_event_t queue[QUEUE_SIZE];
-  void *callback_arg;
 } DATA;
 
 static task_handle_t tasknumber;
@@ -93,24 +86,24 @@ static void lmatrix_timer_done(void *param);
     d->read_offset++;                     \
   }
 
-static void set_gpio_mode_input(int pin, gpio_int_type_t intr) {
+static esp_err_t set_gpio_mode_input(int pin, gpio_int_type_t intr) {
   gpio_config_t config = {.pin_bit_mask = 1LL << pin,
                           .mode = GPIO_MODE_INPUT,
                           .pull_up_en = GPIO_PULLUP_ENABLE,
                           .pull_down_en = GPIO_PULLDOWN_DISABLE,
                           .intr_type = intr};
 
-  gpio_config(&config);
+  return gpio_config(&config);
 }
 
-static void set_gpio_mode_output(int pin) {
+static esp_err_t set_gpio_mode_output(int pin) {
   gpio_config_t config = {.pin_bit_mask = 1LL << pin,
                           .mode = GPIO_MODE_OUTPUT_OD,
                           .pull_up_en = GPIO_PULLUP_DISABLE,
                           .pull_down_en = GPIO_PULLDOWN_DISABLE
                         };
 
-  gpio_config(&config);
+  return gpio_config(&config);
 }
 
 static void set_columns(DATA *d, int level) {
@@ -119,15 +112,19 @@ static void set_columns(DATA *d, int level) {
   }
 }
 
-static void initialize_pins(DATA *d) {
+static void initialize_pins(lua_State *L, DATA *d) {
   for (int i = 0; i < d->column_count; i++) {
-    set_gpio_mode_output(d->columns[i]);
+    if (set_gpio_mode_output(d->columns[i]) != ESP_OK) {
+      luaL_error(L, "Unable to configure pins");
+    }
   }
 
   set_columns(d, 0);
 
   for (int i = 0; i < d->row_count; i++) {
-    set_gpio_mode_input(d->rows[i], GPIO_INTR_NEGEDGE);
+    if (set_gpio_mode_input(d->rows[i], GPIO_INTR_NEGEDGE) != ESP_OK) {
+      luaL_error(L, "Unable to configure pins");
+    }
   }
 }
 
@@ -138,7 +135,7 @@ static void disable_row_interrupts(DATA *d) {
 }
 
 // Just takes the channel number. Cleans up the resources used.
-int matrix_close(DATA *d) {
+static int matrix_close(DATA *d) {
   if (!d) {
     return 0;
   }
@@ -157,7 +154,7 @@ int matrix_close(DATA *d) {
 }
 
 // Character returned is 0 .. max if pressed. -1 if not.
-static int matrix_get_character(DATA *d, bool trace)
+static int matrix_get_character(DATA *d)
 {
   set_columns(d, 1);
   disable_row_interrupts(d);
@@ -167,16 +164,11 @@ static int matrix_get_character(DATA *d, bool trace)
   // We are either waiting for a negative edge (keypress) or a positive edge
   // (keyrelease)
 
-  //M_DEBUG("matrix_get_character called\n");
-
   for (int i = 0; i < d->column_count && character < 0; i++) {
     gpio_set_level(d->columns[i], 0);
 
     for (int j = 0; j < d->row_count && character < 0; j++) {
       if (gpio_get_level(d->rows[j]) == 0) {
-        if (trace) {
-          //M_DEBUG("Found keypress at %d %d\n", i, j);
-        }
         // We found a keypress
         character = j * d->column_count + i;
       }
@@ -185,15 +177,12 @@ static int matrix_get_character(DATA *d, bool trace)
     gpio_set_level(d->columns[i], 1);
   }
 
-  //M_DEBUG("returning %d\n", character);
-
   return character;
 }
 
 static void matrix_queue_character(DATA *d, int character)
 {
   // If character is >= 0 then we have found the character -- so send it.
-  // M_DEBUG("Skipping queuing\n");
 
   if ((d->state == WAITING_FOR_PRESS && character >= 0) || (d->state == WAITING_FOR_RELEASE && character < 0)) {
     if (character >= 0) {
@@ -218,7 +207,7 @@ static void matrix_interrupt(void *arg) {
   // This function runs with high priority
   DATA *d = (DATA *)arg;
 
-  int character = matrix_get_character(d, false);
+  int character = matrix_get_character(d);
 
   matrix_queue_character(d, character);
 
@@ -226,7 +215,7 @@ static void matrix_interrupt(void *arg) {
   esp_timer_start_once(d->timer_handle, 5000);
 }
 
-bool matrix_has_queued_event(DATA *d) {
+static bool matrix_has_queued_event(DATA *d) {
   if (!d) {
     return false;
   }
@@ -321,7 +310,9 @@ static void callback_call(lua_State* L, DATA *d, int cbnum, int key, uint32_t ti
   if (d) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, d->character_ref);
     lua_rawgeti(L, -1, key);
-    callback_callOne(L, d->callback[cbnum], 1 << cbnum, -1, time);
+    if (lua_type(L, -1) != LUA_TNIL) {
+      callback_callOne(L, d->callback[cbnum], 1 << cbnum, -1, time);
+    }
     lua_pop(L, 2);
   }
 }
@@ -338,16 +329,16 @@ static void getpins(lua_State *L, int argno, int count, uint8_t *dest)
 // Lua: setup({cols}, {rows}, {characters})
 static int lmatrix_setup( lua_State* L )
 {
-  // Get the sizes of the first two tables
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checktype(L, 2, LUA_TTABLE);
   luaL_checktype(L, 3, LUA_TTABLE);
 
+  // Get the sizes of the first two tables
   size_t columns = lua_rawlen(L, 1);
   size_t rows = lua_rawlen(L, 2);
 
-  if (columns > 255 || rows > 255) {
-    return luaL_error(L, "Too many rows or columns");
+  if (columns > 255 || rows > 255 || !rows || !columns) {
+    return luaL_error(L, "Number of rows or columns out of range");
   }
 
   DATA *d = (DATA *)lua_newuserdata(L, sizeof(DATA) + rows + columns);
@@ -368,6 +359,8 @@ static int lmatrix_setup( lua_State* L )
     .arg = d
   };
 
+  d->open = true;
+
   esp_timer_create(&timer_args, &d->timer_handle);
 
   for (int i = 0; i < CALLBACK_COUNT; i++) {
@@ -378,12 +371,10 @@ static int lmatrix_setup( lua_State* L )
   lua_pushvalue(L, 3);
   d->character_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-  d->open = true;
-
   for (int i = 0; i < d->row_count; i++) {
     gpio_isr_handler_add(d->rows[i], matrix_interrupt, d);
   }
-  initialize_pins(d);
+  initialize_pins(L, d);
 
   return 1;
 }
@@ -454,9 +445,7 @@ static void lmatrix_timer_done(void *param)
 
   // We need to see if the key is still pressed, and if so, enable rising edge interrupts
 
-  int character = matrix_get_character(d, true);
-
-  //M_DEBUG("Timer fired with character %d (waiting for release %d)\n", character, d->state);
+  int character = matrix_get_character(d);
 
   matrix_queue_character(d, character);
 
@@ -467,8 +456,6 @@ static void lmatrix_timer_done(void *param)
   } else {
     d->state = WAITING_FOR_PRESS;
   }
-
-  //M_DEBUG("Timer: Waiting for release is %d\n", d->state);
 
   if (d->state == WAITING_FOR_PRESS) {
     for (int i = 0; i < d->row_count; i++) {
@@ -484,8 +471,6 @@ static void lmatrix_task(task_param_t param, task_prio_t prio)
 {
   (void) prio;
 
-  //M_DEBUG("Task invoked\n");
-
   bool need_to_post = false;
   lua_State *L = lua_getstate();
 
@@ -500,8 +485,6 @@ static void lmatrix_task(task_param_t param, task_prio_t prio)
     // If there is pending stuff, queue another task
     task_post_medium(tasknumber, param);
   }
-
-  //M_DEBUG("Task done\n");
 }
 
 
