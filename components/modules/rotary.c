@@ -187,6 +187,12 @@ static int lrotary_close( lua_State* L )
 
     d->handle = NULL;
   }
+
+  if (d->timer_handle) {
+    esp_timer_stop(d->timer_handle);
+    esp_timer_delete(d->timer_handle);
+    d->timer_handle = NULL;
+  } 
   return 0;
 }
 

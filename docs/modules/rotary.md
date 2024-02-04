@@ -60,7 +60,7 @@ Sets a callback on specific events.
 `switch:on(eventtype[, callback])`
 
 #### Parameters
-- `eventtype` This defines the type of event being registered. This is the logical or of one or more of `PRESS`, `LONGPRESS`, `RELEASE`, `TURN`, `CLICK` or `DBLCLICK`.
+- `eventtype` This defines the type of event being registered. This is the logical or of one or more of `PRESS`, `LONGPRESS`, `RELEASE`, `TURN`, `CLICK` or `DBLCLICK`. `ALL` can be used as shorthand for all event types.
 - `callback` This is a function that will be invoked when the specified event happens.
 
 If the callback is None or omitted, then the registration is cancelled.
