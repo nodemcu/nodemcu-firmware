@@ -25,7 +25,7 @@ extra_css:
 extra_javascript:
   - js/extra.js
 
-pages:
+nav:
   - Overview: 'index.md'
   - Basics:
       - Getting started: 'getting-started.md'
