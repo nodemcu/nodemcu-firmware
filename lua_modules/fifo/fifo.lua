@@ -22,12 +22,12 @@ local function dequeue(q, k)
     local new, again = k(q[1], #q == 1)
     if new == nil then
       tableRemove(q, 1)
-      if again then
-        return dequeue(q, k)
-      end -- note tail call
     else
       q[1] = new
     end
+    if again then
+      return dequeue(q, k)
+    end -- note tail call
     return true
   else
     q._go = true
