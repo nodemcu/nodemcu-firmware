@@ -27,7 +27,7 @@ var nodemcu = nodemcu || {};
     }
     function isModulePage() {
       // if the breadcrumb contains 'Modules »' it must be an API page
-      return $("ul.wy-breadcrumbs li:contains('Modules »')").size() > 0;
+      return $("ul.wy-breadcrumbs li:contains('C Modules')").length > 0;
     }
     function createTocTableRow(func, intro) {
       // fragile attempt to auto-create the in-page anchor

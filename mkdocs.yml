@@ -20,7 +20,7 @@ extra_css:
 extra_javascript:
   - js/extra.js
 
-pages:
+nav:
   - Overview: 'index.md'
   - Basics:
       - Building the firmware: 'build.md'
