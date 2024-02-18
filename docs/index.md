@@ -1,10 +1,14 @@
 # NodeMCU Documentation
 
-NodeMCU is an open source [Lua](https://www.lua.org/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/products/esp8266/) and uses an on-module flash-based [SPIFFS](https://github.com/pellepl/spiffs) file system. NodeMCU is implemented in C and is layered on the [Espressif NON-OS SDK](https://github.com/espressif/ESP8266_NONOS_SDK).
+NodeMCU is an open source [Lua](https://www.lua.org/) based firmware for the [ESP32](https://www.espressif.com/en/products/socs/esp32) and [ESP8266](https://www.espressif.com/en/products/socs/esp8266) WiFi SOCs from Espressif. It uses an on-module flash-based [SPIFFS](https://github.com/pellepl/spiffs) file system. NodeMCU is implemented in C and the ESP8266 version is layered on the [Espressif NON-OS SDK](https://github.com/espressif/ESP8266_NONOS_SDK).
 
-The firmware was initially developed as is a companion project to the popular ESP8266-based [NodeMCU development modules](https://github.com/nodemcu/nodemcu-devkit-v1.0), but the project is now community-supported, and the firmware can now be run on _any_ ESP module.
+The firmware was initially developed as is a companion project to the popular ESP8266-based [NodeMCU development modules](https://github.com/nodemcu/nodemcu-devkit-v1.0), but the project is now community-supported, and the firmware runs on any ESP module.
 
 → [Getting Started](getting-started.md)
+
+!!! important
+
+    The NodeMCU [`release`](https://github.com/nodemcu/nodemcu-firmware/tree/release) and [`dev`](https://github.com/nodemcu/nodemcu-firmware/tree/dev) branches target the ESP8266. The [`dev-esp32`](https://github.com/nodemcu/nodemcu-firmware/tree/dev-esp32) branch targets the ESP32.
 
 ## Programming Model
 The NodeMCU programming model is similar to that of [Node.js](https://en.wikipedia.org/wiki/Node.js), only in Lua. It is asynchronous and event-driven. Many functions, therefore, have parameters for callback functions. To give you an idea what a NodeMCU program looks like study the short snippets below. For more extensive examples have a look at the [`/lua_examples`](https://github.com/nodemcu/nodemcu-firmware/tree/release/lua_examples) folder in the repository on GitHub.
