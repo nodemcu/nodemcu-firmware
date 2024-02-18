@@ -2,11 +2,21 @@
 //
 // Model Railroading with Arduino - NmraDcc.h 
 //
-// Copyright (c) 2008 - 2018 Alex Shepherd
+// Copyright (c) 2008 - 2020 Alex Shepherd
 //
-// This source file is subject of the GNU general public license 2,
-// that is available at the world-wide-web at
-// http://www.gnu.org/licenses/gpl.txt
+// 	This library is free software; you can redistribute it and/or
+// 	modify it under the terms of the GNU Lesser General Public
+// 	License as published by the Free Software Foundation; either
+// 	version 2.1 of the License, or (at your option) any later version.
+// 
+// 	This library is distributed in the hope that it will be useful,
+// 	but WITHOUT ANY WARRANTY; without even the implied warranty of
+// 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// 	Lesser General Public License for more details.
+// 
+// 	You should have received a copy of the GNU Lesser General Public
+// 	License along with this library; if not, write to the Free Software
+// 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // 
 //------------------------------------------------------------------------
 //
@@ -31,6 +41,7 @@
 
 // NodeMCU Lua port by @voborsky
 
+#define NODEMCUDCC
 // #define NODE_DEBUG
 // #define DCC_DEBUG
 // #define DCC_DBGVAR
@@ -41,18 +52,30 @@
 // Uncomment the following line to Enable MultiFunction Decoder Operations
 #define NMRA_DCC_PROCESS_MULTIFUNCTION
 
-// #ifndef NMRADCC_IS_IN
-// #define NMRADCC_IS_IN
+// Uncomment the following line to Enable 14 Speed Step Support
+//#define NMRA_DCC_ENABLE_14_SPEED_STEP_MODE
 
-#define NMRADCC_VERSION     201     // Version 2.0.1
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#elif defined(NODEMCUDCC)
+#else
+#include "WProgram.h"
+#endif
+
+#ifndef NMRADCC_IS_IN
+#define NMRADCC_IS_IN
+
+#define NMRADCC_VERSION     206     // Version 2.0.6
 
 #define MAX_DCC_MESSAGE_LEN 6    // including XOR-Byte
 
+//#define ALLOW_NESTED_IRQ      // uncomment to enable nested IRQ's ( only for AVR! )
+
 typedef struct
 {
-  uint8_t Size ;
-  uint8_t PreambleBits ;
-  uint8_t Data[MAX_DCC_MESSAGE_LEN] ;
+	uint8_t	Size ;
+	uint8_t	PreambleBits ;
+	uint8_t Data[MAX_DCC_MESSAGE_LEN] ;
 } DCC_MSG ;
 
 //--------------------------------------------------------------------------
@@ -91,23 +114,39 @@ typedef struct
 #define CV_MANUFACTURER_ID                     8
 #define CV_29_CONFIG                          29
 
+#if defined(ESP32)
+	#include <esp_spi_flash.h>
+	#define MAXCV     SPI_FLASH_SEC_SIZE
+#elif defined(ESP8266)
+	#include <spi_flash.h>
+	#define MAXCV     SPI_FLASH_SEC_SIZE
+#elif defined( __STM32F1__)
+	#define MAXCV	(EEPROM_PAGE_SIZE/4 - 1)	// number of storage places (CV address could be larger
+											// because STM32 uses virtual adresses)
+    #undef ALLOW_NESTED_IRQ                 // This is done with NVIC on STM32
+    #define PRIO_DCC_IRQ    9
+    #define PRIO_SYSTIC     8               // MUST be higher priority than DCC Irq
+#else
+	#define MAXCV    E2END     					// the upper limit of the CV value currently defined to max memory.
+#endif
+
 typedef enum {
-    CV29_LOCO_DIR            = 0b00000001,  /** bit 0: Locomotive Direction: "0" = normal, "1" = reversed */
-    CV29_F0_LOCATION         = 0b00000010,  /** bit 1: F0 location: "0" = bit 4 in Speed and Direction instructions, "1" = bit 4 in function group one instruction */
-    CV29_APS                 = 0b00000100,  /** bit 2: Alternate Power Source (APS) "0" = NMRA Digital only, "1" = Alternate power source set by CV12 */
-    CV29_ADV_ACK             = 0b00001000,  /** bit 3: ACK, Advanced Acknowledge mode enabled if 1, disabled if 0 */
-    CV29_SPEED_TABLE_ENABLE  = 0b00010000,  /** bit 4: STE, Speed Table Enable, "0" = values in CVs 2, 4 and 6, "1" = Custom table selected by CV 25 */
-    CV29_EXT_ADDRESSING      = 0b00100000,  /** bit 5: "0" = one byte addressing, "1" = two byte addressing */
-    CV29_OUTPUT_ADDRESS_MODE = 0b01000000,  /** bit 6: "0" = Decoder Address Mode "1" = Output Address Mode */
-    CV29_ACCESSORY_DECODER   = 0b10000000,  /** bit 7: "0" = Multi-Function Decoder Mode "1" = Accessory Decoder Mode */
+    CV29_LOCO_DIR            = 0b00000001,	/** bit 0: Locomotive Direction: "0" = normal, "1" = reversed */
+    CV29_F0_LOCATION         = 0b00000010,	/** bit 1: F0 location: "0" = bit 4 in Speed and Direction instructions, "1" = bit 4 in function group one instruction */
+    CV29_APS                 = 0b00000100,	/** bit 2: Alternate Power Source (APS) "0" = NMRA Digital only, "1" = Alternate power source set by CV12 */
+	CV29_RAILCOM_ENABLE      = 0b00001000, 	/** bit 3: BiDi ( RailCom ) is active */
+    CV29_SPEED_TABLE_ENABLE  = 0b00010000, 	/** bit 4: STE, Speed Table Enable, "0" = values in CVs 2, 4 and 6, "1" = Custom table selected by CV 25 */
+    CV29_EXT_ADDRESSING      = 0b00100000,	/** bit 5: "0" = one byte addressing, "1" = two byte addressing */
+    CV29_OUTPUT_ADDRESS_MODE = 0b01000000,	/** bit 6: "0" = Decoder Address Mode "1" = Output Address Mode */
+    CV29_ACCESSORY_DECODER   = 0b10000000,	/** bit 7: "0" = Multi-Function Decoder Mode "1" = Accessory Decoder Mode */
 } CV_29_BITS;
 
 typedef enum {
 #ifdef NMRA_DCC_ENABLE_14_SPEED_STEP_MODE
-    SPEED_STEP_14 = 15,     /**< ESTOP=0, 1 to 15 */
+    SPEED_STEP_14 = 15,			/**< ESTOP=0, 1 to 15 */
 #endif
-    SPEED_STEP_28 = 29,     /**< ESTOP=0, 1 to 29 */
-    SPEED_STEP_128 = 127    /**< ESTOP=0, 1 to 127 */ 
+    SPEED_STEP_28 = 29,			/**< ESTOP=0, 1 to 29 */
+    SPEED_STEP_128 = 127		/**< ESTOP=0, 1 to 127 */ 
 } DCC_SPEED_STEPS;
 
 typedef enum {
@@ -122,96 +161,295 @@ typedef enum {
 
 typedef enum
 {
-  FN_0_4 = 1,
-  FN_5_8,
-  FN_9_12,
-  FN_13_20,
-  FN_21_28,
+	FN_0_4 = 1,
+	FN_5_8,
+	FN_9_12,
+	FN_13_20,
+	FN_21_28,
 #ifdef NMRA_DCC_ENABLE_14_SPEED_STEP_MODE
-  FN_0         /** function light is controlled by base line package (14 speed steps) */
+  FN_0				 /** function light is controlled by base line package (14 speed steps) */
 #endif  
 } FN_GROUP;
 
-#define FN_BIT_00 0x10
-#define FN_BIT_01 0x01
-#define FN_BIT_02 0x02
-#define FN_BIT_03 0x04
-#define FN_BIT_04 0x08
+#define FN_BIT_00	0x10
+#define FN_BIT_01	0x01
+#define FN_BIT_02	0x02
+#define FN_BIT_03	0x04
+#define FN_BIT_04	0x08
 
-#define FN_BIT_05 0x01
-#define FN_BIT_06 0x02
-#define FN_BIT_07 0x04
-#define FN_BIT_08 0x08
+#define FN_BIT_05	0x01
+#define FN_BIT_06	0x02
+#define FN_BIT_07	0x04
+#define FN_BIT_08	0x08
 
-#define FN_BIT_09 0x01
-#define FN_BIT_10 0x02
-#define FN_BIT_11 0x04
-#define FN_BIT_12 0x08
+#define FN_BIT_09	0x01
+#define FN_BIT_10	0x02
+#define FN_BIT_11	0x04
+#define FN_BIT_12	0x08
 
-#define FN_BIT_13 0x01
-#define FN_BIT_14 0x02
-#define FN_BIT_15 0x04
-#define FN_BIT_16 0x08
-#define FN_BIT_17 0x10
-#define FN_BIT_18 0x20
-#define FN_BIT_19 0x40
-#define FN_BIT_20 0x80
+#define FN_BIT_13	0x01
+#define FN_BIT_14	0x02
+#define FN_BIT_15	0x04
+#define FN_BIT_16	0x08
+#define FN_BIT_17	0x10
+#define FN_BIT_18	0x20
+#define FN_BIT_19	0x40
+#define FN_BIT_20	0x80
 
-#define FN_BIT_21 0x01
-#define FN_BIT_22 0x02
-#define FN_BIT_23 0x04
-#define FN_BIT_24 0x08
-#define FN_BIT_25 0x10
-#define FN_BIT_26 0x20
-#define FN_BIT_27 0x40
-#define FN_BIT_28 0x80
+#define FN_BIT_21	0x01
+#define FN_BIT_22	0x02
+#define FN_BIT_23	0x04
+#define FN_BIT_24	0x08
+#define FN_BIT_25	0x10
+#define FN_BIT_26	0x20
+#define FN_BIT_27	0x40
+#define FN_BIT_28	0x80
 
+//#define DCC_DBGVAR
 #ifdef DCC_DBGVAR
 typedef struct countOf_t {
     unsigned long Tel;
     unsigned long Err;
 }countOf_t ;
 
+#ifdef NODEMCUDCC
 countOf_t countOf;
+#else
+extern struct countOf_t countOf;
+#endif
+#endif
+
+#ifndef NODEMCUDCC
+class NmraDcc
+{
+  private:
+    DCC_MSG Msg ;
+    
+  public:
+    NmraDcc();
 #endif
 
 // Flag values to be logically ORed together and passed into the init() method
-#define FLAGS_MY_ADDRESS_ONLY        0x01 // Only process DCC Packets with My Address
-#define FLAGS_AUTO_FACTORY_DEFAULT   0x02 // Call notifyCVResetFactoryDefault() if CV 7 & 8 == 255
+#define FLAGS_MY_ADDRESS_ONLY        0x01	// Only process DCC Packets with My Address
+#define FLAGS_AUTO_FACTORY_DEFAULT   0x02	// Call notifyCVResetFactoryDefault() if CV 7 & 8 == 255
 #define FLAGS_SETCV_CALLED           0x10   // only used internally !!
 #define FLAGS_OUTPUT_ADDRESS_MODE    0x40  // CV 29/541 bit 6
 #define FLAGS_DCC_ACCESSORY_DECODER  0x80  // CV 29/541 bit 7
 
 // Flag Bits that are cloned from CV29 relating the DCC Accessory Decoder 
-#define FLAGS_CV29_BITS   (FLAGS_OUTPUT_ADDRESS_MODE | FLAGS_DCC_ACCESSORY_DECODER)
+#define FLAGS_CV29_BITS		(FLAGS_OUTPUT_ADDRESS_MODE | FLAGS_DCC_ACCESSORY_DECODER)
 
-#define DCC_RESET   1
-#define DCC_IDLE    2
-#define DCC_SPEED   3
-#define DCC_SPEED_RAW   4
-#define DCC_FUNC    5
-#define DCC_TURNOUT 6
-#define DCC_ACCESSORY   7
-#define DCC_RAW     8
-#define DCC_SERVICEMODE 9
+#ifndef NODEMCUDCC
+  /*+
+   *  pin() is called from setup() and sets up the pin used to receive DCC packets.
+   *
+   *  Inputs:
+   *    ExtIntNum     - Interrupt number of the pin. Use digitalPinToInterrupt(ExtIntPinNum).
+   *    ExtIntPinNum  - Input pin number.
+   *    EnablePullup  - Set true to enable the pins pullup resistor.
+   *
+   *  Returns:
+   *    None.
+   */
+  void pin( uint8_t ExtIntNum, uint8_t ExtIntPinNum, uint8_t EnablePullup); 
 
-#define CV_VALID    10
-#define CV_READ     11
-#define CV_WRITE    12
-#define CV_RESET    13
+  /*+
+   *  pin() is called from setup() and sets up the pin used to receive DCC packets.
+   *  	This relies on the internal function: digitalPinToInterrupt() to map the input pin number to the right interrupt
+   *
+   *  Inputs:
+   *    ExtIntPinNum  - Input pin number.
+   *    EnablePullup  - Set true to enable the pins pullup resistor.
+   *
+   *  Returns:
+   *    None.
+   */
+#ifdef digitalPinToInterrupt
+void pin( uint8_t ExtIntPinNum, uint8_t EnablePullup);
+#endif
+
+  /*+
+   *  init() is called from setup() after the pin() command is called.
+   *  It initializes the NmDcc object and makes it ready to process packets.
+   *
+   *  Inputs:
+   *    ManufacturerId        - Manufacturer ID returned in CV 8.
+   *                            Commonly MAN_ID_DIY.
+   *    VersionId             - Version ID returned in CV 7.
+   *    Flags                 - ORed flags beginning with FLAGS_...
+   *                            FLAGS_MY_ADDRESS_ONLY       - Only process packets with My Address.
+   *                            FLAGS_DCC_ACCESSORY_DECODER - Decoder is an accessory decoder.
+   *                            FLAGS_OUTPUT_ADDRESS_MODE   - This flag applies to accessory decoders only.
+   *                                                          Accessory decoders normally have 4 paired outputs
+   *                                                          and a single address refers to all 4 outputs.
+   *                                                          Setting FLAGS_OUTPUT_ADDRESS_MODE causes each
+   *                                                          address to refer to a single output.
+   *    OpsModeAddressBaseCV  - Ops Mode base address. Set it to 0?
+   *
+   *  Returns:
+   *    None.
+   */
+  void init( uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, uint8_t OpsModeAddressBaseCV );
+
+  /*+
+   *  initAccessoryDecoder() is called from setup() for accessory decoders.
+   *  It calls init() with FLAGS_DCC_ACCESSORY_DECODER ORed into Flags.
+   *
+   *  Inputs:
+   *    ManufacturerId        - Manufacturer ID returned in CV 8.
+   *                            Commonly MAN_ID_DIY.
+   *    VersionId             - Version ID returned in CV 7.
+   *    Flags                 - ORed flags beginning with FLAGS_...
+   *                            FLAGS_DCC_ACCESSORY_DECODER will be set for init() call.
+   *    OpsModeAddressBaseCV  - Ops Mode base address. Set it to 0?
+   *
+   *  Returns:
+   *    None.
+   */
+  void initAccessoryDecoder( uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, uint8_t OpsModeAddressBaseCV );
+
+  /*+
+   *  process() is called from loop() to process DCC packets.
+   *  It must be called very frequently to keep up with the packets.
+   *
+   *  Inputs:
+   *    None.
+   *
+   *  Returns:
+   *    1 - Packet succesfully parsed on this call to process().
+   *    0 - Packet not ready or received packet had an error.
+   */
+  uint8_t process();
+
+  /*+
+   *  getCV() returns the selected CV value.
+   *
+   *  Inputs:
+   *    CV    - CV number. It must point to a valid CV.
+   *
+   *  Returns:
+   *    Value - CV value. Invalid CV numbers will return an undefined result
+   *            since nothing will have been set in that EEPROM position.
+   *            Calls notifyCVRead() if it is defined.
+   */
+  uint8_t getCV( uint16_t CV );
+
+  /*+
+   *  setCV() sets the value of a CV.
+   *
+   *  Inputs:
+   *    CV    - CV number. It must point to a valid CV.
+   *    Value - CV value.
+   *
+   *  Returns:
+   *    Value - CV value set by this call.
+   *            since nothing will have been set in that EEPROM position.
+   *            Calls notifyCVWrite() if it is defined.
+   *            Calls notifyCVChange() if the value is changed by this call.
+   */
+  uint8_t setCV( uint16_t CV, uint8_t Value);
+
+  /*+
+   *  setAccDecDCCAddrNextReceived() enables/disables the setting of the board address from the next received turnout command
+   *
+   *  Inputs:
+   *    enable- boolean to enable or disable the mode
+   *
+   *  Returns:
+   */
+  void setAccDecDCCAddrNextReceived(uint8_t enable);
+
+  /*+
+   *  isSetCVReady() returns 1 if EEPROM is ready to write.
+   *
+   *  Inputs:
+   *    CV    - CV number. It must point to a valid CV.
+   *    Value - CV value.
+   *
+   *  Returns:
+   *    ready - 1 if ready to write, 0 otherwise. AVR processor will block
+   *            for several ms. for each write cycle so you should check this to avoid blocks.
+   *            Note: It returns the value returned by notifyIsSetCVReady() if it is defined.
+   *            Calls notifyIsSetCVReady() if it is defined.
+   */
+  uint8_t isSetCVReady( void );
+
+  /*+
+   *  getAddr() return the currently active decoder address.
+   *            based on decoder type and current address size.
+   *
+   *  Inputs:
+   *    None.
+   *
+   *  Returns:
+   *    Adr - The current decoder address based on decoder type(Multifunction, Accessory)
+   *          and short or long address selection for Multifunction decoders.
+   */
+  uint16_t getAddr(void);
+	
+  /*+
+   *  getX()  return debugging data if DCC_DEBUG is defined.
+   *          You would really need to be modifying the library to need them.
+   *
+   *  Inputs:
+   *    None.
+   *
+   *  Returns:
+   *    getIntCount       - Init to 0 and apparently never incremented?
+   *    getTickCount      - Init to 0 and incremented each time interrupt handler
+   *                        completes without an error.
+   *    getBitCount       - Bit count of valid packet, 0 otherwise. Only valid until
+   *                        start of the next packet.
+   *    getState          - Current WAIT_... state as defined by DccRxWaitState in NmraDcc.cpp.
+   *    getNestedIrqCount - Init to 0 and incremented each time the interrupt handler
+   *                        is called before the previous interrupt was complete.
+   *                        This is an error indication and may indicate the system
+   *                        is not handling packets fast enough or some other error is occurring.
+   */
+// #define DCC_DEBUG
+#ifdef DCC_DEBUG
+  uint8_t getIntCount(void);
+  uint8_t getTickCount(void);
+  uint8_t getBitCount(void);
+  uint8_t getState(void);
+  uint8_t getNestedIrqCount(void);
+#endif
+
+};
+
+#else
+    #define DCC_RESET   1
+    #define DCC_IDLE    2
+    #define DCC_SPEED   3
+    #define DCC_SPEED_RAW   4
+    #define DCC_FUNC    5
+    #define DCC_TURNOUT 6
+    #define DCC_ACCESSORY   7
+    #define DCC_RAW     8
+    #define DCC_SERVICEMODE 9
+
+    #define CV_VALID    10
+    #define CV_READ     11
+    #define CV_WRITE    12
+    #define CV_RESET    13
+    #define CV_ACK_COMPLETE    14
 
 
-void dcc_setup(uint8_t pin, uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, uint8_t OpsModeAddressBaseCV );
+    void dcc_setup(uint8_t pin, uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, uint8_t OpsModeAddressBaseCV);
 
 
-void dcc_close();
+    void dcc_close();
 
-void dcc_init();
-
+    void dcc_init();
+#endif //#ifndef NODEMCUDCC
 
 /************************************************************************************
     Call-back functions
 ************************************************************************************/
+
+#if defined (__cplusplus)
+	extern "C" {
+#endif
 
 /*+
  *  notifyDccReset(uint8_t hardReset) Callback for a DCC reset command.
@@ -410,7 +648,11 @@ extern void    notifyDccMsg( DCC_MSG * Msg ) __attribute__ ((weak));
  *    1         - CV is valid.
  *    0         - CV is not valid.
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((weak));
+#endif
 
 /*+
  *  notifyCVRead()  Callback to read a CV.
@@ -424,10 +666,13 @@ extern uint8_t notifyCVValid( uint16_t CV, uint8_t Writable ) __attribute__ ((we
  *    CV        - CV number.
  *
  *  Returns:
- *    Value     - Value of the CV.
+ *    Value     - Value of the CV. Or a value > 255 to indicate error.
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
-
+#endif
 /*+
  *  notifyCVWrite() Callback to write a value to a CV.
  *                  This is called when the library needs to write
@@ -441,9 +686,54 @@ extern uint8_t notifyCVRead( uint16_t CV) __attribute__ ((weak));
  *    Value     - Value of the CV.
  *
  *  Returns:
- *    Value     - Value of the CV.
+ *    Value     - Value of the CV. Or a value > 255 to signal error. 
  */
+#ifdef NODEMCUDCC
+extern uint16_t notifyCVWrite( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#else
 extern uint8_t notifyCVWrite( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#endif
+
+#ifndef NODEMCUDCC
+/*+
+ *  notifyIsSetCVReady()  Callback to to determine if CVs can be written.
+ *                        This is called when the library needs to determine
+ *                        is ready to write without blocking or failing.
+ *                        Note: If defined, this callback
+ *                        MUST determine if a CV write would block or fail
+ *                        return the appropriate value.
+ *                        If this callback is not defined,
+ *                        the library determines if a write to the EEPROM
+ *                        would block.
+ *
+ *  Inputs:
+ *    None
+ *
+ *  Returns:
+ *    1         - CV is ready to be written.
+ *    0         - CV is not ready to be written.
+ */
+extern uint8_t notifyIsSetCVReady(void) __attribute__ ((weak));
+
+/*+
+ *  notifyCVChange()  Called when a CV value is changed.
+ *                    This is called whenever a CV's value is changed.
+ *  notifyDccCVChange()  Called only when a CV value is changed by a Dcc packet or a internal lib function.
+ *                    it is NOT called if the CV is changed by means of the setCV() method.
+ *                    Note: It is not called if notifyCVWrite() is defined
+ *                    or if the value in the EEPROM is the same as the value
+ *                    in the write command. 
+ *
+ *  Inputs:
+ *    CV        - CV number.
+ *    Value     - Value of the CV.
+ *
+ *  Returns:
+ *    None
+ */
+extern void    notifyCVChange( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+extern void    notifyDccCVChange( uint16_t CV, uint8_t Value) __attribute__ ((weak));
+#endif
 
 /*+
  *  notifyCVResetFactoryDefault() Called when CVs must be reset.
@@ -463,6 +753,29 @@ extern uint8_t notifyCVWrite( uint16_t CV, uint8_t Value) __attribute__ ((weak))
 extern void    notifyCVResetFactoryDefault(void) __attribute__ ((weak));
 
 /*+
+ *  notifyCVAck() Called when a CV write must be acknowledged.
+ *                This callback must increase the current drawn by this
+ *                decoder by at least 60mA for 6ms +/- 1ms.
+ *
+ *  Inputs:
+ *    None
+ *                                                                                                        *
+ *  Returns:
+ *    None
+ */
+extern void    notifyCVAck(void) __attribute__ ((weak));
+/*+
+ *  notifyAdvancedCVAck() Called when a CV write must be acknowledged via Advanced Acknowledgement.
+ *                This callback must send the Advanced Acknowledgement via RailComm.
+ *
+ *  Inputs:
+ *    None
+ *                                                                                                        *
+ *  Returns:
+ *    None
+ */
+extern void    notifyAdvancedCVAck(void) __attribute__ ((weak));
+/*+
  *  notifyServiceMode(bool) Called when state of 'inServiceMode' changes
  *
  *  Inputs:
@@ -475,5 +788,12 @@ extern void    notifyServiceMode(bool) __attribute__ ((weak));
 
 // Deprecated, only for backward compatibility with version 1.4.2. 
 // Don't use in new designs. These functions may be dropped in future versions
-// extern void notifyDccAccState( uint16_t Addr, uint16_t BoardAddr, uint8_t OutputAddr, uint8_t State ) __attribute__ ((weak));
-// extern void notifyDccSigState( uint16_t Addr, uint8_t OutputIndex, uint8_t State) __attribute__ ((weak));
+extern void notifyDccAccState( uint16_t Addr, uint16_t BoardAddr, uint8_t OutputAddr, uint8_t State ) __attribute__ ((weak));
+extern void notifyDccSigState( uint16_t Addr, uint8_t OutputIndex, uint8_t State) __attribute__ ((weak));
+
+#if defined (__cplusplus)
+}
+#endif
+
+#endif
+

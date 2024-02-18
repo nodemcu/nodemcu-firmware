@@ -134,6 +134,7 @@ static int ws2812_write(lua_State* L) {
   {
     buffer1 = lua_tolstring(L, 1, &length1);
   }
+#ifdef LUA_USE_MODULES_PIXBUF      
   else if (type == LUA_TUSERDATA)
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
@@ -141,6 +142,7 @@ static int ws2812_write(lua_State* L) {
     buffer1 = buffer->values;
     length1 = pixbuf_size(buffer);
   }
+#endif
   else
   {
     luaL_argerror(L, 1, "pixbuf or string expected");
@@ -157,6 +159,7 @@ static int ws2812_write(lua_State* L) {
   {
     buffer2 = lua_tolstring(L, 2, &length2);
   }
+#ifdef LUA_USE_MODULES_PIXBUF      
   else if (type == LUA_TUSERDATA)
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
@@ -164,6 +167,7 @@ static int ws2812_write(lua_State* L) {
     buffer2 = buffer->values;
     length2 = pixbuf_size(buffer);
   }
+#endif
   else
   {
     luaL_argerror(L, 2, "pixbuf or string expected");
@@ -177,14 +181,16 @@ static int ws2812_write(lua_State* L) {
 
 LROT_BEGIN(ws2812, NULL, 0)
   LROT_FUNCENTRY( init, ws2812_init )
+#ifdef LUA_USE_MODULES_PIXBUF      
   LROT_FUNCENTRY( newBuffer, pixbuf_new_lua ) // backwards compatibility
-  LROT_FUNCENTRY( write, ws2812_write )
   LROT_NUMENTRY( FADE_IN, PIXBUF_FADE_IN )    // BC
   LROT_NUMENTRY( FADE_OUT, PIXBUF_FADE_OUT )  // BC
-  LROT_NUMENTRY( MODE_SINGLE, MODE_SINGLE )
-  LROT_NUMENTRY( MODE_DUAL, MODE_DUAL )
   LROT_NUMENTRY( SHIFT_LOGICAL, PIXBUF_SHIFT_LOGICAL ) // BC
   LROT_NUMENTRY( SHIFT_CIRCULAR, PIXBUF_SHIFT_CIRCULAR ) // BC
+#endif
+  LROT_FUNCENTRY( write, ws2812_write )
+  LROT_NUMENTRY( MODE_SINGLE, MODE_SINGLE )
+  LROT_NUMENTRY( MODE_DUAL, MODE_DUAL )
 LROT_END(ws2812, NULL, 0)
 
 static int luaopen_ws2812(lua_State *L) {

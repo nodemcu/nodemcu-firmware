@@ -2,8 +2,8 @@ Hardware Test Harness
 =====================
 
 There is an implementation of the hardware testing design which is a small 4in x 4in board with positions for
-two Wemos D! Mini ESP8266 boards, a breadboard area and a number of positions for peripherals. The schematics
-are in [schematic](Test-harness-schematic-v1.pdf) and a rendering of the board is ![Board Render](Test-Harness-Render-V1.png). 
+two Wemos D! Mini ESP8266 boards, a breadboard area and a number of positions for peripherals. A rendering of the board is below and the [schematics](Test-harness-schematic-v1.pdf)
+are available as well: ![Board Render](Test-Harness-Render-V1.png). 
 
 
 The test harness runs from a dedicated host computer, which is expected

@@ -54,6 +54,7 @@ Then the `eus_params.lua` file will contain the following:
 
 ```lua
 -- those wifi_* are the base parameters that are saved anyway
+-- if network is open, then there is no wifi_password
 local p = {}
 p.wifi_ssid="ssid"
 p.wifi_password="password"

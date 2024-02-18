@@ -124,7 +124,7 @@ devices, as found on almost all ESP8266 boards with USB to UART
 adapters, but the host does not necessarily need to use USB to connect,
 so long as TXD, RXD, DTR, and RTS are wired across.
 
-A particular implementation of this can be found at [Test Harness](HardwareTestHarness.html).
+A particular implementation of this can be found at [Test Harness](HardwareTestHarness.md).
 
 ## Peripherals
 

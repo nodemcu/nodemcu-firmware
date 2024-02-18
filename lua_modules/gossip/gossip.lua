@@ -15,11 +15,7 @@ end
 
 utils.debug = function(message)
   if gossip.config.debug then
-    if gossip.config.debugOutput then
-      gossip.config.debugOutput(message);
-    else
-      print(message);
-    end
+    gossip.config.debugOutput(message);
   end
 end
 
@@ -105,15 +101,23 @@ state.start = function()
     return;
   end
 
+  -- sending to own IP makes no sense
+  for index, value in ipairs(gossip.config.seedList) do
+      if value == gossip.ip then
+          table.remove(gossip.config.seedList, index)
+          utils.debug('removing own ip from seed list')
+      end
+  end
+
   gossip.networkState[gossip.ip] = {};
   local localState = gossip.networkState[gossip.ip];
   localState.revision = state.setRev();
   localState.heartbeat = tmr.time();
   localState.state = constants.nodeState.UP;
 
-  gossip.inboundSocket = net.createUDPSocket();
-  gossip.inboundSocket:listen(gossip.config.comPort);
-  gossip.inboundSocket:on('receive', network.receiveData);
+  gossip.socket = net.createUDPSocket();
+  gossip.socket:listen(gossip.config.comPort);
+  gossip.socket:on('receive', network.receiveData);
 
   gossip.started = true;
 
@@ -128,16 +132,25 @@ end
 state.tickNodeState = function(ip)
   if gossip.networkState[ip] then
     local nodeState = gossip.networkState[ip].state;
+    local oldNodeState = nodeState;
     if nodeState < constants.nodeState.REMOVE then
       nodeState = nodeState + constants.nodeState.TICK;
       gossip.networkState[ip].state = nodeState;
+    end
+    if oldNodeState == constants.nodeState.DOWN then
+      if gossip.updateCallback then gossip.updateCallback(gossip.networkState[ip]); end
     end
   end
 end
 
 -- Network
+network.broadcastIp = "255.255.255.255"
 
 network.pushGossip = function(data, ip)
+  if not gossip.started then
+    utils.debug('Gossip not started.');
+    return;
+  end
   gossip.networkState[gossip.ip].data = data;
   network.sendSyn(nil, ip);
 end
@@ -145,10 +158,12 @@ end
 network.updateNetworkState = function(updateData)
   if gossip.updateCallback then gossip.updateCallback(updateData); end
   for ip, data in pairs(updateData) do
-    if not utils.contains(gossip.config.seedList, ip) then
+    if not utils.contains(gossip.config.seedList, ip) and ip ~= network.broadcastIp and ip ~= gossip.ip then
       table.insert(gossip.config.seedList, ip);
     end
-    gossip.networkState[ip] = data;
+    if ip ~= gossip.ip then
+      gossip.networkState[ip] = data;
+    end
   end
 end
 
@@ -170,17 +185,16 @@ network.pickRandomNode = function()
     return gossip.config.seedList[randomListPick];
   end
   utils.debug(
-      'Seedlist is empty. Please provide one or wait for node to be contacted.');
-  return nil;
+      'Seedlist is empty. Using broadcast IP '..network.broadcastIp..' to discover.');
+  return network.broadcastIp;
 end
 
 network.sendData = function(ip, data, sendType)
-  local outboundSocket = net.createUDPSocket();
-  data.type = sendType;
-  local dataToSend = sjson.encode(data);
-  data.type = nil;
-  outboundSocket:send(gossip.config.comPort, ip, dataToSend);
-  outboundSocket:close();
+  data.type = sendType
+  local dataToSend = sjson.encode(data)
+  data.type = nil
+  gossip.socket:send(gossip.config.comPort, ip, dataToSend)
+  utils.debug("Sent "..#dataToSend.." bytes")
 end
 
 network.receiveSyn = function(ip, synData)
@@ -235,7 +249,8 @@ constants.defaultConfig = {
   seedList = {},
   roundInterval = 15000,
   comPort = 5000,
-  debug = false
+  debug = false,
+  debugOutput = print
 };
 
 constants.comparisonFields = {'revision', 'heartbeat', 'state'};

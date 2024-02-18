@@ -145,11 +145,15 @@ static void *Store_(LoadState *S, void *a, int ndx, const void *e, size_t s
 /* These compression maps must match the definitions in lobject.h etc. */
 #  define OFFSET_TSTRING (2*(sizeof(lu_int32)-sizeof(size_t)))
 #  define FMT_TSTRING   "AwwA"
-#  define FMT_TVALUE    "WA"
+#if defined(CONFIG_LUA_NUMBER_INT64) || defined(CONFIG_LUA_NUMBER_DOUBLE) || defined(LUA_NUMBER_64BITS)
+#  define FMT_TVALUE    "www"
+#else
+#  define FMT_TVALUE    "AW"
+#endif
 #  define FMT_PROTO     "AwwwwwwwwwwAAAAAAAA"
 #  define FMT_UPVALUE   "AW"
 #  define FMT_LOCVAR    "Aww"
-#  define FMT_ROTENTRY  "AWA"
+#  define FMT_ROTENTRY  "A" FMT_TVALUE
 #  define FMT_ROTABLE   "AWAA"
 #  define StoreR(S,a, i, v, f) Store_(S, (a), i, &(v), sizeof(v), f)
 #  define Store(S, a, i, v)    StoreR(S, (a), i, v, NULL)
@@ -206,19 +210,23 @@ static lua_Integer LoadInteger (LoadState *S, lu_byte tt_data) {
   return (tt_data & LUAU_TMASK) == LUAU_TNUMNINT ? -x-1 : x;
 }
 static TString *LoadString_ (LoadState *S, int prelen) {
-  TString *ts;
-  char buff[LUAI_MAXSHORTLEN];
+  lua_State *L = S->L;
   int n = LoadInteger(S, (prelen < 0 ? LoadByte(S) : prelen)) - 1;
+  TString *ts;
   if (n < 0)
     return NULL;
   if  (S->useStrRefs)
     ts = S->TS[n];
   else if (n <= LUAI_MAXSHORTLEN) {  /* short string? */
+    char buff[LUAI_MAXSHORTLEN];
     LoadVector(S, buff, n);
-    ts = luaS_newlstr(S->L, buff, n);
+    ts = luaS_newlstr(L, buff, n);
   } else {                      /* long string */
-    ts = luaS_createlngstrobj(S->L, n);
+    ts = luaS_createlngstrobj(L, n);
+    setsvalue2s(L, L->top, ts);  /* anchor it ('loadVector' can GC) */
+    luaD_inctop(L);
     LoadVector(S, getstr(ts), n);             /* load directly in final place */
+    L->top--;  /* pop string */
   }
   return ts;
 }
@@ -295,8 +303,11 @@ static void LoadProtos (LoadState *S, Proto *f) {
   f->p = p;
   f->sizep = n;
   memset (p, 0, n * sizeof(*p));
-  for (i = 0; i < n; i++)
-    p[i] = LoadFunction(S, luaF_newproto(S->L), f->source);
+  for (i = 0; i < n; i++) {
+    p[i] = luaF_newproto(S->L);
+    luaC_objbarrier(S->L, f, p[i]);
+    p[i] = LoadFunction(S, p[i], f->source);
+  }
   if (S->mode != MODE_RAM) {
     f->p = StoreAV(S, cast(void **, p), n);
     luaM_freearray(S->L, p, n);
@@ -434,7 +445,8 @@ LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
   setclLvalue(L, L->top, cl);
   luaD_inctop(L);
   cl->p = luaF_newproto(L);
-  LoadFunction(&S, cl->p, NULL);
+  luaC_objbarrier(L, cl, cl->p);
+  cl->p = LoadFunction(&S, cl->p, NULL);
   lua_assert(cl->nupvalues == cl->p->sizeupvalues);
   return cl;
 }
@@ -575,9 +587,10 @@ static void LoadAllProtos (LoadState *S) {
     S->pv[i] = LoadFunction(S, luaF_newproto(L), NULL);
   }
   /* generate the ROTable entries from first N constants; the last is a timestamp */
-  lua_assert(n+1 == LoadInt(S));
+  int nk = LoadInt(S);
+  lua_assert(n+1 == nk);
   ROTable_entry *entry_list = cast(ROTable_entry *, StoreGetPos(S));
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < nk - 1; i++) { // -1 to ignore timestamp
     lu_byte tt_data = LoadByte(S);
     TString *Tname = LoadString2(S, tt_data);
     const char *name = getstr(Tname) + OFFSET_TSTRING;

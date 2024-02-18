@@ -118,6 +118,7 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
     case LUA_TSTRING:
       values = (const uint8_t*) luaL_checklstring(L, 1, &length);
       break;
+#ifdef LUA_USE_MODULES_PIXBUF      
     case LUA_TUSERDATA: {
       pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
       luaL_argcheck(L, buffer->nchan == 3, 1, "Pixbuf not 3-channel");
@@ -125,6 +126,7 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
       length = pixbuf_size(buffer);
       break;
     }
+#endif    
     default:
       return luaL_argerror(L, 1, "pixbuf or string expected");
     }

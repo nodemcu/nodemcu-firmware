@@ -393,7 +393,7 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 LUA_API size_t lua_rawlen (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (ttype(o)) {
-    case LUA_TSHRSTR: return getshrlen(tsvalue(o));
+    case LUA_TSHRSTR: return getstrshrlen(tsvalue(o));
     case LUA_TLNGSTR: return tsvalue(o)->u.lnglen;
     case LUA_TUSERDATA: return uvalue(o)->len;
     case LUA_TTBLRAM: return luaH_getn(hvalue(o));
@@ -1303,13 +1303,12 @@ LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
 }
 
 
-static UpVal **getupvalref (lua_State *L, int fidx, int n, LClosure **pf) {
+static UpVal **getupvalref (lua_State *L, int fidx, int n) {
   LClosure *f;
   StkId fi = index2addr(L, fidx);
   api_check(L, ttisLclosure(fi), "Lua function expected");
   f = clLvalue(fi);
   api_check(L, (1 <= n && n <= f->p->sizeupvalues), "invalid upvalue index");
-  if (pf) *pf = f;
   return &f->upvals[n - 1];  /* get its upvalue pointer */
 }
 
@@ -1318,7 +1317,7 @@ LUA_API void *lua_upvalueid (lua_State *L, int fidx, int n) {
   StkId fi = index2addr(L, fidx);
   switch (ttype(fi)) {
     case LUA_TLCL: {  /* lua closure */
-      return *getupvalref(L, fidx, n, NULL);
+      return *getupvalref(L, fidx, n);
     }
     case LUA_TCCL: {  /* C closure */
       CClosure *f = clCvalue(fi);
@@ -1335,9 +1334,10 @@ LUA_API void *lua_upvalueid (lua_State *L, int fidx, int n) {
 
 LUA_API void lua_upvaluejoin (lua_State *L, int fidx1, int n1,
                                             int fidx2, int n2) {
-  LClosure *f1;
-  UpVal **up1 = getupvalref(L, fidx1, n1, &f1);
-  UpVal **up2 = getupvalref(L, fidx2, n2, NULL);
+  UpVal **up1 = getupvalref(L, fidx1, n1);
+  UpVal **up2 = getupvalref(L, fidx2, n2);
+  if (*up1 == *up2)
+    return;
   luaC_upvdeccount(L, *up1);
   *up1 = *up2;
   (*up1)->refcount++;
