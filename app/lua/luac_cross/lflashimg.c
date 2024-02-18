@@ -399,6 +399,7 @@ uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w,
 
   fh->flash_sig = FLASH_SIG + (address ? FLASH_SIG_ABSOLUTE : 0);
   fh->flash_size = curOffset*WORDSIZE;
+  printf("Image size: %d\n", fh->flash_size);
   if (fh->flash_size>maxSize) {
     fatal ("The image is too large for specfied LFS size");
   }
