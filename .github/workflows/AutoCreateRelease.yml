@@ -9,7 +9,7 @@ jobs:
 
   build_luac_cross_win:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
   Create_Release:
     name: Create Release
     needs: build_luac_cross_win
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Set release name
