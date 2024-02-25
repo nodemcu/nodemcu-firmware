@@ -1,6 +1,6 @@
 -- A generic fifo module.  See docs/lua-modules/fifo.md for use examples.
 
-local tr, ti = table.remove, table.insert
+local tableRemove, tableInsert = table.remove, table.insert
 
 -- Remove an element and pass it to k, together with a boolean indicating that
 -- this is the last element in the queue; if that returns a value, leave that
@@ -17,29 +17,33 @@ local tr, ti = table.remove, table.insert
 --
 -- Returns 'true' if the queue contained at least one non-phantom entry,
 -- 'false' otherwise.
-local function dequeue(q,k)
-  if #q > 0
-   then
-     local new, again = k(q[1], #q == 1)
-     if new == nil
-       then tr(q,1)
-            if again then return dequeue(q, k) end -- note tail call
-       else q[1] = new
-     end
-     return true
-   else q._go = true ; return false
+local function dequeue(q, k)
+  if #q > 0 then
+    local new, again = k(q[1], #q == 1)
+    if new == nil then
+      tableRemove(q, 1)
+    else
+      q[1] = new
+    end
+    if again then
+      return dequeue(q, k)
+    end -- note tail call
+    return true
+  else
+    q._go = true
+    return false
   end
 end
 
 -- Queue a on queue q and dequeue with `k` if the fifo had previously emptied.
 local function queue(q,a,k)
-  ti(q,a)
+  tableInsert(q,a)
   if k ~= nil and q._go then q._go = false; dequeue(q, k) end
 end
 
 -- return a table containing just the FIFO constructor
 return {
   ['new'] = function()
-    return { ['_go'] = true ; ['queue'] = queue ; ['dequeue'] = dequeue }
-   end
+      return { ['_go'] = true ; ['queue'] = queue ; ['dequeue'] = dequeue }
+    end
 }
