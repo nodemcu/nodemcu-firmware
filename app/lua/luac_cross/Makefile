@@ -8,7 +8,7 @@
 
 summary ?= @true
 
-CCFLAGS:= -I. -I.. -I../../include -I../../uzlib
+CCFLAGS:= -I. -I.. -I../../include -I../../uzlib -I../..
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
@@ -59,12 +59,15 @@ LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c 
            lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
            ltm.c       lundump.c   lvm.c       lzio.c      lnodemcu.c
 UZSRC   := uzlib_deflate.c crc32.c
+SJSONSRC:= jsonsl.c
+MODSRC  := struct.c bit.c color_utils.c sjson.c pipe.c pixbuf.c
+#bloom.c crypto.c encoder.c (file.c)
 
 #
 # This relies on the files being unique on the vpath
 #
-SRC      := $(LUACSRC) $(LUASRC) $(UZSRC)
-vpath %.c .:..:../../libc:../../uzlib
+SRC      := $(LUACSRC) $(LUASRC) $(UZSRC) $(MODSRC) $(SJSONSRC)
+vpath %.c .:..:../../libc:../../uzlib:../../modules:../../sjson
 
 ODIR   := .output/$(TARGET)/$(FLAVOR)/obj
 
