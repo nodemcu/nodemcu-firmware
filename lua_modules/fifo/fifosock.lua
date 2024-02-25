@@ -58,7 +58,15 @@ local function wrap(sock)
     -- Either that was a function or we've hit our coalescing limit or
     -- we didn't ship above.  Ship now, if there's something to ship.
     if s ~= nil then
-      if sslan == 0 then sock:send(s) else sock:send(ssla .. s) end
+      if sslan == 0 then
+        if #s > 0 then
+          sock:send(s)
+        else
+          return ns or nil, true
+        end
+      else
+        sock:send(ssla .. s)
+      end
       ssla, sslan = nil, 0; gc()
       return ns or nil, false
     elseif sslan ~= 0 then
