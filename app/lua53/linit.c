@@ -72,9 +72,22 @@ extern LROT_TABLE(utf8);
 #if defined(LUA_CROSS_COMPILER)
 
 /* _G __index -> rotables __index -> base_func */
-extern LROT_TABLE(rotables_meta);
-extern LROT_TABLE(base_func);
+#define LUAC_MODULE(map) \
+  LUALIB_API LROT_TABLE(map);
 
+#define LUAC_MODULE_INIT(map, initfunc) \
+  LUAC_MODULE(map);\
+  LUALIB_API int initfunc(lua_State *L);
+
+LUAC_MODULE(thislib) // module struct
+LUAC_MODULE(bit)
+LUAC_MODULE(color_utils)
+LUAC_MODULE_INIT(sjson, luaopen_sjson)
+LUAC_MODULE(pipe)
+LUAC_MODULE_INIT(pixbuf, luaopen_pixbuf)
+
+LUAC_MODULE(rotables_meta);
+LUAC_MODULE(base_func);
 LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index, base_func)
 LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
@@ -82,12 +95,26 @@ LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
 LROT_BEGIN(rotables, LROT_TABLEREF(rotables_meta), 0)
   LROT_TABENTRY( _G, base_func)
   LROT_ROM_ENTRIES
+  // modules
+  LROT_TABENTRY( struct, thislib )
+  LROT_TABENTRY(bit, bit)
+  LROT_TABENTRY(color_utils, color_utils)
+  LROT_TABENTRY(sjson, sjson)
+  LROT_TABENTRY(pipe, pipe)
+  LROT_TABENTRY(pixbuf, pixbuf)
 LROT_END(rotables, LROT_TABLEREF(rotables_meta), 0)
 
 LROT_BEGIN(lua_libs, NULL, 0)
   LROT_LIB_ENTRIES
   LROT_FUNCENTRY( io, luaopen_io )
   LROT_FUNCENTRY( os, luaopen_os )
+  // modules
+  LROT_FUNCENTRY(struct, NULL)
+  LROT_FUNCENTRY(bit, NULL)
+  LROT_FUNCENTRY(color_utils, NULL)
+  LROT_FUNCENTRY(sjson, luaopen_sjson)
+  LROT_FUNCENTRY(pipe, NULL)
+  LROT_FUNCENTRY(pixbuf, luaopen_pixbuf)
 LROT_END(lua_libs, NULL, 0)
 
 #else /* LUA_USE_ESP */

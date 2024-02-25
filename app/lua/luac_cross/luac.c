@@ -291,8 +291,7 @@ static int pmain(lua_State* L)
  {
   luaL_openlibs(L);
   if (luaL_loadfile(L,execute)!=0) fatal(lua_tostring(L,-1));
-  lua_pushstring(L, execute);
-  if (lua_pcall(L, 1, 1, 0)) fatal(lua_tostring(L,-1));
+  if (lua_pcall(L, 0, 1, 0)) fatal(lua_tostring(L,-1));
   if (!lua_isfunction(L, -1))
   {
    lua_pop(L,1);
