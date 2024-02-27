@@ -13,11 +13,16 @@
 #include "platform.h"
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_spiffs.h"
 #include "esp_netif.h"
+#include "esp_vfs_dev.h"
+#include "esp_vfs_cdcacm.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "driver/usb_serial_jtag.h"
 #include "nvs_flash.h"
 
 #include "task/task.h"
@@ -98,7 +103,7 @@ static void start_lua ()
     lua_main();
 }
 
-void nodemcu_init(void)
+static void nodemcu_init(void)
 {
     NODE_ERR("\n");
     // Initialize platform first for lua modules.
@@ -141,6 +146,89 @@ void nodemcu_init(void)
 }
 
 
+static void console_task(void *)
+{
+  char linebuf[64];
+  for (;;)
+  {
+    ssize_t n = read(fileno(stdin), linebuf, sizeof(linebuf));
+    if (n > 0)
+    {
+      // If we want to honor run_input, we'd need to check the return val
+      feed_lua_input(linebuf, n);
+    }
+  }
+}
+
+
+static void console_init(void)
+{
+  fflush(stdout);
+  fsync(fileno(stdout));
+
+  /* Disable buffering */
+  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
+
+  /* Disable non-blocking mode */
+  fcntl(fileno(stdin), F_SETFL, 0);
+  fcntl(fileno(stdout), F_SETFL, 0);
+
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  /* Based on console/advanced example */
+
+  esp_vfs_dev_uart_port_set_rx_line_endings(
+    CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
+  esp_vfs_dev_uart_port_set_tx_line_endings(
+    CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
+
+  /* Configure UART. Note that REF_TICK is used so that the baud rate remains
+   * correct while APB frequency is changing in light sleep mode.
+   */
+  const uart_config_t uart_config = {
+    .baud_rate = CONFIG_ESP_CONSOLE_UART_BAUDRATE,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+#if SOC_UART_SUPPORT_REF_TICK
+    .source_clk = UART_SCLK_REF_TICK,
+#elif SOC_UART_SUPPORT_XTAL_CLK
+    .source_clk = UART_SCLK_XTAL,
+#endif
+  };
+  /* Install UART driver for interrupt-driven reads and writes */
+  uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, 256, 0, 0, NULL, 0);
+  uart_param_config(CONFIG_ESP_CONSOLE_UART_NUM, &uart_config);
+
+  /* Tell VFS to use UART driver */
+  esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+
+#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+  /* Based on @pjsg's work */
+
+  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
+  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+
+  usb_serial_jtag_driver_config_t usb_serial_jtag_config =
+    USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+  /* Install USB-SERIAL-JTAG driver for interrupt-driven reads and write */
+  usb_serial_jtag_driver_install(&usb_serial_jtag_config);
+
+  esp_vfs_usb_serial_jtag_use_driver();
+#elif CONFIG_ESP_CONSOLE_USB_CDC
+  /* Based on console/advanced_usb_cdc */
+
+  esp_vfs_dev_cdcacm_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
+  esp_vfs_dev_cdcacm_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+#else
+# error "Unsupported console type"
+#endif
+
+  xTaskCreate(
+    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
+}
+
+
 void __attribute__((noreturn)) app_main(void)
 {
   task_init();
@@ -155,13 +243,12 @@ void __attribute__((noreturn)) app_main(void)
     relay_default_loop_events,
     NULL);
 
-  platform_uart_start(CONFIG_ESP_CONSOLE_UART_NUM);
-  setvbuf(stdout, NULL, _IONBF, 0);
-
   nodemcu_init ();
 
   nvs_flash_init ();
   esp_netif_init ();
+
+  console_init();
 
   start_lua ();
   task_pump_messages ();
