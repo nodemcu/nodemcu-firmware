@@ -3,6 +3,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include <stdio.h>
+#include <string.h>
 
 static struct input_state {
   char       *data;
@@ -59,7 +60,7 @@ size_t feed_lua_input(const char *buf, size_t n)
     /* backspace key */
     if (ch == DEL || ch == BS) {
       if (ins.line_pos > 0) {
-        if(input_echo) printf(BS_OVER);
+        if(input_echo) fwrite(BS_OVER, strlen(BS_OVER), 1, stdout);
         ins.line_pos--;
       }
       ins.data[ins.line_pos] = 0;
@@ -73,7 +74,7 @@ size_t feed_lua_input(const char *buf, size_t n)
       if (input_echo) putchar(LF);
       if (ins.line_pos == 0) {
         /* Get a empty line, then go to get a new line */
-        printf(ins.prompt);
+        fwrite(ins.prompt, strlen(ins.prompt), 1, stdout);
         fflush(stdout);
       } else {
         ins.data[ins.line_pos++] = LF;
