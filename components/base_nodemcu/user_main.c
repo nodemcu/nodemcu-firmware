@@ -148,14 +148,18 @@ static void nodemcu_init(void)
 
 static void console_task(void *)
 {
-  char linebuf[64];
   for (;;)
   {
-    ssize_t n = read(fileno(stdin), linebuf, sizeof(linebuf));
+    /* We can't use a large read buffer here as some console choices
+     * (e.g. usb-serial-jtag) don't support read timeouts/partial reads,
+     * which breaks the echo support and makes for a bad user experience.
+     */
+    char c;
+    ssize_t n = read(fileno(stdin), &c, 1);
     if (n > 0)
     {
       // If we want to honor run_input, we'd need to check the return val
-      feed_lua_input(linebuf, n);
+      feed_lua_input(&c, 1);
       // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
       fsync(fileno(stdout));
     }
