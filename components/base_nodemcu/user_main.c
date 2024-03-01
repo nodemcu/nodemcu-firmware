@@ -227,7 +227,7 @@ static void console_init(void)
 #endif
 
   xTaskCreate(
-    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
+    console_task, "console", 2048, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
 }
 
 
