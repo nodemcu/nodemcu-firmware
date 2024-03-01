@@ -156,6 +156,8 @@ static void console_task(void *)
     {
       // If we want to honor run_input, we'd need to check the return val
       feed_lua_input(linebuf, n);
+      // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
+      fsync(fileno(stdout));
     }
   }
 }
