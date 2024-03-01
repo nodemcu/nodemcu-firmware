@@ -53,6 +53,8 @@ typedef struct {
 static task_handle_t     relayed_event_task;
 static SemaphoreHandle_t relayed_event_handled;
 
+static task_handle_t lua_feed_task;
+
 
 // This function runs in the context of the system default event loop RTOS task
 static void relay_default_loop_events(
@@ -146,6 +148,16 @@ static void nodemcu_init(void)
 }
 
 
+static void console_nodemcu_task(task_param_t param, task_prio_t prio)
+{
+  (void)prio;
+  char c = (char)param;
+  feed_lua_input(&c, 1);
+  // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
+  fsync(fileno(stdout));
+}
+
+
 static void console_task(void *)
 {
   for (;;)
@@ -156,12 +168,12 @@ static void console_task(void *)
      */
     char c;
     ssize_t n = read(fileno(stdin), &c, 1);
-    if (n > 0)
+    if (n > 0 && run_input)
     {
-      // If we want to honor run_input, we'd need to check the return val
-      feed_lua_input(&c, 1);
-      // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
-      fsync(fileno(stdout));
+      if (!task_post_block_high(lua_feed_task, (task_param_t)c))
+      {
+        NODE_ERR("Lost console input data?!\n");
+      }
     }
   }
 }
@@ -231,13 +243,15 @@ static void console_init(void)
 #endif
 
   xTaskCreate(
-    console_task, "console", 2048, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
+    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
 }
 
 
 void __attribute__((noreturn)) app_main(void)
 {
   task_init();
+
+  lua_feed_task = task_get_id(console_nodemcu_task);
 
   relayed_event_handled = xSemaphoreCreateBinary();
   relayed_event_task = task_get_id(handle_default_loop_event);
