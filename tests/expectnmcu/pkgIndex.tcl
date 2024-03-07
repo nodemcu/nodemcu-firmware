@@ -9,4 +9,5 @@
 # full path name of this file's directory.
 
 package ifneeded expectnmcu::core 1.0 [list source [file join $dir core.tcl]]
+package ifneeded expectnmcu::net  1.0 [list source [file join $dir  net.tcl]]
 package ifneeded expectnmcu::xfer 1.0 [list source [file join $dir xfer.tcl]]
