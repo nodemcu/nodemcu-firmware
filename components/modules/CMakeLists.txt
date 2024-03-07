@@ -8,6 +8,7 @@ set(module_srcs
   "dht.c"
   "encoder.c"
   "eromfs.c"
+  "espnow.c"
   "file.c"
   "gpio.c"
   "heaptrace.c"

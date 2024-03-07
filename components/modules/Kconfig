@@ -82,6 +82,12 @@ menu "NodeMCU modules"
             store the directory path as part of the filename just as SPIFFS
             does.
 
+    config NODEMCU_CMODULE_ESPNOW
+        bool "ESP-NOW module"
+        default "n"
+        help
+            Includes the espnow module.
+
     config NODEMCU_CMODULE_ETH
         depends on IDF_TARGET_ESP32
         select ETH_USE_ESP32_EMAC
