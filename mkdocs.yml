@@ -48,6 +48,7 @@ nav:
       - 'dht': 'modules/dht.md'
       - 'encoder': 'modules/encoder.md'
       - 'eromfs': 'modules/eromfs.md'
+      - 'espnow': 'modules/espnow.md'
       - 'eth': 'modules/eth.md'
       - 'file': 'modules/file.md'
       - 'gpio': 'modules/gpio.md'
