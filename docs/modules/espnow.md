@@ -1,7 +1,7 @@
 # ESP-NOW Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2024-03-07 | [Jade Mattsson](https://github.com/jmattsson) |[Jade Mattsson](https://github.com/jmattsson) | [espnow.c](../../components/modules/espnow.c)|
+| 2024-03-07 | [DiUS](https://github.com/DiUS) [Jade Mattsson](https://github.com/jmattsson) |[Jade Mattsson](https://github.com/jmattsson) | [espnow.c](../../components/modules/espnow.c)|
 
 The `espnow` module provides an interface to Espressif's [ESP-NOW functionality](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html). To quote their documentation directly:
 
@@ -113,8 +113,8 @@ Registers a peer MAC address. Optionally parameters for the peer may be included
 espnow.addpeer(mac, options)
 ```
 #### Parameters
-`mac`  The peer mac address, given as a string in `00:11:22:33:44:55` format (colons optional, and may also be replaced by '-' or ' ').
-`options`  A table with with following entries:
+- `mac`  The peer mac address, given as a string in `00:11:22:33:44:55` format (colons optional, and may also be replaced by '-' or ' ').
+- `options`  A table with with following entries:
   - `channel`  An integer indicating the WiFi channel to be used. The default is `0`, indicating that the current WiFi channel should be used. If non-zero, must match the current WiFi channel.
   - `lmk`  The LMK for the peer, if encryption is to be used.
   - `encrypt`  A non-zero integer to indicate encryption should be enabled. When set, makes `lmk` a required field.
@@ -166,10 +166,11 @@ Only a single callback function can be registered for each event.
 The callback function for the `sent` event is invoked with two parameters, the destination MAC address, and a `1`/`nil` to indicate whether the send was believed to be successful or not.
 
 The callback function for the `receive` event is invoked with a single parameter, a table with the following keys:
-  - `src`  The sender MAC address
-  - `dst`  The destination MAC address (likely either the local MAC of the receiver, or the broadcast address)
-  - `rssi`  The RSSI value from the packet, indicating signal strength between the two devices
-  - `data`  The actual payload data, as a string. The string may contain binary data.
+
+- `src`  The sender MAC address
+- `dst`  The destination MAC address (likely either the local MAC of the receiver, or the broadcast address)
+- `rssi`  The RSSI value from the packet, indicating signal strength between the two devices
+- `data`  The actual payload data, as a string. The string may contain binary data.
 
 #### Syntax
 ```lua
@@ -177,8 +178,8 @@ espnow.on(event, callbackfn)
 ```
 
 #### Parameters
-`event`  The event name, one of `sent` or `receive`.
-`callbackfn`  The callback function to register, or `nil` to unregister the previously set callback function for the event.
+- `event`  The event name, one of `sent` or `receive`.
+- `callbackfn`  The callback function to register, or `nil` to unregister the previously set callback function for the event.
 
 #### Returns
 `nil`
@@ -215,8 +216,8 @@ espnow.send(peer, data)
 ```
 
 #### Parameters
-`peer`  The peer MAC address to send to. Must have previously been added via `espnow.addpeer()`. If `peer` is given as `nil`, the packet is sent to all registered non-broadcast/multicast peers, and the `sent` callback is invoked for each of those peers.
-`data`  A string of data to send. May contain binary bytes. Maximum supported length at the time of writing is 250 bytes.
+- `peer`  The peer MAC address to send to. Must have previously been added via `espnow.addpeer()`. If `peer` is given as `nil`, the packet is sent to all registered non-broadcast/multicast peers, and the `sent` callback is invoked for each of those peers.
+- `data`  A string of data to send. May contain binary bytes. Maximum supported length at the time of writing is 250 bytes.
 
 #### Returns
 `nil`, but the `sent` callback is invoked with the status afterwards.
