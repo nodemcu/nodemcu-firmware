@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Prepare cache key
         run: git rev-parse HEAD:sdk/esp32-esp-idf > idf.rev
         shell: bash
       - name: Cache Espressif tools
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.espressif
           key: ${{ runner.os }}-espressif-tools-${{ hashFiles('idf.rev') }}
@@ -58,7 +58,7 @@ jobs:
           echo lua_build_opts="$(expr "$(./build/luac_cross/luac.cross -v)" : '.*\[\(.*\)\]')" >> $GITHUB_ENV
         shell: bash
       - name: Upload luac.cross
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ success() }}
         with:
           name: luac.cross-${{ env.lua_build_opts }}-${{ matrix.target }}
