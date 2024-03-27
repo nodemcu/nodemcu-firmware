@@ -66,6 +66,7 @@ nav:
       - 'pulsecnt': 'modules/pulsecnt.md'
       - 'qrcodegen': 'modules/qrcodegen.md'
       - 'rmt': 'modules/rmt.md'
+      - 'rtcmem': 'modules/rtcmem.md'
       - 'sdmmc': 'modules/sdmmc.md'
       - 'sigma delta': 'modules/sigma-delta.md'
       - 'sjson': 'modules/sjson.md'
