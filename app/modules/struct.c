@@ -155,7 +155,7 @@ static int gettoalign (size_t len, Header *h, int opt, size_t size) {
 
 
 /*
-** options to control endianess and alignment
+** options to control endianness and alignment
 */
 static void controloptions (lua_State *L, int opt, const char **fmt,
                             Header *h) {

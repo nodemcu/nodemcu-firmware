@@ -51,7 +51,7 @@ extern "C" {
  * 'a' is expected to be 'higher' (without overflow) than 'b'. */
 #define LWIP_U32_DIFF(a, b) (((a) >= (b)) ? ((a) - (b)) : (((a) + ((b) ^ 0xFFFFFFFF) + 1)))
 
-/* Endianess-optimized shifting of two u8_t to create one u16_t */
+/* Endianness-optimized shifting of two u8_t to create one u16_t */
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define LWIP_MAKE_U16(a, b) ((a << 8) | b)
 #else

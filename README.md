@@ -10,6 +10,8 @@ NodeMCU is an open source [Lua](https://www.lua.org/) based firmware for the [ES
 
 The firmware was initially developed as is a companion project to the popular ESP8266-based [NodeMCU development modules]((https://github.com/nodemcu/nodemcu-devkit-v1.0)), but the project is now community-supported, and the firmware can now be run on _any_ ESP module.
 
+**The NodeMCU `release` and `dev` branches target the ESP8266. The `dev-esp32` branch targets the ESP32.**
+
 ## Summary
 
 - Easy to program wireless node and/or access point
