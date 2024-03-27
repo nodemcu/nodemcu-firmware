@@ -33,6 +33,11 @@ jobs:
         run: |
           cp sdkconfig.defaults sdkconfig
         shell: bash
+      - name: Update config for Lua 5.1
+        if: ${{ matrix.lua_ver == '5.1' }}
+        run: |
+          echo CONFIG_LUA_VERSION_51=y >> sdkconfig
+        shell: bash
       - name: Update config for Lua 5.1, integer-only
         if: ${{ matrix.lua_ver == '5.1' && matrix.numbers == 'alternate' }}
         run: |
