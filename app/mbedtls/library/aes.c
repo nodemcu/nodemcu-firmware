@@ -1111,7 +1111,7 @@ int mbedtls_aes_crypt_cbc( mbedtls_aes_context *ctx,
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
 
-/* Endianess with 64 bits values */
+/* Endianness with 64 bits values */
 #ifndef GET_UINT64_LE
 #define GET_UINT64_LE(n,b,i)                            \
 {                                                       \
@@ -1147,7 +1147,7 @@ typedef unsigned char mbedtls_be128[16];
  *
  * This function multiplies a field element by x in the polynomial field
  * representation. It uses 64-bit word operations to gain speed but compensates
- * for machine endianess and hence works correctly on both big and little
+ * for machine endianness and hence works correctly on both big and little
  * endian machines.
  */
 static void mbedtls_gf128mul_x_ble( unsigned char r[16],
