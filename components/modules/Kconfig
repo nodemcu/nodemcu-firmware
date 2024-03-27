@@ -83,6 +83,7 @@ menu "NodeMCU modules"
             does.
 
     config NODEMCU_CMODULE_ESPNOW
+        depends on !IDF_TARGET_ESP32H2
         bool "ESP-NOW module"
         default "n"
         help
@@ -309,6 +310,7 @@ menu "NodeMCU modules"
     rsource "../ucg/Kconfig.ucg"
 
     config NODEMCU_CMODULE_WIFI
+        depends on !IDF_TARGET_ESP32H2
         bool "WiFi module"
         default "y"
         help
