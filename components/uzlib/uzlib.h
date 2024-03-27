@@ -18,7 +18,7 @@
 #define uz_malloc malloc
 #define uz_free free
 
-#if defined(__XTENSA__) || defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET)
 
 #define UZLIB_THROW(v) longjmp(unwindAddr, (v))
 #define UZLIB_SETJMP setjmp

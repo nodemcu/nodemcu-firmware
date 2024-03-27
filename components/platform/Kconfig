@@ -72,6 +72,7 @@ menu "NodeMCU platform config"
             default y if IDF_TARGET_ESP32S2
             default y if IDF_TARGET_ESP32S3
             default y if IDF_TARGET_ESP32C3
+            default y if IDF_TARGET_ESP32C6
             default y if IDF_TARGET_ESP32H2
 
         config NODEMCU_UART_AT_LEAST_3

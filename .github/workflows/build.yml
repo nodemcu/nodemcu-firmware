@@ -10,7 +10,7 @@ jobs:
       matrix:
         lua_ver: ['5.1', '5.3']
         numbers: ['default', 'alternate']
-        target: ['esp32', 'esp32s2', 'esp32s3', 'esp32c3']
+        target: ['esp32', 'esp32s2', 'esp32s3', 'esp32c3', 'esp32c6']
 
     runs-on: ubuntu-20.04
 
