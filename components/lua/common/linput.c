@@ -11,7 +11,9 @@ static struct input_state {
   size_t      len;
   const char *prompt;
   char last_nl_char;
-} ins = {0};
+} ins = {
+  .prompt = "? ", // prompt should never be allowed to be null
+};
 
 #define NUL '\0'
 #define BS  '\010'
@@ -23,6 +25,15 @@ static struct input_state {
 bool input_echo = true;
 bool run_input = true;
 
+void input_setprompt (const char *prompt) {
+  if (prompt == NULL)
+  {
+    fprintf(stderr, "Error: attempted to set a null prompt?!");
+    return;
+  }
+  ins.prompt = prompt;
+}
+
 /*
 ** The input state (ins) is private, so input_setup() exposes the necessary
 ** access to public properties and is called in user_init() before the Lua
@@ -32,11 +43,8 @@ void input_setup(int bufsize, const char *prompt) {
   // Initialise non-zero elements
   ins.data      = malloc(bufsize);
   ins.len       = bufsize;
-  ins.prompt    = prompt;
-}
-
-void input_setprompt (const char *prompt) {
-  ins.prompt = prompt;
+  // Call to get the prompt error checking
+  input_setprompt(prompt);
 }
 
 
