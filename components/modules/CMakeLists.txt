@@ -18,6 +18,7 @@ set(module_srcs
   "i2c_hw_master.c"
   "i2c_hw_slave.c"
   "ledc.c"
+  "matrix.c"
   "mqtt.c"
   "net.c"
   "node.c"
