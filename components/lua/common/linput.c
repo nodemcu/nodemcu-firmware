@@ -3,6 +3,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include <stdio.h>
+#include <string.h>
 
 static struct input_state {
   char       *data;
@@ -10,7 +11,9 @@ static struct input_state {
   size_t      len;
   const char *prompt;
   char last_nl_char;
-} ins = {0};
+} ins = {
+  .prompt = "? ", // prompt should never be allowed to be null
+};
 
 #define NUL '\0'
 #define BS  '\010'
@@ -22,6 +25,15 @@ static struct input_state {
 bool input_echo = true;
 bool run_input = true;
 
+void input_setprompt (const char *prompt) {
+  if (prompt == NULL)
+  {
+    fprintf(stderr, "Error: attempted to set a null prompt?!");
+    return;
+  }
+  ins.prompt = prompt;
+}
+
 /*
 ** The input state (ins) is private, so input_setup() exposes the necessary
 ** access to public properties and is called in user_init() before the Lua
@@ -31,11 +43,8 @@ void input_setup(int bufsize, const char *prompt) {
   // Initialise non-zero elements
   ins.data      = malloc(bufsize);
   ins.len       = bufsize;
-  ins.prompt    = prompt;
-}
-
-void input_setprompt (const char *prompt) {
-  ins.prompt = prompt;
+  // Call to get the prompt error checking
+  input_setprompt(prompt);
 }
 
 
@@ -59,7 +68,7 @@ size_t feed_lua_input(const char *buf, size_t n)
     /* backspace key */
     if (ch == DEL || ch == BS) {
       if (ins.line_pos > 0) {
-        if(input_echo) printf(BS_OVER);
+        if(input_echo) fwrite(BS_OVER, strlen(BS_OVER), 1, stdout);
         ins.line_pos--;
       }
       ins.data[ins.line_pos] = 0;
@@ -73,7 +82,7 @@ size_t feed_lua_input(const char *buf, size_t n)
       if (input_echo) putchar(LF);
       if (ins.line_pos == 0) {
         /* Get a empty line, then go to get a new line */
-        printf(ins.prompt);
+        fwrite(ins.prompt, strlen(ins.prompt), 1, stdout);
         fflush(stdout);
       } else {
         ins.data[ins.line_pos++] = LF;

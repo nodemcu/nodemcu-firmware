@@ -284,6 +284,11 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 
 void platform_uart_setmode(unsigned id, unsigned mode)
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return;
+#endif
+
 	uart_mode_t uartMode;
 	
 	switch(mode)
@@ -334,6 +339,11 @@ void platform_uart_flush( unsigned id )
 
 int platform_uart_start( unsigned id )
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return -1;
+#endif
+
   if(uart_event_task_id == 0)
     uart_event_task_id = task_get_id( uart_event_task );
 
@@ -365,16 +375,16 @@ int platform_uart_start( unsigned id )
 
 void platform_uart_stop( unsigned id )
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
-    ;
-  else {
-    uart_status_t *us = & uart_status[id];  
-    uart_driver_delete(id);
-    if(us->line_buffer) free(us->line_buffer);
-    us->line_buffer = NULL;
-    if(us->taskHandle) vTaskDelete(us->taskHandle);
-    us->taskHandle = NULL;
-  }
+    return;
+#endif
+  uart_status_t *us = & uart_status[id];
+  uart_driver_delete(id);
+  if(us->line_buffer) free(us->line_buffer);
+  us->line_buffer = NULL;
+  if(us->taskHandle) vTaskDelete(us->taskHandle);
+  us->taskHandle = NULL;
 }
 
 int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {

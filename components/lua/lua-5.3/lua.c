@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "user_version.h"
 #include "linput.h"
 
@@ -211,6 +212,7 @@ static void dojob (lua_State *L) {
   prompt = get_prompt(L, MLref!= LUA_NOREF ? 0 : 1);
   input_setprompt(prompt);
   lua_writestring(prompt,strlen(prompt));
+  fsync(fileno(stdout)); /* work around IDF issue on ACM consoles */
 }
 
 

@@ -55,18 +55,30 @@ task_handle_t task_get_id(task_callback_t t) {
 }
 
 
-bool IRAM_ATTR task_post(task_prio_t priority, task_handle_t handle, task_param_t param)
+static bool IRAM_ATTR task_post_wait(task_prio_t priority, task_handle_t handle, task_param_t param, unsigned max_wait)
 {
   if (priority >= TASK_PRIORITY_COUNT ||
       (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
     return false;
 
   task_event_t ev = { handle, param };
-  bool res = (pdPASS == xQueueSendToBack(task_Q[priority], &ev, 0));
+  bool res = (pdPASS == xQueueSendToBack(task_Q[priority], &ev, max_wait));
 
   xSemaphoreGive(pending);
 
   return res;
+}
+
+
+bool IRAM_ATTR task_post(task_prio_t priority, task_handle_t handle, task_param_t param)
+{
+  return task_post_wait(priority, handle, param, 0);
+}
+
+
+bool IRAM_ATTR task_post_block(task_prio_t priority, task_handle_t handle, task_param_t param)
+{
+  return task_post_wait(priority, handle, param, portMAX_DELAY);
 }
 
 

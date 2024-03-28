@@ -1,4 +1,11 @@
 # Modules common to all chips
+set(wifi_modules
+  "espnow.c"
+  "wifi.c"
+  "wifi_ap.c"
+  "wifi_common.c"
+  "wifi_sta.c"
+)
 set(module_srcs
   "adc.c"
   "bit.c"
@@ -8,7 +15,6 @@ set(module_srcs
   "dht.c"
   "encoder.c"
   "eromfs.c"
-  "espnow.c"
   "file.c"
   "gpio.c"
   "heaptrace.c"
@@ -24,6 +30,7 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rmt.c"
   "rtcmem.c"
   "qrcodegen.c"
   "sigma_delta.c"
@@ -37,10 +44,6 @@ set(module_srcs
   "u8g2.c"
   "uart.c"
   "ucg.c"
-  "wifi.c"
-  "wifi_ap.c"
-  "wifi_common.c"
-  "wifi_sta.c"
   "ws2812.c"
 )
 
@@ -53,25 +56,34 @@ if(IDF_TARGET STREQUAL "esp32")
     "eth.c"
     "i2s.c"
     "pulsecnt.c"
-    "rmt.c"
     "sdmmc.c"
     "touch.c"
+    ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
     "pulsecnt.c"
-    "rmt.c"
+    ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32s3")
   list(APPEND module_srcs
+    "dac.c"
     "pulsecnt.c"
-    "rmt.c"
     "sdmmc.c"
+    ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
-    "rmt.c"
+  )
+elseif(IDF_TARGET STREQUAL "esp32c6")
+  list(APPEND module_srcs
+    "dac.c"
+    "pulsecnt.c"
+    ${wifi_modules}
+  )
+elseif(IDF_TARGET STREQUAL "esp32h2")
+  list(APPEND module_srcs
   )
 endif()
 
