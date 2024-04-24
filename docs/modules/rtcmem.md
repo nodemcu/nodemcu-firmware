@@ -1,7 +1,7 @@
 # RTC User Memory Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2015-06-25 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [PJSG](https://github.com/pjsg) | [rtcmem.c](../../app/modules/rtcmem.c)|
+| 2015-06-25 | [DiUS](https://github.com/DiUS), [Jade Mattsson](https://github.com/jmattsson) | [PJSG](https://github.com/pjsg) | [rtcmem.c](../../components/modules/rtcmem.c)|
 
 The rtcmem module provides basic access to the RTC memory. 
 

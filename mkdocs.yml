@@ -20,7 +20,7 @@ extra_css:
 extra_javascript:
   - js/extra.js
 
-pages:
+nav:
   - Overview: 'index.md'
   - Basics:
       - Building the firmware: 'build.md'
@@ -47,6 +47,8 @@ pages:
       - 'dac': 'modules/dac.md'
       - 'dht': 'modules/dht.md'
       - 'encoder': 'modules/encoder.md'
+      - 'eromfs': 'modules/eromfs.md'
+      - 'espnow': 'modules/espnow.md'
       - 'eth': 'modules/eth.md'
       - 'file': 'modules/file.md'
       - 'gpio': 'modules/gpio.md'
@@ -64,6 +66,8 @@ pages:
       - 'pipe':         'modules/pipe.md'
       - 'pulsecnt': 'modules/pulsecnt.md'
       - 'qrcodegen': 'modules/qrcodegen.md'
+      - 'rmt': 'modules/rmt.md'
+      - 'rtcmem': 'modules/rtcmem.md'
       - 'sdmmc': 'modules/sdmmc.md'
       - 'sigma delta': 'modules/sigma-delta.md'
       - 'sjson': 'modules/sjson.md'

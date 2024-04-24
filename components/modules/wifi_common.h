@@ -56,7 +56,7 @@ typedef void (*fill_cb_arg_fn) (lua_State *L, const void *data);
 typedef struct
 {
   const char *name;
-  esp_event_base_t *event_base_ptr;
+  const esp_event_base_t *event_base_ptr;
   int32_t  event_id;
   fill_cb_arg_fn fill_cb_arg;
 } event_desc_t;

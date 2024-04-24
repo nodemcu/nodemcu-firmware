@@ -40,6 +40,7 @@ This optional table consists of a number of keys that control various aspects of
 - `carrier_hz` specifies that the signal is to modulate the carrier at the specified frequency. This is useful for IR transmissions.
 - `carrier_duty` specifies the duty cycle of the carrier. Defaults to 50%
 - `idle_level` specifies what value to send when the transmission completes.
+- `slots` If specified, then the number of memory slots used for transmission. 1 slot = 64 pulses (i.e. high and low widths). Total slots in the system are 8 (on the ESP32). Slots cannot be shared.
 
 ## rmt.rxsetup(gpio, bitrate, options)
 
@@ -71,6 +72,7 @@ This optional table consists of a number of keys that control various aspects of
 - `invert` if true, then the input is inverted.
 - `filter_ticks` If specified, then any pulse shorter than this will be ignored. This is in units of the bit time.
 - `idle_threshold` If specified, then any level longer than this will set the receiver as idle. The default is 65535 bit times.
+- `slots` If specified, then the number of memory slots used for reception. 1 slot = 64 pulses (i.e. high and low widths). Total slots in the system are 8 (on the ESP32). Slots cannot be shared.
 
 
 ## channel:on(event, callback)

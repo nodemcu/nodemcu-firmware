@@ -11,6 +11,14 @@
 #define SHIFT_LOGICAL  0
 #define SHIFT_CIRCULAR 1
 
+// The default bit H & L durations in multiples of 100ns.
+#define WS2812_DURATION_T0H 4
+#define WS2812_DURATION_T0L 7
+#define WS2812_DURATION_T1H 8
+#define WS2812_DURATION_T1L 6
+// The default reset duration in multiples of 100ns.
+#define WS2812_DURATION_RESET 512
+
 
 typedef struct {
   int size;
@@ -33,6 +41,7 @@ static void ws2812_cleanup( lua_State *L, int pop )
 // ws2812.write({pin = 4, data = string.char(255, 0, 0, 255, 255, 255)}) first LED green, second LED white.
 static int ws2812_write( lua_State* L )
 {
+  int type;
   int top = lua_gettop( L );
 
   for (int stack = 1; stack <= top; stack++) {
@@ -54,6 +63,106 @@ static int ws2812_write( lua_State* L )
       return luaL_argerror( L, stack, "invalid pin" );
     }
     int gpio_num = luaL_checkint( L, -1 );
+    lua_pop( L, 1 );
+
+    //
+    // retrieve reset
+    // This is an optional parameter which defaults to WS2812_DURATION_RESET.
+    //
+    int reset = WS2812_DURATION_RESET;
+    type = lua_getfield( L, stack, "reset" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid reset" );
+      }
+      reset = luaL_checkint( L, -1 );
+      if ((reset<0) || (reset>0xfffe)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "reset must be 0<=reset<=65534" );
+      }
+    }
+    lua_pop( L, 1 );
+
+    //
+    // retrieve t0h
+    // This is an optional parameter which defaults to WS2812_DURATION_T0H.
+    //
+    int t0h = WS2812_DURATION_T0H;
+    type = lua_getfield( L, stack, "t0h" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid t0h" );
+      }
+      t0h = luaL_checkint( L, -1 );
+      if ((t0h<1) || (t0h>0x7fff)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "t0h must be 1<=t0h<=32767" );
+      }
+    }
+    lua_pop( L, 1 );
+
+    //
+    // retrieve t0l
+    // This is an optional parameter which defaults to WS2812_DURATION_T0L.
+    //
+    int t0l = WS2812_DURATION_T0L;
+    type = lua_getfield( L, stack, "t0l" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid t0l" );
+      }
+      t0l = luaL_checkint( L, -1 );
+      if ((t0l<1) || (t0l>0x7fff)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "t0l must be 1<=t0l<=32767" );
+      }
+    }
+    lua_pop( L, 1 );
+
+    //
+    // retrieve t1h
+    // This is an optional parameter which defaults to WS2812_DURATION_T1H.
+    //
+    int t1h = WS2812_DURATION_T1H;
+    type = lua_getfield( L, stack, "t1h" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid t1h" );
+      }
+      t1h = luaL_checkint( L, -1 );
+      if ((t1h<1) || (t1h>0x7fff)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "t1h must be 1<=t1h<=32767" );
+      }
+    }
+    lua_pop( L, 1 );
+
+    //
+    // retrieve t1l
+    // This is an optional parameter which defaults to WS2812_DURATION_T1L.
+    //
+    int t1l = WS2812_DURATION_T1L;
+    type = lua_getfield( L, stack, "t1l" );
+    if (type!=LUA_TNIL )
+    {
+      if (!lua_isnumber( L, -1 )) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "invalid t1l" );
+      }
+      t1l = luaL_checkint( L, -1 );
+      if ((t1l<1) || (t1l>0x7fff)) {
+        ws2812_cleanup( L, 1 );
+        return luaL_argerror( L, stack, "t1l must be 1<=t1l<=32767" );
+      }
+    }
     lua_pop( L, 1 );
 
     //
@@ -83,7 +192,7 @@ static int ws2812_write( lua_State* L )
     lua_pop( L, 1 );
 
     // prepare channel
-    if (platform_ws2812_setup( gpio_num, 1, (const uint8_t *)data, length ) != PLATFORM_OK) {
+    if (platform_ws2812_setup( gpio_num, reset, t0h, t0l, t1h, t1l, (const uint8_t *)data, length ) != PLATFORM_OK) {
       ws2812_cleanup( L, 0 );
       return luaL_argerror( L, stack, "can't set up chain" );
     }

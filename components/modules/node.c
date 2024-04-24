@@ -362,7 +362,12 @@ static int node_dsleep (lua_State *L)
     int level = opt_checkint_range(L, "level", 1, 0, 1);
     if (pin_mask) {
       esp_sleep_ext1_wakeup_mode_t mode = (level == 1) ?
-        ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW;
+        ESP_EXT1_WAKEUP_ANY_HIGH :
+#ifdef CONFIG_IDF_TARGET_ESP32
+        ESP_EXT1_WAKEUP_ALL_LOW;
+#else
+        ESP_EXT1_WAKEUP_ANY_LOW;
+#endif
       int err = esp_sleep_enable_ext1_wakeup(pin_mask, mode);
       if (err) {
         return luaL_error(L, "Error %d returned from esp_sleep_enable_ext1_wakeup", err);
