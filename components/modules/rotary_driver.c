@@ -175,6 +175,15 @@ void rotary_event_handled(rotary_driver_handle_t d)
   d->task_queued = 0;
 }
 
+bool rotary_has_queued_task(rotary_driver_handle_t d) {
+  if (!d) {
+    return false;
+  }
+
+  return d->task_queued;
+}
+
+
 // The pin numbers are actual platform GPIO numbers
 rotary_driver_handle_t rotary_setup(int phase_a, int phase_b, int press,
                                     task_handle_t tasknumber, void *arg) {

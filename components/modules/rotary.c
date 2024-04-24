@@ -44,6 +44,7 @@ typedef struct {
   uint32_t last_event_time;
   int callback[CALLBACK_COUNT];
   esp_timer_handle_t timer_handle;
+  int self_ref;
 } DATA;
 
 static task_handle_t tasknumber;
@@ -141,6 +142,8 @@ static int lrotary_setup( lua_State* L )
     d->callback[i] = LUA_NOREF;
   }
 
+  d->self_ref = LUA_NOREF;
+
   d->click_delay_us = CLICK_DELAY_US;
   d->longpress_delay_us = LONGPRESS_DELAY_US;
 
@@ -173,6 +176,27 @@ static int lrotary_setup( lua_State* L )
   return 1;
 }
 
+static void update_self_ref(lua_State *L, DATA *d, int argnum) {
+  bool have_callback = false;
+  for (int i = 0; i < CALLBACK_COUNT; i++) {
+    if (d->callback[i] != LUA_NOREF) {
+      have_callback = true;
+      break;
+    }
+  }
+  if (have_callback) {
+    if (d->self_ref == LUA_NOREF && argnum > 0) {
+      lua_pushvalue(L, argnum);
+      d->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    }
+  } else {
+    if (d->self_ref != LUA_NOREF) {
+      luaL_unref(L, LUA_REGISTRYINDEX, d->self_ref);
+      d->self_ref = LUA_NOREF;
+    }
+  }
+}
+
 // Lua: close( )
 static int lrotary_close( lua_State* L )
 {
@@ -180,6 +204,10 @@ static int lrotary_close( lua_State* L )
 
   if (d->handle) {
     callback_free(L, d, ROTARY_ALL);
+
+    if (!rotary_has_queued_task(d->handle)) {
+      update_self_ref(L, d, 1);
+    }
 
     if (rotary_close( d->handle )) {
       return luaL_error( L, "Unable to close switch." );
@@ -193,6 +221,7 @@ static int lrotary_close( lua_State* L )
     esp_timer_delete(d->timer_handle);
     d->timer_handle = NULL;
   } 
+
   return 0;
 }
 
@@ -210,6 +239,8 @@ static int lrotary_on( lua_State* L )
   } else {
     callback_free(L, d, mask);
   }
+
+  update_self_ref(L, d, 1);
 
   return 0;
 }
@@ -347,6 +378,8 @@ static void lrotary_task(task_param_t param, task_prio_t prio)
   if (need_to_post) {
     // If there is pending stuff, queue another task
     task_post_medium(tasknumber, param);
+  } else if (d) {
+    update_self_ref(L, d, -1);
   }
 }
 
