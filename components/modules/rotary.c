@@ -190,7 +190,7 @@ static void update_self_ref(lua_State *L, DATA *d, int argnum) {
       d->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
   } else {
-    if (d->self_ref != LUA_NOREF) {
+    if (d->self_ref != LUA_NOREF && !rotary_has_queued_event(d->handle)) {
       luaL_unref(L, LUA_REGISTRYINDEX, d->self_ref);
       d->self_ref = LUA_NOREF;
     }
@@ -205,7 +205,7 @@ static int lrotary_close( lua_State* L )
   if (d->handle) {
     callback_free(L, d, ROTARY_ALL);
 
-    if (!rotary_has_queued_task(d->handle)) {
+    if (!rotary_has_queued_event(d->handle)) {
       update_self_ref(L, d, 1);
     }
 

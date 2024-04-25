@@ -25,6 +25,4 @@ int rotary_close(struct rotary_driver_handle *handle);
 
 void rotary_event_handled(struct rotary_driver_handle *handle);
 
-bool rotary_has_queued_task(struct rotary_driver_handle *handle);
-
 #endif
