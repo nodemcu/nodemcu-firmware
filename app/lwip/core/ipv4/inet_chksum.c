@@ -75,7 +75,7 @@
  * @return host order (!) lwip checksum (non-inverted Internet sum)
  *
  * @note accumulator size limits summable length to 64k
- * @note host endianess is irrelevant (p3 RFC1071)
+ * @note host endianness is irrelevant (p3 RFC1071)
  */
 static u16_t ICACHE_FLASH_ATTR
 lwip_standard_chksum(void *dataptr, u16_t len)

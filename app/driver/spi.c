@@ -210,7 +210,7 @@ void spi_mast_blkget(uint8 spi_no, size_t bitlen, uint8 *data)
     os_memcpy((void *)data, (void *)SPI_W0(spi_no), aligned_len);
 }
 
-static uint32 swap_endianess(uint32 n)
+static uint32 swap_endianness(uint32 n)
 {
     return ((n & 0xff) << 24) |
             ((n & 0xff00) << 8) |
@@ -248,10 +248,10 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 
     // transfer Wn to buf
     spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
-    spi_buf.word[1] = swap_endianess(spi_buf.word[1]);
+    spi_buf.word[1] = swap_endianness(spi_buf.word[1]);
     if (wn < 15) {
         spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
-        spi_buf.word[0] = swap_endianess(spi_buf.word[0]);
+        spi_buf.word[0] = swap_endianness(spi_buf.word[0]);
     }
 
     shift = 64 - (offset & 0x1f) - bitlen;
@@ -259,9 +259,9 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
     spi_buf.dword |= (uint64)data << shift;
 
     if (wn < 15) {
-        WRITE_PERI_REG(SPI_W0(spi_no) + (wn+1)*4, swap_endianess(spi_buf.word[0]));
+        WRITE_PERI_REG(SPI_W0(spi_no) + (wn+1)*4, swap_endianness(spi_buf.word[0]));
     }
-    WRITE_PERI_REG(SPI_W0(spi_no) + wn*4, swap_endianess(spi_buf.word[1]));
+    WRITE_PERI_REG(SPI_W0(spi_no) + wn*4, swap_endianness(spi_buf.word[1]));
 
     return;
 }
@@ -293,10 +293,10 @@ uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen)
 
     // transfer Wn to buf
     spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
-    spi_buf.word[1] = swap_endianess(spi_buf.word[1]);
+    spi_buf.word[1] = swap_endianness(spi_buf.word[1]);
     if (wn < 15) {
         spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
-        spi_buf.word[0] = swap_endianess(spi_buf.word[0]);
+        spi_buf.word[0] = swap_endianness(spi_buf.word[0]);
     }
 
     result = (uint32)(spi_buf.dword >> (64 - ((offset & 0x1f) + bitlen)));
