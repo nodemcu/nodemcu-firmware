@@ -52,6 +52,7 @@ typedef struct {
   state_t state;
   bool open;
   int character_ref;
+  int self_ref;    // to prevent GC at bad moments.
   int callback[CALLBACK_COUNT];
   esp_timer_handle_t timer_handle;
   int8_t task_queued;
@@ -347,6 +348,11 @@ static int lmatrix_setup( lua_State* L )
   luaL_getmetatable(L, "matrix.keyboard");
   lua_setmetatable(L, -2);
 
+  // create a self_ref to prevent GC
+
+  lua_pushvalue(L, -1);
+  d->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
   d->columns = (uint8_t *) (d + 1);
   d->rows = d->columns + columns;
   d->column_count = columns;
@@ -394,6 +400,10 @@ static int lmatrix_close( lua_State* L )
     esp_timer_stop(d->timer_handle);
     esp_timer_delete(d->timer_handle);
     luaL_unref(L, LUA_REGISTRYINDEX, d->character_ref);
+
+    if (!HAS_QUEUED_DATA(d)) {
+      luaL_unref(L, LUA_REGISTRYINDEX, d->self_ref);
+    }
 
     d->open = false;
   }
@@ -484,6 +494,10 @@ static void lmatrix_task(task_param_t param, task_prio_t prio)
   if (need_to_post) {
     // If there is pending stuff, queue another task
     task_post_medium(tasknumber, param);
+  } else if (d) {
+    if (!d->open) {
+      luaL_unref(L, LUA_REGISTRYINDEX, d->self_ref);  
+    }
   }
 }
 
