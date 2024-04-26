@@ -251,7 +251,7 @@ void resizeBuffer(void) {
   /* The outbuf is given an initial size estimate but if we are running */
   /* out of space then extropolate size using current compression */
   double newEstimate = (((double) oBuf->len)*oBuf->inLen) / oBuf->inNdx;
-  oBuf->size = 128 + (uint) newEstimate;
+  oBuf->size = 128 + (uint32_t) newEstimate;
   if (!(nb = realloc(oBuf->buffer, oBuf->size)))
     UZLIB_THROW(UZLIB_MEMORY_ERROR);
   oBuf->buffer = nb;

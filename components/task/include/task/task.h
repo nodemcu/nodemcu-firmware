@@ -23,6 +23,11 @@ typedef intptr_t task_param_t;
 */
 bool task_post(task_prio_t priority, task_handle_t handle, task_param_t param);
 
+/* Regular task posting is non-blocking, best effort. This version can be used
+ * where blocking-until-slot-is-available functionality is needed.
+ */
+bool task_post_block(task_prio_t priority, task_handle_t handle, task_param_t param);
+
 /* When posting NodeMCU tasks from an ISR, this version MUST be used,
  * and vice versa.
  * Doing otherwise breaks assumptions made by the FreeRTOS kernel in terms of
@@ -43,6 +48,10 @@ bool task_post_isr(task_prio_t priority, task_handle_t handle, task_param_t para
 #define task_post_isr_low(handle,param)    task_post_isr(TASK_PRIORITY_LOW,    handle, param)
 #define task_post_isr_medium(handle,param) task_post_isr(TASK_PRIORITY_MEDIUM, handle, param)
 #define task_post_isr_high(handle,param)   task_post_isr(TASK_PRIORITY_HIGH,   handle, param)
+
+#define task_post_block_low(handle,param)    task_post_block(TASK_PRIORITY_LOW,    handle, param)
+#define task_post_block_medium(handle,param) task_post_block(TASK_PRIORITY_MEDIUM, handle, param)
+#define task_post_block_high(handle,param)   task_post_block(TASK_PRIORITY_HIGH,   handle, param)
 
 typedef void (*task_callback_t)(task_param_t param, task_prio_t prio);
 

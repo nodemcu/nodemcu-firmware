@@ -35,7 +35,7 @@ menu "NodeMCU modules"
             Includes the crypto module.
 
     config NODEMCU_CMODULE_DAC
-        depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2
+        depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32_C6
         bool "DAC module"
         default "n"
         help
@@ -83,6 +83,7 @@ menu "NodeMCU modules"
             does.
 
     config NODEMCU_CMODULE_ESPNOW
+        depends on !IDF_TARGET_ESP32H2
         bool "ESP-NOW module"
         default "n"
         help
@@ -210,7 +211,7 @@ menu "NodeMCU modules"
             Includes the pipe module (required by our Lua VM).
 
     config NODEMCU_CMODULE_PULSECNT
-        depends on IDF_TARGET_ESP32
+        depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32C6
         bool "Pulse counter module"
         default "n"
         help
@@ -246,7 +247,7 @@ menu "NodeMCU modules"
             the battery backed memory.
 
     config NODEMCU_CMODULE_SDMMC
-        depends on IDF_TARGET_ESP32
+        depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3
         bool "SD-MMC module"
         default "n"
         help
@@ -316,6 +317,7 @@ menu "NodeMCU modules"
     rsource "../ucg/Kconfig.ucg"
 
     config NODEMCU_CMODULE_WIFI
+        depends on !IDF_TARGET_ESP32H2
         bool "WiFi module"
         default "y"
         help
