@@ -178,7 +178,7 @@ static void DumpCode(const Proto *f, DumpState* D)
 
 static void DumpString(const TString* s, DumpState* D)
 {
- if (s==NULL || getstr(s)==NULL)
+ if (s==NULL)
  {
   strsize_t size=0;
   DumpSize(size,D);
