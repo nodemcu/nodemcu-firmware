@@ -30,6 +30,8 @@ set(module_srcs
   "otaupgrade.c"
   "ow.c"
   "pipe.c"
+  "rotary_driver.c"
+  "rotary.c"
   "rmt.c"
   "rtcmem.c"
   "qrcodegen.c"
