@@ -600,7 +600,7 @@ LROT_BEGIN(lu8g2_display, NULL, LROT_MASK_INDEX)
   LROT_FUNCENTRY( setFontRefHeightExtendedText, lu8g2_setFontRefHeightExtendedText )
   LROT_FUNCENTRY( setFontRefHeightText,         lu8g2_setFontRefHeightText )
   LROT_FUNCENTRY( setPowerSave,       lu8g2_setPowerSave )
-  LROT_FUNCENTRY( updateDispla,       lu8g2_updateDisplay )
+  LROT_FUNCENTRY( updateDisplay,       lu8g2_updateDisplay )
   LROT_FUNCENTRY( updateDisplayArea,  lu8g2_updateDisplayArea )
 LROT_END(lu8g2_display, NULL, LROT_MASK_INDEX)
 
