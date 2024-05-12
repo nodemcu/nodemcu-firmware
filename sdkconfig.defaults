@@ -32,3 +32,7 @@ CONFIG_LWIP_TCP_MSL=5000
 # Disable esp-idf's bluetooth component by default.
 # The bthci module is also disabled and will enable bt when selected
 CONFIG_BT_ENABLED=n
+
+# Disable CR/LF translation, for legacy compatibility
+CONFIG_NEWLIB_STDIN_LINE_ENDING_LF=y
+CONFIG_NEWLIB_STDOUT_LINE_ENDING_LF=y
