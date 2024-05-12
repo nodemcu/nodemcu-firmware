@@ -71,7 +71,7 @@ if reset_reason == 0 then print("Power UP!") end
 
 ## node.chipid()
 
-Returns the ESP chip ID.
+Returns the ESP chip ID. Only available on the base ESP32 model.
 
 #### Syntax
 `node.chipid()`
@@ -84,6 +84,19 @@ chip ID (string)
 
 Note that due to the chip id being a much larger value on the ESP32, it is
 reported as a string now. E.g. `"0x1818fe346a88"`.
+
+## node.chipmodel()
+
+Returns the model of the ESP chip.
+
+#### Syntax
+`node.chipmodel()`
+
+#### Parameters
+none
+
+#### Returns
+The chip model as a string, e.g. "esp32c3". This is the string corresponding to the IDF's Kconfig parameter `IDF_TARGET`.
 
 ## node.compile()
 
@@ -153,20 +166,6 @@ node.dsleep({ gpio = 13, level = 0, pull = true })
 - [`node.sleep()`](#nodesleep)
 
 
-## node.flashid()
-
-Returns the flash chip ID.
-
-#### Syntax
-`node.flashid()`
-
-#### Parameters
-none
-
-#### Returns
-flash ID (number)
-
-
 ## node.flashindex() --deprecated
 
 Deprecated synonym for [`node.LFS.get()`](#nodelfsget) to return an LFS function reference.
@@ -191,31 +190,6 @@ none
 #### Returns
 system heap size left in bytes (number)
 
-## node.info()
-
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed.
-
-#### Syntax
-`node.info()`
-
-#### Parameters
-none
-
-#### Returns
- - `majorVer` (number)
- - `minorVer` (number)
- - `devVer` (number)
- - `chipid` (number)
- - `flashid` (number)
- - `flashsize` (number)
- - `flashmode` (number)
- - `flashspeed` (number)
-
-#### Example
-```lua
-majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = node.info()
-print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
-```
 
 ## node.input()
 

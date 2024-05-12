@@ -174,6 +174,13 @@ static int node_chipid( lua_State *L )
 }
 #endif
 
+// Lua: node.chipmodel()
+static int node_chipmodel(lua_State *L)
+{
+  lua_pushstring(L, CONFIG_IDF_TARGET);
+  return 1;
+}
+
 // Lua: node.heap()
 static int node_heap( lua_State* L )
 {
@@ -868,6 +875,7 @@ LROT_BEGIN(node, NULL, 0)
 #if defined(CONFIG_IDF_TARGET_ESP32)
   LROT_FUNCENTRY( chipid,     node_chipid )
 #endif
+  LROT_FUNCENTRY( chipmodel,  node_chipmodel )
   LROT_FUNCENTRY( compile,    node_compile )
   LROT_FUNCENTRY( dsleep,     node_dsleep )
 #if defined(CONFIG_LUA_VERSION_51)
