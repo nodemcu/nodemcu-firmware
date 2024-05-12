@@ -148,11 +148,29 @@ static void nodemcu_init(void)
 }
 
 
+static bool have_console_on_data_cb(void)
+{
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  return uart_has_on_data_cb(CONFIG_ESP_CONSOLE_UART_NUM);
+#else
+  return false;
+#endif
+}
+
+
 static void console_nodemcu_task(task_param_t param, task_prio_t prio)
 {
   (void)prio;
   char c = (char)param;
-  feed_lua_input(&c, 1);
+
+  if (run_input)
+    feed_lua_input(&c, 1);
+
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (have_console_on_data_cb())
+    uart_feed_data(CONFIG_ESP_CONSOLE_UART_NUM, &c, 1);
+#endif
+
   // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
   fsync(fileno(stdout));
 }
@@ -168,7 +186,7 @@ static void console_task(void *)
      */
     char c;
     ssize_t n = read(fileno(stdin), &c, 1);
-    if (n > 0 && run_input)
+    if (n > 0 && (run_input || have_console_on_data_cb()))
     {
       if (!task_post_block_high(lua_feed_task, (task_param_t)c))
       {

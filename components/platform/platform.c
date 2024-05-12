@@ -83,14 +83,9 @@ uart_status_t uart_status[NUM_UART];
 task_handle_t uart_event_task_id = 0;
 SemaphoreHandle_t sem = NULL;
 
-extern bool uart_has_on_data_cb(unsigned id);
-extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
-extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
-
 void uart_event_task( task_param_t param, task_prio_t prio ) {
   uart_event_post_t *post = (uart_event_post_t *)param;
   unsigned id = post->id;
-  uart_status_t *us = &uart_status[id];
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
     if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
@@ -101,28 +96,9 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
         i += used;
       }
     }
-    if (uart_has_on_data_cb(id)) {
-      size_t i = 0;
-      while (i < post->size)
-      {
-        char ch = post->data[i];
-        us->line_buffer[us->line_position] = ch;
-        us->line_position++;
+    if (uart_has_on_data_cb(id))
+      uart_feed_data(id, post->data, post->size);
 
-        uint16_t need_len = us->need_len;
-        int16_t end_char = us->end_char;
-        size_t max_wanted =
-          (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
-        bool at_end = (us->line_position >= max_wanted);
-        bool end_char_found =
-          (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
-        if (at_end || end_char_found) {
-          uart_on_data_cb(id, us->line_buffer, us->line_position);
-          us->line_position = 0;
-        }
-        ++i;
-      }
-    }
     free(post->data);
   } else {
     const char *err;
@@ -353,20 +329,12 @@ int platform_uart_start( unsigned id )
   if(ret != ESP_OK) {
     return -1;
   }
-  us->line_buffer = malloc(LUA_MAXINPUT);
-  us->line_position = 0;
-  if(us->line_buffer == NULL) {
-    uart_driver_delete(id);
-    return -1;
-  }
 
   char pcName[6];
   snprintf( pcName, 6, "uart%d", id );
   pcName[5] = '\0';
   if(xTaskCreate(task_uart, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, & us->taskHandle) != pdPASS) {
     uart_driver_delete(id);
-    free(us->line_buffer);
-    us->line_buffer = NULL;
     return -1;
   }
 
@@ -381,8 +349,6 @@ void platform_uart_stop( unsigned id )
 #endif
   uart_status_t *us = & uart_status[id];
   uart_driver_delete(id);
-  if(us->line_buffer) free(us->line_buffer);
-  us->line_buffer = NULL;
   if(us->taskHandle) vTaskDelete(us->taskHandle);
   us->taskHandle = NULL;
 }
