@@ -91,15 +91,12 @@ typedef struct {
 typedef struct {
   QueueHandle_t queue;
   TaskHandle_t taskHandle;
-  int receive_rf;
-  int error_rf;
-  char *line_buffer;
-  size_t line_position;
-  uint16_t need_len;
-  int16_t end_char;
 } uart_status_t;
 
-extern uart_status_t uart_status[NUM_UART];
+// We have a bit of legacy spaghetti - these point into modules/uart.c
+extern bool uart_has_on_data_cb(unsigned id);
+extern void uart_feed_data(unsigned id, const char *buf, size_t len);
+extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
 
 // Flow control types (this is a bit mask, one can specify PLATFORM_UART_FLOW_RTS | PLATFORM_UART_FLOW_CTS )
 #define PLATFORM_UART_FLOW_NONE               0

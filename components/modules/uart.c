@@ -4,47 +4,92 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "linput.h"
+#include "lmem.h"
 
 #include <stdint.h>
 #include <string.h>
 
+typedef struct {
+  int receive_rf;
+  int error_rf;
+  char *line_buffer;
+  size_t line_position;
+  uint16_t need_len;
+  int16_t end_char;
+} uart_cb_cfg_t;
+
 static lua_State *gL = NULL;
+static uart_cb_cfg_t uart_cb_cfg[NUM_UART];
 
-bool uart_has_on_data_cb(unsigned id){
-  return uart_status[id].receive_rf != LUA_NOREF;
-}
 
-bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
+static bool uart_on_data_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
-  if(uart_status[id].receive_rf == LUA_NOREF)
+  if(uart_cb_cfg[id].receive_rf == LUA_NOREF)
     return false;
   if(!gL)
     return false;
 
   int top = lua_gettop(gL);
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_status[id].receive_rf);
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_cb_cfg[id].receive_rf);
   lua_pushlstring(gL, buf, len);
   luaL_pcallx(gL, 1, 0);
   lua_settop(gL, top);
   return !run_input;
 }
 
+
 bool uart_on_error_cb(unsigned id, const char *buf, size_t len){
   if(!buf || len==0)
     return false;
-  if(uart_status[id].error_rf == LUA_NOREF)
+  if(uart_cb_cfg[id].error_rf == LUA_NOREF)
     return false;
   if(!gL)
     return false;
 
   int top = lua_gettop(gL);
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_status[id].error_rf);
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_cb_cfg[id].error_rf);
   lua_pushlstring(gL, buf, len);
   luaL_pcallx(gL, 1, 0);
   lua_settop(gL, top);
   return true;
 }
+
+
+bool uart_has_on_data_cb(unsigned id){
+  return uart_cb_cfg[id].receive_rf != LUA_NOREF;
+}
+
+
+void uart_feed_data(unsigned id, const char *buf, size_t len)
+{
+  if (id >= NUM_UART)
+    return;
+
+  uart_cb_cfg_t *cfg = &uart_cb_cfg[id];
+  if (!cfg->line_buffer)
+    return;
+
+  for (unsigned i = 0; i < len; ++i)
+  {
+    char ch = buf[i];
+    cfg->line_buffer[cfg->line_position] = ch;
+    cfg->line_position++;
+
+    uint16_t need_len = cfg->need_len;
+    int16_t end_char = cfg->end_char;
+    size_t max_wanted =
+      (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
+    bool at_end = (cfg->line_position >= max_wanted);
+    bool end_char_found =
+      (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
+    if (at_end || end_char_found) {
+      uart_on_data_cb(id, cfg->line_buffer, cfg->line_position);
+      cfg->line_position = 0;
+    }
+  }
+}
+
 
 // Lua: uart.on([id], "method", [number/char], function, [run_input])
 static int uart_on( lua_State* L )
@@ -54,14 +99,15 @@ static int uart_on( lua_State* L )
   int32_t run = 1;
   uint8_t stack = 1;
   const char *method;
-  uart_status_t *us;
   
   if( lua_isnumber( L, stack ) ) {
     id = ( unsigned )luaL_checkinteger( L, stack );
     MOD_CHECK_ID( uart, id );
     stack++;
   }
-  us = & uart_status[id];
+
+  uart_cb_cfg_t *cfg = &uart_cb_cfg[id];
+
   method = luaL_checklstring( L, stack, &sl );
   stack++;
   if (method == NULL)
@@ -69,11 +115,12 @@ static int uart_on( lua_State* L )
 
   if( lua_type( L, stack ) == LUA_TNUMBER )
   {
-    us->need_len = ( uint16_t )luaL_checkinteger( L, stack );
+    cfg->need_len = (uint16_t)luaL_checkinteger(L, stack);
     stack++;
-    us->end_char = -1;
-    if( us->need_len > 255 ){
-      us->need_len = 255;
+    cfg->end_char = -1;
+    if(cfg->need_len > 255)
+    {
+      cfg->need_len = 255;
       return luaL_error( L, "wrong arg range" );
     }
   }
@@ -84,8 +131,8 @@ static int uart_on( lua_State* L )
     if(el!=1){
       return luaL_error( L, "wrong arg range" );
     }
-    us->end_char = (int16_t)end[0];
-    us->need_len = 0;
+    cfg->end_char = (int16_t)end[0];
+    cfg->need_len = 0;
   }
 
   if (lua_isfunction(L, stack)) {
@@ -99,12 +146,12 @@ static int uart_on( lua_State* L )
   if(sl == 4 && strcmp(method, "data") == 0){
     if(id == CONFIG_ESP_CONSOLE_UART_NUM)
       run_input = true;
-    if(us->receive_rf != LUA_NOREF){
-      luaL_unref(L, LUA_REGISTRYINDEX, us->receive_rf);
-      us->receive_rf = LUA_NOREF;
+    if(cfg->receive_rf != LUA_NOREF){
+      luaL_unref(L, LUA_REGISTRYINDEX, cfg->receive_rf);
+      cfg->receive_rf = LUA_NOREF;
     }
     if(!lua_isnil(L, -1)){
-      us->receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
+      cfg->receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
       gL = L;
       if(id == CONFIG_ESP_CONSOLE_UART_NUM && run==0)
         run_input = false;
@@ -112,12 +159,12 @@ static int uart_on( lua_State* L )
       lua_pop(L, 1);
     }
   } else if(sl == 5 && strcmp(method, "error") == 0){
-    if(us->error_rf != LUA_NOREF){
-      luaL_unref(L, LUA_REGISTRYINDEX, us->error_rf);
-      us->error_rf = LUA_NOREF;
+    if(cfg->error_rf != LUA_NOREF){
+      luaL_unref(L, LUA_REGISTRYINDEX, cfg->error_rf);
+      cfg->error_rf = LUA_NOREF;
     }
     if(!lua_isnil(L, -1)){
-      us->error_rf = luaL_ref(L, LUA_REGISTRYINDEX);
+      cfg->error_rf = luaL_ref(L, LUA_REGISTRYINDEX);
       gL = L;
     } else {
       lua_pop(L, 1);
@@ -183,7 +230,7 @@ static int uart_setup( lua_State* L )
 static int uart_setmode(lua_State* L)
 {
   unsigned id, mode;
-	
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
   mode = luaL_checkinteger( L, 2 );
@@ -230,6 +277,11 @@ static int uart_stop( lua_State* L )
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
   platform_uart_stop( id );
+  if (uart_cb_cfg[id].line_buffer)
+  {
+    luaM_freemem(L, uart_cb_cfg[id].line_buffer, LUA_MAXINPUT);
+    uart_cb_cfg[id].line_buffer = NULL;
+  }
   return 0;
 }
 
@@ -240,6 +292,8 @@ static int uart_start( lua_State* L )
   int err;
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
+  if (!uart_cb_cfg[id].line_buffer)
+    uart_cb_cfg[id].line_buffer = luaM_malloc(L, LUA_MAXINPUT);
   err = platform_uart_start( id );
   lua_pushboolean( L, err == 0 );
   return 1;
@@ -303,21 +357,23 @@ LROT_BEGIN(uart, NULL, 0)
   LROT_NUMENTRY( FLOWCTRL_NONE,               PLATFORM_UART_FLOW_NONE )
   LROT_NUMENTRY( FLOWCTRL_CTS,                PLATFORM_UART_FLOW_CTS )
   LROT_NUMENTRY( FLOWCTRL_RTS,                PLATFORM_UART_FLOW_RTS )
-  LROT_NUMENTRY( MODE_UART, 	              PLATFORM_UART_MODE_UART )
+  LROT_NUMENTRY( MODE_UART,                   PLATFORM_UART_MODE_UART )
   LROT_NUMENTRY( MODE_RS485_COLLISION_DETECT, PLATFORM_UART_MODE_RS485_COLLISION_DETECT )
   LROT_NUMENTRY( MODE_RS485_APP_CONTROL,      PLATFORM_UART_MODE_RS485_APP_CONTROL )
   LROT_NUMENTRY( MODE_RS485_HALF_DUPLEX,      PLATFORM_UART_MODE_HALF_DUPLEX )
-  LROT_NUMENTRY( MODE_IRDA, 		      PLATFORM_UART_MODE_IRDA )
+  LROT_NUMENTRY( MODE_IRDA,                   PLATFORM_UART_MODE_IRDA )
 LROT_END(uart, NULL, 0)
 
 int luaopen_uart( lua_State *L ) {
-  uart_status_t *us;
-  for(int id = 0; id < NUM_UART; id++) {
-    us = & uart_status[id];
-    us->receive_rf = LUA_NOREF;
-  us->error_rf = LUA_NOREF;
-    us->need_len = 0;
-    us->end_char = -1;
+  for(int id = 0; id < sizeof(uart_cb_cfg)/sizeof(uart_cb_cfg[0]); id++)
+  {
+    uart_cb_cfg_t *cfg = &uart_cb_cfg[id];
+    cfg->receive_rf = LUA_NOREF;
+    cfg->error_rf = LUA_NOREF;
+    cfg->line_buffer = NULL;
+    cfg->line_position = 0;
+    cfg->need_len = 0;
+    cfg->end_char = -1;
   }
   return 0;
 }
