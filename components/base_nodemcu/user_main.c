@@ -36,6 +36,24 @@
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
 
+// Line ending config from Kconfig
+#if CONFIG_NEWLIB_STDIN_LINE_ENDING_CRLF
+# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CRLF
+#elif CONFIG_NEWLIB_STDIN_LINE_ENDING_CR
+# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CR
+#else
+# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_LF
+#endif
+
+#if CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF
+# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CRLF
+#elif CONFIG_NEWLIB_STDOUT_LINE_ENDING_CR
+# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CR
+#else
+# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_LF
+#endif
+
+
 // We don't get argument size data from the esp_event dispatch, so it's
 // not possible to copy and forward events from the default event queue
 // to one running within our task context. To cope with this, we instead
@@ -214,9 +232,9 @@ static void console_init(void)
   /* Based on console/advanced example */
 
   esp_vfs_dev_uart_port_set_rx_line_endings(
-    CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
+    CONFIG_ESP_CONSOLE_UART_NUM, RX_LINE_ENDINGS_CFG);
   esp_vfs_dev_uart_port_set_tx_line_endings(
-    CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
+    CONFIG_ESP_CONSOLE_UART_NUM, TX_LINE_ENDINGS_CFG);
 
   /* Configure UART. Note that REF_TICK is used so that the baud rate remains
    * correct while APB frequency is changing in light sleep mode.
@@ -242,8 +260,8 @@ static void console_init(void)
 #elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
   /* Based on @pjsg's work */
 
-  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
-  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
+  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
 
   usb_serial_jtag_driver_config_t usb_serial_jtag_config =
     USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
@@ -254,8 +272,8 @@ static void console_init(void)
 #elif CONFIG_ESP_CONSOLE_USB_CDC
   /* Based on console/advanced_usb_cdc */
 
-  esp_vfs_dev_cdcacm_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
-  esp_vfs_dev_cdcacm_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+  esp_vfs_dev_cdcacm_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
+  esp_vfs_dev_cdcacm_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
 #else
 # error "Unsupported console type"
 #endif
