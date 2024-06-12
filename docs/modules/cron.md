@@ -83,10 +83,10 @@ end)
 
 ## cron.entry:schedule()
 
-Sets a new schedule mask.
+Sets a new schedule mask and/or restores an unscheduled entry.
 
 #### Syntax
-`schedule(mask)`
+`schedule([mask])`
 
 #### Parameters
 - `mask` - [crontab](https://en.wikipedia.org/wiki/Cron#Overview)-like string mask for schedule

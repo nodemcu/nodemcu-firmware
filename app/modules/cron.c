@@ -12,6 +12,14 @@
 #include "rtc/rtctime.h"
 #include "mem.h"
 
+static const char *CRON_ENTRY_METATABLE = "cron.entry";
+
+#if 0
+# define cron_dbg(...) printf(__VA_ARGS__)
+#else
+# define cron_dbg(...)
+#endif
+
 struct cronent_desc {
   uint64_t min;  // Minutes repeat - bits 0-59
   uint32_t hour; // Hours repeat - bits 0-23
@@ -27,8 +35,7 @@ typedef struct cronent_ud {
 
 static ETSTimer cron_timer;
 
-static int *cronent_list = 0;
-static size_t cronent_count = 0;
+static int cronent_table_ref;
 
 static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min, uint8_t max) {
   uint64_t res = 0;
@@ -52,15 +59,14 @@ static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min
     }
   } else {
     uint32_t val;
-    while (1) {
+    do {
       val = strtol(str, end, 10);
       if (val < min || val > max) {
         return luaL_error(L, "invalid spec (val %d out of range %d..%d)", val, min, max);
       }
       res |= (uint64_t)1 << (val - min);
-      if (**end != ',') break;
       str = *end + 1;
-    }
+    } while (**end == ',');
   }
   return res;
 }
@@ -86,67 +92,76 @@ static int lcron_parsedesc(lua_State *L, char *str, struct cronent_desc *desc) {
 static int lcron_create(lua_State *L) {
   // Check arguments
   char *strdesc = (char*)luaL_checkstring(L, 1);
-  void *newlist;
   luaL_checktype(L, 2, LUA_TFUNCTION);
-  // Parse description
-  struct cronent_desc desc;
-  lcron_parsedesc(L, strdesc, &desc);
-  // Allocate userdata
+
+  // Grab the table of all entries onto the stack
+  lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_table_ref);
+
+  // Find a free index
+  int ix = 1;
+  while(lua_rawgeti(L, -1, ix) != LUA_TNIL) {
+    lua_pop(L, 1);
+    ix++;
+  }
+  lua_pop(L, 1); // pop the nil off the stack
+
+  // Allocate userdata onto the stack
   cronent_ud_t *ud = lua_newuserdata(L, sizeof(cronent_ud_t));
   // Set metatable
-  luaL_getmetatable(L, "cron.entry");
+  luaL_getmetatable(L, CRON_ENTRY_METATABLE);
   lua_setmetatable(L, -2);
   // Set callback
   lua_pushvalue(L, 2);
   ud->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   // Set entry
-  ud->desc = desc;
-  // Store entry
-  newlist = os_realloc(cronent_list, sizeof(int) * (cronent_count + 1));
-  if (newlist == NULL) {
-    return luaL_error(L, "out of memory");
-  }
-  lua_pushvalue(L, -1);
-  cronent_list = newlist;
-  cronent_list[cronent_count++] = luaL_ref(L, LUA_REGISTRYINDEX);
-  return 1;
+  lcron_parsedesc(L, strdesc, &ud->desc);
+
+  // Store entry to table while preserving userdata
+  lua_pushvalue(L, -1); // clone userdata
+  lua_rawseti(L, -3, ix); // -userdata; userdata, cronent table, cb, desc
+
+  return 1; // just the userdata
 }
 
+// Finds index, leaves table at top of stack for convenience
 static size_t lcron_findindex(lua_State *L, cronent_ud_t *ud) {
-  cronent_ud_t *eud;
-  size_t i;
-  for (i = 0; i < cronent_count; i++) {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
-    eud = lua_touserdata(L, -1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_table_ref);
+  size_t count = lua_objlen(L, -1);
+
+  for (size_t i = 1; i <= count; i++) {
+    lua_rawgeti(L, -1, i);
+    cronent_ud_t *eud = lua_touserdata(L, -1);
     lua_pop(L, 1);
-    if (eud == ud) break;
+    if (eud == ud) {
+      return i;
+    }
   }
-  if (i == cronent_count) return -1;
-  return i;
+
+  return count + 1;
 }
 
 static int lcron_schedule(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
-  char *strdesc = (char*)luaL_checkstring(L, 2);
-  struct cronent_desc desc;
-  lcron_parsedesc(L, strdesc, &desc);
-  ud->desc = desc;
-  size_t i = lcron_findindex(L, ud);
-  if (i == -1) {
-    void *newlist;
-    newlist = os_realloc(cronent_list, sizeof(int) * (cronent_count + 1));
-    if (newlist == NULL) {
-      return luaL_error(L, "out of memory");
-    }
-    cronent_list = newlist;
-    lua_pushvalue(L, 1);
-    cronent_list[cronent_count++] = luaL_ref(L, LUA_REGISTRYINDEX);
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
+  char *strdesc = (char*)luaL_optstring(L, 2, NULL);
+
+  if (strdesc != NULL) {
+    struct cronent_desc desc;
+    lcron_parsedesc(L, strdesc, &desc);
+    ud->desc = desc;
   }
+
+  size_t i = lcron_findindex(L, ud);
+
+  cron_dbg("cron: schedule %p at index %d\n", ud, i);
+
+  lua_pushvalue(L, 1); // copy ud to top of stack
+  lua_rawseti(L, -2, i); // install into table
+
   return 0;
 }
 
 static int lcron_handler(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   luaL_checktype(L, 2, LUA_TFUNCTION);
   lua_pushvalue(L, 2);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_ref);
@@ -155,29 +170,31 @@ static int lcron_handler(lua_State *L) {
 }
 
 static int lcron_unschedule(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   size_t i = lcron_findindex(L, ud);
-  if (i == -1) return 0;
-  luaL_unref(L, LUA_REGISTRYINDEX, cronent_list[i]);
-  memmove(cronent_list + i, cronent_list + i + 1, sizeof(int) * (cronent_count - i - 1));
-  cronent_count--;
+
+  cron_dbg("cron: unschedule %p at index %d\n", ud, i);
+
+  lua_pushnil(L);
+  lua_rawseti(L, -2, i);
+
   return 0;
 }
 
+// scheduled entries are pinned, so we cannot arrive at the __gc metamethod
 static int lcron_delete(lua_State *L) {
-  cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
-  lcron_unschedule(L);
+  cronent_ud_t *ud = luaL_checkudata(L, 1, CRON_ENTRY_METATABLE);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_ref);
   return 0;
 }
 
 static int lcron_reset(lua_State *L) {
-  for (size_t i = 0; i < cronent_count; i++) {
-    luaL_unref(L, LUA_REGISTRYINDEX, cronent_list[i]);
-  }
-  cronent_count = 0;
-  free(cronent_list);
-  cronent_list = 0;
+  lua_newtable(L);
+  luaL_unref(L, LUA_REGISTRYINDEX, cronent_table_ref);
+  cronent_table_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  cron_dbg("cron: cronent_table_ref is %d\n", cronent_table_ref);
+
   return 0;
 }
 
@@ -189,19 +206,31 @@ static void cron_handle_time(uint8_t mon, uint8_t dom, uint8_t dow, uint8_t hour
   desc.dow  = ( uint8_t)1 << dow;
   desc.hour = (uint32_t)1 << hour;
   desc.min  = (uint64_t)1 << min;
-  for (size_t i = 0; i < cronent_count; i++) {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_table_ref);
+  size_t count = lua_objlen(L, -1);
+
+  for (size_t i = 1; i <= count; i++) {
+    cron_dbg("cron: handle_time index %d (of %d; top %d)\n", i, count, lua_gettop(L));
+
+    lua_rawgeti(L, -1, i);
     cronent_ud_t *ent = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    cron_dbg(" ... is %p\n", ent);
+
     if ((ent->desc.mon  & desc.mon ) == 0) continue;
     if ((ent->desc.dom  & desc.dom ) == 0) continue;
     if ((ent->desc.dow  & desc.dow ) == 0) continue;
     if ((ent->desc.hour & desc.hour) == 0) continue;
     if ((ent->desc.min  & desc.min ) == 0) continue;
+
     lua_rawgeti(L, LUA_REGISTRYINDEX, ent->cb_ref);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
+    lua_rawgeti(L, -2, i); // get ud again
     luaL_pcallx(L, 1, 0);
   }
+
+  lua_pop(L, 1); // pop table
 }
 
 static void cron_handle_tmr() {
@@ -249,7 +278,11 @@ int luaopen_cron( lua_State *L ) {
     //cron_handle_tmr determines when to execute a scheduled cron job
     //My guess: To be sure to give the other modules required by cron enough time to get to a ready state, restart cron_timer.
   os_timer_arm(&cron_timer, 1000, 0);
-  luaL_rometatable(L, "cron.entry", LROT_TABLEREF(cronent));
+  luaL_rometatable(L, CRON_ENTRY_METATABLE, LROT_TABLEREF(cronent));
+
+  cronent_table_ref = LUA_NOREF;
+  lcron_reset(L);
+
   return 0;
 }
 
