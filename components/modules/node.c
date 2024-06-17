@@ -17,6 +17,9 @@
 #include "rom/rtc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
+#include "user_version.h"
 
 static void restart_callback(TimerHandle_t timer) {
   (void)timer;
@@ -409,6 +412,77 @@ static int node_dsleep (lua_State *L)
 }
 
 
+static void add_int_field( lua_State* L, lua_Integer i, const char *name){
+  lua_pushinteger(L, i);
+  lua_setfield(L, -2, name);
+}
+
+static void add_string_field( lua_State* L, const char *s, const char *name) {
+  lua_pushstring(L, s);
+  lua_setfield(L, -2, name);
+}
+
+static void get_lfs_config ( lua_State* L );
+
+static int node_info( lua_State* L ){
+  const char* options[] = {"lfs", "hw", "sw_version", "build_config", "default", NULL};
+  int option = luaL_checkoption (L, 1, options[4], options);
+
+  switch (option) {
+    case 0: { // lfs
+      get_lfs_config(L);
+      return 1;
+    }
+    case 1: { // hw
+      uint32_t flash_size, flash_id;
+      esp_chip_info_t chip_info;
+      esp_chip_info(&chip_info);
+      if(esp_flash_get_size(NULL, &flash_size) != ESP_OK) {
+        ESP_LOGW("node", "Get flash size failed");
+        flash_size = 0;
+      }
+      if(esp_flash_read_id(NULL, &flash_id) != ESP_OK) {
+        ESP_LOGW("node", "Get flash ID failed");
+        flash_id = 0;
+      }
+      lua_createtable(L, 0, 7);
+      add_string_field(L, CONFIG_IDF_TARGET, "chip_model");
+      add_int_field(L, chip_info.features, "chip_features");
+      add_int_field(L, chip_info.revision / 100, "chip_major_rev");
+      add_int_field(L, chip_info.revision % 100, "chip_minor_rev");
+      add_int_field(L, chip_info.cores, "cpu_cores");
+      add_int_field(L, flash_size / 1024, "flash_size"); // flash size in KB
+      add_int_field(L, flash_id, "flash_id");
+      return 1;
+    }
+    // based on PR https://github.com/nodemcu/nodemcu-firmware/pull/3289
+    case 2: { // sw_version
+      lua_createtable(L, 0, 8);
+      add_string_field(L, NODE_VERSION,          "node_version");
+      add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
+      add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
+      add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
+      add_string_field(L, BUILDINFO_BRANCH,      "git_branch");
+      add_string_field(L, BUILDINFO_COMMIT_ID,   "git_commit_id");
+      add_string_field(L, BUILDINFO_RELEASE,     "git_release");
+      add_string_field(L, BUILDINFO_RELEASE_DTS, "git_commit_dts");
+      return 1;
+    }
+      case 3: { // build_config
+      lua_createtable(L, 0, 3);
+      lua_pushboolean(L, CONFIG_MBEDTLS_TLS_ENABLED);
+      lua_setfield(L, -2, "ssl");
+      add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
+      add_string_field(L, BUILDINFO_MODULES, "modules");
+      return 1;
+    }
+    default: {  // default
+      lua_newtable(L);
+      return 1;
+    }
+  }
+}
+
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -796,12 +870,6 @@ static int node_lfslist (lua_State *L) {
 
 //== node.LFS Table emulator ==============================================//
 
-
-static void add_int_field( lua_State* L, lua_Integer i, const char *name){
-  lua_pushinteger(L, i);
-  lua_setfield(L, -2, name);
-}
-
 static void get_lfs_config ( lua_State* L ){
     int config[5];
     lua_getlfsconfig(L, config);
@@ -885,6 +953,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( flashindex, node_lfsindex )
   LROT_TABENTRY(  LFS,        node_lfs )
   LROT_FUNCENTRY( heap,       node_heap )
+  LROT_FUNCENTRY( info,       node_info )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )
   LROT_FUNCENTRY( osprint,    node_osprint )

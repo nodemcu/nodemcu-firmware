@@ -25,3 +25,6 @@ dependencies.lock
 # ignore IDEA files
 .idea
 *.iml
+
+#ignore temp file for build infos
+buildinfo.h

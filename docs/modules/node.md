@@ -191,6 +191,72 @@ none
 system heap size left in bytes (number)
 
 
+## node.info()
+
+Returns information about hardware, software version and build configuration.
+
+#### Syntax
+`node.info([group])`
+
+#### Parameters
+`group` A designator for a group of properties. May be one of `"hw"`, `"sw_version"`, `"build_config"`, `"lfs"`. If omitted the empty table is returned. 
+
+#### Returns
+If a `group` is given the return value will be a table containing the following elements:
+
+- for `group` = `"hw"`
+    - `chip_model` (string) one of "ESP32", "ESP32S2", "ESP32S3", "ESP32C3", "ESP32C2", "ESP32C6", "ESP32H2"
+    - `chip_features` (number) bit mask of chip feature flags
+        - BIT(0), Chip has embedded flash memory
+        - BIT(1), Chip has 2.4GHz WiFi
+        - BIT(4), Chip has Bluetooth LE
+        - BIT(5), Chip has Bluetooth Classic
+        - BIT(6), Chip has IEEE 802.15.4
+        - BIT(7), Chip has embedded psram
+    - `chip_major_rev` (number) chip revision; wafer major version
+    - `chip_minor_rev` (number) chip revision; wafer minor version
+    - `cpu_cores` (number) number of CPU cores
+    - `flash_size` (number) flash size in KB
+    - `flash_id` (number) flash ID
+
+- for `group` = `"sw_version"`
+    - `git_branch` (string)
+    - `git_commit_id` (string)
+    - `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403"
+    - `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
+    - `node_version_major` (number)
+    - `node_version_minor` (number)
+    - `node_version_revision` (number)
+    - `node_version` (string)
+
+- for `group` = `"build_config"`
+    - `ssl` (boolean)
+    - `modules` (string) comma separated list
+    - `number_type` (string) `integer`, `float` or `double`
+
+- for `group` = `"lfs"`
+    - `lfs_base` (number) Flash offset of selected LFS region
+    - `lfs_mapped` (number) Mapped memory address of selected LFS region
+    - `lfs_size` (number) size of selected LFS region
+    - `lfs_used` (number) actual size used by current LFS image
+
+!!! attention
+
+	Not providing a `group` will result in the empty table being returned.
+
+#### Example
+
+```lua
+for k,v in pairs(node.info("build_config")) do
+  print (k,v)
+end
+```
+
+```lua
+print(node.info("sw_version").git_release)
+```
+
+
 ## node.input()
 
 Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.
