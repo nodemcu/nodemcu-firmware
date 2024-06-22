@@ -422,7 +422,7 @@ static void add_string_field( lua_State* L, const char *s, const char *name) {
   lua_setfield(L, -2, name);
 }
 
-static void get_lfs_config ( lua_State* L );
+static void get_lfs_config ( lua_State* );
 
 static int node_info( lua_State* L ){
   const char* options[] = {"lfs", "hw", "sw_version", "build_config", "default", NULL};
@@ -446,13 +446,13 @@ static int node_info( lua_State* L ){
         flash_id = 0;
       }
       lua_createtable(L, 0, 7);
-      add_string_field(L, CONFIG_IDF_TARGET, "chip_model");
-      add_int_field(L, chip_info.features, "chip_features");
+      add_string_field(L, CONFIG_IDF_TARGET,     "chip_model");
+      add_int_field(L, chip_info.features,       "chip_features");
       add_int_field(L, chip_info.revision / 100, "chip_major_rev");
       add_int_field(L, chip_info.revision % 100, "chip_minor_rev");
-      add_int_field(L, chip_info.cores, "cpu_cores");
-      add_int_field(L, flash_size / 1024, "flash_size"); // flash size in KB
-      add_int_field(L, flash_id, "flash_id");
+      add_int_field(L, chip_info.cores,          "cpu_cores");
+      add_int_field(L, flash_size / 1024,        "flash_size"); // flash size in KB
+      add_int_field(L, flash_id,                 "flash_id");
       return 1;
     }
     // based on PR https://github.com/nodemcu/nodemcu-firmware/pull/3289
@@ -471,9 +471,9 @@ static int node_info( lua_State* L ){
       case 3: { // build_config
       lua_createtable(L, 0, 3);
       lua_pushboolean(L, CONFIG_MBEDTLS_TLS_ENABLED);
-      lua_setfield(L, -2, "ssl");
+      lua_setfield(L, -2,                       "ssl");
       add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
-      add_string_field(L, BUILDINFO_MODULES, "modules");
+      add_string_field(L, BUILDINFO_MODULES,    "modules");
       return 1;
     }
     default: {  // default

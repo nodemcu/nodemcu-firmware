@@ -122,7 +122,8 @@ idf_component_register(
 # "-u <modname>_module_selected1" option to force the linker to include
 # the module. See components/core/include/module.h for further details on
 # how this works.
-set(modules_enabled buildinfo_modules)
+set(buildinfo_modules)
+set(modules_enabled)
 foreach(module_src ${module_srcs})
   string(REPLACE ".c" "" module_name ${module_src})
   string(TOUPPER ${module_name} module_ucase)
