@@ -459,9 +459,9 @@ static int node_info( lua_State* L ){
     case 2: { // sw_version
       lua_createtable(L, 0, 8);
       add_string_field(L, NODE_VERSION,          "node_version");
-      add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
-      add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
-      add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
+      add_int_field(L,    NODE_VERSION_MAJOR,    "node_version_major");
+      add_int_field(L,    NODE_VERSION_MINOR,    "node_version_minor");
+      add_int_field(L,    NODE_VERSION_REVISION, "node_version_revision");
       add_string_field(L, BUILDINFO_BRANCH,      "git_branch");
       add_string_field(L, BUILDINFO_COMMIT_ID,   "git_commit_id");
       add_string_field(L, BUILDINFO_RELEASE,     "git_release");
@@ -472,6 +472,7 @@ static int node_info( lua_State* L ){
       lua_createtable(L, 0, 3);
       lua_pushboolean(L, CONFIG_MBEDTLS_TLS_ENABLED);
       lua_setfield(L, -2,                       "ssl");
+      add_int_field(L,    BUILDINFO_LFS_SIZE,   "lfs_size");
       add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
       add_string_field(L, BUILDINFO_MODULES,    "modules");
       return 1;

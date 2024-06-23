@@ -231,6 +231,7 @@ If a `group` is given the return value will be a table containing the following 
 
 - for `group` = `"build_config"`
     - `ssl` (boolean)
+    - `lfs_size` (number) as defined at build time
     - `modules` (string) comma separated list
     - `number_type` (string) `integer`, `float` or `double`
 

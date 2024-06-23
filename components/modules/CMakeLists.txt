@@ -207,6 +207,7 @@ set(buildinfo_h
 #define BUILDINFO_RELEASE_DTS \"@release_dts@\"
 #define BUILDINFO_BUILD_DATE \"@build_date@\"
 #define BUILDINFO_MODULES \"@buildinfo_modules@\"
+#define BUILDINFO_LFS_SIZE \@buildinfo_lfs_size@\
 
 #endif	/* __BUILDINFO_H__ */
 "
@@ -243,6 +244,15 @@ execute_process(
   COMMAND ${CMAKE_COMMAND} -E env TZ=UTC0 -- git show --quiet --date=format-local:%Y%m%d%H%M --format=%cd HEAD
   OUTPUT_STRIP_TRAILING_WHITESPACE
   OUTPUT_VARIABLE release_dts
+)
+
+execute_process(
+COMMAND grep "^lfs,.*" ${PROJECT_DIR}/components/platform/partitions.csv
+COMMAND cut -d, -f5
+COMMAND tr -d " "
+COMMAND awk "{print strtonum( $1 )}"
+OUTPUT_STRIP_TRAILING_WHITESPACE
+OUTPUT_VARIABLE buildinfo_lfs_size
 )
 
 file(CONFIGURE OUTPUT ${PROJECT_DIR}/components/platform/include/buildinfo.h
