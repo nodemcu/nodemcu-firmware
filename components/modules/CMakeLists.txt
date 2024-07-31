@@ -122,6 +122,7 @@ idf_component_register(
 # "-u <modname>_module_selected1" option to force the linker to include
 # the module. See components/core/include/module.h for further details on
 # how this works.
+set(buildinfo_modules)
 set(modules_enabled)
 foreach(module_src ${module_srcs})
   string(REPLACE ".c" "" module_name ${module_src})
@@ -129,9 +130,11 @@ foreach(module_src ${module_srcs})
   set(mod_opt "CONFIG_NODEMCU_CMODULE_${module_ucase}")
   if (${${mod_opt}})
     list(APPEND modules_enabled ${module_ucase})
+    list(APPEND buildinfo_modules ${module_name})
   endif()
 endforeach()
 message("Including the following modules: ${modules_enabled}")
+string(REPLACE ";" "," buildinfo_modules "${buildinfo_modules}")
 
 foreach(mod ${modules_enabled})
   target_link_libraries(${COMPONENT_LIB} "-u ${mod}_module_selected1")
@@ -182,3 +185,77 @@ set_property(
   PROPERTY ADDITIONAL_MAKE_CLEAN_FILES eromfs.bin
 )
 
+
+set(buildinfo_h
+"#ifndef __BUILDINFO_H__
+#define __BUILDINFO_H__
+
+#ifdef CONFIG_LUA_NUMBER_INT64
+#define BUILDINFO_BUILD_TYPE \"integer\"
+#else
+#ifdef CONFIG_LUA_NUMBER_DOUBLE
+#define BUILDINFO_BUILD_TYPE \"double\"
+#else
+#define BUILDINFO_BUILD_TYPE \"float\"
+#endif
+#endif
+
+#define USER_PROLOG \"@user_prolog@\"
+#define BUILDINFO_BRANCH \"@branch@\"
+#define BUILDINFO_COMMIT_ID \"@commit_id@\"
+#define BUILDINFO_RELEASE \"@release@\"
+#define BUILDINFO_RELEASE_DTS \"@release_dts@\"
+#define BUILDINFO_BUILD_DATE \"@build_date@\"
+#define BUILDINFO_MODULES \"@buildinfo_modules@\"
+#define BUILDINFO_LFS_SIZE \@buildinfo_lfs_size@\
+
+#endif	/* __BUILDINFO_H__ */
+"
+)
+
+execute_process(
+  COMMAND date "+%Y-%m-%d %H:%M"
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE build_date
+)
+
+execute_process(
+  COMMAND git rev-parse HEAD
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE commit_id
+)
+
+execute_process(
+  COMMAND git rev-parse --abbrev-ref HEAD
+  COMMAND sed -E "s/[\/\\]+/_/g"
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE branch
+)
+
+execute_process(
+  COMMAND git describe --tags --long
+  COMMAND sed -E "s/(.*)-(.*)-.*/\\1 +\\2/g"
+  COMMAND sed "s/ +0$//"
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE release
+)
+
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E env TZ=UTC0 -- git show --quiet --date=format-local:%Y%m%d%H%M --format=%cd HEAD
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE release_dts
+)
+
+execute_process(
+COMMAND grep "^lfs,.*" ${PROJECT_DIR}/components/platform/partitions.csv
+COMMAND cut -d, -f5
+COMMAND tr -d " "
+COMMAND awk "{print strtonum( $1 )}"
+OUTPUT_STRIP_TRAILING_WHITESPACE
+OUTPUT_VARIABLE buildinfo_lfs_size
+)
+
+file(CONFIGURE OUTPUT ${PROJECT_DIR}/components/platform/include/buildinfo.h
+  CONTENT "${buildinfo_h}"
+  @ONLY
+)
