@@ -469,12 +469,19 @@ static int node_info( lua_State* L ){
       return 1;
     }
       case 3: { // build_config
-      lua_createtable(L, 0, 3);
+      lua_createtable(L, 0, 5);
       lua_pushboolean(L, CONFIG_MBEDTLS_TLS_ENABLED);
       lua_setfield(L, -2,                       "ssl");
       add_int_field(L,    BUILDINFO_LFS_SIZE,   "lfs_size");
       add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
       add_string_field(L, BUILDINFO_MODULES,    "modules");
+      #if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+        add_string_field(L, "uart", "esp_console");
+      #elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+        add_string_field(L, "usb_serial_jtag", "esp_console");
+      #elif CONFIG_ESP_CONSOLE_USB_CDC
+        add_string_field(L, "usb_cdc", "esp_console");
+      #endif
       return 1;
     }
     default: {  // default
