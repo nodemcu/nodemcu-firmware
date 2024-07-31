@@ -230,10 +230,11 @@ If a `group` is given the return value will be a table containing the following 
     - `node_version` (string)
 
 - for `group` = `"build_config"`
-    - `ssl` (boolean)
+    - `esp_console` (string) one of `uart`, `usb_serial_jtag` or `usb_cdc`
     - `lfs_size` (number) as defined at build time
     - `modules` (string) comma separated list
     - `number_type` (string) `integer`, `float` or `double`
+    - `ssl` (boolean)
 
 - for `group` = `"lfs"`
     - `lfs_base` (number) Flash offset of selected LFS region
