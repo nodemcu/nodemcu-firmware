@@ -77,6 +77,7 @@ elseif(IDF_TARGET STREQUAL "esp32s3")
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
+    ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32c6")
   list(APPEND module_srcs
