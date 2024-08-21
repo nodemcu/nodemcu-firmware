@@ -171,6 +171,13 @@ menu "NodeMCU modules"
         help
             Includes the LEDC module.
 
+    config NODEMCU_CMODULE_MATRIX
+        bool "MATRIX module"
+        default "n"
+	select NODEMCU_CMODULE_GPIO
+        help
+            The matrix module provides support for cheap matrixed keypads like a 3x4 telephone keypad.
+
     config NODEMCU_CMODULE_MQTT
         bool "MQTT module"
         default "n"
