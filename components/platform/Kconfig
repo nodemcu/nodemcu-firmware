@@ -79,6 +79,7 @@ menu "NodeMCU platform config"
             bool
             default y if IDF_TARGET_ESP32
             default y if IDF_TARGET_ESP32S3
+            default y if IDF_TARGET_ESP32C6
 
         config NODEMCU_UART_DRIVER_BUF_SIZE_RX0
             int "RX buffer size for UART0"

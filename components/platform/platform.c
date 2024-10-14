@@ -215,7 +215,7 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   uart_config_t cfg = {
      .baud_rate = baud,
      .flow_ctrl = flow_control,
-     .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
+     .rx_flow_ctrl_thresh = UART_HW_FIFO_LEN(id) - 16,
      .source_clk = UART_SCLK_DEFAULT,
   };
   
