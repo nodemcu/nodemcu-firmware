@@ -104,6 +104,7 @@ idf_component_register(
     "esp_http_client"
     "esp_http_server"
     "esp_hw_support"
+    "esp_vfs_console"
     "fatfs"
     "libsodium"
     "lua"

@@ -16,6 +16,11 @@
 #include "esp_event.h"
 #include "esp_spiffs.h"
 #include "esp_netif.h"
+#include "esp_vfs_dev.h"
+#include "esp_vfs_cdcacm.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "driver/uart_vfs.h"
+#include "driver/usb_serial_jtag.h"
 #include "nvs_flash.h"
 
 #include "task/task.h"
