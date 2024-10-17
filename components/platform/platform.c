@@ -11,6 +11,7 @@
 #include "lua.h"
 #include "rom/uart.h"
 #include "esp_log.h"
+#include "esp_spiffs.h"
 #include "task/task.h"
 #include "linput.h"
 
@@ -670,3 +671,38 @@ void platform_print_deprecation_note( const char *msg, const char *time_frame)
   printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
 }
 
+
+const char *platform_remount_default_fs(bool autoformat)
+{
+  const char *label = CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL;
+
+  if (esp_spiffs_mounted(label))
+    esp_vfs_spiffs_unregister(label);
+
+  esp_vfs_spiffs_conf_t spiffs_cfg = {
+    .base_path = "",
+    .partition_label = (label && label[0]) ? label : NULL,
+    .max_files = CONFIG_NODEMCU_MAX_OPEN_FILES,
+    .format_if_mount_failed = autoformat,
+  };
+  const char *reason = NULL;
+  switch(esp_vfs_spiffs_register(&spiffs_cfg))
+  {
+    case ESP_OK:
+    case ESP_ERR_INVALID_STATE: // already mounted (or encrypted)
+      break;
+    case ESP_ERR_NO_MEM:
+      reason = "out of memory";
+      break;
+    case ESP_ERR_NOT_FOUND:
+      reason = "no SPIFFS partition found";
+      break;
+    case ESP_FAIL:
+      reason = "failed to mount partition, use file.format() to reformat";
+      break;
+    default:
+      reason = "unknown";
+      break;
+  }
+  return reason;
+}
