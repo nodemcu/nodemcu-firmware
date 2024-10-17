@@ -324,6 +324,7 @@ menu "NodeMCU modules"
             Includes the WiFi module (recommended).
 
     config NODEMCU_CMODULE_WIFI_STARTUP_DELAY
+        depends on NODEMCU_CMODULE_WIFI
         depends on ESP_CONSOLE_USB_CDC
         int "WiFi start-up delay (ms)"
         default 500
