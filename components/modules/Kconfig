@@ -133,6 +133,14 @@ menu "NodeMCU modules"
             Includes the HTTPD module. This module uses the regular IDF
             http server component internally.
 
+    config NODEMCU_CMODULE_HTTPD_WS
+        bool "Include websocket support." if NODEMCU_CMODULE_HTTPD
+        default "n"
+        select HTTPD_WS_SUPPORT
+        help
+            Includes the websocket support. This module uses the regular IDF
+            http server component internally.
+
     config NODEMCU_CMODULE_HTTPD_MAX_RESPONSE_HEADERS
         int "Max response header fields" if NODEMCU_CMODULE_HTTPD
         default 5
