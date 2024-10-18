@@ -196,8 +196,6 @@ static void console_task(void *)
 
 static void console_init(void)
 {
-  esp_vfs_console_register();
-
   fflush(stdout);
   fsync(fileno(stdout));
 
@@ -260,7 +258,8 @@ static void console_init(void)
 #endif
 
   xTaskCreate(
-    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
+    console_task, "console", configMINIMAL_STACK_SIZE,
+    NULL, ESP_TASK_MAIN_PRIO+1, NULL);
 }
 
 
