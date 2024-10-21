@@ -88,14 +88,6 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   unsigned id = post->id;
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    if (id == CONFIG_ESP_CONSOLE_UART_NUM && run_input) {
-      size_t i = 0;
-      while (i < post->size)
-      {
-        unsigned used = feed_lua_input(post->data + i, post->size - i);
-        i += used;
-      }
-    }
     if (uart_has_on_data_cb(id))
       uart_feed_data(id, post->data, post->size);
 
@@ -206,6 +198,10 @@ static void task_uart( void *pvParameters ){
 // pins must not be null for non-console uart
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return 0;
+#endif
   int flow_control = UART_HW_FLOWCTRL_DISABLE;
   if (pins != NULL) {
 	if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
@@ -286,30 +282,29 @@ void platform_uart_setmode(unsigned id, unsigned mode)
 
 void platform_uart_send_multi( unsigned id, const char *data, size_t len )
 {
-  size_t i;
-  if (id == CONFIG_ESP_CONSOLE_UART_NUM) {
-      for( i = 0; i < len; i ++ ) {
-        putchar (data[ i ]);
-    }
-  } else {
-    uart_write_bytes(id, data, len);
-  }
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return;
+#endif
+  uart_write_bytes(id, data, len);
 }
 
 void platform_uart_send( unsigned id, uint8_t data )
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
-    putchar (data);
-  else
-    uart_write_bytes(id, (const char *)&data, 1);
+    return;
+#endif
+  uart_write_bytes(id, (const char *)&data, 1);
 }
 
 void platform_uart_flush( unsigned id )
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
   if (id == CONFIG_ESP_CONSOLE_UART_NUM)
-    fflush (stdout);
-  else
-    uart_tx_flush(id);
+    return;
+#endif
+  uart_tx_flush(id);
 }
 
 
@@ -354,9 +349,12 @@ void platform_uart_stop( unsigned id )
 }
 
 int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {
-    int err;
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return -1;
+#endif
 
-    err = uart_get_baudrate(id, baudp);
+    int err = uart_get_baudrate(id, baudp);
     if (err != ESP_OK) return -1;
     *baudp &= 0xFFFFFFFE; // round down
 
@@ -405,6 +403,10 @@ int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, 
 
 int platform_uart_set_wakeup_threshold(unsigned id, unsigned threshold)
 {
+#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
+  if (id == CONFIG_ESP_CONSOLE_UART_NUM)
+    return -1;
+#endif
   esp_err_t err = uart_set_wakeup_threshold(id, threshold);
   return (err == ESP_OK) ? 0 : -1;
 }

@@ -11,47 +11,18 @@
 #include "lua.h"
 #include "linput.h"
 #include "platform.h"
-#include <string.h>
-#include <stdlib.h>
-#include <fcntl.h>
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_spiffs.h"
 #include "esp_netif.h"
-#include "esp_vfs_dev.h"
-#include "esp_vfs_cdcacm.h"
-#include "esp_vfs_usb_serial_jtag.h"
-#include "driver/usb_serial_jtag.h"
 #include "nvs_flash.h"
 
 #include "task/task.h"
-#include "sections.h"
 #include "nodemcu_esp_event.h"
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-
-#define SIG_LUA 0
-#define SIG_UARTINPUT 1
-
-// Line ending config from Kconfig
-#if CONFIG_NEWLIB_STDIN_LINE_ENDING_CRLF
-# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CRLF
-#elif CONFIG_NEWLIB_STDIN_LINE_ENDING_CR
-# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CR
-#else
-# define RX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_LF
-#endif
-
-#if CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF
-# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CRLF
-#elif CONFIG_NEWLIB_STDOUT_LINE_ENDING_CR
-# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CR
-#else
-# define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_LF
-#endif
+#include "freertos/semphr.h"
 
 
 // We don't get argument size data from the esp_event dispatch, so it's
@@ -70,8 +41,6 @@ typedef struct {
 } relayed_event_t;
 static task_handle_t     relayed_event_task;
 static SemaphoreHandle_t relayed_event_handled;
-
-static task_handle_t lua_feed_task;
 
 
 // This function runs in the context of the system default event loop RTOS task
@@ -166,128 +135,9 @@ static void nodemcu_init(void)
 }
 
 
-static bool have_console_on_data_cb(void)
-{
-#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
-  return uart_has_on_data_cb(CONFIG_ESP_CONSOLE_UART_NUM);
-#else
-  return false;
-#endif
-}
-
-
-static void console_nodemcu_task(task_param_t param, task_prio_t prio)
-{
-  (void)prio;
-  char c = (char)param;
-
-  if (run_input)
-    feed_lua_input(&c, 1);
-
-#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
-  if (have_console_on_data_cb())
-    uart_feed_data(CONFIG_ESP_CONSOLE_UART_NUM, &c, 1);
-#endif
-
-  // The IDF doesn't seem to honor setvbuf(stdout, NULL, _IONBF, 0) :(
-  fsync(fileno(stdout));
-}
-
-
-static void console_task(void *)
-{
-  for (;;)
-  {
-    /* We can't use a large read buffer here as some console choices
-     * (e.g. usb-serial-jtag) don't support read timeouts/partial reads,
-     * which breaks the echo support and makes for a bad user experience.
-     */
-    char c;
-    ssize_t n = read(fileno(stdin), &c, 1);
-    if (n > 0 && (run_input || have_console_on_data_cb()))
-    {
-      if (!task_post_block_high(lua_feed_task, (task_param_t)c))
-      {
-        NODE_ERR("Lost console input data?!\n");
-      }
-    }
-  }
-}
-
-
-static void console_init(void)
-{
-  fflush(stdout);
-  fsync(fileno(stdout));
-
-  /* Disable buffering */
-  setvbuf(stdin, NULL, _IONBF, 0);
-  setvbuf(stdout, NULL, _IONBF, 0);
-
-  /* Disable non-blocking mode */
-  fcntl(fileno(stdin), F_SETFL, 0);
-  fcntl(fileno(stdout), F_SETFL, 0);
-
-#if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
-  /* Based on console/advanced example */
-
-  esp_vfs_dev_uart_port_set_rx_line_endings(
-    CONFIG_ESP_CONSOLE_UART_NUM, RX_LINE_ENDINGS_CFG);
-  esp_vfs_dev_uart_port_set_tx_line_endings(
-    CONFIG_ESP_CONSOLE_UART_NUM, TX_LINE_ENDINGS_CFG);
-
-  /* Configure UART. Note that REF_TICK is used so that the baud rate remains
-   * correct while APB frequency is changing in light sleep mode.
-   */
-  const uart_config_t uart_config = {
-    .baud_rate = CONFIG_ESP_CONSOLE_UART_BAUDRATE,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
-#if SOC_UART_SUPPORT_REF_TICK
-    .source_clk = UART_SCLK_REF_TICK,
-#elif SOC_UART_SUPPORT_XTAL_CLK
-    .source_clk = UART_SCLK_XTAL,
-#endif
-  };
-  /* Install UART driver for interrupt-driven reads and writes */
-  uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, 256, 0, 0, NULL, 0);
-  uart_param_config(CONFIG_ESP_CONSOLE_UART_NUM, &uart_config);
-
-  /* Tell VFS to use UART driver */
-  esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
-
-#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
-  /* Based on @pjsg's work */
-
-  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
-  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
-
-  usb_serial_jtag_driver_config_t usb_serial_jtag_config =
-    USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
-  /* Install USB-SERIAL-JTAG driver for interrupt-driven reads and write */
-  usb_serial_jtag_driver_install(&usb_serial_jtag_config);
-
-  esp_vfs_usb_serial_jtag_use_driver();
-#elif CONFIG_ESP_CONSOLE_USB_CDC
-  /* Based on console/advanced_usb_cdc */
-
-  esp_vfs_dev_cdcacm_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
-  esp_vfs_dev_cdcacm_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
-#else
-# error "Unsupported console type"
-#endif
-
-  xTaskCreate(
-    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
-}
-
-
 void __attribute__((noreturn)) app_main(void)
 {
   task_init();
-
-  lua_feed_task = task_get_id(console_nodemcu_task);
 
   relayed_event_handled = xSemaphoreCreateBinary();
   relayed_event_task = task_get_id(handle_default_loop_event);
@@ -303,8 +153,6 @@ void __attribute__((noreturn)) app_main(void)
 
   nvs_flash_init ();
   esp_netif_init ();
-
-  console_init();
 
   start_lua ();
   task_pump_messages ();

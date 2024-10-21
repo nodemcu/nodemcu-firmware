@@ -28,6 +28,12 @@ menu "NodeMCU modules"
         help
             Includes the can module.
 
+    config NODEMCU_CMODULE_CONSOLE
+        bool "Console module"
+        default y
+        help
+            Includes the console module (required by our Lua VM).
+
     config NODEMCU_CMODULE_CRYPTO
         bool "Crypto module"
         default "n"
@@ -339,6 +345,6 @@ menu "NodeMCU modules"
         bool "UART module"
         default y
         help
-            Includes the UART module (required by our Lua VM).
+            Includes the UART module.
 
 endmenu

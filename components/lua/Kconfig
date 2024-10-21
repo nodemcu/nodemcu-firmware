@@ -129,7 +129,7 @@ menu "Lua configuration"
       bool
       default y
       select NODEMCU_CMODULE_PIPE
-      select NODEMCU_CMODULE_UART
+      select NODEMCU_CMODULE_CONSOLE
       select LUA_BUILTIN_DEBUG
 
     choice LUA_INIT_STRING

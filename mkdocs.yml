@@ -43,6 +43,7 @@ nav:
       - 'bit': 'modules/bit.md'
       - 'bthci': 'modules/bthci.md'
       - 'can': 'modules/can.md'
+      - 'console': 'modules/console.md'
       - 'crypto': 'modules/crypto.md'
       - 'dac': 'modules/dac.md'
       - 'dht': 'modules/dht.md'
