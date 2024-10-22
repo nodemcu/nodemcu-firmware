@@ -302,6 +302,13 @@ static int node_sleep (lua_State *L)
   int err = esp_light_sleep_start();
   if (err == ESP_ERR_INVALID_STATE) {
     return luaL_error(L, "WiFi and BT must be stopped before sleeping");
+  } else if (err == 1) {
+    // Not documented, and not a esp_err_t, but '1' here means a sleep reject
+    // occurred. Usually because a GPIO is already in a state that would cause
+    // an immediate wakeup (in IDFv3 this situation would just cause an
+    // immediate wakeup and return 0). This isn't really an error condition and
+    // we should just treat it as OK. esp_sleep_get_wakeup_cause appears to
+    // still return the correct value when this happens.
   } else if (err) {
     return luaL_error(L, "Error %d returned from esp_light_sleep_start()", err);
   }
