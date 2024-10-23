@@ -203,26 +203,25 @@ static int console_mode(lua_State *L)
 }
 
 
-// Lua: console.write(string1, [string2], ..., [stringn])
+// Lua: console.write(str_or_num [, str_or_num2 ... ])
 static int console_write(lua_State *L)
 {
   int total = lua_gettop(L);
   for (int s = 1; s <= total; ++s)
   {
-    if (lua_isnumber(L, s))
+    if (lua_type(L, s) == LUA_TSTRING)
+    {
+      size_t len = 0;
+      const char *buf = lua_tolstring(L, s, &len);
+      retrying_write(buf, len);
+    }
+    else if (lua_isnumber(L, s))
     {
       int n = lua_tointeger(L, s);
       if (n < 0 || n > 255)
         return luaL_error(L, "invalid number");
       char ch = n;
       retrying_write(&ch, 1);
-    }
-    else
-    {
-      luaL_checktype(L, s, LUA_TSTRING);
-      size_t len = 0;
-      const char *buf = lua_tolstring(L, s, &len);
-      retrying_write(buf, len);
     }
   }
   fflush(stdout);

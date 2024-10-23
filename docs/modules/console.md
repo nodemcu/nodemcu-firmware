@@ -24,12 +24,12 @@ Used to register or deregister a callback function to handle console events.
     - "data" for bytes received on the console
     - "error" if an error condition is encountered on the console
 - `number/end_char`. Only for event `data`.
-	- if pass in a number n, the callback will called when n chars are received.
-	- if n=0, will receive every char in buffer.
-	- if pass in a one char string "c", the callback will called when "c" is encounterd, or max n=255 received.
+    - if pass in a number n, the callback will called when n chars are received.
+    - if n=0, will receive every char in buffer.
+    - if pass in a one char string "c", the callback will called when "c" is encounterd, or max n=255 received.
 - `function` callback function. 
-  - event "data" has a callback like this: `function(data) end`
-  - event "error" has a callback like this: `function(err) end`
+    - event "data" has a callback like this: `function(data) end`
+    - event "error" has a callback like this: `function(err) end`
 
 To unregister the callback, specify `nil` as the function.
 
@@ -39,27 +39,24 @@ To unregister the callback, specify `nil` as the function.
 #### Example
 ```lua
 -- when 4 chars is received.
-console.on("data", 4,
-  function(data)
-	print("received from console:", data)
-	if data=="quit" then
-	  console.on("data", 0, nil)
-	end
+console.on("data", 4, function(data)
+  print("received from console:", data)
+  if data=="quit" then
+    console.on("data", 0, nil)
+  end
 end)
 -- when '\r' is received.
-console.on("data", "\r",
-  function(data)
-	print("received from console:", data)
-	if data=="quit\r" then
-	  console.on("data", 0, nil)
-	end
+console.on("data", "\r", function(data)
+  print("received from console:", data)
+  if data=="quit\r" then
+    console.on("data", 0, nil)
+  end
 end)
 
 -- error handler
-console.on("error",
-  function(err)
-	print("error on console:", err)
-  end)
+console.on("error", function(err)
+  print("error on console:", err)
+end)
 ```
 
 ## console.mode()
@@ -81,8 +78,133 @@ Controls the interactivity of the console.
 `nil`
 
 #### Example
+Implement a REL instead of the usual REPL
 ```lua
--- Implement a REL instead of the usual REPL
 console.on("data", "\r", function(line) node.input(line.."\r\n") end)
 console.mode(console.NONINTERACTIVE)
+```
+
+Receive potentially binary data on the console, and process it without letting
+it reach the Lua interpreter.
+```lua
+-- Instantiate a stream handling function that processes a classic framing
+-- protocol: <STX><escaped-data><ETX> where <escaped-data> has the
+-- STX, ETX and DLE symbols escaped as <DLE><STX>, <DLE><ETX>, <DLE><DLE>.
+-- The chunk_cb gets called incrementally with partial stream data which is
+-- effectively unescaped. When the end of frame is encountered, the done_cb
+-- gets invoked.
+function transmission_receiver(chunk_cb, done_cb)
+  local inframe = false
+  local escaped = false
+  local done = false
+  local STX = 2
+  local ETX = 3
+  local DLE = 16
+  local function dispatch(data, i, j)
+    if (j - i) < 0 then return end
+    chunk_cb(data:sub(i, j))
+  end
+  return function(data)
+    if done then return end
+    local from
+    local to
+    for i = 1, #data
+    do
+      local b = data:byte(i)
+      if inframe
+      then
+        if not from then from = i end -- first valid byte
+        if escaped
+        then
+          escaped = false
+        else
+          if b == DLE
+          then
+            escaped = true
+            dispatch(data, from, i-1)
+            from = nil
+          elseif b == ETX
+          then
+            done = true
+            to = i-1
+            break
+          end
+        end
+      else -- look for an (unescaped) STX to sync frame start
+        if b == DLE then escaped = true
+        elseif b == STX and not escaped then inframe = true
+        else escaped = false
+        end
+      end
+      -- else ignore byte outside of framing
+    end
+    if from then dispatch(data, from, to or #data) end
+    if done then done_cb() end
+  end
+end
+
+function print_hex(chunk)
+  for i = 1, #chunk
+  do
+    print(string.format("%02x ", chunk:sub(i,i)))
+  end
+end
+
+function resume_interactive()
+  console.on("data", 0, nil)
+  console.mode(console.INTERACTIVE)
+end
+
+-- The 0 may be adjusted upwards for improved efficiency, but be mindful to
+-- always send enough data to reach the ETX marker.
+console.on("data", 0, transmission_receiver(print_hex, resume_interactive))
+console.mode(console.NONINTERACTIVE)
+```
+
+Example C program for encoding data suitable for the above.
+```C
+#include <stdio.h>
+
+#define STX 0x02
+#define ETX 0x03
+#define DLE 0x10
+
+int main(int argc, char *argv[])
+{
+  putchar(STX);
+  int ch;
+  while ((ch = getchar()) != EOF)
+  {
+    switch(ch)
+    {
+      case STX: case ETX: case DLE: putchar(DLE); break;
+      default: break;
+    }
+    putchar(ch);
+  }
+  putchar(ETX);
+  return 0;
+}
+```
+
+## console.write()
+
+Provides ability to write raw, unformatted data to the console.
+
+#### Syntax
+`console.write(str_or_num [, str2_or_num ...])`
+
+#### Parameters
+- `str_or_num` Either
+    - A string to write to the console. May contain binary data.
+    - A number representing the character code to write the console.
+  Multiple parameters may be given, and they will be written in sequence.
+
+#### Returns
+`nil`
+
+#### Example
+Write "Hello world!\n" to the console, in a roundabout manner
+```lua
+console.write("Hello", 0x20, "world", 0x21, "\n")
 ```
