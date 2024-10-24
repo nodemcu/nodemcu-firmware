@@ -93,22 +93,6 @@ static int wifi_stop (lua_State *L)
     0 : luaL_error (L, "failed to stop wifi, code %d", err);
 }
 
-#if defined(CONFIG_ESP_CONSOLE_USB_CDC)
-// For some unknown reason, on an S2 with USB CDC console enabled, if we allow
-// the esp_wifi_init() to run during initial startup, something Bad(tm)
-// happens and the S2 fails to enumerate on the USB bus. However, if we defer
-// the wifi initialisation, it starts up fine. This is an ugly workaround, but
-// I'm out of ideas at this point. If I use a UART console, I see no errors
-// even with the immediate init.
-static task_handle_t th;
-#endif
-
-static void do_esp_wifi_init(task_param_t p, task_prio_t)
-{
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init (&cfg));
-}
-
 extern void wifi_ap_init (void);
 extern void wifi_sta_init (void);
 static int wifi_init (lua_State *L)
@@ -117,11 +101,16 @@ static int wifi_init (lua_State *L)
   wifi_sta_init ();
 
 #if defined(CONFIG_ESP_CONSOLE_USB_CDC)
-  th = task_get_id(do_esp_wifi_init);
-  task_post_low(th, 0);
-#else
-  do_esp_wifi_init(0, 0);
+// For some unknown reason, on an S2 with USB CDC console enabled, if we allow
+// the esp_wifi_init() to run during initial startup, something Bad(tm)
+// happens and the S2 fails to enumerate on the USB bus. However, if we defer
+// it by half a second or so, everything works. This is an ugly workaround,
+// but I'm out of ideas at this point.
+  vTaskDelay(CONFIG_NODEMCU_CMODULE_WIFI_STARTUP_DELAY / portTICK_PERIOD_MS);
 #endif
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init (&cfg));
+
   return 0;
 }
 

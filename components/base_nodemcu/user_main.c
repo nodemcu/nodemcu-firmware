@@ -17,12 +17,14 @@
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_spiffs.h"
 #include "esp_netif.h"
 #include "esp_vfs_dev.h"
 #include "esp_vfs_cdcacm.h"
+#include "esp_vfs_console.h"
 #include "esp_vfs_usb_serial_jtag.h"
+#include "driver/uart_vfs.h"
 #include "driver/usb_serial_jtag.h"
+#include "driver/usb_serial_jtag_vfs.h"
 #include "nvs_flash.h"
 
 #include "task/task.h"
@@ -51,6 +53,10 @@
 # define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_CR
 #else
 # define TX_LINE_ENDINGS_CFG ESP_LINE_ENDINGS_LF
+#endif
+
+#ifndef CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT
+# define CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT 0
 #endif
 
 
@@ -125,7 +131,6 @@ static void start_lua ()
 
 static void nodemcu_init(void)
 {
-    NODE_ERR("\n");
     // Initialize platform first for lua modules.
     if( platform_init() != PLATFORM_OK )
     {
@@ -133,34 +138,8 @@ static void nodemcu_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
-    const char *label = CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL;
-
-    esp_vfs_spiffs_conf_t spiffs_cfg = {
-      .base_path = "",
-      .partition_label = (label && label[0]) ? label : NULL,
-      .max_files = CONFIG_NODEMCU_MAX_OPEN_FILES,
-      .format_if_mount_failed = true,
-    };
-    const char *reason = NULL;
-    switch(esp_vfs_spiffs_register(&spiffs_cfg))
-    {
-      case ESP_OK: break;
-      case ESP_ERR_NO_MEM:
-        reason = "out of memory";
-        break;
-      case ESP_ERR_INVALID_STATE:
-        reason = "already mounted, or encrypted";
-        break;
-      case ESP_ERR_NOT_FOUND:
-        reason = "no SPIFFS partition found";
-        break;
-      case ESP_FAIL:
-        reason = "failed to mount or format partition";
-        break;
-      default:
-        reason = "unknown";
-        break;
-    }
+    const char *reason =
+      platform_remount_default_fs(CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT);
     if (reason)
       printf("Failed to mount SPIFFS partition: %s\n", reason);
 }
@@ -231,9 +210,9 @@ static void console_init(void)
 #if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
   /* Based on console/advanced example */
 
-  esp_vfs_dev_uart_port_set_rx_line_endings(
+  uart_vfs_dev_port_set_rx_line_endings(
     CONFIG_ESP_CONSOLE_UART_NUM, RX_LINE_ENDINGS_CFG);
-  esp_vfs_dev_uart_port_set_tx_line_endings(
+  uart_vfs_dev_port_set_tx_line_endings(
     CONFIG_ESP_CONSOLE_UART_NUM, TX_LINE_ENDINGS_CFG);
 
   /* Configure UART. Note that REF_TICK is used so that the baud rate remains
@@ -255,20 +234,20 @@ static void console_init(void)
   uart_param_config(CONFIG_ESP_CONSOLE_UART_NUM, &uart_config);
 
   /* Tell VFS to use UART driver */
-  esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+  uart_vfs_dev_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
 
 #elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
   /* Based on @pjsg's work */
 
-  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
-  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
+  usb_serial_jtag_vfs_set_rx_line_endings(RX_LINE_ENDINGS_CFG);
+  usb_serial_jtag_vfs_set_tx_line_endings(TX_LINE_ENDINGS_CFG);
 
   usb_serial_jtag_driver_config_t usb_serial_jtag_config =
     USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
   /* Install USB-SERIAL-JTAG driver for interrupt-driven reads and write */
   usb_serial_jtag_driver_install(&usb_serial_jtag_config);
 
-  esp_vfs_usb_serial_jtag_use_driver();
+  usb_serial_jtag_vfs_use_driver();
 #elif CONFIG_ESP_CONSOLE_USB_CDC
   /* Based on console/advanced_usb_cdc */
 
@@ -279,7 +258,8 @@ static void console_init(void)
 #endif
 
   xTaskCreate(
-    console_task, "console", 1024, NULL, ESP_TASK_MAIN_PRIO+1, NULL);
+    console_task, "console", configMINIMAL_STACK_SIZE,
+    NULL, ESP_TASK_MAIN_PRIO+1, NULL);
 }
 
 

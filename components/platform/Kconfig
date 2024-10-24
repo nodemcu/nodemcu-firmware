@@ -37,6 +37,18 @@ menu "NodeMCU platform config"
             opened. Raising this limit will incur some extra memory
             overhead.
 
+    config NODEMCU_AUTO_FORMAT_ON_BOOT
+        bool "Auto-format SPIFFS on first boot"
+        default "y" if !ESP_CONSOLE_USB_CDC
+        default "n" if  ESP_CONSOLE_USB_CDC
+        help
+            The traditional behavior of NodeMCU is to automatically format
+            the SPIFFS partition on first boot (or any other time the
+            filesystem is unmountable). When using USB CDC however, the
+            formatting can interfere with USB device enumeration, leading
+            to a failed boot. In that case, disable the auto-format and
+            use file.format() after startup instead.
+
     config NODEMCU_EMBED_LFS
         bool "Embed LFS as part of the NodeMCU firmware"
         default "n"
@@ -79,6 +91,7 @@ menu "NodeMCU platform config"
             bool
             default y if IDF_TARGET_ESP32
             default y if IDF_TARGET_ESP32S3
+            default y if IDF_TARGET_ESP32C6
 
         config NODEMCU_UART_DRIVER_BUF_SIZE_RX0
             int "RX buffer size for UART0"
