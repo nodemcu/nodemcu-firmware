@@ -171,7 +171,17 @@ static int retrying_write(const char *buf, size_t len)
   size_t written = 0;
   while (written < len)
   {
-    size_t n = fwrite(buf + written, 1, len - written, stdout);
+    // At least the USB-Serial-JTAG appears to silently drop characters
+    // sometimes when writing more than 255 bytes, so we break such strings
+    // up into multiple calls as a workaround.
+    const size_t MAX_LEN = 255;
+    size_t left = len - written;
+    size_t to_write = left > MAX_LEN ? MAX_LEN : left;
+    size_t n = fwrite(buf + written, 1, to_write, stdout);
+    // Additionally, we have to explicitly flush after each chunk we've written.
+    fflush(stdout);
+    fsync(fileno(stdout));
+
     if (n > 0)
       written += n;
     else if (ferror(stdout))
@@ -224,8 +234,6 @@ static int console_write(lua_State *L)
       retrying_write(&ch, 1);
     }
   }
-  fflush(stdout);
-  fsync(fileno(stdout));
   return 0;
 }
 
