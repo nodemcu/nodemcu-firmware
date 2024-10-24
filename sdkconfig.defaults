@@ -12,6 +12,8 @@ CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 
 # Empirical value to prevent a firmware crash due to stack overflow.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# Increase the event task stack size to avoid crash on C3 during WiFi connect.
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=3072
 
 # Enable panic handler for task wdt to reset the firmware upon wdt timeout
 CONFIG_ESP_TASK_WDT_PANIC=y
