@@ -43,7 +43,7 @@ uart.on("data", 4,
 	if data=="quit" then
 	  uart.on("data") -- unregister callback function
 	end
-end, 0)
+end)
 -- when '\r' is received.
 uart.on("data", "\r",
   function(data)
@@ -51,7 +51,7 @@ uart.on("data", "\r",
 	if data=="quit\r" then
 	  uart.on("data") -- unregister callback function
 	end
-end, 0)
+end)
 
 -- uart 2
 uart.on(2, "data", "\r",
