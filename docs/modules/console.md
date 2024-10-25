@@ -12,6 +12,10 @@ shell (REPL — Read-Execute-Print Loop). It also provides a hook for listening
 in on the data received on the console programatically, and the interactivity
 may also be disabled (and re-enabled) programatically if so desired.
 
+There is a helper script (`scripts/upload-file.py`) which can be used to
+easily upload files to NodeMCU via this module. The script may also be used
+as inspiration for integrating such functionality into IDEs.
+
 ## console.on()
 
 Used to register or deregister a callback function to handle console events.

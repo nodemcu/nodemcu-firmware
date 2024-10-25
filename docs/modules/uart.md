@@ -8,7 +8,11 @@ The [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver/transmi
 If the UART is in use as the system console, it is unavailable for use by this
 module. Instead, refer to the `console` module.
 
-Before using a UART, you must call `uart.setup` and `uart.start` to set them up.
+If your IDE does not yet support uploading files via the `console` module,
+consider using the utility script `scripts/upload-file.py`, e.g.
+`scripts/upload-file.py init.lua` (use `scripts/upload-file.py -h` for help).
+
+Before using a UART, you must call `uart.setup` and `uart.start` to set it up.
 
 ## uart.on()
 
