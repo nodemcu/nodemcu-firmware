@@ -260,4 +260,4 @@ int luaopen_console( lua_State *L ) {
   return 0;
 }
 
-NODEMCU_MODULE(UART, "console", console, luaopen_console);
+NODEMCU_MODULE(CONSOLE, "console", console, luaopen_console);
