@@ -16,6 +16,15 @@ There is a helper script (`scripts/upload-file.py`) which can be used to
 easily upload files to NodeMCU via this module. The script may also be used
 as inspiration for integrating such functionality into IDEs.
 
+If using a SoC with USB CDC-ACM as the console, consider increasing the receive
+buffer from the default. This type of console is quite prone to overflows, and
+increasing the receive buffer helps mitigate (but not completely resolve) that.
+Look for `Component config -> ESP system settings ->  Size of USB CDC RX buffer`
+in the menuconfig (`ESP_CONSOLE_USB_CDC_RX_BUF_SIZE` in sdkconfig). Increasing
+this value from the default 64 to 512 makes it match what is typically used
+for a UART console. Some utilities and IDEs may have their own minimum
+requirements for the receive buffer.
+
 ## console.on()
 
 Used to register or deregister a callback function to handle console events.
@@ -97,10 +106,14 @@ it reach the Lua interpreter.
 -- The chunk_cb gets called incrementally with partial stream data which is
 -- effectively unescaped. When the end of frame is encountered, the done_cb
 -- gets invoked.
-function transmission_receiver(chunk_cb, done_cb)
+-- To avoid overruns on slower consoles (e.g. CDC-ACM) each block gets
+-- acknowledged by printing another prompt. This allows the sender to easily
+-- throttle the upload to a maintainable pace.
+function transmission_receiver(chunk_cb, done_cb, blocksize)
   local inframe = false
   local escaped = false
   local done = false
+  local len = 0
   local STX = 2
   local ETX = 3
   local DLE = 16
@@ -110,6 +123,11 @@ function transmission_receiver(chunk_cb, done_cb)
   end
   return function(data)
     if done then return end
+    len = len + #data
+    while len >= blocksize do
+      len = len - blocksize
+      console.write("> ")
+    end
     local from
     local to
     for i = 1, #data
@@ -160,8 +178,8 @@ function resume_interactive()
 end
 
 -- The 0 may be adjusted upwards for improved efficiency, but be mindful to
--- always send enough data to reach the ETX marker.
-console.on("data", 0, transmission_receiver(print_hex, resume_interactive))
+-- always send enough data to reach the ETX marker if so.
+console.on("data", 0, transmission_receiver(print_hex, resume_interactive, 64))
 console.mode(console.NONINTERACTIVE)
 ```
 
