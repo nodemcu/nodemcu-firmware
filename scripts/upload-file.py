@@ -103,7 +103,7 @@ def parse_args():
 def load_file(filename):
     """Open a file and read its contents into memory."""
     try:
-        with open(filename, "r") as f:
+        with open(filename, "rb") as f:
             data = f.read()
         return data
     except IOError as e:
@@ -201,7 +201,7 @@ def transmission(data):
     for b in data:
         if b == STX or b == ETX or b == DLE:
             out.append(DLE)
-        out.append(ord(b))
+        out.append(b)
     out.append(ETX)
     return bytes(out)
 
