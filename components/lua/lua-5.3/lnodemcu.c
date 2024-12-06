@@ -629,10 +629,9 @@ LUAI_FUNC int luaN_init (lua_State *L) {
   lua_getglobal(L, #t); luaL_getmetafield( L, 1, #f ); lua_remove(L, -2);
 
 LUALIB_API void luaL_lfsreload (lua_State *L) {
-#if defined(CONFIG_NODEMCU_EMBEDDED_FLS_SIZE)
-  (void)L;
+#if defined(CONFIG_NODEMCU_EMBEDDED_LFS_SIZE)
   lua_pushstring(L, "Not allowed to write to LFS section");
-  return 1;
+  return;
 #else
 #ifdef LUA_USE_ESP
   size_t l;
