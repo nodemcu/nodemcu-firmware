@@ -120,7 +120,7 @@ static void start_lua ()
 {
   NODE_DBG("Task task_lua started.\n");
   if (lua_main()) // If it returns true then LFS restart is needed
-    lua_main();
+    esp_restart();
 }
 
 static void nodemcu_init(void)
