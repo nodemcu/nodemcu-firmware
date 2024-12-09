@@ -79,6 +79,14 @@ elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
     ${wifi_modules}
   )
+elseif(IDF_TARGET STREQUAL "esp32c5")
+  list(APPEND module_srcs
+    # "can.c"
+    # "i2s.c"
+    # "pulsecnt.c"
+    # "sdmmc.c"
+    ${wifi_modules}
+  )
 elseif(IDF_TARGET STREQUAL "esp32c6")
   list(APPEND module_srcs
     "dac.c"
@@ -97,7 +105,6 @@ idf_component_register(
     "app_update"
     "base_nodemcu"
     "bt"
-    "driver_can"
     "esp_eth"
     "esp_http_client"
     "esp_http_server"
