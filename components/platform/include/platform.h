@@ -272,4 +272,10 @@ bool platform_partition_info (uint8_t idx, platform_partition_t *info);
 
 void platform_print_deprecation_note( const char *msg, const char *time_frame);
 
+/**
+ * Mount or remount the default SPIFFS filesystem.
+ * @returns An error message string if the operation failed.
+ */
+const char *platform_remount_default_fs(bool autoformat);
+
 #endif

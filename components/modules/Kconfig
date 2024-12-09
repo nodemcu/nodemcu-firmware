@@ -323,6 +323,18 @@ menu "NodeMCU modules"
         help
             Includes the WiFi module (recommended).
 
+    config NODEMCU_CMODULE_WIFI_STARTUP_DELAY
+        depends on NODEMCU_CMODULE_WIFI
+        depends on ESP_CONSOLE_USB_CDC
+        int "WiFi start-up delay (ms)"
+        default 500
+        help
+            For some unknown reason there is an issue with allowing the
+            WiFi stack to initialise immediately when using a USB CDC
+            console (at least on the ESP32-S2). The workaround is to
+            delay the initialisation sequence by enough that whatever
+            else is needing to run gets to run first.
+
     config NODEMCU_CMODULE_WS2812
         bool "WS2812 module"
         default "n"

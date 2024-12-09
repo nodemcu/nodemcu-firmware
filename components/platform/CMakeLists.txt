@@ -24,4 +24,5 @@ idf_component_register(
     "esp_rom"
     "lua"
     "soc"
+    "spiffs"
 )
