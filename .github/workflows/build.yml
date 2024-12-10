@@ -31,7 +31,10 @@ jobs:
         shell: bash
       - name: Prepare default sdkconfig
         run: |
+          # Compose sdkconfig manually rather than overwrite checked in files
           cp sdkconfig.defaults sdkconfig
+          [ -e "sdkconfig.defaults.${{ matrix.target }}" ] && cat "sdkconfig.defaults.${{ matrix.target }}" >> sdkconfig || true
+          [ -e "sdkconfig.ci.${{ matrix.target }}" ] && cat "sdkconfig.ci.${{ matrix.target }}" >> sdkconfig || true
         shell: bash
       - name: Update config for Lua 5.1
         if: ${{ matrix.lua_ver == '5.1' }}
@@ -54,6 +57,10 @@ jobs:
           echo CONFIG_LUA_NUMBER_INT64=y >> sdkconfig
           echo CONFIG_LUA_NUMBER_DOUBLE=y >> sdkconfig
         shell: bash
+      - name: Show resulting sdkconfig
+        shell: bash
+        run: |
+          cat sdkconfig
       - name: Build firmware
         run: |
           make IDF_TARGET=${{ matrix.target }}
