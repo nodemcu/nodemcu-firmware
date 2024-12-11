@@ -5,31 +5,35 @@
 
 The [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver/transmitter) (Universal asynchronous receiver/transmitter) module allows configuration of and communication over the UART serial port.
 
-The default setup for the console uart is controlled by build-time settings. The default uart for console is `UART0`. The default rate is 115,200 bps. In addition, auto-baudrate detection is enabled for the first two minutes
-after platform boot. This will cause a switch to the correct baud rate once a few characters are received. Auto-baudrate detection is disabled when `uart.setup` is called.
+If the UART is in use as the system console, it is unavailable for use by this
+module. Instead, refer to the `console` module.
 
-For other uarts, you should call `uart.setup` and `uart.start` to get them working.
+If your IDE does not yet support uploading files via the `console` module,
+consider using the utility script `scripts/upload-file.py`, e.g.
+`scripts/upload-file.py init.lua` (use `scripts/upload-file.py -h` for help).
+
+Before using a UART, you must call `uart.setup` and `uart.start` to set it up.
 
 ## uart.on()
 
-Sets the callback function to handle UART events.
+Sets the callback function to handle UART events. For a UART used by the
+console, refer to the `console` module instead.
 
 #### Syntax
-`uart.on([id], method, [number/end_char], [function], [run_input])`
+`uart.on([id], method, [number/end_char], [function])`
 
 #### Parameters
-- `id` uart id, default value is uart num of the console.
+- `id` uart id, except console uart. Default value is uart 0.
 - `method` "data", data has been received on the UART. "error", error occurred on the UART.
 - `number/end_char`. Only for event `data`.
-	- if pass in a number n<255, the callback will called when n chars are received.
+	- if pass in a number n, the callback will called when n chars are received.
 	- if n=0, will receive every char in buffer.
 	- if pass in a one char string "c", the callback will called when "c" is encounterd, or max n=255 received.
 - `function` callback function. 
   - event "data" has a callback like this: `function(data) end`
   - event "error" has a callback like this: `function(err) end`. `err` could be one of "out_of_memory", "break", "rx_error".
-- `run_input` 0 or 1. Only for "data" event on console uart. If 0, input from UART will not go into Lua interpreter, can accept binary data. If 1, input from UART will go into Lua interpreter, and run.
 
-To unregister the callback, provide only the "data" parameter.
+To unregister the callback, provide only the "method" parameter.
 
 #### Returns
 `nil`
@@ -43,7 +47,7 @@ uart.on("data", 4,
 	if data=="quit" then
 	  uart.on("data") -- unregister callback function
 	end
-end, 0)
+end)
 -- when '\r' is received.
 uart.on("data", "\r",
   function(data)
@@ -51,7 +55,7 @@ uart.on("data", "\r",
 	if data=="quit\r" then
 	  uart.on("data") -- unregister callback function
 	end
-end, 0)
+end)
 
 -- uart 2
 uart.on(2, "data", "\r",
@@ -71,17 +75,16 @@ uart.on(2, "error",
 (Re-)configures the communication parameters of the UART.
 
 #### Syntax
-`uart.setup(id, baud, databits, parity, stopbits, echo_or_pins)`
+`uart.setup(id, baud, databits, parity, stopbits, pins)`
 
 #### Parameters
-- `id` uart id
+- `id` uart id, except console uart
 - `baud` one of 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 74880, 115200, 230400, 256000, 460800, 921600, 1843200, 3686400
 - `databits` one of 5, 6, 7, 8
 - `parity` `uart.PARITY_NONE`, `uart.PARITY_ODD`, or `uart.PARITY_EVEN`
 - `stopbits` `uart.STOPBITS_1`, `uart.STOPBITS_1_5`, or `uart.STOPBITS_2`
-- `echo_or_pins`
-  - for console uart, this should be a int. if 0, disable echo, otherwise enable echo
-  - for others, this is a table:
+- `pins`
+  - table with the following entries:
     - `tx` int. TX pin. Required
 	- `rx` int. RX pin. Required
 	- `cts` in. CTS pin. Optional
@@ -113,7 +116,7 @@ Returns the current configuration parameters of the UART.
 `uart.getconfig(id)`
 
 #### Parameters
-- `id` UART id (0 or 1).
+- `id` uart id, except console uart
 
 #### Returns
 Four values as follows:
@@ -130,7 +133,7 @@ print (uart.getconfig(0))
 ```
 
 ## uart.start()
-Start the UART. You do not need to call `start()` on the console uart.
+Start the UART.
 
 #### Syntax
 `uart.start(id)`
@@ -143,7 +146,7 @@ Boolean. `true` if uart is started.
 
 
 ## uart.stop()
-Stop the UART. You should not call `stop()` on the console uart.
+Stop the UART.
 
 #### Syntax
 `uart.stop(id)`
@@ -164,7 +167,7 @@ Set UART controllers communication mode
 `uart.setmode(id, mode)`
 
 #### Parameters
-- `id` uart id
+- `id` uart id, except console uart
 - `mode` value should be one of
     - `uart.MODE_UART` default UART mode, is set after uart.setup() call
     - `uart.MODE_RS485_COLLISION_DETECT` receiver must be always enabled, transmitter is automatically switched using RTS pin, collision is detected by UART hardware (note: no event is generated on collision, limitation of esp-idf)
@@ -184,15 +187,15 @@ Wait for any data currently in the UART transmit buffers to be written out. It c
 `uart.txflush(id)`
 
 #### Parameters
-- `id` uart id
+- `id` uart id, except console uart
 
 #### Returns
 `nil`
 
 #### Example
 ```lua
-print("I want this to show up now not in 5 seconds")
-uart.txflush(0) -- assuming 0 is the console uart
+uart.write(0, "I want this to show up now not in 5 seconds")
+uart.txflush(0)
 node.sleep({secs=5})
 ```
 
@@ -208,7 +211,7 @@ Configure the light sleep wakeup threshold. This is the number of positive edges
 `uart.wakeup(id, val)`
 
 #### Parameters
-- `id` uart id
+- `id` uart id, except console uart
 - `val` the new value 
 
 #### Returns
@@ -231,7 +234,7 @@ Write string or byte to the UART.
 `uart.write(id, data1 [, data2, ...])`
 
 #### Parameters
-- `id` uart id
+- `id` uart id, except console uart
 - `data1`... string or byte to send via UART
 
 #### Returns
