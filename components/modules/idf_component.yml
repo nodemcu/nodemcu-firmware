@@ -4,4 +4,5 @@ dependencies:
   idf:
     version: ">=5.0.0"
   # Component dependencies
-  libsodium: "~1.0.20"
+  espressif/libsodium: "~1.0.20"
+  espressif/mdns: "^1.4.2"
