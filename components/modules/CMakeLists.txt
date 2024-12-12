@@ -83,10 +83,9 @@ elseif(IDF_TARGET STREQUAL "esp32c3")
   )
 elseif(IDF_TARGET STREQUAL "esp32c5")
   list(APPEND module_srcs
-    # "can.c"
-    # "i2s.c"
-    # "pulsecnt.c"
-    # "sdmmc.c"
+    "can.c"
+    "i2s.c"
+    "pulsecnt.c"
     ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32c6")

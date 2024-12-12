@@ -161,9 +161,13 @@ static int node_i2s_start( lua_State *L )
   pin_config.data_out_num  = opt_checkint(L, "data_out_pin", I2S_PIN_NO_CHANGE);
   pin_config.data_in_num = opt_checkint(L, "data_in_pin", I2S_PIN_NO_CHANGE);
   //
+#ifdef SOC_I2S_SUPPORTS_DAC
   i2s_dac_mode_t dac_mode = opt_checkint_range(L, "dac_mode", I2S_DAC_CHANNEL_DISABLE, 0, I2S_DAC_CHANNEL_MAX-1);
+#endif
   //
+#ifdef SOC_I2S_SUPPORTS_ADC
   adc1_channel_t adc1_channel = opt_checkint_range(L, "adc1_channel", ADC1_CHANNEL_MAX, ADC1_CHANNEL_0, ADC1_CHANNEL_MAX);
+#endif
 
   // handle optional callback functions TX and RX
   lua_settop( L, top );
@@ -183,14 +187,18 @@ static int node_i2s_start( lua_State *L )
   if (err != ESP_OK)
     luaL_error( L, "i2s can not start" );
 
+#ifdef SOC_I2S_SUPPORTS_DAC
   if (dac_mode != I2S_DAC_CHANNEL_DISABLE) {
     if (i2s_set_dac_mode( dac_mode ) != ESP_OK)
       luaL_error( L, "error setting dac mode" );
   }
+#endif
+#ifdef SOC_I2S_SUPPORTS_ADC
   if (adc1_channel != ADC1_CHANNEL_MAX) {
     if (i2s_set_adc_mode( ADC_UNIT_1, adc1_channel ) != ESP_OK)
       luaL_error( L, "error setting adc1 mode" );
   }
+#endif
 
   if (i2s_set_pin(i2s_id, &pin_config) != ESP_OK)
     luaL_error( L, "error setting pins" );
@@ -331,14 +339,20 @@ LROT_BEGIN(i2s, NULL, 0)
   LROT_NUMENTRY( MODE_SLAVE,        I2S_MODE_SLAVE )
   LROT_NUMENTRY( MODE_TX,           I2S_MODE_TX )
   LROT_NUMENTRY( MODE_RX,           I2S_MODE_RX )
+#ifdef SOC_I2S_SUPPORTS_DAC
   LROT_NUMENTRY( MODE_DAC_BUILT_IN, I2S_MODE_DAC_BUILT_IN )
+#endif
+#ifdef SOC_I2S_SUPPORTS_ADC
   LROT_NUMENTRY( MODE_ADC_BUILT_IN, I2S_MODE_ADC_BUILT_IN )
+#endif
   LROT_NUMENTRY( MODE_PDM,          I2S_MODE_PDM )
 
+#ifdef SOC_I2S_SUPPORTS_DAC
   LROT_NUMENTRY( DAC_CHANNEL_DISABLE, I2S_DAC_CHANNEL_DISABLE )
   LROT_NUMENTRY( DAC_CHANNEL_RIGHT,   I2S_DAC_CHANNEL_RIGHT_EN )
   LROT_NUMENTRY( DAC_CHANNEL_LEFT,    I2S_DAC_CHANNEL_LEFT_EN )
   LROT_NUMENTRY( DAC_CHANNEL_BOTH,    I2S_DAC_CHANNEL_BOTH_EN )
+#endif
 LROT_END(i2s, NULL, 0)
 
 int luaopen_i2s( lua_State *L ) {

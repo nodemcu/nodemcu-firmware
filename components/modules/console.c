@@ -6,7 +6,7 @@
 #include "task/task.h"
 
 #include "esp_vfs_dev.h"
-#include "esp_vfs_cdcacm.h"
+//#include "esp_vfs_cdcacm.h"
 #include "esp_vfs_usb_serial_jtag.h"
 #include "driver/usb_serial_jtag.h"
 #include "freertos/FreeRTOS.h"
