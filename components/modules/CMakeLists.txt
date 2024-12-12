@@ -1,4 +1,6 @@
 # Modules common to all chips
+set(extra_requires
+)
 set(wifi_modules
   "espnow.c"
   "wifi.c"
@@ -64,6 +66,9 @@ if(IDF_TARGET STREQUAL "esp32")
     "touch.c"
     ${wifi_modules}
   )
+  list(APPEND extra_requires
+     "driver_can"
+  )
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
@@ -123,6 +128,7 @@ idf_component_register(
     "u8g2"
     "ucg"
     "vfs"
+    ${extra_requires}
 )
 
 # Match up all the module source files with their corresponding Kconfig
