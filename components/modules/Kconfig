@@ -177,6 +177,12 @@ menu "NodeMCU modules"
         help
             Includes the LEDC module.
 
+    config NODEMCU_CMODULE_MDNS
+        bool "mDNS module"
+        default "n"
+        help
+            Includes the mDNS module.
+
     config NODEMCU_CMODULE_MQTT
         bool "MQTT module"
         default "n"
