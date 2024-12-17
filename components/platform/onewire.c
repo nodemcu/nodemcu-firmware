@@ -65,6 +65,7 @@ sample code bearing this copyright.
 #include "driver/gpio.h"
 #include "rom/gpio.h" // for gpio_matrix_out()
 #include "soc/gpio_periph.h"
+#include "hal/gpio_ll.h"
 #include "esp_log.h"
 
 #define TRUE (1==1)
@@ -197,7 +198,7 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     return PLATFORM_ERR;
 
   if (gpio_num != ow_rmt.gpio) {
-#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32H2)
+#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32H2) && !defined(CONFIG_IDF_TARGET_ESP32C5)
     // attach GPIO to previous pin
     if (gpio_num < 32) {
       GPIO.enable_w1ts = (0x1 << gpio_num);
@@ -217,7 +218,7 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     rmt_set_gpio( ow_rmt.rx, RMT_MODE_RX, gpio_num, false );
     rmt_set_gpio( ow_rmt.tx, RMT_MODE_TX, gpio_num, false );
     // force pin direction to input to enable path to RX channel
-    PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
+    gpio_ll_input_enable(&GPIO, gpio_num);
 
     ow_rmt.gpio = gpio_num;
   }

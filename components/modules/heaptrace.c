@@ -16,7 +16,7 @@ static int lht_init(lua_State *L)
 
   heap_trace_stop();
   free(buffer);
-  buffer = calloc(sizeof(heap_trace_record_t), records);
+  buffer = calloc(records, sizeof(heap_trace_record_t));
   if (!buffer)
     return luaL_error(L, "out of memory");
 

@@ -14,8 +14,12 @@
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_spiffs.h"
 #include "esp_netif.h"
+#include "esp_vfs_dev.h"
+#include "esp_vfs_cdcacm.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "driver/uart_vfs.h"
+#include "driver/usb_serial_jtag.h"
 #include "nvs_flash.h"
 
 #include "task/task.h"
@@ -23,6 +27,10 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+
+#ifndef CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT
+# define CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT 0
+#endif
 
 
 // We don't get argument size data from the esp_event dispatch, so it's
@@ -94,7 +102,6 @@ static void start_lua ()
 
 static void nodemcu_init(void)
 {
-    NODE_ERR("\n");
     // Initialize platform first for lua modules.
     if( platform_init() != PLATFORM_OK )
     {
@@ -102,34 +109,8 @@ static void nodemcu_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
-    const char *label = CONFIG_NODEMCU_DEFAULT_SPIFFS_LABEL;
-
-    esp_vfs_spiffs_conf_t spiffs_cfg = {
-      .base_path = "",
-      .partition_label = (label && label[0]) ? label : NULL,
-      .max_files = CONFIG_NODEMCU_MAX_OPEN_FILES,
-      .format_if_mount_failed = true,
-    };
-    const char *reason = NULL;
-    switch(esp_vfs_spiffs_register(&spiffs_cfg))
-    {
-      case ESP_OK: break;
-      case ESP_ERR_NO_MEM:
-        reason = "out of memory";
-        break;
-      case ESP_ERR_INVALID_STATE:
-        reason = "already mounted, or encrypted";
-        break;
-      case ESP_ERR_NOT_FOUND:
-        reason = "no SPIFFS partition found";
-        break;
-      case ESP_FAIL:
-        reason = "failed to mount or format partition";
-        break;
-      default:
-        reason = "unknown";
-        break;
-    }
+    const char *reason =
+      platform_remount_default_fs(CONFIG_NODEMCU_AUTO_FORMAT_ON_BOOT);
     if (reason)
       printf("Failed to mount SPIFFS partition: %s\n", reason);
 }

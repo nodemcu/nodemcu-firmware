@@ -274,9 +274,9 @@ static int leth_init( lua_State *L )
 
   eth_esp32_emac_config_t emac_cfg = ETH_ESP32_EMAC_DEFAULT_CONFIG();
 
-  emac_cfg.smi_mdc_gpio_num =
+  emac_cfg.smi_gpio.mdc_num =
     opt_checkint_range( L, "mdc",   -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
-  emac_cfg.smi_mdio_gpio_num =
+  emac_cfg.smi_gpio.mdio_num =
     opt_checkint_range( L, "mdio",  -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
 
   eth_mac_config_t mac_cfg = ETH_MAC_DEFAULT_CONFIG();

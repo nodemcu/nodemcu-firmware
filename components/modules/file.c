@@ -31,6 +31,11 @@ static int file_format( lua_State* L )
   else{
     NODE_ERR( "format done.\n" );
   }
+
+  const char *err = platform_remount_default_fs(false);
+  if (err)
+    return luaL_error(L, err);
+
   return 0;
 }
 

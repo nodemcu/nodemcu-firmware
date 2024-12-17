@@ -1,6 +1,5 @@
 sdk/
 cache/
-user_config.h
 server-ca.crt
 sdkconfig
 sdkconfig.old*
@@ -13,6 +12,7 @@ bin
 version.txt
 managed_components/
 dependencies.lock
+.idf_tools_installed
 
 #ignore Eclipse project files
 .cproject

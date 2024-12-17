@@ -1,4 +1,6 @@
 # Modules common to all chips
+set(extra_requires
+)
 set(wifi_modules
   "espnow.c"
   "wifi.c"
@@ -64,6 +66,9 @@ if(IDF_TARGET STREQUAL "esp32")
     "touch.c"
     ${wifi_modules}
   )
+  list(APPEND extra_requires
+     "driver_can"
+  )
 elseif(IDF_TARGET STREQUAL "esp32s2")
   list(APPEND module_srcs
     "dac.c"
@@ -79,6 +84,12 @@ elseif(IDF_TARGET STREQUAL "esp32s3")
   )
 elseif(IDF_TARGET STREQUAL "esp32c3")
   list(APPEND module_srcs
+    ${wifi_modules}
+  )
+elseif(IDF_TARGET STREQUAL "esp32c5")
+  list(APPEND module_srcs
+    "i2s.c"
+    "pulsecnt.c"
     ${wifi_modules}
   )
 elseif(IDF_TARGET STREQUAL "esp32c6")
@@ -99,11 +110,11 @@ idf_component_register(
     "app_update"
     "base_nodemcu"
     "bt"
-    "driver_can"
     "esp_eth"
     "esp_http_client"
     "esp_http_server"
     "esp_hw_support"
+    "esp_vfs_console"
     "fatfs"
     "libsodium"
     "lua"
@@ -118,6 +129,7 @@ idf_component_register(
     "u8g2"
     "ucg"
     "vfs"
+    ${extra_requires}
 )
 
 # Match up all the module source files with their corresponding Kconfig

@@ -205,7 +205,7 @@ Returns information about hardware, software version and build configuration.
 If a `group` is given the return value will be a table containing the following elements:
 
 - for `group` = `"hw"`
-    - `chip_model` (string) one of "ESP32", "ESP32S2", "ESP32S3", "ESP32C3", "ESP32C2", "ESP32C6", "ESP32H2"
+    - `chip_model` (string) one of "ESP32", "ESP32S2", "ESP32S3", "ESP32C3", "ESP32C2", "ESP32C5", "ESP32C6", "ESP32H2"
     - `chip_features` (number) bit mask of chip feature flags
         - BIT(0), Chip has embedded flash memory
         - BIT(1), Chip has 2.4GHz WiFi
