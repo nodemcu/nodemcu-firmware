@@ -254,7 +254,7 @@ execute_process(
 COMMAND grep "^lfs,.*" ${PROJECT_DIR}/components/platform/partitions.csv
 COMMAND cut -d, -f5
 COMMAND tr -d " "
-COMMAND awk "{print strtonum( $1 )}"
+COMMAND xargs printf "%d"
 OUTPUT_STRIP_TRAILING_WHITESPACE
 OUTPUT_VARIABLE buildinfo_lfs_size
 )
