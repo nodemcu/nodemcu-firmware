@@ -74,3 +74,14 @@ See [https://nodemcu.readthedocs.io/en/release/support/](https://nodemcu.readthe
 ## License
 
 [MIT](/LICENSE) © [zeroday](https://github.com/NodeMCU)/[nodemcu.com](http://nodemcu.com/index_en.html)
+## AI-generated ProductMaps
+
+
+
+| Github file | ProductMap |
+|-------------|------------|
+| [lapi.c](https://github.com/nodemcu/nodemcu-firmware/blob/release/app/lua/lapi.c) | [Link to Map](https://product-map.ai/app/public?url=https://github.com/nodemcu/nodemcu-firmware/blob/release/app/lua/lapi.c) |
+
+Contact ProductMap if you have any questions at [juan@product-map.ai](juan@product-map.ai).
+
+Last updated on Mon Feb 03 22:55:48 UTC 2025.
