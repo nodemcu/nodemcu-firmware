@@ -351,11 +351,11 @@ void handle_dns_event(task_param_t param, task_prio_t prio)
 
 
 static err_t netconn_close_and_delete(struct netconn *conn) {
-  err_t err = netconn_close(conn);
-  if (err == ERR_OK)
-    netconn_delete(conn);
-
-  return err;
+  // netconn_close() no longer returns valid return codes, as the code
+  // path we get in the IDF ends up using uninitialised memory.
+  netconn_close(conn);
+  netconn_delete(conn);
+  return ERR_OK;
 }
 
 
