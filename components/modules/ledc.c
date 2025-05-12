@@ -20,7 +20,7 @@ static int lledc_new_channel( lua_State *L )
   luaL_checktable (L, 1);
 
   /* Setup timer */
-  ledc_timer_config_t ledc_timer;
+  ledc_timer_config_t ledc_timer = {};
 
   ledc_timer.duty_resolution = opt_checkint_range (L, "bits", LEDC_TIMER_13_BIT, 0, LEDC_TIMER_BIT_MAX-1);
 
