@@ -100,30 +100,11 @@ end
 
 conversion = (function (self)
   local sens = self.sens
-  local powered_only = true
-  for _, s in ipairs(sens) do powered_only = powered_only and s:byte(9) ~= 1 end
-  if powered_only then
-    debugPrint("starting conversion: all sensors")
-    ow_reset(pin)
-    ow_skip(pin)  -- skip ROM selection, talk to all sensors
-    ow_write(pin, CONVERT_T, MODE)  -- and start conversion
-    for i, _ in ipairs(sens) do status[i] = 1 end
-  else
-    local started = false
-    for i, s in ipairs(sens) do
-      if status[i] == 0 then
-        local addr, parasite = s:sub(1,8), s:byte(9) == 1
-        if parasite and started then break end -- do not start concurrent conversion of powered and parasite
-        debugPrint("starting conversion:", to_string(addr), parasite and "parasite" or "")
-        ow_reset(pin)
-        ow_select(pin, addr)  -- select the sensor
-        ow_write(pin, CONVERT_T, MODE)  -- and start conversion
-        status[i] = 1
-        if parasite then break end -- parasite sensor blocks bus during conversion
-        started = true
-      end
-    end
-  end
+  debugPrint("starting conversion: all sensors")
+  ow_reset(pin)
+  ow_skip(pin)  -- skip ROM selection, talk to all sensors
+  ow_write(pin, CONVERT_T, MODE)  -- and start conversion
+  for i, _ in ipairs(sens) do status[i] = 1 end
   tmr_create():alarm(750, tmr_ALARM_SINGLE, function() return readout(self) end)
 end)
 
