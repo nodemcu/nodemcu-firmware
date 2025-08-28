@@ -184,7 +184,6 @@ sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 length) 
 bool ICACHE_FLASH_ATTR 
 espconn_secure_set_hostname(const char* hostname)
 {
-	printf("Setting SNI hostname: %s\n", hostname ? hostname : "NULL");
 
     if (ssl_client_options.hostname) {
         os_free(ssl_client_options.hostname);
@@ -195,7 +194,6 @@ espconn_secure_set_hostname(const char* hostname)
         ssl_client_options.hostname = (char*)os_malloc(strlen(hostname) + 1);
         if (ssl_client_options.hostname) {
             strcpy(ssl_client_options.hostname, hostname);
-			printf("SNI hostname set successfully: %s\n", ssl_client_options.hostname);
             return true;
         }
         return false;
