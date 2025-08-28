@@ -20,13 +20,13 @@ jobs:
             numbers: 'integral'  
           - lua_ver: 53
             numbers: '64bit'  
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     env:
       LUA: ${{ matrix.lua_ver }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - run: pip install pyserial
@@ -61,7 +61,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Build luac.cross.exe
@@ -96,15 +96,15 @@ jobs:
             numbers: '64bit'  
             filter: 'cat'
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
         path: ./
@@ -130,11 +130,11 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
         path: ./
@@ -159,15 +159,15 @@ jobs:
           - lua_ver: 53
             numbers: '64bit'  
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
         path: ./
@@ -200,11 +200,11 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
         path: ./
@@ -236,7 +236,7 @@ jobs:
     runs-on: ${{ matrix.vm }} 
       
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: false
     - run: sudo apt install luarocks
@@ -260,10 +260,10 @@ jobs:
 
     strategy:
       fail-fast: false
-    runs-on: ubuntu-20.04 
+    runs-on: ubuntu-22.04
       
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: false
     - name: all_modules_linked
