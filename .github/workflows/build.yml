@@ -104,7 +104,7 @@ jobs:
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
         path: ./
@@ -134,7 +134,7 @@ jobs:
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
         path: ./
@@ -167,7 +167,7 @@ jobs:
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
         path: ./
@@ -204,7 +204,7 @@ jobs:
       with:
         submodules: false
     - name: Download luac.cross
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
         path: ./

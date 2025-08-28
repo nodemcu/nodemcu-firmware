@@ -65,7 +65,7 @@ jobs:
           prerelease: false
           draft: true
       - name: Download luac.cross
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: luac.cross_51_float_win
           path: ./
