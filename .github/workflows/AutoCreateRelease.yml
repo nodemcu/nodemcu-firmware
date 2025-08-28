@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Build luac.cross.exe
@@ -34,7 +34,7 @@ jobs:
   Create_Release:
     name: Create Release
     needs: build_luac_cross_win
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Set release name
@@ -65,7 +65,7 @@ jobs:
           prerelease: false
           draft: true
       - name: Download luac.cross
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: luac.cross_51_float_win
           path: ./
