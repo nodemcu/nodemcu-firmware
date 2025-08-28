@@ -626,6 +626,20 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	ret = mbedtls_ssl_setup(&msg->ssl, &msg->conf);
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
+	/* Add hostname for SNI support */
+	if (ssl_client_options.hostname != NULL) {
+		os_printf("Configuring SNI for hostname: %s\n", ssl_client_options.hostname);
+        ret = mbedtls_ssl_set_hostname(&msg->ssl, ssl_client_options.hostname);
+		if (ret == 0) {
+     	   os_printf("SNI hostname configured successfully\n");
+    	} else {
+	        os_printf("SNI hostname configuration failed: -0x%x\n", -ret);
+	    }
+        lwIP_REQUIRE_NOERROR(ret, exit);
+    } else {
+		os_printf("Hostname was not set!\n");
+	}
+
 	/*Initialize the RNG and the session data*/
 	ret = mbedtls_ctr_drbg_seed(&msg->ctr_drbg, mbedtls_entropy_func, &msg->entropy, "client", 6);
 	lwIP_REQUIRE_NOERROR(ret, exit);
