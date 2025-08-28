@@ -204,7 +204,6 @@ static int tls_socket_connect( lua_State *L ) {
   ud->pesp_conn.state = ESPCONN_NONE;
   ud->pesp_conn.proto.tcp->remote_port = port;
   
-  espconn_secure_set_hostname(domain);
   espconn_regist_connectcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_onconnect);
   espconn_regist_disconcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_ondisconnect);
   espconn_regist_reconcb(&ud->pesp_conn, (espconn_reconnect_callback)tls_socket_onreconnect);
