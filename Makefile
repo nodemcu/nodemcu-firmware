@@ -100,7 +100,7 @@ ifeq ($(OS),Windows_NT)
   else
     # It is gcc, may be cygwin
     # Can we use -fdata-sections?
-    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4
+    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4 -Wno-error=implicit-function-declaration -Dstricmp=strcasecmp -DWIN32
     AR = xtensa-lx106-elf-ar
     CC = xtensa-lx106-elf-gcc
     CXX = xtensa-lx106-elf-g++
