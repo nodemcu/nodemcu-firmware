@@ -20,7 +20,11 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #define lwIP_unlikely(Expression) !!(Expression)
 #endif
 
-#define lwIP_ASSERT(Expression)	do{if(!(Expression)) {os_printf("%s %d\n", __func__, __LINE__);return;}}while(0)
+#define lwIP_ASSERT(Expression) \
+  do { if(!(Expression)) { os_printf("%s %d\n", __func__, __LINE__); return; }} while(0)
+
+#define lwIP_ASSERT_RET(Expression, Retval) \
+  do { if(!(Expression)) { os_printf("%s %d\n", __func__, __LINE__); return (Retval); }} while(0)
 
 ringbuf_t ringbuf_new(size_t capacity)
 {
@@ -101,7 +105,7 @@ const void* ringbuf_head(const struct ringbuf_t *rb)
 
 static uint8_t *ringbuf_nextp(ringbuf_t rb, const uint8_t *p)
 {
-	lwIP_ASSERT((p >= rb->buf) && (p < ringbuf_end(rb)));
+	lwIP_ASSERT_RET((p >= rb->buf) && (p < ringbuf_end(rb)), 0);
 	return rb->buf + ((++p -rb->buf) % ringbuf_buffer_size(rb));
 }
 
@@ -113,7 +117,7 @@ size_t ringbuf_findchr(const struct ringbuf_t *rb, int c, size_t offset)
 		return bytes_used;
 
 	const uint8_t *start = rb ->buf + (((rb->tail - rb->buf) + offset) % ringbuf_buffer_size(rb));
-	lwIP_ASSERT(bufend > start);
+	lwIP_ASSERT_RET(bufend > start, 0);
 	size_t n = LWIP_MIN(bufend - start, bytes_used - offset);
 	const uint8_t *found = (const uint8_t *)memchr(start, c, n);
 	if (found)
@@ -131,7 +135,7 @@ size_t ringbuf_memset(ringbuf_t dst, int c, size_t len)
 
 	while (nwritten != count){
 
-		lwIP_ASSERT(bufend > dst->head);
+		lwIP_ASSERT_RET(bufend > dst->head, 0);
 		size_t n = LWIP_MIN(bufend - dst->head, count - nwritten);
 		os_memset(dst->head, c, n);
 		dst->head += n;
@@ -143,7 +147,7 @@ size_t ringbuf_memset(ringbuf_t dst, int c, size_t len)
 
 	if (overflow){
 		dst->tail = ringbuf_nextp(dst, dst->head);
-		lwIP_ASSERT(ringbuf_is_full(dst));
+		lwIP_ASSERT_RET(ringbuf_is_full(dst), 0);
 	}
 
 	return nwritten;
@@ -157,7 +161,7 @@ void *ringbuf_memcpy_into(ringbuf_t dst,const void *src, size_t count)
 	size_t nread = 0;
 
 	while (nread != count){
-		lwIP_ASSERT(bufend > dst->head);
+		lwIP_ASSERT_RET(bufend > dst->head, NULL);
 		size_t n = LWIP_MIN(bufend - dst->head, count - nread);
 		os_memcpy(dst->head, u8src + nread, n);
 		dst->head += n;
@@ -169,7 +173,7 @@ void *ringbuf_memcpy_into(ringbuf_t dst,const void *src, size_t count)
 
 	if (overflow) {
 		dst->tail = ringbuf_nextp(dst, dst->head);
-		lwIP_ASSERT(ringbuf_is_full(dst));
+		lwIP_ASSERT_RET(ringbuf_is_full(dst), NULL);
 	}
 
 	return dst->head;
@@ -187,7 +191,7 @@ void *ringbuf_memcpy_from(void *dst,ringbuf_t src, size_t count)
 	size_t nwritten = 0;
 
 	while (nwritten != count){
-		lwIP_ASSERT(bufend > src->tail);
+		lwIP_ASSERT_RET(bufend > src->tail, NULL);
 		size_t n = LWIP_MIN(bufend - src->tail, count - nwritten);
 		os_memcpy((uint8_t*)u8dst + nwritten, src->tail, n);
 		src->tail += n;
@@ -197,7 +201,7 @@ void *ringbuf_memcpy_from(void *dst,ringbuf_t src, size_t count)
 			src->tail = src->buf;
 	}
 
-	lwIP_ASSERT(count + ringbuf_bytes_used(src) == bytes_used);
+	lwIP_ASSERT_RET(count + ringbuf_bytes_used(src) == bytes_used, NULL);
 	return src->tail;
 }
 
