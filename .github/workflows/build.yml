@@ -55,6 +55,87 @@ jobs:
         name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}
         path: luac.cross
 
+  build_win_msys2:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lua_ver: 51
+            numbers: float
+          - lua_ver: 51
+            numbers: integral
+          - lua_ver: 53
+            numbers: float
+          - lua_ver: 53
+            numbers: 64bit
+
+    env:
+      LUA: ${{ matrix.lua_ver }}
+      MSYSTEM: MINGW32
+      CHERE_INVOKING: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        cache: true
+        install: >-
+          make
+          gcc
+          python
+          python-pip
+          unzip
+
+    - name: Setup Python venv
+      shell: msys2 {0}
+      run: |
+        python -m venv .venv
+        . .venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install pyserial
+
+    - name: Build firmware
+      shell: msys2 {0}
+      run: |
+        . .venv/bin/activate
+
+        EXTRA_FLAGS=""
+        if [ "${{ matrix.numbers }}" = "integral" ]; then
+          EXTRA_FLAGS="-DLUA_NUMBER_INTEGRAL"
+        elif [ "${{ matrix.numbers }}" = "64bit" ]; then
+          EXTRA_FLAGS="-DLUA_NUMBER_64BITS"
+        fi
+        make EXTRA_CCFLAGS=$EXTRA_FLAGS
+        
+        if [ "${{ matrix.numbers }}" = "integral" ]; then
+          mv -f luac.cross.int.exe luac.cross.exe
+        fi
+
+    - name: Copy required DLLs
+      shell: msys2 {0}
+      run: |
+        ldd luac.cross.exe | awk '{print $3}' | grep -vi "/c/windows" | xargs -I{} cp -v {} . || true
+        ls *.dll
+
+    - name: Check build items
+      shell: msys2 {0}
+      run: |
+        ls -ll bin/0x00000.bin bin/0x10000.bin luac.cross.exe
+
+    - name: Upload luac.cross
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
+        path: |
+          luac.cross.exe
+          *.dll
+
 # The files in the 'msvc' folder would need to be updated to be compatible with VS 2022.
 # Sample job (that failed): https://github.com/nodemcu/nodemcu-firmware/actions/runs/17306868602/job/49131917376#step:3:153
 # => disable the Windows jobs for now
@@ -225,6 +306,54 @@ jobs:
   #       (if grep  " ==>  " log ; then exit 1 ; fi)
   #     shell: bash
 
+  NTest_win_msys2:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lua_ver: 51
+            numbers: 'float'
+          - lua_ver: 53
+            numbers: 'float'
+          - lua_ver: 51
+            numbers: 'integral'  
+          - lua_ver: 53
+            numbers: '64bit'  
+
+    needs: build_win_msys2
+    runs-on: windows-latest
+    env:
+      MSYSTEM: MINGW32
+      CHERE_INVOKING: 1
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: false
+    - name: Download luac.cross
+      uses: actions/download-artifact@v4
+      with:
+        name: luac.cross_${{ matrix.lua_ver }}_${{ matrix.numbers }}_win
+        path: ./
+    - name: NTest selfcheck
+      run: |
+        cd tests/NTest
+        ../../luac.cross.exe -e ../NTest/NTest_NTest.lua | tee log
+        if ((gc log | Select-String "failed: 0") -eq $null) { 
+          Throw "Errors were found during tests";
+        }
+      shell: pwsh
+        
+    - name: NTest hosttests
+      run: |
+        cd tests
+        cp NTest/NTest.lua .
+        ../luac.cross.exe -e NTest_lua.lua | tee log
+        if ((gc log | Select-String " ==>  ") -ne $null) { 
+          Throw "Errors were found during tests";
+        }
 
   luacheck:
 
