@@ -80,19 +80,16 @@ jobs:
       with:
         submodules: true
 
-    - uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        cache: true
-        install: >-
-          make
-          gcc
-          python
-          python-pip
-          unzip
+    - name: Download ESP32 MSYS2 Toolchain
+      run: |
+        Invoke-WebRequest -Uri "https://media.githubusercontent.com/media/nodemcu/espressif-sdk-archive/refs/heads/master/esp32_win32_msys2_environment_and_toolchain-20181001.zip" -OutFile "esp32_toolchain.zip"
 
+    - name: Extract Toolchain
+      run: |
+        Expand-Archive -Path "esp32_toolchain.zip" -DestinationPath "D:\" -Force
+    
     - name: Setup Python venv
-      shell: msys2 {0}
+      shell:  D:\msys32\usr\bin\bash.exe --login {0}
       run: |
         python -m venv .venv
         . .venv/bin/activate
@@ -100,7 +97,7 @@ jobs:
         pip install pyserial
 
     - name: Build firmware
-      shell: msys2 {0}
+      shell:  D:\msys32\usr\bin\bash.exe --login {0}
       run: |
         . .venv/bin/activate
 
@@ -117,13 +114,13 @@ jobs:
         fi
 
     - name: Copy required DLLs
-      shell: msys2 {0}
+      shell:  D:\msys32\usr\bin\bash.exe --login {0}
       run: |
         ldd luac.cross.exe | awk '{print $3}' | grep -vi "/c/windows" | xargs -I{} cp -v {} . || true
         ls *.dll
 
     - name: Check build items
-      shell: msys2 {0}
+      shell:  D:\msys32\usr\bin\bash.exe --login {0}
       run: |
         ls -ll bin/0x00000.bin bin/0x10000.bin luac.cross.exe
 

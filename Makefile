@@ -110,7 +110,7 @@ ifeq ($(OS),Windows_NT)
 	TOOLCHAIN_VERSION = 2020r3
 	GCCTOOLCHAIN      = xtensa-lx106-elf-gcc8_4_0-esp-$(TOOLCHAIN_VERSION)-win32
 	TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
-	ESPRESSIF_URL  = https://dl.espressif.com/dl
+	ESPRESSIF_URL     = https://media.githubusercontent.com/media/nodemcu/espressif-sdk-archive/refs/heads/master
 	TOOLCHAIN_EXT     = zip
 	TOOLCHAIN_URL     = $(ESPRESSIF_URL)/$(GCCTOOLCHAIN).$(TOOLCHAIN_EXT)
 	WGET              = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
