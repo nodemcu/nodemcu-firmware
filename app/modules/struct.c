@@ -309,14 +309,16 @@ static int b_unpack (lua_State *L) {
   const char *fmt = luaL_checkstring(L, 1);
   size_t ld;
   const char *data = luaL_checklstring(L, 2, &ld);
-  size_t pos = luaL_optinteger(L, 3, 1) - 1;
+  size_t pos = luaL_optinteger(L, 3, 1);
+  luaL_argcheck(L, pos > 0, 3, "offset must be 1 or greater");
+  pos--;
   defaultoptions(&h);
   lua_settop(L, 2);
   while (*fmt) {
     int opt = *fmt++;
     size_t size = optsize(L, opt, &fmt);
     pos += gettoalign(pos, &h, opt, size);
-    luaL_argcheck(L, pos+size <= ld, 2, "data string too short");
+    luaL_argcheck(L, size <= ld && pos <= ld - size, 2, "data string too short");
     luaL_checkstack(L, 2, "too many results");
     switch (opt) {
       case 'b': case 'B': case 'h': case 'H':
