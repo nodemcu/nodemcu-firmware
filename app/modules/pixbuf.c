@@ -680,10 +680,13 @@ static int pixbuf_tostring_lua(lua_State *L) {
 }
 
 LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
-  LROT_TABENTRY ( __index, pixbuf_map )
-  LROT_FUNCENTRY( __eq, pixbuf_eq_lua )
-
+  /* https://nodemcu.readthedocs.io/en/dev/lua53/#rotables notes:
+   * "Some ordering limitations apply", namely that entries beginning
+   * with '__' must be first and must be sorted.
+   */
   LROT_FUNCENTRY( __concat, pixbuf_concat_lua )
+  LROT_FUNCENTRY( __eq, pixbuf_eq_lua )
+  LROT_TABENTRY ( __index, pixbuf_map )
   LROT_FUNCENTRY( __tostring, pixbuf_tostring_lua )
 
   LROT_FUNCENTRY( channels, pixbuf_channels_lua )
