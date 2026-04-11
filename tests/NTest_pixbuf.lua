@@ -12,6 +12,7 @@ N.test('initialize a buffer', function()
     local buffer = pixbuf.newBuffer(9, 3)
     nok(buffer == nil)
     ok(eq(buffer:size(), 9), "check size")
+    ok(buffer:base() == nil, "not a view")
     ok(eq(buffer:dump(), string.char(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)), "initialize with 0")
 
     fail(function() pixbuf.newBuffer(9, -1) end, "should be a positive integer")
@@ -247,6 +248,36 @@ N.test('shift CIRCULAR', function()
     buffer1:shift(1, pixbuf.SHIFT_CIRCULAR, -12,12)
     ok(buffer1 == buffer2, "shift right way out of bound")
 
+end)
+
+N.test('slice', function()
+  local base = pixbuf.newBuffer(4, 4)
+  local view = base:slice(2, 3)
+
+  ok(rawequal(base, view:base()), "base() returns base pixbuf")
+
+  -- Use a weak table to detect when `base` is garbage collected
+  local refs = {}
+  setmetatable(refs, {__mode='kv'})
+  refs[base] = base
+
+  local function empty(t)
+    for k, _ in pairs(t) do return false end
+    return true
+  end
+
+  base = nil
+  -- Now the only strong reference to `base` is the one that `view` holds
+
+  collectgarbage()
+  ok(not empty(refs), "keeps base pixbuf alive")
+
+  view = nil
+  collectgarbage()  -- clean up `view` and run its finalizer
+  collectgarbage()  -- clean up `base`
+  -- No strong references to `base` remain
+
+  ok(empty(refs), "releases base pixbuf when garbage-collected")
 end)
 
 N.test('sub', function()

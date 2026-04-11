@@ -139,7 +139,8 @@ static int ws2812_write(lua_State* L) {
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
     luaL_argcheck(L, pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4, 1, "Bad pixbuf format");
-    buffer1 = buffer->values;
+    luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 1, "pixbuf slices not supported");
+    buffer1 = pixbuf_values(buffer);
     length1 = pixbuf_size(buffer);
   }
 #endif
@@ -164,7 +165,8 @@ static int ws2812_write(lua_State* L) {
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
     luaL_argcheck(L, pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4, 2, "Bad pixbuf format");
-    buffer2 = buffer->values;
+    luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 2, "pixbuf slices not supported");
+    buffer2 = pixbuf_values(buffer);
     length2 = pixbuf_size(buffer);
   }
 #endif

@@ -340,3 +340,50 @@ Concatenate channels per pixel, possibly with different offsets in buffers:
 outbuf:map(function(...) return ... end, inbuf1, inbuf2)
 outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3)
 ```
+
+## pixbuf.buffer:base()
+If this buffer is a view of another buffer, returns that other buffer.
+Otherwise returns `nil`.
+
+#### Syntax
+`buffer:base()`
+
+#### Parameters
+None
+
+#### Returns
+A buffer instance, or `nil`.
+
+#### Examples
+
+Make a new view of an existing buffer and show that its base is the
+original buffer.
+```Lua
+rawequal(buffer, buffer:slice():base())
+```
+
+## pixbuf.buffer:slice()
+Returns a view of an existing buffer (the "base").
+
+At the moment, the size() of a view is always zero so it's not of much use.
+
+A view holds a reference to its base so that the lifespan of the buffer to
+which it points is at least as long as the lifespan of the view itself.
+The reference can be retrieved using the `:base()` function.
+
+#### Syntax
+`buffer:slice()`
+
+#### Parameters
+None
+
+#### Returns
+A new buffer object that refers to the same data as the original.
+
+#### Examples
+
+Make a new view of an existing buffer and show that its base is the
+original buffer.
+```Lua
+rawequal(buffer, buffer:slice():base())
+```

@@ -5,7 +5,24 @@ typedef struct pixbuf {
   const size_t npix;
   const size_t nchan;
 
-  /* Flexible Array Member; true size is npix * pixbuf_channels_for(type) */
+  /* If this pixbuf is a view into another pixbuf, then base_ref is a
+   * reference to that other pixbuf.
+   * Otherwise base_ref is LUA_REFNIL.
+   */
+  const int base_ref;
+  /* If base_ref is LUA_REFNIL then this pixbuf owns its values and
+   * values_ptr points to &values[0].
+   * Otherwise base_ref identifies a different owner of the pixels
+   * and values_ptr points into that owner's values array.
+   */
+  uint8_t *const values_ptr;
+
+  /* Flexible Array Member.
+   * If base_ref is LUA_REFNIL then this pixbuf owns its values and
+   * the true size of this array is npix * pixbuf_channels_for(type).
+   * Otherwise base_ref identifies a different owner of the pixels
+   * and the true size of this array is zero.
+   */
   uint8_t values[];
 } pixbuf;
 
@@ -21,6 +38,7 @@ enum pixbuf_shift {
 
 pixbuf *pixbuf_from_lua_arg(lua_State *, int);
 const size_t pixbuf_size(pixbuf *);
+uint8_t *pixbuf_values(pixbuf *);
 
 // Exported for backwards compat with ws2812 module
 int pixbuf_new_lua(lua_State *);

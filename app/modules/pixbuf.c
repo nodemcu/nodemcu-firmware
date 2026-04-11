@@ -51,6 +51,10 @@ const size_t pixbuf_size(pixbuf *p) {
   return p->npix * p->nchan;
 }
 
+uint8_t *pixbuf_values(pixbuf *buffer) {
+  return buffer->values_ptr;
+}
+
 /*
  * Construct a pixbuf newuserdata using C arguments.
  *
@@ -77,6 +81,8 @@ static pixbuf *pixbuf_new(lua_State *L, size_t leds, size_t chans) {
   // Save led strip size
   *(size_t *)&buffer->npix = leds;
   *(size_t *)&buffer->nchan = chans;
+  *(int *)&buffer->base_ref = LUA_REFNIL;
+  *(uint8_t* *)&buffer->values_ptr = buffer->values;
 
   memset(buffer->values, 0, leds * chans);
 
@@ -95,6 +101,39 @@ int pixbuf_new_lua(lua_State *L) {
   return 1;
 }
 
+static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base) {
+  size_t size = sizeof(pixbuf);
+
+  // This view won't include any pixels of its own.
+  pixbuf *buffer = (pixbuf*)lua_newuserdata(L, size);  // +1
+
+  // Associate its metatable
+  luaL_getmetatable(L, PIXBUF_METATABLE);  // +1
+  lua_setmetatable(L, -2);  // -1
+
+  // Save led strip size
+  *(size_t *)&buffer->npix = 0;  // TODO set this once view is implemented
+  *(size_t *)&buffer->nchan = base->nchan;
+
+  lua_pushvalue(L, 1); // +1
+  *(int *)&buffer->base_ref = luaL_ref(L, LUA_REGISTRYINDEX); // -1
+  *(uint8_t* *)&buffer->values_ptr = pixbuf_values(base);
+
+  return buffer;
+}
+
+static int pixbuf_gc_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+  luaL_unref(L, LUA_REGISTRYINDEX, buffer->base_ref);
+  return 0;
+}
+
+static int pixbuf_base_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, buffer->base_ref);
+  return 1;
+}
+
 static int pixbuf_concat_lua(lua_State *L) {
   pixbuf *lhs = pixbuf_from_lua_arg(L, 1);
   pixbuf *rhs = pixbuf_from_lua_arg(L, 2);
@@ -109,8 +148,9 @@ static int pixbuf_concat_lua(lua_State *L) {
 
   pixbuf *buffer = pixbuf_new(L, osize, lhs->nchan);
 
-  memcpy(buffer->values, lhs->values, pixbuf_size(lhs));
-  memcpy(buffer->values + pixbuf_size(lhs), rhs->values, pixbuf_size(rhs));
+  uint8_t *const values = pixbuf_values(buffer);
+  memcpy(values, pixbuf_values(lhs), pixbuf_size(lhs));
+  memcpy(values + pixbuf_size(lhs), pixbuf_values(rhs), pixbuf_size(rhs));
 
   return 1;
 }
@@ -123,7 +163,7 @@ static int pixbuf_channels_lua(lua_State *L) {
 
 static int pixbuf_dump_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-  lua_pushlstring(L, (char*)buffer->values, pixbuf_size(buffer));
+  lua_pushlstring(L, (char*)pixbuf_values(buffer), pixbuf_size(buffer));
   return 1;
 }
 
@@ -139,8 +179,11 @@ static int pixbuf_eq_lua(lua_State *L) {
     res = false;
   } else {
     res = true;
-    for(size_t i = 0; i < pixbuf_size(lhs); i++) {
-      if(lhs->values[i] != rhs->values[i]) {
+    const uint8_t *lhs_values = pixbuf_values(lhs);
+    const uint8_t *rhs_values = pixbuf_values(rhs);
+    const size_t n = pixbuf_size(lhs);
+    for(size_t i = 0; i < n; i++) {
+      if(lhs_values[i] != rhs_values[i]) {
         res = false;
         break;
       }
@@ -158,7 +201,7 @@ static int pixbuf_fade_lua(lua_State *L) {
 
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strictly positive int");
 
-  uint8_t *p = &buffer->values[0];
+  uint8_t *p = pixbuf_values(buffer);
   for (size_t i = 0; i < pixbuf_size(buffer); i++)
   {
     if (direction == PIXBUF_FADE_OUT)
@@ -184,7 +227,7 @@ static int pixbuf_fadeI_lua(lua_State *L) {
 
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strictly positive int");
 
-  uint8_t *p = &buffer->values[0];
+  uint8_t *p = pixbuf_values(buffer);
   for (size_t i = 0; i < buffer->npix; i++, p+=buffer->nchan) {
     if (direction == PIXBUF_FADE_OUT) {
       *p /= fade;
@@ -209,13 +252,14 @@ static int pixbuf_fill_lua(lua_State *L) {
   }
 
   /* Fill the first pixel from the Lua stack */
+  uint8_t *values = pixbuf_values(buffer);
   for (size_t i = 0; i < buffer->nchan; i++) {
-    buffer->values[i] = luaL_checkinteger(L, 2+i);
+    values[i] = luaL_checkinteger(L, 2+i);
   }
 
   /* Fill the rest of the pixels from the first */
   for (size_t i = 1; i < buffer->npix; i++) {
-    memcpy(&buffer->values[i * buffer->nchan], buffer->values, buffer->nchan);
+    memcpy(&values[i * buffer->nchan], values, buffer->nchan);
   }
 
 out:
@@ -231,7 +275,7 @@ static int pixbuf_get_lua(lua_State *L) {
   luaL_argcheck(L, led >= 0 && led < buffer->npix, 2, "index out of range");
 
   uint8_t tmp[channels];
-  memcpy(tmp, &buffer->values[channels*led], channels);
+  memcpy(tmp, &pixbuf_values(buffer)[channels*led], channels);
 
   for (size_t i = 0; i < channels; i++)
   {
@@ -266,19 +310,22 @@ static int pixbuf_map_lua(lua_State *L) {
     luaL_argcheck(L, ilo2 + npix <= buffer2->npix, 6, "Second buffer too short");
   }
 
+  const uint8_t *const buffer1_values = pixbuf_values(buffer1);
+  const uint8_t *const buffer2_values = buffer2 ? pixbuf_values(buffer2) : NULL;
+  uint8_t *const outbuf_values = pixbuf_values(outbuf);
   for (size_t p = 0; p < npix; p++) {
     lua_pushvalue(L, 2);
     for (size_t c = 0; c < buffer1->nchan; c++) {
-      lua_pushinteger(L, buffer1->values[(ilo + p) * buffer1->nchan + c]);
+      lua_pushinteger(L, buffer1_values[(ilo + p) * buffer1->nchan + c]);
     }
     if (buffer2) {
       for (size_t c = 0; c < buffer2->nchan; c++) {
-        lua_pushinteger(L, buffer2->values[(ilo2 + p) * buffer2->nchan + c]);
+        lua_pushinteger(L, buffer2_values[(ilo2 + p) * buffer2->nchan + c]);
       }
     }
     lua_call(L, buffer1->nchan + (buffer2 ? buffer2->nchan : 0), outbuf->nchan);
     for (size_t c = 0; c < outbuf->nchan; c++) {
-      outbuf->values[(p + 1) * outbuf->nchan - c - 1] = luaL_checkinteger(L, -1);
+      outbuf_values[(p + 1) * outbuf->nchan - c - 1] = luaL_checkinteger(L, -1);
       lua_pop(L, 1);
     }
   }
@@ -302,6 +349,7 @@ static uint32_t pixbuf_mix_clamp(int32_t v) {
 static void pixbuf_mix_raw(pixbuf *out, size_t n_src, struct mix_source* src) {
   size_t cells = pixbuf_size(out);
 
+  uint8_t *const out_values = pixbuf_values(out);
   for (size_t c = 0; c < cells; c++) {
     int32_t val = 0;
     for (size_t s = 0; s < n_src; s++) {
@@ -311,7 +359,7 @@ static void pixbuf_mix_raw(pixbuf *out, size_t n_src, struct mix_source* src) {
     val += 128; // rounding instead of floor
     val /= 256; // do not use implemetation dependant right shift
 
-    out->values[c] = (uint8_t)pixbuf_mix_clamp(val);
+    out_values[c] = (uint8_t)pixbuf_mix_clamp(val);
   }
 }
 
@@ -321,6 +369,8 @@ static void pixbuf_mix_raw(pixbuf *out, size_t n_src, struct mix_source* src) {
  */
 static void pixbuf_mix_i3(pixbuf *out, size_t ibits, size_t n_src,
     struct mix_source* src) {
+  uint8_t *const out_values = pixbuf_values(out);
+
   for(size_t p = 0; p < out->npix; p++) {
     int32_t sums[3] = { 0, 0, 0 };
 
@@ -341,7 +391,7 @@ static void pixbuf_mix_i3(pixbuf *out, size_t ibits, size_t n_src,
     size_t maxgi;
     if (pmaxc == 0) {
       /* Zero value */
-      memset(&out->values[4*p], 0, 4);
+      memset(&out_values[4*p], 0, 4);
       return;
     } else if (pmaxc <= (1 << 16)) {
       /* Minimum global factor */
@@ -355,9 +405,9 @@ static void pixbuf_mix_i3(pixbuf *out, size_t ibits, size_t n_src,
 
     // printf("mixi3: %x %x %x -> %x, %zx\n", sums[0], sums[1], sums[2], pmaxc, maxgi);
 
-    out->values[4*p] = maxgi;
+    out_values[4*p] = maxgi;
     for (size_t c = 0; c < 3; c++) {
-      out->values[4*p+c+1] = pixbuf_mix_clamp((sums[c] + 256 * maxgi - 127) / (256 * maxgi));
+      out_values[4*p+c+1] = pixbuf_mix_clamp((sums[c] + 256 * maxgi - 127) / (256 * maxgi));
     }
   }
 }
@@ -387,7 +437,7 @@ static int pixbuf_mix_core(lua_State *L, size_t ibits) {
                      pos + 1, "buffer not same size or shape");
 
     sources[src].factor = factor;
-    sources[src].values = src_buffer->values;
+    sources[src].values = pixbuf_values(src_buffer);
   }
 
   if (ibits != 0) {
@@ -416,9 +466,10 @@ static int pixbuf_power_lua(lua_State *L) {
 
   int total = 0;
   size_t p = 0;
+  uint8_t *values = pixbuf_values(buffer);
   for (size_t i = 0; i < buffer->npix; i++) {
     for (size_t j = 0; j < buffer->nchan; j++, p++) {
-      total += buffer->values[p];
+      total += values[p];
     }
   }
 
@@ -432,10 +483,11 @@ static int pixbuf_powerI_lua(lua_State *L) {
 
   int total = 0;
   size_t p = 0;
+  uint8_t *values = pixbuf_values(buffer);
   for (size_t i = 0; i < buffer->npix; i++) {
-    int inten = buffer->values[p++];
+    int inten = values[p++];
     for (size_t j = 0; j < buffer->nchan - 1; j++, p++) {
-      total += inten * buffer->values[p];
+      total += inten * values[p];
     }
   }
 
@@ -458,13 +510,13 @@ static int pixbuf_replace_lua(lua_State *L) {
   } else {
     pixbuf *rhs = pixbuf_from_lua_arg(L, 2);
     luaL_argcheck(L, rhs->nchan == buffer->nchan, 2, "buffers have different channels");
-    src = rhs->values;
+    src = pixbuf_values(rhs);
     srcLen = rhs->npix;
   }
 
   luaL_argcheck(L, srcLen + start - 1 <= buffer->npix, 2, "does not fit into destination");
 
-  memcpy(buffer->values + (start - 1) * channels, src, srcLen * channels);
+  memcpy(pixbuf_values(buffer) + (start - 1) * channels, src, srcLen * channels);
 
   return 0;
 }
@@ -474,6 +526,7 @@ static int pixbuf_set_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   const int led = luaL_checkinteger(L, 2) - 1;
   const size_t channels = buffer->nchan;
+  uint8_t *values = pixbuf_values(buffer);
 
   luaL_argcheck(L, led >= 0 && led < buffer->npix, 2, "index out of range");
 
@@ -483,7 +536,7 @@ static int pixbuf_set_lua(lua_State *L) {
     for (size_t i = 0; i < channels; i++)
     {
       lua_rawgeti(L, 3, i+1);
-      buffer->values[channels*led+i] = lua_tointeger(L, -1);
+      values[channels*led+i] = lua_tointeger(L, -1);
       lua_pop(L, 1);
     }
   }
@@ -500,7 +553,7 @@ static int pixbuf_set_lua(lua_State *L) {
       return luaL_error(L, "string does not contain whole LEDs");
     }
 
-    memcpy(&buffer->values[channels*led], buf, len);
+    memcpy(&values[channels*led], buf, len);
   }
   else
   {
@@ -509,7 +562,7 @@ static int pixbuf_set_lua(lua_State *L) {
 
     for (size_t i = 0; i < channels; i++)
     {
-      buffer->values[channels*led+i] = luaL_checkinteger(L, 3+i);
+      values[channels*led+i] = luaL_checkinteger(L, 3+i);
     }
   }
 
@@ -520,7 +573,7 @@ static int pixbuf_set_lua(lua_State *L) {
 static void pixbuf_shift_circular(pixbuf *buffer, struct pixbuf_shift_params *sp) {
   /* Move a buffer of pixels per iteration; loop repeatedly if needed */
   uint8_t tmpbuf[32];
-  uint8_t *v = buffer->values;
+  uint8_t *v = pixbuf_values(buffer);
   size_t shiftRemaining = sp->shift;
   size_t cursor = sp->offset;
 
@@ -544,7 +597,7 @@ static void pixbuf_shift_circular(pixbuf *buffer, struct pixbuf_shift_params *sp
 
 static void pixbuf_shift_logical(pixbuf *buffer, struct pixbuf_shift_params *sp) {
   /* Logical shifts don't require a temporary buffer, so we just move bytes */
-  uint8_t *v = buffer->values;
+  uint8_t *v = pixbuf_values(buffer);
 
   if (sp->shiftLeft) {
     memmove(&v[sp->offset], &v[sp->offset+sp->shift], sp->window - sp->shift);
@@ -648,6 +701,18 @@ static int pixbuf_size_lua(lua_State *L) {
   return 1;
 }
 
+int pixbuf_slice_lua(lua_State *L) {
+  pixbuf *base = pixbuf_from_lua_arg(L, 1);
+
+  // TODO slicing etc
+  // const int start = luaL_checkint(L, 1);
+  // const int stop = luaL_checkint(L, 2);
+  // const int step = luaL_checkint(L, 3);
+
+  pixbuf_slice(L, base);
+  return 1;
+}
+
 static int pixbuf_sub_lua(lua_State *L) {
   pixbuf *lhs = pixbuf_from_lua_arg(L, 1);
   size_t l = lhs->npix;
@@ -656,7 +721,7 @@ static int pixbuf_sub_lua(lua_State *L) {
 
   if (start <= end) {
     pixbuf *result = pixbuf_new(L, end - start + 1, lhs->nchan);
-    memcpy(result->values, lhs->values + lhs->nchan * (start - 1),
+    memcpy(pixbuf_values(result), pixbuf_values(lhs) + lhs->nchan * (start - 1),
            lhs->nchan * (end - start + 1));
     return 1;
   } else {
@@ -667,6 +732,7 @@ static int pixbuf_sub_lua(lua_State *L) {
 
 static int pixbuf_tostring_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+  uint8_t *values = pixbuf_values(buffer);
 
   luaL_Buffer result;
   luaL_buffinit(L, &result);
@@ -683,7 +749,7 @@ static int pixbuf_tostring_lua(lua_State *L) {
         luaL_addchar(&result, ',');
       }
       char numbuf[5];
-      sprintf(numbuf, "%d", buffer->values[p]);
+      sprintf(numbuf, "%d", values[p]);
       luaL_addstring(&result, numbuf);
     }
     luaL_addchar(&result, ')');
@@ -695,16 +761,18 @@ static int pixbuf_tostring_lua(lua_State *L) {
   return 1;
 }
 
-LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
+LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ | LROT_MASK_GC)
   /* https://nodemcu.readthedocs.io/en/dev/lua53/#rotables notes:
    * "Some ordering limitations apply", namely that entries beginning
    * with '__' must be first and must be sorted.
    */
   LROT_FUNCENTRY( __concat, pixbuf_concat_lua )
   LROT_FUNCENTRY( __eq, pixbuf_eq_lua )
+  LROT_FUNCENTRY( __gc, pixbuf_gc_lua )
   LROT_TABENTRY ( __index, pixbuf_map )
   LROT_FUNCENTRY( __tostring, pixbuf_tostring_lua )
 
+  LROT_FUNCENTRY( base, pixbuf_base_lua )
   LROT_FUNCENTRY( channels, pixbuf_channels_lua )
   LROT_FUNCENTRY( dump, pixbuf_dump_lua )
   LROT_FUNCENTRY( fade, pixbuf_fade_lua )
@@ -720,8 +788,9 @@ LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
   LROT_FUNCENTRY( set, pixbuf_set_lua )
   LROT_FUNCENTRY( shift, pixbuf_shift_lua )
   LROT_FUNCENTRY( size, pixbuf_size_lua )
+  LROT_FUNCENTRY( slice, pixbuf_slice_lua )
   LROT_FUNCENTRY( sub, pixbuf_sub_lua )
-LROT_END(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ)
+LROT_END(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ | LROT_MASK_GC)
 
 LROT_BEGIN(pixbuf, NULL, 0)
   LROT_NUMENTRY( FADE_IN, PIXBUF_FADE_IN )
