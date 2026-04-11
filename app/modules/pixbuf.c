@@ -21,11 +21,26 @@ pixbuf *pixbuf_opt_from_lua_arg(lua_State *L, int arg) {
   return luaL_testudata(L, arg, PIXBUF_METATABLE);
 }
 
+// Cribbed from lua/lstrlib.c
 static ssize_t posrelat(ssize_t pos, size_t len) {
   /* relative string position: negative means back from end */
   if (pos < 0)
     pos += (ssize_t)len + 1;
-  return MIN(MAX(pos, 1), len);
+  return (pos >= 0) ? pos : 0;
+}
+
+// Models how string.sub treats i
+static int posrelat_start(int start, int l) {
+  start = posrelat(start, l);
+  if (start < 1) start = 1;
+  return start;
+}
+
+// Models how string.sub treats j
+static int posrelat_end(int end, int l) {
+  end = posrelat(end, l);
+  if (end > (ssize_t)l) end = (ssize_t)l;
+  return end;
 }
 
 const size_t pixbuf_channels(pixbuf *p) {
@@ -235,17 +250,17 @@ static int pixbuf_map_lua(lua_State *L) {
   if (!buffer1)
     buffer1 = outbuf;
 
-  const int ilo = posrelat(luaL_optinteger(L, 4, 1), buffer1->npix) - 1;
-  const int ihi = posrelat(luaL_optinteger(L, 5, buffer1->npix), buffer1->npix) - 1;
+  const int ilo = posrelat_start(luaL_optinteger(L, 4, 1), buffer1->npix) - 1;
+  const int ihi = posrelat_end(luaL_optinteger(L, 5, buffer1->npix), buffer1->npix) - 1;
 
-  luaL_argcheck(L, ihi > ilo, 3, "Buffer limits out of order");
+  luaL_argcheck(L, ihi >= ilo, 3, "Buffer limits out of order");
 
   size_t npix = ihi - ilo + 1;
 
   luaL_argcheck(L, npix == outbuf->npix, 1, "Output buffer wrong size");
 
   pixbuf *buffer2 = pixbuf_opt_from_lua_arg(L, 6);
-  const int ilo2 = buffer2 ? posrelat(luaL_optinteger(L, 7, 1), buffer2->npix) - 1 : 0;
+  const int ilo2 = buffer2 ? posrelat_start(luaL_optinteger(L, 7, 1), buffer2->npix) - 1 : 0;
 
   if (buffer2) {
     luaL_argcheck(L, ilo2 + npix <= buffer2->npix, 6, "Second buffer too short");
@@ -430,7 +445,7 @@ static int pixbuf_powerI_lua(lua_State *L) {
 
 static int pixbuf_replace_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-  ptrdiff_t start = posrelat(luaL_optinteger(L, 3, 1), buffer->npix);
+  ptrdiff_t start = posrelat_start(luaL_optinteger(L, 3, 1), buffer->npix);
   size_t channels = buffer->nchan;
 
   uint8_t *src;
@@ -561,8 +576,8 @@ int pixbuf_shift_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   const int shift_shift = luaL_checkinteger(L, 2) * buffer->nchan;
   const unsigned shift_type = luaL_optinteger(L, 3, PIXBUF_SHIFT_LOGICAL);
-  const int pos_start = posrelat(luaL_optinteger(L, 4, 1), buffer->npix);
-  const int pos_end = posrelat(luaL_optinteger(L, 5, -1), buffer->npix);
+  const int pos_start = posrelat_start(luaL_optinteger(L, 4, 1), buffer->npix);
+  const int pos_end = posrelat_end(luaL_optinteger(L, 5, -1), buffer->npix);
 
   if (shift_shift < 0) {
     sp.shiftLeft = true;
@@ -609,8 +624,8 @@ int pixbuf_shift_lua(lua_State *L) {
 void pixbuf_prepare_shift(pixbuf *buffer, struct pixbuf_shift_params *sp,
     int shift, enum pixbuf_shift type, int start, int end)
 {
-  start = posrelat(start, buffer->npix);
-  end = posrelat(end, buffer->npix);
+  start = posrelat_start(start, buffer->npix);
+  end = posrelat_end(end, buffer->npix);
 
   lua_assert((end > start) && (start > 0) && (end < buffer->npix));
 
@@ -636,8 +651,9 @@ static int pixbuf_size_lua(lua_State *L) {
 static int pixbuf_sub_lua(lua_State *L) {
   pixbuf *lhs = pixbuf_from_lua_arg(L, 1);
   size_t l = lhs->npix;
-  ssize_t start = posrelat(luaL_checkinteger(L, 2), l);
-  ssize_t end = posrelat(luaL_optinteger(L, 3, -1), l);
+  ssize_t start = posrelat_start(luaL_checkinteger(L, 2), l);
+  ssize_t end = posrelat_end(luaL_optinteger(L, 3, -1), l);
+
   if (start <= end) {
     pixbuf *result = pixbuf_new(L, end - start + 1, lhs->nchan);
     memcpy(result->values, lhs->values + lhs->nchan * (start - 1),
