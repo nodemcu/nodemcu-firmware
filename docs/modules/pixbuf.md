@@ -416,6 +416,38 @@ Make a reversed view of every third element of an existing buffer:
 buffer:slice(buffer:size(), 1, -3)
 ```
 
+## pixbuf.buffer:channel()
+Returns a view of a single channel of the buffer. As with `:slice()`,
+changes to the view are reflected in the buffer and vice versa.
+
+Channels can be specified by name or by index. Possible names are 'g',
+'r', 'b' and 'w' and possible indices are 1 to 4. It is an error
+to refer to a name or index that the buffer does not have.
+
+Since a channel view is itself a kind of buffer, it is possible to
+call `channel()` on it too. In that case names are not permitted and
+the only valid channel index is 1.
+
+#### Returns
+A new buffer object that refers to a single channel of the original.
+
+#### Examples
+
+Turn off the red channel of a buffer:
+```Lua
+buffer:channel'r':fill(0)
+```
+
+Rotate a buffer's green channel:
+```Lua
+buffer:channel(1):shift(1, pixbuf.SHIFT_CIRCULAR)
+```
+
+Set every other pixel's blue value:
+```Lua
+buffer:channel'b':slice(1, -1, 2):fill(128)
+```
+
 ## pixbuf.buffer:stride()
 Returns the stride (in bytes!) of a buffer.
 

@@ -153,6 +153,34 @@ static pixbuf *pixbuf_slice(
   return buffer;
 }
 
+static pixbuf *pixbuf_channel(
+    lua_State *L,
+    pixbuf *base,
+    size_t chan
+) {
+  // NOTE chan is zero-indexed and is assumed to be in bounds
+  // of base.
+
+  size_t size = sizeof(pixbuf);
+  // This view won't include any pixels of its own.
+  pixbuf *buffer = (pixbuf*)lua_newuserdata(L, size);  // +1
+
+  // Associate its metatable
+  luaL_getmetatable(L, PIXBUF_METATABLE);  // +1
+  lua_setmetatable(L, -2);  // -1
+
+  // Save led strip size
+  *(size_t *)&buffer->npix = base->npix;
+  *(size_t *)&buffer->nchan = 1;
+  *(signed int *)&buffer->stride = base->stride;
+
+  lua_pushvalue(L, 1); // +1
+  *(int *)&buffer->base_ref = luaL_ref(L, LUA_REGISTRYINDEX); // -1
+  *(uint8_t* *)&buffer->values_ptr = pixbuf_values(base) + chan;
+
+  return buffer;
+}
+
 static int pixbuf_gc_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   luaL_unref(L, LUA_REGISTRYINDEX, buffer->base_ref);
@@ -203,6 +231,50 @@ static int pixbuf_concat_lua(lua_State *L) {
 static int pixbuf_channels_lua(lua_State *L) {
   pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
   lua_pushinteger(L, buffer->nchan);
+  return 1;
+}
+
+static int pixbuf_channel_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+
+  int chan;
+  switch(lua_type(L, 2)) {
+    case LUA_TNUMBER:
+      chan = (int)lua_tonumber(L, 2);
+      luaL_argcheck(
+          L, 0 < chan && chan <= buffer->nchan, 2,
+          "channel number out of bounds"
+      );
+      break;
+    case LUA_TSTRING:
+      // It doesn't make sense to ask for e.g. the green channel
+      // of a red channel.
+      luaL_argcheck(
+          L, buffer->nchan > 1, 1,
+          "buffer is already a single-channel view"
+      );
+      const char *s = lua_tostring(L, 2);
+      switch (s[0]) {
+        case 'g': chan = 1; break;
+        case 'r': chan = 2; break;
+        case 'b': chan = 3; break;
+        case 'w': chan = 4; break;
+        default: chan = 0; break;
+      }
+      luaL_argcheck(
+          L, 0 < chan && chan <= buffer->nchan, 2,
+          "invalid channel name"
+      );
+  }
+
+  // If we already have a single-channel view (and we've passed
+  // the argument checks above) then we can just return the same
+  // instance and we don't need to make a new object.
+  if (buffer->nchan == 1) {
+    lua_settop(L, 1);
+  } else {
+    pixbuf_channel(L, buffer, chan - 1);
+  }
   return 1;
 }
 
@@ -945,6 +1017,7 @@ LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ | LROT_MASK_GC)
 
   LROT_FUNCENTRY( base, pixbuf_base_lua )
   LROT_FUNCENTRY( channels, pixbuf_channels_lua )
+  LROT_FUNCENTRY( channel, pixbuf_channel_lua )
   LROT_FUNCENTRY( dump, pixbuf_dump_lua )
   LROT_FUNCENTRY( fade, pixbuf_fade_lua )
   LROT_FUNCENTRY( fadeI, pixbuf_fadeI_lua )

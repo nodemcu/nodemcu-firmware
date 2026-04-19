@@ -527,3 +527,40 @@ N.test('sub boundaries behave like string.sub', function()
         ok(eq(sub_buf:dump(), quadruple(sub_str)), range_name)
     end
 end)
+
+N.test('channel slicing', function()
+    local buffer = NewBuffer(4, 4)
+    buffer:set(1, "abcdefghijklmnop");
+    buffer:channel(1):fill(('X'):byte())
+    ok(eq(buffer:dump(), "XbcdXfghXjklXnop"), "set channel 1")
+    buffer:channel(2):fill(('Y'):byte())
+    ok(eq(buffer:dump(), "XYcdXYghXYklXYop"), "set channel 2")
+    buffer:channel(3):fill(('Z'):byte())
+    ok(eq(buffer:dump(), "XYZdXYZhXYZlXYZp"), "set channel 3")
+    buffer:channel(4):fill(('W'):byte())
+    ok(eq(buffer:dump(), "XYZWXYZWXYZWXYZW"), "set channel 4")
+
+    buffer:set(1, "abcdefghijklmnop");
+    buffer:channel('g'):fill(('X'):byte())
+    ok(eq(buffer:dump(), "XbcdXfghXjklXnop"), "set channel g")
+    buffer:channel('r'):fill(('Y'):byte())
+    ok(eq(buffer:dump(), "XYcdXYghXYklXYop"), "set channel r")
+    buffer:channel('b'):fill(('Z'):byte())
+    ok(eq(buffer:dump(), "XYZdXYZhXYZlXYZp"), "set channel b")
+    buffer:channel('w'):fill(('W'):byte())
+    ok(eq(buffer:dump(), "XYZWXYZWXYZWXYZW"), "set channel w")
+
+    fail(function() buffer:channel(0) end, "channel number out of bounds", "too small")
+    fail(function() buffer:channel(5) end, "channel number out of bounds", "too large")
+    fail(function() buffer:channel('x') end, "invalid channel name", "wrong name")
+    fail(function() buffer:channel('') end, "invalid channel name", "empty name")
+
+    local c = buffer:channel(1)
+    fail(function() c:channel('r') end,
+        "buffer is already a single%-channel view")
+    ok(rawequal(c, c:channel(1)), "first channel of a channel is itself")
+
+    buffer:set(1, "AbcdEfghIjklMnop");
+    buffer:channel(1):shift(1, pixbuf.SHIFT_CIRCULAR)
+    ok(eq(buffer:dump(), "MbcdAfghEjklInop"))
+end)
