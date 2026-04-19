@@ -4,26 +4,77 @@ N = ...
 N = (N or require "NTest")("pixbuf")
 local pixbuf = require"pixbuf"
 
+if unpack == nil then unpack = table.unpack end
+
+local base_buffers = {}
+
+local check_byte = string.char(0xda)
+local check_pattern = '()[^' .. check_byte .. ']'
+
 -- `_NTest_pixbuf_lib` uses this to know how to create a buffer for testing.
 -- When a test needs a pixbuf of length 3, say, we will first construct
--- a base pixbuf and then return a view into that.
+-- a base pixbuf of length 5 and then return a view into that.
 -- Since the properties tested by `_NTest_pixbuf_lib.lua` should hold for all
 -- pixbufs, this is expected to be invisible to those tests.
 function NewBuffer(npix, nchan)
-  local base_npix = npix
+  local padding = 1
+  local base_npix = padding + npix + padding
   local base = pixbuf.newBuffer(base_npix, nchan)
+
+  base:set(1, check_byte:rep(base_npix * nchan))
+  local zero_pix = string.char(0):rep(nchan)
+  for i = padding+1, padding+npix do base:set(i, zero_pix) end
+
   local view
-  view = base:slice()
+  view = base:slice(padding+1, -(padding+1))
   assert(view:size() == npix)
 
+  table.insert(base_buffers, {base, padding})
+
   return view
+end
+
+-- Makes sure that the base buffer was not affected by writes
+-- to a view of it, except in locations that are visible to that view.
+local function check_buffer(buffer, padding)
+  local check_pix = check_byte:rep(buffer:channels())
+  for i = padding+1, buffer:size() - padding do
+    buffer:set(i, check_pix)
+  end
+
+  local bad = nil
+  for i, _ in buffer:dump():gmatch(check_pattern) do
+    if not bad then bad = {} end
+    table.insert(bad, i)
+  end
+  if bad then print(buffer) end
+  return bad
+end
+
+local function check_buffers(bb)
+  local bads = nil
+  for _, details in pairs(bb) do
+    local bad = check_buffer(unpack(details))
+    if bad then
+      if not bads then bads = {} end
+      table.insert(bads, bad)
+    end
+  end
+  if bads then
+    for _, bad in ipairs(bads) do print(unpack(bad)) end
+  end
+  ok(eq(#(bads or ''), 0), 'no overruns')
 end
 
 -- Wrap test functions to do overrun checks, and annotate test names.
 local n_test = N.test
 N.test = function(name, f)
   local function wrapper()
+    local bb = {}
+    base_buffers = bb
     f()
+    base_buffers = nil
+    check_buffers(bb)
   end
 
   return n_test(string.format("%s (slice step %d)", name, 1), wrapper)

@@ -297,6 +297,63 @@ N.test('slice whole view', function()
   ok(eq(expected, base), "writes through to base")
 end)
 
+N.test('slice partial view', function()
+  local base = NewBuffer(4, 4)
+  initBuffer(base,7,8,9,12)
+
+  local half_expected = pixbuf.newBuffer(2, 4)
+  local expected = pixbuf.newBuffer(4, 4)
+
+  local half = base:slice(1,2)
+  initBuffer(half_expected,7,8)
+  ok(eq(half_expected, half), "compares equal to part of base")
+
+  half:fill(0,0,0,0)
+  initBuffer(expected,0,0,9,12)
+  initBuffer(half_expected,0,0)
+  ok(eq(expected, base), "writes through to base")
+  ok(eq(half_expected, half), "reflects changes made to self")
+
+  initBuffer(base,1,5,3,7)
+  initBuffer(half_expected,1,5)
+  ok(eq(half_expected, half), "reflects changes made to base")
+end)
+
+N.test('slice degenerate view', function()
+  local base = NewBuffer(4, 4)
+  initBuffer(base,7,8,9,12)
+
+  for _, bounds in ipairs({
+    {2, 1},  -- empty
+    {5, 7}, -- too positive
+    {7, 5}, -- too positive and backwards
+    {-8, -6}, -- too negative
+    {-6, -8}, -- too negative and backwards
+    {0, 1},
+    {1, 0},
+    {-1, 0},
+    {0, -1},
+  }) do
+    start, stop = unpack(bounds)
+    ok(base:sub(start, stop) == base:slice(start, stop),
+       ('matches sub(%d, %d)'):format(start, stop))
+  end
+
+  ok(base:slice(3, 2):base() == nil, "has no base if empty")
+end)
+
+N.test('slice of slice', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  base:slice(2, 5):slice(2, -2):fill(0,0,0,0)
+
+  local expected = pixbuf.newBuffer(6, 4)
+  initBuffer(expected,1,2,0,0,5,6)
+
+  ok(eq(expected, base), "mutates original base object")
+end)
+
 N.test('sub', function()
     local buffer1 = NewBuffer(4, 4)
     initBuffer(buffer1,7,8,9,12)

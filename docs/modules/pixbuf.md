@@ -364,18 +364,29 @@ rawequal(buffer, buffer:slice():base())
 
 ## pixbuf.buffer:slice()
 Returns a view of an existing buffer (the "base"). Changes to the base are
-reflected in the view and vice versa.
+reflected in the slice and vice versa.
 
-A view holds a reference to its base so that the lifespan of the buffer to
-which it points is at least as long as the lifespan of the view itself.
+When start and stop indices are specified, they behave the same as for
+`pixbuf.buffer:sub()`.
+
+Operations on a slice address its base buffer's data directly and do not
+involve the base's methods, so it is just as efficient to use a slice as to
+use the base object. It is possible to create a slice of a slice (... of a
+slice, etc) with no overhead beyond the allocation of each slice object's
+header userdata.
+
+A slice holds a reference to its base so that the lifespan of the buffer to
+which it points is at least as long as the lifespan of the slice itself.
 The reference can be retrieved using the `:base()` function.
 
 #### Syntax
 `buffer:slice([start], [stop])`
 
 #### Parameters
- - `start` the first element to include in the view.
- - `stop` the last element to include in the view.
+ - `start` the first element to include in the slice. If not supplied, it
+   is assumed to be 1. Negative values can be used.
+ - `stop` the last element to include in the slice. Negative values can be
+   used. If not supplied, it is assumed to be -1.
 
 #### Returns
 A new buffer object that refers to a subset of the same data as the
@@ -387,4 +398,9 @@ Make a new view of an existing buffer and show that its base is the
 original buffer:
 ```Lua
 rawequal(buffer, buffer:slice():base())
+```
+
+Make a new view of the second ten elements of an existing buffer:
+```Lua
+buffer:slice(1, 20):slice(10)
 ```

@@ -101,9 +101,11 @@ int pixbuf_new_lua(lua_State *L) {
   return 1;
 }
 
-static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base) {
-  size_t size = sizeof(pixbuf);
+static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base, size_t start, size_t end) {
+  // NOTE start and end are zero-indexed and are assumed to be in bounds
+  // of base.
 
+  size_t size = sizeof(pixbuf);
   // This view won't include any pixels of its own.
   pixbuf *buffer = (pixbuf*)lua_newuserdata(L, size);  // +1
 
@@ -112,12 +114,12 @@ static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base) {
   lua_setmetatable(L, -2);  // -1
 
   // Save led strip size
-  *(size_t *)&buffer->npix = base->npix;
+  *(size_t *)&buffer->npix = end - start;
   *(size_t *)&buffer->nchan = base->nchan;
 
   lua_pushvalue(L, 1); // +1
   *(int *)&buffer->base_ref = luaL_ref(L, LUA_REGISTRYINDEX); // -1
-  *(uint8_t* *)&buffer->values_ptr = pixbuf_values(base);
+  *(uint8_t* *)&buffer->values_ptr = &pixbuf_values(base)[start * buffer->nchan];
 
   return buffer;
 }
@@ -702,14 +704,19 @@ static int pixbuf_size_lua(lua_State *L) {
 }
 
 int pixbuf_slice_lua(lua_State *L) {
-  pixbuf *base = pixbuf_from_lua_arg(L, 1);
+  pixbuf *lhs = pixbuf_from_lua_arg(L, 1);
 
-  // TODO slicing etc
-  // const int start = luaL_checkint(L, 1);
-  // const int stop = luaL_checkint(L, 2);
-  // const int step = luaL_checkint(L, 3);
+  size_t l = lhs->npix;
+  ssize_t start = posrelat_start(luaL_optinteger(L, 2, 1), l);
+  ssize_t end = posrelat_end(luaL_optinteger(L, 3, -1), l);
+  if (start <= end) {
+    pixbuf_slice(L, lhs, start - 1, end);
+    return 1;
+  } else {
+    pixbuf_new(L, 0, lhs->nchan);
+    return 1;
+  }
 
-  pixbuf_slice(L, base);
   return 1;
 }
 
