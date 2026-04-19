@@ -83,6 +83,7 @@ static pixbuf *pixbuf_new(lua_State *L, size_t leds, size_t chans) {
   *(size_t *)&buffer->nchan = chans;
   *(int *)&buffer->base_ref = LUA_REFNIL;
   *(uint8_t* *)&buffer->values_ptr = buffer->values;
+  *(signed int *)&buffer->stride = chans;
 
   memset(buffer->values, 0, leds * chans);
 
@@ -101,7 +102,13 @@ int pixbuf_new_lua(lua_State *L) {
   return 1;
 }
 
-static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base, size_t start, size_t end) {
+static pixbuf *pixbuf_slice(
+    lua_State *L,
+    pixbuf *base,
+    size_t start,
+    size_t end,
+    signed int step
+) {
   // NOTE start and end are zero-indexed and are assumed to be in bounds
   // of base.
 
@@ -116,6 +123,7 @@ static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base, size_t start, size_t end
   // Save led strip size
   *(size_t *)&buffer->npix = end - start;
   *(size_t *)&buffer->nchan = base->nchan;
+  *(signed int *)&buffer->stride = base->stride * step;
 
   lua_pushvalue(L, 1); // +1
   *(int *)&buffer->base_ref = luaL_ref(L, LUA_REGISTRYINDEX); // -1
@@ -709,14 +717,24 @@ int pixbuf_slice_lua(lua_State *L) {
   size_t l = lhs->npix;
   ssize_t start = posrelat_start(luaL_optinteger(L, 2, 1), l);
   ssize_t end = posrelat_end(luaL_optinteger(L, 3, -1), l);
+  signed int step = luaL_optinteger(L, 4, 1);
+  if (step != 1) {
+    return luaL_argerror(L, 4, "step must be 1");
+  }
   if (start <= end) {
-    pixbuf_slice(L, lhs, start - 1, end);
+    pixbuf_slice(L, lhs, start - 1, end, step);
     return 1;
   } else {
     pixbuf_new(L, 0, lhs->nchan);
     return 1;
   }
 
+  return 1;
+}
+
+static int pixbuf_stride_lua(lua_State *L) {
+  pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+  lua_pushinteger(L, buffer->stride);
   return 1;
 }
 
@@ -796,6 +814,7 @@ LROT_BEGIN(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ | LROT_MASK_GC)
   LROT_FUNCENTRY( shift, pixbuf_shift_lua )
   LROT_FUNCENTRY( size, pixbuf_size_lua )
   LROT_FUNCENTRY( slice, pixbuf_slice_lua )
+  LROT_FUNCENTRY( stride, pixbuf_stride_lua )
   LROT_FUNCENTRY( sub, pixbuf_sub_lua )
 LROT_END(pixbuf_map, NULL, LROT_MASK_INDEX | LROT_MASK_EQ | LROT_MASK_GC)
 

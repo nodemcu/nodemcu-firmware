@@ -342,6 +342,16 @@ N.test('slice degenerate view', function()
   ok(base:slice(3, 2):base() == nil, "has no base if empty")
 end)
 
+N.test('slice with unit step', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  local view = base:slice(2, 5, 1)
+  ok(eq(base:sub(2, 5), view), 'permits unit step')
+
+  fail(function() base:slice(2, 5, 2) end, 'step must be 1')
+end)
+
 N.test('slice of slice', function()
   local base = NewBuffer(6, 4)
   initBuffer(base,1,2,3,4,5,6)
@@ -352,6 +362,13 @@ N.test('slice of slice', function()
   initBuffer(expected,1,2,0,0,5,6)
 
   ok(eq(expected, base), "mutates original base object")
+end)
+
+N.test('stride', function()
+    local base = NewBuffer(4, 4)
+
+    local view = base:slice()
+    ok(eq(view:stride(), base:stride()), "of non-stepped view matches that of base")
 end)
 
 N.test('sub', function()

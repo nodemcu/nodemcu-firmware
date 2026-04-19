@@ -17,28 +17,30 @@ local check_pattern = '()[^' .. check_byte .. ']'
 -- Since the properties tested by `_NTest_pixbuf_lib.lua` should hold for all
 -- pixbufs, this is expected to be invisible to those tests.
 function NewBuffer(npix, nchan)
-  local padding = 1
+  local step = 1
+
+  local padding = step + 1
   local base_npix = padding + npix + padding
   local base = pixbuf.newBuffer(base_npix, nchan)
 
   base:set(1, check_byte:rep(base_npix * nchan))
   local zero_pix = string.char(0):rep(nchan)
-  for i = padding+1, padding+npix do base:set(i, zero_pix) end
+  for i = padding+1, base_npix-padding, step do base:set(i, zero_pix) end
 
   local view
-  view = base:slice(padding+1, -(padding+1))
+  view = base:slice(padding+1, -(padding+1), step)
   assert(view:size() == npix)
 
-  table.insert(base_buffers, {base, padding})
+  table.insert(base_buffers, {base, padding, step})
 
   return view
 end
 
 -- Makes sure that the base buffer was not affected by writes
 -- to a view of it, except in locations that are visible to that view.
-local function check_buffer(buffer, padding)
+local function check_buffer(buffer, padding, step)
   local check_pix = check_byte:rep(buffer:channels())
-  for i = padding+1, buffer:size() - padding do
+  for i = padding+1, buffer:size() - padding, step do
     buffer:set(i, check_pix)
   end
 

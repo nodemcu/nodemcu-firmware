@@ -404,3 +404,34 @@ Make a new view of the second ten elements of an existing buffer:
 ```Lua
 buffer:slice(1, 20):slice(10)
 ```
+
+## pixbuf.buffer:stride()
+Returns the stride (in bytes!) of a buffer.
+
+If the buffer object has no base, then it manages its own data and the
+stride will match its `:channels()`.
+
+If the buffer object has a base, then it is a view of another buffer's
+data. In this case the stride will still match the `:channels()`
+because more complex configurations have not yet been implemented.
+
+#### Syntax
+`buffer:stride()`
+
+#### Parameters
+None
+
+#### Returns
+The byte stride of this buffer.
+
+#### Examples
+
+Measure the stride of an existing buffer:
+```Lua
+buffer:stride()
+```
+
+Measure the stride of a new view of part of an existing buffer:
+```Lua
+buffer:slice(4, 8):stride()
+```

@@ -16,6 +16,12 @@ typedef struct pixbuf {
    * and values_ptr points into that owner's values array.
    */
   uint8_t *const values_ptr;
+  /* If base_ref is LUA_REFNIL then this pixbuf owns its values and its
+   * stride (in bytes!) is required to be the same as nchan.
+   * Otherwise this pixbuf is a view into another pixbuf, then stride
+   * gives the stride (in bytes!) of the view.
+   */
+  const signed int stride;
 
   /* Flexible Array Member.
    * If base_ref is LUA_REFNIL then this pixbuf owns its values and
