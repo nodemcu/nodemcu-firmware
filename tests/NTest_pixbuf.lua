@@ -24,6 +24,14 @@ N.test('initialize a buffer', function()
     fail(function() pixbuf.newBuffer(-1, 3) end, "should be a positive integer")
 end)
 
+N.test('stride of non-view buffer', function()
+    local base = pixbuf.newBuffer(4, 4)
+    ok(eq(base:channels(), base:stride()), "matches channels()")
+
+    local view = base:slice()
+    ok(eq(view:channels(), view:stride()), "of view matches channels()")
+end)
+
 --[[
 pixbuf.buffer:__concat()
 --]]

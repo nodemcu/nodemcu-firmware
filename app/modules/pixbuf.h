@@ -18,10 +18,11 @@ typedef struct pixbuf {
   uint8_t *const values_ptr;
   /* If base_ref is LUA_REFNIL then this pixbuf owns its values and its
    * stride (in bytes!) is required to be the same as nchan.
-   * Otherwise this pixbuf is a view into another pixbuf, then stride
-   * gives the stride (in bytes!) of the view.
+   * Otherwise this pixbuf is a view into another pixbuf, and stride
+   * gives the stride (in bytes!) of the view. This is the difference
+   * between the addresses of adjacent pixels; it may be negative.
    */
-  const signed int stride;
+  const ptrdiff_t stride;
 
   /* Flexible Array Member.
    * If base_ref is LUA_REFNIL then this pixbuf owns its values and

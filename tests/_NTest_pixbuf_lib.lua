@@ -347,9 +347,63 @@ N.test('slice with unit step', function()
   initBuffer(base,1,2,3,4,5,6)
 
   local view = base:slice(2, 5, 1)
-  ok(eq(base:sub(2, 5), view), 'permits unit step')
+  ok(eq(base:sub(2, 5), view), 'unit step')
+end)
 
-  fail(function() base:slice(2, 5, 2) end, 'step must be 1')
+N.test('slice with step', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  local view = base:slice(2, 5, 2)
+  ok(eq(view:stride(), 2 * base:stride()))
+  ok(eq(view:size(), 2))
+
+  local expected = pixbuf.newBuffer(2, 4)
+  initBuffer(expected,2,4)
+
+  ok(eq(expected, view), 'positive step')
+end)
+
+N.test('slice with unit negative step', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  local view = base:slice(5, 2, -1)
+  ok(eq(view:stride(), -1 * base:stride()))
+  ok(eq(view:size(), 4))
+
+  local expected = pixbuf.newBuffer(4, 4)
+  initBuffer(expected,5,4,3,2)
+
+  ok(eq(expected, view), 'unit negative step')
+end)
+
+N.test('slice with negative step', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  local view = base:slice(5, 2, -2)
+  ok(eq(view:stride(), -2 * base:stride()))
+  ok(eq(view:size(), 2))
+
+  local expected = pixbuf.newBuffer(2, 4)
+  initBuffer(expected,5,3)
+
+  ok(eq(expected, view), 'negative step')
+end)
+
+N.test('slice with longer negative step', function()
+  local base = NewBuffer(6, 4)
+  initBuffer(base,1,2,3,4,5,6)
+
+  local view = base:slice(5, 1, -2)
+  ok(eq(view:stride(), -2 * base:stride()))
+  ok(eq(view:size(), 3))
+
+  local expected = pixbuf.newBuffer(3, 4)
+  initBuffer(expected,5,3,1)
+
+  ok(eq(expected, view), 'longer negative step')
 end)
 
 N.test('slice of slice', function()

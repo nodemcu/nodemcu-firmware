@@ -138,7 +138,13 @@ static int ws2812_write(lua_State* L) {
   else if (type == LUA_TUSERDATA)
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-    luaL_argcheck(L, pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4, 1, "Bad pixbuf format");
+    luaL_argcheck(
+        L,
+        ((pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4)
+         && buffer->stride == buffer->nchan),
+        1,
+        "Bad pixbuf format"
+    );
     buffer1 = pixbuf_values(buffer);
     length1 = pixbuf_size(buffer);
   }
@@ -163,7 +169,13 @@ static int ws2812_write(lua_State* L) {
   else if (type == LUA_TUSERDATA)
   {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
-    luaL_argcheck(L, pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4, 2, "Bad pixbuf format");
+    luaL_argcheck(
+        L,
+        ((pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4)
+         && buffer->stride == buffer->nchan),
+        2,
+        "Bad pixbuf format"
+    );
     buffer2 = pixbuf_values(buffer);
     length2 = pixbuf_size(buffer);
   }
