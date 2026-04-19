@@ -342,8 +342,8 @@ outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3)
 ```
 
 ## pixbuf.buffer:base()
-If this buffer is a view of another buffer, returns that other buffer.
-Otherwise returns `nil`.
+If this buffer is a view of another buffer, return that other buffer.
+Otherwise return `nil`.
 
 #### Syntax
 `buffer:base()`
@@ -357,33 +357,34 @@ A buffer instance, or `nil`.
 #### Examples
 
 Make a new view of an existing buffer and show that its base is the
-original buffer.
+original buffer:
 ```Lua
 rawequal(buffer, buffer:slice():base())
 ```
 
 ## pixbuf.buffer:slice()
-Returns a view of an existing buffer (the "base").
-
-At the moment, the size() of a view is always zero so it's not of much use.
+Returns a view of an existing buffer (the "base"). Changes to the base are
+reflected in the view and vice versa.
 
 A view holds a reference to its base so that the lifespan of the buffer to
 which it points is at least as long as the lifespan of the view itself.
 The reference can be retrieved using the `:base()` function.
 
 #### Syntax
-`buffer:slice()`
+`buffer:slice([start], [stop])`
 
 #### Parameters
-None
+ - `start` the first element to include in the view.
+ - `stop` the last element to include in the view.
 
 #### Returns
-A new buffer object that refers to the same data as the original.
+A new buffer object that refers to a subset of the same data as the
+original.
 
 #### Examples
 
 Make a new view of an existing buffer and show that its base is the
-original buffer.
+original buffer:
 ```Lua
 rawequal(buffer, buffer:slice():base())
 ```

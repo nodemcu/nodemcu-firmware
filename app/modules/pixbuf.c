@@ -112,7 +112,7 @@ static pixbuf *pixbuf_slice(lua_State *L, pixbuf *base) {
   lua_setmetatable(L, -2);  // -1
 
   // Save led strip size
-  *(size_t *)&buffer->npix = 0;  // TODO set this once view is implemented
+  *(size_t *)&buffer->npix = base->npix;
   *(size_t *)&buffer->nchan = base->nchan;
 
   lua_pushvalue(L, 1); // +1
