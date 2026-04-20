@@ -79,33 +79,81 @@ ws2812_write_byte(int uart, uint8_t value)
   WRITE_PERI_REG(UART_FIFO(uart), _uartData[(value >> 0) & 3]);
 }
 
+struct strided_iter {
+  const uint8_t *p;  // Start of current pixel
+  const uint8_t *end;  // Stop at this pixel
+  int j;  // Channel within current pixel
+
+  size_t nchan;  // Channels per pixel
+  ptrdiff_t stride;  // Offset between pixels
+};
+
+static void ICACHE_RAM_ATTR init(
+    struct strided_iter *it,
+    const uint8_t *pixels,
+    size_t npix,
+    size_t nchan,
+    ptrdiff_t stride
+) {
+  it->p = pixels;
+  it->end = pixels + (npix * stride);
+  it->j = 0;
+  it->nchan = nchan;
+  it->stride = stride;
+}
+
+static uint8_t ICACHE_RAM_ATTR next(struct strided_iter *it) {
+  uint8_t x = it->p[it->j];
+  if (++it->j == it->nchan) {
+    it->j = 0;
+    it->p += it->stride;
+  }
+  return x;
+}
+
+static uint8_t ICACHE_RAM_ATTR done(struct strided_iter *it) {
+  return it->p == it->end;
+}
+
 // Stream data using UART1 routed to GPIO2
 // ws2812.init() should be called first
 //
 // NODE_DEBUG should not be activated because it also uses UART1
-void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, const uint8_t *pixels2, uint32_t length2) {
-  const uint8_t *end  = pixels + length;
-  const uint8_t *end2 = pixels2 + length2;
-
+static void ICACHE_RAM_ATTR ws2812_write_strided_data(
+    struct strided_iter *pixels,
+    struct strided_iter *pixels2
+) {
   /* Fill the UART fifos with IRQs disabled */
   uint32_t irq_state = esp8266_defer_irqs();
-  while ((pixels < end) && ws2812_can_write(1)) {
-    ws2812_write_byte(1, *pixels++);
+  while (!done(pixels) && ws2812_can_write(1)) {
+    ws2812_write_byte(1, next(pixels));
   }
-  while ((pixels2 < end2) && ws2812_can_write(0)) {
-    ws2812_write_byte(0, *pixels2++);
+  while (!done(pixels2) && ws2812_can_write(0)) {
+    ws2812_write_byte(0, next(pixels2));
   }
   esp8266_restore_irqs(irq_state);
 
   do {
-    if (pixels < end && ws2812_can_write(1)) {
-      ws2812_write_byte(1, *pixels++);
+    if (!done(pixels) && ws2812_can_write(1)) {
+      ws2812_write_byte(1, next(pixels));
     }
     // Same for the second buffer
-    if (pixels2 < end2 && ws2812_can_write(0)) {
-      ws2812_write_byte(0, *pixels2++);
+    if (!done(pixels2) && ws2812_can_write(0)) {
+      ws2812_write_byte(0, next(pixels2));
     }
-  } while(pixels < end || pixels2 < end2); // Until there is still something to send
+  } while(!done(pixels) || !done(pixels2)); // Until there is still something to send
+}
+
+void ICACHE_RAM_ATTR ws2812_write_data(
+    const uint8_t *pixels,
+    uint32_t length,
+    const uint8_t *pixels2,
+    uint32_t length2
+) {
+  struct strided_iter pix[2];
+  init(&pix[0], pixels, length, 1, 1);
+  init(&pix[1], pixels2, length2, 1, 1);
+  ws2812_write_strided_data(&pix[0], &pix[1]);
 }
 
 // Lua: ws2812.write("string")
@@ -120,73 +168,43 @@ void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, c
 // In DUAL mode 'ws2812.init(ws2812.DUAL)', you may pass a second string as parameter
 // It will be sent through TXD0 in parallel
 static int ws2812_write(lua_State* L) {
-  size_t length1, length2;
-  const char *buffer1, *buffer2;
+  struct strided_iter pix[2];
 
-  // First mandatory parameter
-  int type = lua_type(L, 1);
-  if (type == LUA_TNIL)
-  {
-    buffer1 = 0;
-    length1 = 0;
-  }
-  else if(type == LUA_TSTRING)
-  {
-    buffer1 = lua_tolstring(L, 1, &length1);
-  }
-#ifdef LUA_USE_MODULES_PIXBUF      
-  else if (type == LUA_TUSERDATA)
-  {
-    pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
-    luaL_argcheck(
-        L,
-        ((pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4)
-         && buffer->stride == buffer->nchan),
-        1,
-        "Bad pixbuf format"
-    );
-    buffer1 = pixbuf_values(buffer);
-    length1 = pixbuf_size(buffer);
-  }
-#endif
-  else
-  {
-    luaL_argerror(L, 1, "pixbuf or string expected");
-  }
-
-  // Second optionnal parameter
-  type = lua_type(L, 2);
-  if (type == LUA_TNONE || type == LUA_TNIL)
-  {
-    buffer2 = 0;
-    length2 = 0;
-  }
-  else if (type == LUA_TSTRING)
-  {
-    buffer2 = lua_tolstring(L, 2, &length2);
-  }
-#ifdef LUA_USE_MODULES_PIXBUF      
-  else if (type == LUA_TUSERDATA)
-  {
-    pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
-    luaL_argcheck(
-        L,
-        ((pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4)
-         && buffer->stride == buffer->nchan),
-        2,
-        "Bad pixbuf format"
-    );
-    buffer2 = pixbuf_values(buffer);
-    length2 = pixbuf_size(buffer);
-  }
-#endif
-  else
-  {
-    luaL_argerror(L, 2, "pixbuf or string expected");
+  for (int i = 0; i < 2; i++) {
+    int type = lua_type(L, i+1);
+    if (type == LUA_TNIL
+        || i > 0 && type == LUA_TNONE)  // Second parameter is optional
+    {
+      init(&pix[i], 0, 0, 0, 0);
+    }
+    else if(type == LUA_TSTRING)
+    {
+      init(&pix[i], 0, 0, 1, 1);
+      size_t nbytes;
+      pix[i].p = lua_tolstring(L, i+1, &nbytes);
+      pix[i].end = pix[i].p + nbytes;
+    }
+  #ifdef LUA_USE_MODULES_PIXBUF      
+    else if (type == LUA_TUSERDATA)
+    {
+      pixbuf *buffer = pixbuf_from_lua_arg(L, i+1);
+      luaL_argcheck(
+          L,
+          pixbuf_channels(buffer) == 3 || pixbuf_channels(buffer) == 4,
+          i+1,
+          "Bad pixbuf format"
+      );
+      init(&pix[i], buffer->values_ptr, buffer->npix, buffer->nchan, buffer->stride);
+    }
+  #endif
+    else
+    {
+      luaL_argerror(L, i+1, "pixbuf or string expected");
+    }
   }
 
   // Send the buffers
-  ws2812_write_data(buffer1, length1, buffer2, length2);
+  ws2812_write_strided_data(&pix[0], &pix[1]);
 
   return 0;
 }
