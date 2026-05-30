@@ -58,6 +58,13 @@ N.test('replace correctly issue #2921', function()
     ok(eq(buffer:dump(), string.char(3,255,165,33,0,244,12,87,255,0,0,0,0,0,0)), "RGBW")
 end)
 
+N.test('replace correctly issue #3702', function()
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    buffer1:set(1, "AAAABBBBCCCCDDDD")
+    fail(function() buffer1:replace("XXXX", 5) end,
+         "does not fit into destination")
+end)
+
 N.test('get/set correctly', function()
     local buffer = pixbuf.newBuffer(3, 4)
     buffer:fill(1,222,55,13)
@@ -193,6 +200,13 @@ N.test('shift LOGICAL issue #2946', function()
     fail(function() buffer1:shift(-6) end, "shifting more elements than buffer size")
 end)
 
+N.test('shift LOGICAL issue #3702', function()
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    initBuffer(buffer1,7,8,9,12)
+    fail(function() buffer1:shift(1, pixbuf.SHIFT_LOGICAL, 5, 5) end,
+         "end position must be >= start")
+end)
+
 N.test('shift CIRCULAR', function()
     local buffer1 = pixbuf.newBuffer(4, 4)
     local buffer2 = pixbuf.newBuffer(4, 4)
@@ -281,6 +295,61 @@ N.test('map', function()
     buffer3:set(1,"EFGHIJKLM")
     buffer1:map(function(c,a,b,d) return a,b,c,d end, buffer2, 1, 2, buffer3, 2)
     ok(eq("HIAJKLBM", buffer1:dump()), "partial zip")
+end)
+
+N.test('map issue #3702', function()
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    local buffer2 = pixbuf.newBuffer(1, 4)
+    local f = function(a, b, c, d) return a+10, b+10, c+10, d+10 end
+    buffer1:fill(65,66,67,68)
+    buffer2:map(f, buffer1, -1, -1) -- just the last pixel
+    ok(eq("KLMN", buffer2:dump()), "map last pixel only")
+end)
+
+N.test('sub boundaries behave like string.sub', function()
+    local buffer1 = pixbuf.newBuffer(4, 4)
+    local function quadruple(s)
+        local q = ""
+        for i = 1, #s do
+            local c = s:byte(i)
+            q = ("%s%c%c%c%c"):format(q, c, c, c, c)
+        end
+        return q
+    end
+
+    local str1 = "ABCD"
+    buffer1:set(1, quadruple(str1))
+
+    for _, range in ipairs({
+        {2, 3},  -- all in range
+        {2, nil},  -- implicit end
+        {2, -1},  -- explicit end
+        {-2, nil}, -- suffix of length 2
+        {-4, nil}, -- suffix of length 4: entire sequence
+        {-5, nil}, -- still entire sequence
+        {-100, nil}, -- still entire sequence
+        {-5, 1}, -- overlap just first element
+        {-5, -3}, -- overlap first two elements
+        {0, 2}, -- overlap first two elements
+        {-5, 0}, -- empty
+        {3, 2}, -- empty
+        {3, -2}, -- just third element
+        {4, 5}, -- just last element
+        {4, 6}, -- still just last element
+        {4, -1}, -- also just last element
+        {5, 6}, -- empty
+        {5, -1}, -- empty
+        {6, -5}, -- empty
+        {-5, 10}, -- entire sequence
+    }) do
+        local first, last = range[1], range[2]
+        local range_name = ("(%s to %s)"):format(first or 'nil', last or 'nil')
+
+        local sub_buf = buffer1:sub(first, last)
+        local sub_str = str1:sub(first, last)
+
+        ok(eq(sub_buf:dump(), quadruple(sub_str)), range_name)
+    end
 end)
 
 --[[
