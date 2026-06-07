@@ -1,0 +1,31 @@
+#!/usr/bin/env expect
+
+log_file -noappend -a "/dev/fd/2"
+log_user 0
+
+# Boot a NodeMCU device, connect it to the network, and try to extract the
+# host's IP address to use when listening for this endpoint.
+
+package require expectnmcu::core
+package require expectnmcu::net
+
+package require cmdline
+set cmd_parameters {
+  { serial.arg "/dev/ttyUSB0"   "Set the serial interface name" }
+  { wifi.arg   ""               "Command to run to bring up the network" }
+}
+set cmd_usage "- Figure out the host IP to use for a NodeMCU DUT"
+if {[catch {array set cmdopts [cmdline::getoptions ::argv $cmd_parameters $cmd_usage]}]} {
+  send_user [cmdline::usage $cmd_parameters $cmd_usage]
+  exit 0
+}
+
+
+set victim [::expectnmcu::core::connect ${cmdopts(serial)}]
+if {0 < [string length ${cmdopts(wifi)}]} {
+  ::expectnmcu::core::send_exp_prompt ${victim} ${cmdopts(wifi)}
+}
+set myip [::expectnmcu::net::guessmyip [::expectnmcu::net::waitwifista ${victim}]]
+
+log_file
+send_user ${myip}

@@ -1,0 +1,448 @@
+#!/usr/bin/env expect
+
+# Walk a NodeMCU device through some basic MQTT functionality tests.
+#
+# Requires `openssl` and `mosquitto` host-side; tested only on Linux.  Spawns a
+# mosquitto broker using the configuration files next to this script, but can
+# be told to use another (see -brokerhost, -brokertcp, -brokerssl, -mqttuser, -mqttpass).
+#
+# A typical invocation looks like:
+#   export NODEMCU_TESTTMP=/tmp/nodemcu
+#   ./preflight-tls.sh
+#   TCLLIBPATH=./expectnmcu ./test-mqtt.expect -serial /dev/ttyUSB3 -wifi "$(cat wificmd)"
+#
+# where the file `wificmd` contains something like
+#  wifi.setmode(wifi.STATION); wifi.sta.config({...}); wifi.sta.connect()
+# where the ... is filled in with the local network's configuration.  All on
+# one line, tho', so that the script just gets one prompt back.
+#
+# For debugging the test itself, it may be useful to invoke expect with -d,
+# which will give a great deal of diagnostic information about the expect state
+# machine's internals:
+#   TCLLIBPATH=./expectnmcu expect -d ./mqtt-test.expect ...
+
+if { [info exists ::env(NODEMCU_TESTTMP)] } {
+  set tdir $::env(NODEMCU_TESTTMP)
+} else {
+  send_user "==> Specify NODEMCU_TESTTMP in environment <=="
+  exit 1
+}
+
+package require expectnmcu::core
+  namespace import expectnmcu::core::send_exp_prompt
+  namespace import expectnmcu::core::send_exp_prompt_c
+  namespace import expectnmcu::core::send_exp_res_prompt
+package require expectnmcu::net
+package require tcltest
+
+package require cmdline
+set cmd_parameters {
+  { serial.arg "/dev/ttyUSB0"   "Set the serial interface name"            }
+  { wifi.arg   ""               "Command to run to bring up the network"   }
+  { ip.arg     ""               "My IP address (will guess if not given)"  }
+  { brokerhost.arg ""           "Broker IP address (mine if not given)"    }
+  { brokertcp.arg "1883"        "Broker TCP port"                          }
+  { brokerssl.arg "8883"        "Broker SSL-over-TCP port"                 }
+  { mqttuser.arg ""             "MQTT username for testing"                }
+  { mqttpass.arg ""             "MQTT password for testing"                }
+  { tcfg.arg   ""               "Specify key/value pairs for tcltest config" }
+}
+set cmd_usage "- A NodeMCU MQTT test program"
+if {[catch {array set cmdopts [cmdline::getoptions ::argv $cmd_parameters $cmd_usage]}]} {
+  send_user [cmdline::usage $cmd_parameters $cmd_usage]
+  exit 0
+}
+
+proc onexit {} {
+  uplevel 1 {if {[info exists sub_sid]} {
+    close -i ${sub_sid}
+  }}
+  uplevel 1 {if {[info exists broker_sid]} {
+    exec "kill" [exp_pid -i ${broker_sid}]
+    close -i ${broker_sid}
+  }}
+}
+exit -onexit onexit
+
+::tcltest::configure -verbose pste
+foreach {k v} [split ${cmdopts(tcfg)}] { ::tcltest::configure ${k} ${v} }
+
+# Boot the board
+set victim [::expectnmcu::core::connect ${cmdopts(serial)}]
+send_user "\n===> Machine has booted <===\n"
+
+# Connect the board to the network
+if {0 < [string length ${cmdopts(wifi)}]} {
+  send_exp_prompt ${victim} ${cmdopts(wifi)}
+}
+set victimip [::expectnmcu::net::waitwifista ${victim}]
+send_user "\n===> Victim IP address ${victimip} <===\n"
+
+if {0 < [string length ${cmdopts(ip)}]} {
+  set myip ${cmdopts(ip)}
+} else {
+  set myip [::expectnmcu::net::guessmyip ${victimip}]
+}
+
+send_user "\n===> I am ${myip} <===\n"
+
+if {0 == [string length ${cmdopts(brokerhost)}]} {
+  if {0 < [string length ${cmdopts(mqttuser)}]} {
+    send_user "MQTT user with self-managed broker doesn't make sense\n"
+    exit 2
+  }
+  if {0 < [string length ${cmdopts(mqttpass)}]} {
+    send_user "MQTT password with self-managed broker doesn't make sense\n"
+    exit 2
+  }
+
+  set cmdopts(brokerhost) ${myip}
+  set cmdopts(mqttuser) "nmcutest"
+  set cmdopts(mqttpass) "nmcutest"
+
+  spawn "./test-mqtt.mosquitto.sh"
+  set broker_sid ${spawn_id}
+
+  # Wait for mosquitto to come online; it announces opening its listeners
+  for {set i 0} {${i} < 2} {incr i} {
+    expect {
+      -i ${broker_sid} "listen socket on port ${cmdopts(brokertcp)}" { }
+      -i ${broker_sid} "listen socket on port ${cmdopts(brokerssl)}" { }
+      -i ${broker_sid} "Error" {
+        send_user "===> Broker error! <==="
+        exit 1
+      }
+    }
+  }
+  sleep 1
+}
+
+# Locally, spawn a MQTT client to listen for messages.  We expect to see all
+# the messages we generate, both on the host and the device under test, show
+# up here, and no others.
+spawn "mosquitto_sub" "-v" "-t" "nmcutest/#" "-q" "2" \
+      "-h" "${cmdopts(brokerhost)}" "-P" "${cmdopts(brokertcp)}" \
+      "-u" "${cmdopts(mqttuser)}" "-P" "${cmdopts(mqttpass)}"
+set sub_sid ${spawn_id}
+
+proc publish [list msg {topic "nmcutest/host"} {qos 2} [list acksid ${sub_sid} ] ] {
+  upvar 1 cmdopts cmdopts
+  exec "mosquitto_pub" "-t" "${topic}" "-m" "${msg}" "-q" "${qos}" \
+        "-h" "${cmdopts(brokerhost)}" "-P" "${cmdopts(brokertcp)}" \
+        "-u" "${cmdopts(mqttuser)}" "-P" "${cmdopts(mqttpass)}"
+  expect {
+    -timeout 2
+    timeout { return 0 }
+    -i ${acksid} -re "${topic} ${msg}\[\r\n\]" { return 1 }
+  }
+}
+
+# Create some helper functions on the DUT
+send_exp_prompt ${victim} "function mkcb(str, id) return function(...) print(str, id, ...) end end"
+
+# Ready the DUT by creating an insecure mqtt client to our broker
+send_exp_prompt ${victim} "mqct = mqtt.Client(\"nmcutest\", 10, \"${cmdopts(mqttuser)}\", \"${cmdopts(mqttpass)}\")"
+send_exp_prompt ${victim} "mqct:lwt(\"nmcutest/lwt\", \"lwt\", 2, 0)"
+send_exp_prompt ${victim} "mqct:on(\"offline\" , mkcb(\"OFFL\", 1))"
+send_exp_prompt ${victim} "mqct:on(\"puback\"  , mkcb(\"PUBL\", 1))"
+send_exp_prompt ${victim} "mqct:on(\"suback\"  , mkcb(\"SUBA\", 1))"
+send_exp_prompt ${victim} "mqct:on(\"unsuback\", mkcb(\"UNSA\", 1))"
+send_exp_prompt ${victim} "mqct:on(\"message\" , mkcb(\"MESG\", 1))"
+send_exp_prompt ${victim} "mqct:on(\"overflow\", mkcb(\"MOVR\", 1))"
+send_exp_prompt ${victim} "mqct:connect(\"${cmdopts(brokerhost)}\", ${cmdopts(brokertcp)}, false, mkcb(\"CONN\",1), mkcb(\"CFAI\",1))"
+expect {
+  -i ${victim} -re "CONN\t1\[^\n]*\n" { }
+  -i ${victim} -re "CFAI\t1\[^\n]*\n" {
+    send_user "\n===> MQTT connection failed, bailing out <===\n"
+    exit 1
+  }
+  timeout {
+    send_user "\n===> MQTT connection timed out, bailing out <===\n"
+    exit 1
+  }
+}
+
+# Set some default expect handlers.
+expect_after {
+  -i ${sub_sid} "nmcutest/lwt" { return "lwt" }
+  timeout { return "timeout" }
+  eof { return "eof" }
+}
+
+# Proc to wait around for the device to heartbeat.  Note that we
+# are mostly waiting for the above expect_acter's lwt trigger!
+proc check_pulse { victim } {
+  # Timeout is 1.5x keepalive, as required by spec
+  expect {
+    -timeout 15
+    timeout { return "ok" }
+    # Pass through any debugging chatter
+    -i ${victim} -re ".+" { exp_continue -continue_timer }
+  }
+}
+
+# {{{
+::tcltest::test basic_wait_after_connect {
+  Wait to ensure that our client is sending keepalives
+} -body {
+  set res [eval check_pulse ${victim} ]
+
+  # Help ensure any debugging output gets logged as part of this test.
+  send_exp_prompt ${victim} ""
+
+  return ${res}
+} -result "ok"
+# }}}
+
+# {{{
+::tcltest::test basic_publish_qos1 {
+  Basic publish test, QoS 1
+} -body {
+  set res 0
+
+  send_exp_prompt ${victim} "mqct:publish(\"nmcutest/nmcu\", \"4567\", 1, 0)"
+  expect {
+    -i ${sub_sid} "nmcutest/nmcu 4567" { incr res }
+  }
+  expect {
+    -i ${victim} -re "PUBL\t1" { incr res }
+  }
+
+  return ${res}
+} -result 2
+# }}}
+
+# {{{
+::tcltest::test basic_publish_qos2 {
+  Basic publish test, QoS 2
+} -body {
+  set res 0
+
+  send_exp_prompt ${victim} "mqct:publish(\"nmcutest/nmcu\", \"1234\", 2, 0)"
+  expect {
+    -i ${sub_sid} "nmcutest/nmcu 1234" { incr res }
+  }
+  expect {
+    -i ${victim} -re "PUBL\t1" { incr res }
+  }
+
+  return ${res}
+} -result 2
+# }}}
+
+# {{{
+::tcltest::test basic_publish_double_qos2 {
+  Double-tap publish test, QoS 2
+} -body {
+  send_exp_prompt ${victim} \
+    "mqct:publish(\"nmcutest/nmcu\", \"1357\", 2, 0); mqct:publish(\"nmcutest/nmcu\", \"0246\", 2, 0)"
+  for {set i 0} {${i} < 4} {incr i} {
+    expect {
+      -i ${sub_sid} "nmcutest/nmcu 1357" { }
+      -i ${sub_sid} "nmcutest/nmcu 0246" { }
+      -i ${victim} "PUBL\t1" { }
+    }
+  }
+  return ${i}
+} -result 4
+# }}}
+
+# {{{
+::tcltest::test basic_wait_after_pub {
+  Wait to ensure that our client is still heartbeating after publishing
+} -body {
+  set res [eval check_pulse ${victim} ]
+  send_exp_prompt ${victim} ""
+  return ${res}
+} -result "ok"
+# }}}
+
+# {{{
+::tcltest::test basic_subscribe_qos1 {
+  Sub test, QoS 1
+} -body {
+  set res 0
+
+  send_exp_prompt ${victim} "mqct:subscribe(\"nmcutest/host\", 1)"
+  expect {
+    -i ${victim} "SUBA\t1" { incr res }
+  }
+
+  if { [ publish "12345" ] == 1 } { incr res }
+  expect {
+    -i ${victim} -re "MESG\t1\tuserdata:\[^\t]*\tnmcutest/host\t12345" { incr res }
+  }
+
+  send_exp_prompt ${victim} "mqct:unsubscribe(\"nmcutest/host\")"
+  expect {
+    -i ${victim} "UNSA\t1" { incr res }
+  }
+
+  return ${res}
+} -result 4
+# }}}
+
+# {{{
+::tcltest::test basic_wait_after_sub {
+  Wait to ensure that our client is still heartbeating after subscribing
+} -body {
+  set res [eval check_pulse ${victim} ]
+  send_exp_prompt ${victim} ""
+  return ${res}
+} -result "ok"
+# }}}
+
+# {{{
+::tcltest::test overflow {
+  Message Overflow test
+} -body {
+  set res 0
+
+  send_exp_prompt ${victim} "mqct:subscribe(\"nmcutest/host\", 1)"
+  expect {
+    -i ${victim} "SUBA\t1" { incr res }
+  }
+
+  if { [ publish [string repeat "A" 2000] ] == 1 } { incr res }
+  expect {
+    -i ${victim} -re "MOVR\t1\tuserdata:\[^\t]*\tnmcutest/host\tA*\[\r\n]" { incr res }
+  }
+
+  send_exp_prompt ${victim} "mqct:unsubscribe(\"nmcutest/host\")"
+  expect {
+    -i ${victim} "UNSA\t1" { incr res }
+  }
+
+  return ${res}
+} -result 4
+# }}}
+ 
+# {{{ 
+::tcltest::test un-re-sub {
+  Messages not received after unsubscription
+} -body {
+  set res 0
+
+  # We are not presently subscribed
+  if { [ publish "54321" ] == 1 } { incr res }
+  expect {
+    -timeout 2
+    timeout { incr res }
+    -i ${victim} -re "MESG\t1\tuserdata:\[^\t]*\tnmcutest/host\t54321" { return "fail" }
+  }
+
+  # Now subscribe and resend 
+  send_exp_prompt ${victim} \
+    "mqct:subscribe({\[\"nmcutest/host\"\]=2,\[\"nmcutest/host2\"\]=2})"
+  expect {
+    -i ${victim} "SUBA\t1" { incr res }
+  }
+  
+  exec "mosquitto_pub" "-t" "nmcutest/host" "-m" "09876" "-q" "2" \
+        "-h" "${cmdopts(brokerhost)}" "-P" "${cmdopts(brokertcp)}" \
+        "-u" "${cmdopts(mqttuser)}" "-P" "${cmdopts(mqttpass)}"
+  expect {
+    -i ${sub_sid} -re "nmcutest/host 09876\[\r\n\]" { incr res }
+  }
+  expect {
+    -i ${victim} -re "MESG\t1\tuserdata:\[^\t]*\tnmcutest/host\t09876" { incr res }
+  }
+
+  return ${res}
+} -result 5
+# }}}
+
+send_user "\n===> Graceful disconnect <===\n"
+
+send_exp_prompt ${victim} "mqct:close()"
+expect {
+  -timeout 5
+  -i ${victim} "OFFL\t1" { }
+  timeout {
+    send_user "\n===> Failed to hang up <===\n"
+    exit 1
+  }
+}
+
+# {{{
+::tcltest::test close_no_lwt {
+  Ensure that close() does not send a LWT
+} -body {
+  expect {
+    -timeout 2
+    -i ${sub_sid} -re "nmcutest/lwt" { return "fail" }
+    timeout { return "ok" }
+  }
+} -result "ok"
+# }}}
+
+# {{{
+::tcltest::test tls_bad_cert {
+  TLS connection, wrong certificate
+} -body {
+  set cert [open "${tdir}/tmp-ec384r1.crt"]
+  send_exp_prompt_c ${victim} "tls.cert.verify(function(ix) return ix == 1 and \[\["
+  while { [gets ${cert} line] >= 0 } {
+    send_exp_prompt_c ${victim} $line
+  }
+  send_exp_prompt ${victim} "]] end)"
+  close ${cert}
+  send_exp_prompt ${victim} "tls.cert.auth(false)"
+  send_exp_prompt ${victim} "tls.setDebug(2)"
+  
+  send_exp_prompt ${victim} "mqct:connect(\"${cmdopts(brokerhost)}\", ${cmdopts(brokerssl)}, true, mkcb(\"CONN\",2), mkcb(\"CFAI\",2))"
+  expect {
+    -i ${victim} -re "CFAI\t2\[^\n]*\n" { return "cfai" }
+    -i ${victim} -re "CONN\t2\[^\n]*\n" { return "conn" }
+  }
+} -result "cfai"
+# }}}
+
+set cert [open "${tdir}/tmp-ec256v1.crt"]
+send_exp_prompt_c ${victim} "tls.cert.verify(function(ix) return ix == 1 and \[\["
+while { [gets ${cert} line] >= 0 } {
+  send_exp_prompt_c ${victim} $line
+}
+send_exp_prompt ${victim} "]] end)"
+close ${cert}
+send_exp_prompt ${victim} "tls.cert.auth(false)"
+  
+send_exp_prompt ${victim} "mqct:connect(\"${cmdopts(brokerhost)}\", ${cmdopts(brokerssl)}, true, mkcb(\"CONN\",3), mkcb(\"CFAI\",3))"
+expect {
+  -i ${victim} -re "CONN\t3\[^\n]*\n" { }
+  -i ${victim} -re "CFAI\t3\[^\n]*\n" {
+    send_user "\n===> Unable to reconnect over SSL <===\n"
+    exit 1
+  }
+  timeout {
+    send_user "\n===> Timeout while reconnecting over SSL <===\n"
+    exit 1
+  }
+}
+
+# {{{
+::tcltest::test hangup_lwt {
+  Disconnect wifi and wait for everyone to notice
+} -body {
+  set res 0
+
+  send_exp_prompt ${victim} "wifi.sta.disconnect()"
+
+  # This one is more or less immediate, because the connection is actively
+  # torn down ESP-side.
+  expect {
+    -timeout 4
+    -i ${victim} -re "OFFL\t1" { incr res }
+  }
+  expect {
+    -timeout 30
+    -i ${sub_sid} -re "nmcutest/lwt" { incr res }
+  }
+
+  return ${res}
+} -result 2
+# }}}
+
+###############################################################################
+send_exp_prompt ${victim} "collectgarbage()"
+::tcltest::cleanupTests
