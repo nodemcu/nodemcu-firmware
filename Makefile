@@ -85,16 +85,7 @@ endif
 #  then please raise a GitHub issue on this work.
 #
 
-ifndef $(OS)
-  # Assume Windows if MAKE_HOST contains "indows" and Linux otherwise
-  ifneq (,$(findstring indows,$(MAKE_HOST)))
-    OS := windows
-  else
-    OS := linux
-  endif
-endif
-
-ifneq (,$(findstring indows,$(OS)))
+ifeq ($(OS),Windows_NT)
   #------------ BEGIN UNTESTED ------------ We are not under Linux, e.g.under windows.
   ifeq ($(XTENSA_CORE),lx106)
     # It is xcc
@@ -109,13 +100,21 @@ ifneq (,$(findstring indows,$(OS)))
   else
     # It is gcc, may be cygwin
     # Can we use -fdata-sections?
-    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4
+    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4 -Wno-error=implicit-function-declaration -Dstricmp=strcasecmp -DWIN32
     AR = xtensa-lx106-elf-ar
     CC = xtensa-lx106-elf-gcc
     CXX = xtensa-lx106-elf-g++
     NM = xtensa-lx106-elf-nm
     CPP = xtensa-lx106-elf-cpp
     OBJCOPY = xtensa-lx106-elf-objcopy
+	TOOLCHAIN_VERSION = 2020r3
+	GCCTOOLCHAIN      = xtensa-lx106-elf-gcc8_4_0-esp-$(TOOLCHAIN_VERSION)-win32
+	TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
+	ESPRESSIF_URL     = https://media.githubusercontent.com/media/nodemcu/espressif-sdk-archive/refs/heads/master
+	TOOLCHAIN_EXT     = zip
+	TOOLCHAIN_URL     = $(ESPRESSIF_URL)/$(GCCTOOLCHAIN).$(TOOLCHAIN_EXT)
+	WGET              = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
+	export PATH      := $(PATH):$(TOOLCHAIN_ROOT)/bin
   endif
   FIRMWAREDIR = ..\\bin\\
   ifndef COMPORT
@@ -123,24 +122,21 @@ ifneq (,$(findstring indows,$(OS)))
   else
     ESPPORT = $(COMPORT)
   endif
-  ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
-# ->AMD64
-  endif
-  ifeq ($(PROCESSOR_ARCHITECTURE),x86)
-# ->IA32
-  endif
+  
   #---------------- END UNTESTED ---------------- We are under windows.
 else
   # We are under other system, may be Linux. Assume using gcc.
 
   UNAME_S := $(shell uname -s)
   UNAME_P := $(shell uname -p)
-  ifeq ($(OS),linux)
+  ifeq ($(UNAME_S),Linux)
     ifndef TOOLCHAIN_ROOT
       TOOLCHAIN_VERSION = 20190731.0
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
+	  TOOLCHAIN_EXT 	= tar.xz
+	  TOOLCHAIN_URL 	= $(GITHUB_TOOLCHAIN)/releases/download/$(GCCTOOLCHAIN)/toolchain-esp8266-$(GCCTOOLCHAIN).$(TOOLCHAIN_EXT)
       export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
     endif
   endif
@@ -286,21 +282,24 @@ endif
 sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
 sdk_pruned: sdk_extracted toolchain $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 
-ifdef GITHUB_TOOLCHAIN
-  TOOLCHAIN_ROOT := $(TOP_DIR)/tools/toolchains/esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
-
+ifdef TOOLCHAIN_URL
 toolchain: $(TOOLCHAIN_ROOT)/bin $(ESPTOOL)
 
-$(TOOLCHAIN_ROOT)/bin: $(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz
+$(TOOLCHAIN_ROOT)/bin: $(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).$(TOOLCHAIN_EXT)
 	mkdir -p $(TOP_DIR)/tools/toolchains/
 	$(summary) EXTRACT $(patsubst $(TOP_DIR)/%,%,$<)
-	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
+    ifeq ($(TOOLCHAIN_EXT),tar.xz)
+	    tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
+    else ifeq ($(TOOLCHAIN_EXT),zip)
+	    unzip -q $< -d $(TOP_DIR)/tools/toolchains/
+		mv $(TOP_DIR)/tools/toolchains/xtensa-lx106-elf $(TOOLCHAIN_ROOT)
+    endif
 	touch $@
 
-$(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz:
+$(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).$(TOOLCHAIN_EXT):
 	mkdir -p $(TOP_DIR)/cache
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
-	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(GCCTOOLCHAIN)/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz -O $@ \
+	$(WGET) $(TOOLCHAIN_URL) -O $@ \
 	|| { rm -f "$@"; exit 1; }
 else
 toolchain: $(ESPTOOL)

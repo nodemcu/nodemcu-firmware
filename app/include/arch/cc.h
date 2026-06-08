@@ -42,10 +42,12 @@
 
 //#define LWIP_PROVIDE_ERRNO
 
+#ifndef BYTE_ORDER
 #if (1)
 #define BYTE_ORDER LITTLE_ENDIAN
 #else
 #define BYTE_ORDER BIG_ENDIAN
+#endif
 #endif
 
 

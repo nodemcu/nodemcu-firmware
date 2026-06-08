@@ -88,6 +88,10 @@ else
 IMAGE := ../../../luac.cross.int
 endif
 
+ifeq ($(OS),Windows_NT)
+  IMAGE := $(IMAGE).exe
+endif
+
 .PHONY: test clean all
 
 all: $(DEPS) $(IMAGE)
