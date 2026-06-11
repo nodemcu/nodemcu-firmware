@@ -585,5 +585,14 @@ extern sint8 espconn_recv_hold(struct espconn *pespconn);
 *******************************************************************************/
 extern sint8 espconn_recv_unhold(struct espconn *pespconn);
 
+
+/******************************************************************************
+ * FunctionName : espconn_pbuf_delete
+ * Description  : remove the node from the active connection list
+ * Parameters   : arg -- Additional argument to pass to the callback function
+ * Returns      : none
+*******************************************************************************/
+void espconn_pbuf_delete(espconn_buf **phead, espconn_buf* pdelete);
+
 #endif
 

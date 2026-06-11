@@ -35,22 +35,8 @@
  *
  */
 /*
- *  Copyright (C) 2006-2017, ARM Limited, All Rights Reserved
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  This file is part of mbed TLS (https://tls.mbed.org)
+ *  Copyright The Mbed TLS Contributors
+ *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  *
  */
 
@@ -58,12 +44,12 @@
 #define MBEDTLS_RSA_INTERNAL_H
 
 #if !defined(MBEDTLS_CONFIG_FILE)
-#include "config.h"
+#include "mbedtls/config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#include "bignum.h"
+#include "mbedtls/bignum.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,9 +80,9 @@ extern "C" {
  *                 use the helper function \c mbedtls_rsa_validate_params.
  *
  */
-int mbedtls_rsa_deduce_primes( mbedtls_mpi const *N, mbedtls_mpi const *E,
-                               mbedtls_mpi const *D,
-                               mbedtls_mpi *P, mbedtls_mpi *Q );
+int mbedtls_rsa_deduce_primes(mbedtls_mpi const *N, mbedtls_mpi const *E,
+                              mbedtls_mpi const *D,
+                              mbedtls_mpi *P, mbedtls_mpi *Q);
 
 /**
  * \brief          Compute RSA private exponent from
@@ -119,10 +105,10 @@ int mbedtls_rsa_deduce_primes( mbedtls_mpi const *N, mbedtls_mpi const *E,
  * \note           This function does not check whether P and Q are primes.
  *
  */
-int mbedtls_rsa_deduce_private_exponent( mbedtls_mpi const *P,
-                                         mbedtls_mpi const *Q,
-                                         mbedtls_mpi const *E,
-                                         mbedtls_mpi *D );
+int mbedtls_rsa_deduce_private_exponent(mbedtls_mpi const *P,
+                                        mbedtls_mpi const *Q,
+                                        mbedtls_mpi const *E,
+                                        mbedtls_mpi *D);
 
 
 /**
@@ -145,9 +131,9 @@ int mbedtls_rsa_deduce_private_exponent( mbedtls_mpi const *P,
  *                 prime and whether D is a valid private exponent.
  *
  */
-int mbedtls_rsa_deduce_crt( const mbedtls_mpi *P, const mbedtls_mpi *Q,
-                            const mbedtls_mpi *D, mbedtls_mpi *DP,
-                            mbedtls_mpi *DQ, mbedtls_mpi *QP );
+int mbedtls_rsa_deduce_crt(const mbedtls_mpi *P, const mbedtls_mpi *Q,
+                           const mbedtls_mpi *D, mbedtls_mpi *DP,
+                           mbedtls_mpi *DQ, mbedtls_mpi *QP);
 
 
 /**
@@ -180,11 +166,11 @@ int mbedtls_rsa_deduce_crt( const mbedtls_mpi *P, const mbedtls_mpi *Q,
  *                 to perform specific checks only. E.g., calling it with
  *                 (-,P,-,-,-) and a PRNG amounts to a primality check for P.
  */
-int mbedtls_rsa_validate_params( const mbedtls_mpi *N, const mbedtls_mpi *P,
-                                 const mbedtls_mpi *Q, const mbedtls_mpi *D,
-                                 const mbedtls_mpi *E,
-                                 int (*f_rng)(void *, unsigned char *, size_t),
-                                 void *p_rng );
+int mbedtls_rsa_validate_params(const mbedtls_mpi *N, const mbedtls_mpi *P,
+                                const mbedtls_mpi *Q, const mbedtls_mpi *D,
+                                const mbedtls_mpi *E,
+                                int (*f_rng)(void *, unsigned char *, size_t),
+                                void *p_rng);
 
 /**
  * \brief          Check validity of RSA CRT parameters
@@ -215,9 +201,9 @@ int mbedtls_rsa_validate_params( const mbedtls_mpi *N, const mbedtls_mpi *P,
  *                 to perform specific checks only. E.g., calling it with the
  *                 parameters (P, -, D, DP, -, -) will check DP = D mod P-1.
  */
-int mbedtls_rsa_validate_crt( const mbedtls_mpi *P,  const mbedtls_mpi *Q,
-                              const mbedtls_mpi *D,  const mbedtls_mpi *DP,
-                              const mbedtls_mpi *DQ, const mbedtls_mpi *QP );
+int mbedtls_rsa_validate_crt(const mbedtls_mpi *P,  const mbedtls_mpi *Q,
+                             const mbedtls_mpi *D,  const mbedtls_mpi *DP,
+                             const mbedtls_mpi *DQ, const mbedtls_mpi *QP);
 
 #ifdef __cplusplus
 }

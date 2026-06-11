@@ -94,7 +94,11 @@
 #endif
 
 #ifdef LUA_NUMBER_INTEGRAL
-#error LUA_NUMBER_INTEGRAL is not supported in LUA5.3 builds
+/*
+** Lua 5.3 always supports both integer and float subtypes, so ignore the
+** legacy Lua 5.1 integral-only build flag when it is still configured.
+*/
+#undef LUA_NUMBER_INTEGRAL
 #endif
 
 /*
@@ -397,15 +401,20 @@ static inline lu_int32 fn(const type *o) { \
 
 #elif LUA_INT_TYPE == LUA_INT_LONGLONG	/* }{ long long */
 
-/* use presence of macro LLONG_MAX as proxy for C99 compliance */
-#if defined(LLONG_MAX)		/* { */
-/* use ISO C99 stuff */
+/* use presence of standard or compiler builtin long long macros as proxy */
+#if defined(LLONG_MAX) || defined(__LONG_LONG_MAX__)		/* { */
+/* use ISO C99 stuff where available */
 
 #define LUA_INTEGER		long long
 #define LUA_INTEGER_FRMLEN	"ll"
 
+#ifdef LLONG_MAX
 #define LUA_MAXINTEGER		LLONG_MAX
 #define LUA_MININTEGER		LLONG_MIN
+#else
+#define LUA_MAXINTEGER		__LONG_LONG_MAX__
+#define LUA_MININTEGER		(-__LONG_LONG_MAX__ - 1LL)
+#endif
 
 #elif defined(LUA_USE_WINDOWS) /* }{ */
 /* in Windows, can use specific Windows types */
