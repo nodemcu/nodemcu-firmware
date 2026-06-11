@@ -94,7 +94,11 @@
 #endif
 
 #ifdef LUA_NUMBER_INTEGRAL
-#error LUA_NUMBER_INTEGRAL is not supported in LUA5.3 builds
+/*
+** Lua 5.3 always supports both integer and float subtypes, so ignore the
+** legacy Lua 5.1 integral-only build flag when it is still configured.
+*/
+#undef LUA_NUMBER_INTEGRAL
 #endif
 
 /*

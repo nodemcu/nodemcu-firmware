@@ -36,11 +36,15 @@ endif
 
 LFSSOURCES := $(wildcard $(LUASOURCE)/*.lua)
 
+ifeq ($(LUA),53)
+LUAC_CROSS := ../luac.cross
+else
 BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <$(APP_DIR)/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
 ifeq ($(BUILD_TYPE),0)
 LUAC_CROSS := ../luac.cross
 else
 LUAC_CROSS := ../luac.cross.int
+endif
 endif
 
 #############################################################

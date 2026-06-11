@@ -26,7 +26,7 @@ endif
 #   for a subtree within the makefile rooted therein
 #
 #DEFINES +=
-EXTRA_CCFLAGS += -std=gnu99
+override EXTRA_CCFLAGS += -std=gnu99
 
 #############################################################
 # Recursion Magic - Don't touch this!!
