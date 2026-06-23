@@ -88,7 +88,7 @@ static const struct defaultpt rompt IROM_PTABLE_ATTR USED_ATTR  = {
     { SYSTEM_PARTITION_PHY_DATA,          0x0F000,     PHY_DATA_SIZE},
     { NODEMCU_PARTITION_IROM0TEXT,        0x10000,     0x0000},
     { NODEMCU_PARTITION_LFS,              0x0,         LUA_FLASH_STORE},
-    { NODEMCU_PARTITION_SPIFFS,           0x0,         SPIFFS_MAX_FILESYSTEM_SIZE},
+    { NODEMCU_PARTITION_SPIFFS,           SPIFFS_FIXED_LOCATION, SPIFFS_MAX_FILESYSTEM_SIZE},
     { SYSTEM_PARTITION_SYSTEM_PARAMETER,  0x0,         SYSTEM_PARAMETER_SIZE},
     {0,(uint32_t) &_irom0_text_end,0}
   }
@@ -260,7 +260,7 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
             if (p->size == ~0x0) {         /* Maximum SPIFFS partition */               
                 if (p->addr == 0)
                     p->addr = last;
-                p->size = flash_size - SYSTEM_PARAMETER_SIZE - last;
+                p->size = flash_size - SYSTEM_PARAMETER_SIZE - p->addr;
             } else if (p->size > 0x0) {    /* Explicit SPIFFS size */
                 if (p->addr < last)   // SPIFFS can't overlap the previous region; 
                     p->addr = 0; 
