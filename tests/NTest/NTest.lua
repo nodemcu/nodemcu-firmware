@@ -75,7 +75,11 @@ local function deepeq(a, b)
   -- Primitives and equal pointers
   if a == b then return true end
   -- Only equal tables could have passed previous tests
-  if type(a) ~= 'table' then return notEqual("different "..type(a).."s expected "..a.." vs. "..b) end
+  if type(a) ~= 'table' then
+    return notEqual(
+        "different "..type(a).."s expected "..tostring(a).." vs. "..tostring(b)
+    )
+  end
   -- Compare tables field by field
   for k,v in pairs(a) do
     if b[k] == nil then return notEqual("key "..k.."only contained in left part") end
