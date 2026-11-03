@@ -340,3 +340,140 @@ Concatenate channels per pixel, possibly with different offsets in buffers:
 outbuf:map(function(...) return ... end, inbuf1, inbuf2)
 outbuf:map(function(...) return ... end, inbuf1, 5, 10, inbuf2, 3)
 ```
+
+## pixbuf.buffer:base()
+If this buffer is a view of another buffer, return that other buffer.
+Otherwise return `nil`.
+
+#### Syntax
+`buffer:base()`
+
+#### Parameters
+None
+
+#### Returns
+A buffer instance, or `nil`.
+
+#### Examples
+
+Make a new view of an existing buffer and show that its base is the
+original buffer:
+```Lua
+rawequal(buffer, buffer:slice():base())
+```
+
+## pixbuf.buffer:slice()
+Returns a view of an existing buffer (the "base"). Changes to the base are
+reflected in the slice and vice versa.
+
+Start and stop indices behave the same as for `pixbuf.buffer:sub()`.
+
+A step can be specified, to create a view of every Nth element of the
+base buffer. A step of 2 selects every other element. A step of -1 can be
+used to create a reversed view of a buffer. A step of -2 selects every
+other element, starting from the opposite end.
+
+Operations on a slice address its base buffer's data directly and do not
+involve the base's methods, so it is just as efficient to use a slice as to
+use the base object. It is possible to create a slice of a slice (... of a
+slice, etc) with no overhead beyond the allocation of each slice object's
+header userdata.
+
+A slice holds a reference to its base so that the lifespan of the buffer to
+which it points is at least as long as the lifespan of the slice itself.
+The reference can be retrieved using the `:base()` function.
+
+#### Syntax
+`buffer:slice([start], [stop], [step])`
+
+#### Parameters
+ - `start` the first element to include in the slice. If not supplied, it
+   is assumed to be 1. Negative values can be used.
+ - `stop` the last element to include in the slice. Negative values can be
+   used. If not supplied, it is assumed to be -1.
+ - `step` the distance from one element of the slice to the next. If not
+   supplied, it is assumed to be 1.
+
+#### Returns
+A new buffer object that refers to a subset of the same data as the
+original.
+
+#### Examples
+
+Make a new view of an existing buffer and show that its base is the
+original buffer:
+```Lua
+rawequal(buffer, buffer:slice():base())
+```
+
+Make a new view of the second ten elements of an existing buffer:
+```Lua
+buffer:slice(1, 20):slice(10)
+```
+
+Make a reversed view of every third element of an existing buffer:
+```Lua
+buffer:slice(buffer:size(), 1, -3)
+```
+
+## pixbuf.buffer:channel()
+Returns a view of a single channel of the buffer. As with `:slice()`,
+changes to the view are reflected in the buffer and vice versa.
+
+Channels can be specified by name or by index. Possible names are 'g',
+'r', 'b' and 'w' and possible indices are 1 to 4. It is an error
+to refer to a name or index that the buffer does not have.
+
+Since a channel view is itself a kind of buffer, it is possible to
+call `channel()` on it too. In that case names are not permitted and
+the only valid channel index is 1.
+
+#### Returns
+A new buffer object that refers to a single channel of the original.
+
+#### Examples
+
+Turn off the red channel of a buffer:
+```Lua
+buffer:channel'r':fill(0)
+```
+
+Rotate a buffer's green channel:
+```Lua
+buffer:channel(1):shift(1, pixbuf.SHIFT_CIRCULAR)
+```
+
+Set every other pixel's blue value:
+```Lua
+buffer:channel'b':slice(1, -1, 2):fill(128)
+```
+
+## pixbuf.buffer:stride()
+Returns the stride (in bytes!) of a buffer.
+
+If the buffer object has no base, then it manages its own data and the
+stride will match its `:channels()`.
+
+If the buffer object has a base, then it is a view of another buffer's
+data. In this case the stride may differ from the number of `:channels()`.
+
+#### Syntax
+`buffer:stride()`
+
+#### Parameters
+None
+
+#### Returns
+The byte stride of this buffer.
+
+#### Examples
+
+Measure the stride of an existing buffer:
+```Lua
+buffer:stride()
+```
+
+Measure the stride of a new view of part of an existing buffer:
+```Lua
+buffer:slice(4, 8):stride()
+```
