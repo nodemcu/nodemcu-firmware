@@ -516,6 +516,15 @@ extern sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 l
 extern sint8 espconn_secure_sent(struct espconn *espconn, uint8 *psent, uint16 length);
 
 /******************************************************************************
+ * FunctionName : espconn_secure_set_hostname
+ * Description  : set hostname for SNI (Server Name Indication) support
+ * Parameters   : hostname -- hostname string to send during TLS handshake
+ * Returns      : true on success, false on memory allocation failure
+*******************************************************************************/
+
+extern bool espconn_secure_set_hostname(const char* hostname);
+
+/******************************************************************************
  * FunctionName : espconn_secure_ca_enable
  * Description  : enable the certificate authenticate and set the flash sector
  *                               as client or server

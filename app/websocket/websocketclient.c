@@ -712,6 +712,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
 
   if (ws->isSecure) {
     NODE_DBG("secure connecting \n");
+    espconn_secure_set_hostname( hostname );
     espconn_secure_connect(conn);
   }
   else {

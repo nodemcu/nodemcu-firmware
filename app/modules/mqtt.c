@@ -989,6 +989,7 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
   if(mud->conf.flags.secure)
   {
     NODE_DBG("mqtt_socket_do_connect using espconn_secure\n");
+    
     espconn_status = espconn_secure_connect(&mud->pesp_conn);
   }
   else
@@ -1020,6 +1021,13 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   NODE_DBG("socket_dns_found success: ");
   NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
   NODE_DBG("\n");
+  #ifdef CLIENT_SSL_ENABLE
+  if(mud->conf.flags.secure)
+  {
+    NODE_DBG("socket_dns_found configuring hostname for SNI\n");
+    espconn_secure_set_hostname( name );
+  }
+  #endif
 
   if(mqtt_socket_do_connect(mud) != ESPCONN_OK) {
       NODE_DBG("socket_dns_found, got DNS but connect failed\n");

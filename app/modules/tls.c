@@ -174,6 +174,7 @@ static void tls_socket_dns_cb( const char* domain, const ip_addr_t *ip_addr, tls
     lua_gc(L, LUA_GCRESTART, 0);
   } else {
     os_memcpy(ud->pesp_conn.proto.tcp->remote_ip, &addr.addr, 4);
+		espconn_secure_set_hostname( domain );
     espconn_secure_connect(&ud->pesp_conn);
   }
 }
@@ -202,6 +203,7 @@ static int tls_socket_connect( lua_State *L ) {
   ud->pesp_conn.type = ESPCONN_TCP;
   ud->pesp_conn.state = ESPCONN_NONE;
   ud->pesp_conn.proto.tcp->remote_port = port;
+  
   espconn_regist_connectcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_onconnect);
   espconn_regist_disconcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_ondisconnect);
   espconn_regist_reconcb(&ud->pesp_conn, (espconn_reconnect_callback)tls_socket_onreconnect);

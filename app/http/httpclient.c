@@ -533,6 +533,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 #ifdef CLIENT_SSL_ENABLE
 		if ( req->secure )
 		{
+			espconn_secure_set_hostname( hostname );
 			espconn_secure_connect( conn );
 		}
 		else
