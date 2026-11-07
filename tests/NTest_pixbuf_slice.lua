@@ -9,12 +9,10 @@
 -- (Note that this seems to exhaust resources if given more than
 -- one element, perhaps because the number of test cases is already
 -- fairly large without multiplying them.)
-N = ...
+local N, SliceSteps = ...
 N = (N or require "NTest")("pixbuf")
 local pixbuf = require"pixbuf"
 SliceSteps = SliceSteps or {2}
-
-if unpack == nil then unpack = table.unpack end
 
 local base_buffers = {}  -- Set in `wrapper()`
 local current_slice_step = 0  -- Set in `wrapper()`
@@ -29,7 +27,7 @@ local check_pattern = '()[^' .. check_byte .. ']'
 -- a base pixbuf of length >= 6 and then return a view into that, with step -2.
 -- Since the properties tested by `_NTest_pixbuf_lib.lua` should hold for all
 -- pixbufs, this is expected to be invisible to those tests.
-function NewBuffer(npix, nchan)
+local function NewBuffer(npix, nchan)
   local step = current_slice_step
   local u_step = math.abs(step)
   local padding = u_step + 1
@@ -104,4 +102,4 @@ N.test = function(name, f)
   end
 end
 
-dofile"_NTest_pixbuf_lib.lua"
+require("_NTest_pixbuf_lib")(N, NewBuffer)

@@ -5,8 +5,7 @@
 -- `NTest_pixbuf_slice.lua` runs them against slices of pixbufs.
 -- Each of them sets a global function `NewBuffer(npix, nchan)` which these
 -- tests use to create buffers for testing.
-
-local pixbuf = require"pixbuf"
+return function(N, NewBuffer)
 
 local function initBuffer(buf, ...)
   for i,v in ipairs({...}) do
@@ -257,17 +256,17 @@ N.test('slice reference', function()
   refs[base] = base
 
   local function empty(t)
-    for k, _ in pairs(t) do return false end
+    for k, _ in pairs(t) do return false end  -- luacheck: ignore '* at most once'
     return true
   end
 
-  base = nil
+  base = nil  -- luacheck: no unused
   -- Now the only strong reference to `base` is the one that `view` holds
 
   collectgarbage()
   ok(not empty(refs), "keeps base pixbuf alive")
 
-  view = nil
+  view = nil  -- luacheck: no unused
   collectgarbage()  -- clean up `view` and run its finalizer
   collectgarbage()  -- clean up `base`
   -- No strong references to `base` remain
@@ -334,7 +333,7 @@ N.test('slice degenerate view', function()
     {-1, 0},
     {0, -1},
   }) do
-    start, stop = unpack(bounds)
+    local start, stop = unpack(bounds)
     ok(base:sub(start, stop) == base:slice(start, stop),
        ('matches sub(%d, %d)'):format(start, stop))
   end
@@ -564,3 +563,5 @@ N.test('channel slicing', function()
     buffer:channel(1):shift(1, pixbuf.SHIFT_CIRCULAR)
     ok(eq(buffer:dump(), "MbcdAfghEjklInop"))
 end)
+
+end
