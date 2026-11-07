@@ -2,15 +2,15 @@
 -- views of other pixbufs.
 --
 -- (Views are tested in `NTest_pixbuf_slice.lua`.)
-N = ...
+local N = ...
 N = (N or require "NTest")("pixbuf")
 local pixbuf = require"pixbuf"
 
 -- `_NTest_pixbuf_lib` uses this to know how to create a buffer for testing.
 -- For testing base pixbufs, `newBuffer` can be called directly.
-NewBuffer = pixbuf.newBuffer
+local NewBuffer = pixbuf.newBuffer
 
-dofile"_NTest_pixbuf_lib.lua"
+require("_NTest_pixbuf_lib")(N, NewBuffer)
 
 N.test('initialize a buffer', function()
     local buffer = pixbuf.newBuffer(9, 3)
