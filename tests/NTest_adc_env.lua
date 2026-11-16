@@ -4,21 +4,23 @@
 local N = ...
 N = (N or require "NTest")("adc-env")
 
--- TODO: Preflight test that we are in the correct environment with an I2C
--- expander in the right place with the right connections.
+local NTE = require "NTestEnv"
 
 -- TODO: Use the mcp23017 module in the main tree rather than hand-coding
 -- the commands
 
 N.test('setup', function()
-  -- Configure the ADC
+  -- Ensure that we're on DUT 0
+  assert(NTE.getFeat('DUT') == 0, "Not on DUT 0")
+
+  -- Configure the ADC (this implicitly checks for having the ADC module)
   if adc.force_init_mode(adc.INIT_ADC)
   then
     node.restart()
     error "Must reboot to get to ADC mode"
   end
 
-  -- Configure the I2C bus
+  -- Configure the I2C bus (again, implicitly testing...)
   i2c.setup(0, 2, 1, i2c.FAST)
 
   -- Set the IO expander port B to channels 0 and 1 as outputs
