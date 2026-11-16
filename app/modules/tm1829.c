@@ -72,7 +72,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   const uint8_t *pixels;
   size_t length;
 
-  switch(lua_type(L, 3)) {
+  switch(lua_type(L, 2)) {
   case LUA_TSTRING: {
     pixels = luaL_checklstring(L, 2, &length);
     break;
@@ -81,6 +81,8 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   case LUA_TUSERDATA: {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 2);
     luaL_argcheck(L, pixbuf_channels(buffer) == 3, 2, "Bad pixbuf format");
+    // ws2812.c shows how support for slices could be added if desired.
+    luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 2, "Pixbuf slice not (yet?) supported");
     pixels = buffer->values;
     length = 3 * buffer->npix;
     break;

@@ -122,6 +122,8 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
     case LUA_TUSERDATA: {
       pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
       luaL_argcheck(L, buffer->nchan == 3, 1, "Pixbuf not 3-channel");
+      // ws2812.c shows how support for slices could be added if desired.
+      luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 1, "Pixbuf slice not (yet?) supported");
       values = buffer->values;
       length = pixbuf_size(buffer);
       break;
