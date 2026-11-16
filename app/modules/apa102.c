@@ -95,6 +95,8 @@ static int apa102_write(lua_State* L) {
   case LUA_TUSERDATA: {
     pixbuf *buffer = pixbuf_from_lua_arg(L, 3);
     luaL_argcheck(L, buffer->nchan == 4, 3, "Pixbuf not 4-channel");
+    // ws2812.c shows how support for slices could be added if desired.
+    luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 3, "Pixbuf slice not (yet?) supported");
     buf = (const char *)buffer->values;
     nbr_frames = buffer->npix;
     break;

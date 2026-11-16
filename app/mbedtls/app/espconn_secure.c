@@ -115,6 +115,11 @@ espconn_secure_disconnect(struct espconn *espconn)
 	if (espconn == NULL)
 		return ESPCONN_ARG;
 
+	if (ssl_client_options.hostname) {
+    	os_free(ssl_client_options.hostname);
+    	ssl_client_options.hostname = NULL;
+	}
+	
 	value = espconn_find_connection(espconn, &pnode);
 	if (value){
 		if (pnode->pespconn->state == ESPCONN_CLOSE)
@@ -169,6 +174,33 @@ espconn_secure_sent(struct espconn *espconn, uint8 *psent, uint16 length)
 *******************************************************************************/
 
 sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 length) __attribute__((alias("espconn_secure_sent")));
+
+/******************************************************************************
+ * FunctionName : espconn_secure_set_hostname
+ * Description  : set hostname for SNI (Server Name Indication) support
+ * Parameters   : hostname -- hostname string to send during TLS handshake
+ * Returns      : true on success, false on memory allocation failure
+*******************************************************************************/
+bool ICACHE_FLASH_ATTR 
+espconn_secure_set_hostname(const char* hostname)
+{
+
+    if (ssl_client_options.hostname) {
+        os_free(ssl_client_options.hostname);
+        ssl_client_options.hostname = NULL;
+    }
+    
+    if (hostname) {
+        ssl_client_options.hostname = (char*)os_malloc(strlen(hostname) + 1);
+        if (ssl_client_options.hostname) {
+            strcpy(ssl_client_options.hostname, hostname);
+            return true;
+        }
+        return false;
+    }
+    
+    return true;
+}
 
 /******************************************************************************
  * FunctionName : espconn_secure_ca_enable

@@ -161,6 +161,7 @@ static int ws2812_effects_init(lua_State *L) {
     "soon; please see https://github.com/nodemcu/nodemcu-firmware/issues/3122");
 
   pixbuf * buffer = pixbuf_from_lua_arg(L, 1);
+  luaL_argcheck(L, buffer->base_ref == LUA_REFNIL, 1, "Pixbuf slice not supported");
 
   // get rid of old state
   if (state != NULL) {

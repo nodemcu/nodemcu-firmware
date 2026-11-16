@@ -43,16 +43,6 @@ most common features supported.  Specifically, it provides:
 
 !!! warning
 
-	The TLS glue provided by Espressif provides no interface to TLS SNI.
-	As such, NodeMCU TLS should not be expected to function with endpoints
-	requiring the use of SNI, which is a growing fraction of the Internet
-	and includes, for example, Cloudflare sites using their "universal SSL"
-	service and other, similar "virtual" TLS servers.  TLS servers to which
-	you wish NodeMCU to connect should have their own, dedicated IP/port
-	pair.
-
-!!! warning
-
 	The TLS handshake is very heap intensive, requiring between 25 and 30
 	**kilobytes** of heap, even with our reduced buffer sizes.  Some, but
 	not all, of that is made available again once the handshake has

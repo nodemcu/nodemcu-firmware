@@ -47,6 +47,7 @@ nav:
       - Lua Compact Debug (LCD): 'lcd.md'
       - Filesystem on SD card: 'sdcard.md'
       - Internal filesystem: 'spiffs.md'
+      - Strided Slices of `pixbuf.buffer` Arrays: 'pixbuf-plus.md'
   - Lua Modules:
       - 'Lua modules directory': 'lua-modules/README.md'
       - 'bh1750': 'lua-modules/bh1750.md'

@@ -39,7 +39,8 @@ Initialize the effects library with the provided buffer for the connected LED st
 `ws2812_effects.init(buffer)`
 
 #### Parameters
-- `buffer` is a `ws2812.buffer` for the connected strip.
+- `buffer` is a `pixbuf.buffer` for the connected strip. It must be a basic `pixbuf`
+  and not a slice of an underlying buffer.
 
 #### Returns
 `nil`

@@ -25,3 +25,10 @@ N.test('set_brightness', function()
   fail(function() ws2812_effects.set_brightness(-1) end, "should be")
   fail(function() ws2812_effects.set_brightness(256) end, "should be")
 end)
+
+N.test('slice unsupported', function()
+  buffer = ws2812.newBuffer(9, 3)
+  ws2812_effects.init(buffer)
+
+  fail(function() ws2812_effects.init(buffer:slice(2, 7)) end, "slice not supported")
+end)
