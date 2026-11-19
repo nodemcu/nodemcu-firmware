@@ -82,5 +82,6 @@ nav:
       - 'u8g2': 'modules/u8g2.md'
       - 'uart': 'modules/uart.md'
       - 'ucg': 'modules/ucg.md'
+      - 'websocket': 'modules/websocket.md'
       - 'wifi': 'modules/wifi.md'
       - 'ws2812': 'modules/ws2812.md'

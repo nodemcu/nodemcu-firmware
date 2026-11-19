@@ -6,3 +6,4 @@ dependencies:
   # Component dependencies
   espressif/libsodium: "~1.0.20"
   espressif/mdns: "^1.4.2"
+  espressif/esp_websocket_client: "^1.5.0"
