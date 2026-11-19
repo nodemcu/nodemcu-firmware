@@ -49,6 +49,7 @@ set(module_srcs
   "u8g2.c"
   "uart.c"
   "ucg.c"
+  "websocket.c"
   "ws2812.c"
 )
 

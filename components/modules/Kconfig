@@ -335,6 +335,22 @@ menu "NodeMCU modules"
         help
             Includes the WiFi module (recommended).
 
+    config NODEMCU_CMODULE_WEBSOCKET
+        bool "Websocket client module"
+        default "n"
+        select WS_TRANSPORT
+        help
+            Includes the websocket client module (ESP8266-compatible API).
+
+    config NODEMCU_CMODULE_WEBSOCKET_MAX_MSG
+        int "Max. size of a received websocket message (bytes)"
+        depends on NODEMCU_CMODULE_WEBSOCKET
+        range 256 65536
+        default 8192
+        help
+            Larger incoming messages are dropped. Each active client
+            allocates up to this much RAM while receiving a message.
+
     config NODEMCU_CMODULE_WS2812
         bool "WS2812 module"
         default "n"
