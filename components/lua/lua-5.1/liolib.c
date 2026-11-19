@@ -117,7 +117,7 @@ static int aux_close (lua_State *L) {
 
 static int io_close (lua_State *L) {
   if (lua_isnone(L, 1))
-    lua_rawgeti(L, LUA_ENVIRONINDEX, IO_OUTPUT);
+    LUA_IO_GETFIELD(IO_OUTPUT);
   tofile(L);  /* make sure argument is a file */
   return aux_close(L);
 }
@@ -153,7 +153,7 @@ static int io_open (lua_State *L) {
 
 static FILE *getiofile (lua_State *L, int findex) {
   FILE *f;
-  lua_rawgeti(L, LUA_ENVIRONINDEX, findex);
+  LUA_IO_GETFIELD(findex);
   f = *(FILE **)lua_touserdata(L, -1);
   if (f == NULL)
     luaL_error(L, "standard %s file is closed", fnames[findex - 1]);
@@ -174,10 +174,10 @@ static int g_iofile (lua_State *L, int f, const char *mode) {
       tofile(L);  /* check that it's a valid file handle */
       lua_pushvalue(L, 1);
     }
-    lua_rawseti(L, LUA_ENVIRONINDEX, f);
+    LUA_IO_SETFIELD(f);
   }
   /* return current value */
-  lua_rawgeti(L, LUA_ENVIRONINDEX, f);
+  LUA_IO_GETFIELD(f);
   return 1;
 }
 
@@ -212,7 +212,7 @@ static int f_lines (lua_State *L) {
 static int io_lines (lua_State *L) {
   if (lua_isnoneornil(L, 1)) {  /* no arguments? */
     /* will iterate over default input */
-    lua_rawgeti(L, LUA_ENVIRONINDEX, IO_INPUT);
+    LUA_IO_GETFIELD(IO_INPUT);
     return f_lines(L);
   }
   else {
