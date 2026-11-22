@@ -475,7 +475,7 @@ static void createstdfile (lua_State *L, FILE *f, int k, const char *fname) {
   *newfile(L) = f;
 
   lua_pushvalue(L, -1);
-  lua_rawseti(L, LUA_REGISTRYINDEX, (int)(liolib_keys[k]));
+  LUA_IO_SETFIELD(k);
   lua_setfield(L, -2, fname);
 }
 
