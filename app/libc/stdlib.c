@@ -10,6 +10,15 @@
 #define TRUE  1
 #define FALSE 0
 #endif
+
+#ifdef WIN32
+// locale/ctype support not enabled for windows
+__attribute__((weak))
+const char* __locale_ctype_ptr(void) {
+    return NULL; 
+}
+#endif
+
 double powersOf10[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =   /* Table giving binary powers of 10.  Entry */
 {
     10.,            /* is 10^2^i.  Used to convert decimal */
