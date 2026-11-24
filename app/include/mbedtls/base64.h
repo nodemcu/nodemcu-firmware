@@ -4,36 +4,24 @@
  * \brief RFC 1521 base64 encoding/decoding
  */
 /*
- *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  This file is part of mbed TLS (https://tls.mbed.org)
+ *  Copyright The Mbed TLS Contributors
+ *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 #ifndef MBEDTLS_BASE64_H
 #define MBEDTLS_BASE64_H
 
 #if !defined(MBEDTLS_CONFIG_FILE)
-#include "config.h"
+#include "mbedtls/config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
 
 #include <stddef.h>
 
-#define MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL               -0x002A  /**< Output buffer too small. */
-#define MBEDTLS_ERR_BASE64_INVALID_CHARACTER              -0x002C  /**< Invalid character in input. */
+/** Output buffer too small. */
+#define MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL               -0x002A
+/** Invalid character in input. */
+#define MBEDTLS_ERR_BASE64_INVALID_CHARACTER              -0x002C
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,8 +46,8 @@ extern "C" {
  * \note           Call this function with dlen = 0 to obtain the
  *                 required buffer size in *olen
  */
-int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen,
-                   const unsigned char *src, size_t slen );
+int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
+                          const unsigned char *src, size_t slen);
 
 /**
  * \brief          Decode a base64-formatted buffer
@@ -78,8 +66,8 @@ int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen,
  * \note           Call this function with *dst = NULL or dlen = 0 to obtain
  *                 the required buffer size in *olen
  */
-int mbedtls_base64_decode( unsigned char *dst, size_t dlen, size_t *olen,
-                   const unsigned char *src, size_t slen );
+int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
+                          const unsigned char *src, size_t slen);
 
 #if defined(MBEDTLS_SELF_TEST)
 /**
@@ -87,7 +75,7 @@ int mbedtls_base64_decode( unsigned char *dst, size_t dlen, size_t *olen,
  *
  * \return         0 if successful, or 1 if the test failed
  */
-int mbedtls_base64_self_test( int verbose );
+int mbedtls_base64_self_test(int verbose);
 
 #endif /* MBEDTLS_SELF_TEST */
 

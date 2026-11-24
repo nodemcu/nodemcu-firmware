@@ -88,6 +88,7 @@
 #define MBEDTLS_ECP_DP_BP384R1_ENABLED
 #undef  MBEDTLS_ECP_DP_BP512R1_ENABLED
 #undef MBEDTLS_ECP_DP_CURVE25519_ENABLED	/* Not exported on the wire yet :( */
+#undef MBEDTLS_ECP_DP_CURVE448_ENABLED
 
 #define MBEDTLS_ECP_NIST_OPTIM
 
@@ -119,6 +120,26 @@
 #define MBEDTLS_NO_PLATFORM_ENTROPY
 #define MBEDTLS_ENTROPY_FORCE_SHA256
 #undef MBEDTLS_ENTROPY_NV_SEED
+
+// PSA crypto is not needed for our use cases and pulls in a lot of code
+// (psa_crypto.c, psa_crypto_*.c, etc.). Keep it off until we have a use for it.
+#undef MBEDTLS_PSA_CRYPTO_C
+#undef MBEDTLS_PSA_CRYPTO_CONFIG
+#undef MBEDTLS_PSA_CRYPTO_SE_C
+#undef MBEDTLS_PSA_CRYPTO_STORAGE_C
+#undef MBEDTLS_PSA_ITS_FILE_C
+#undef MBEDTLS_PSA_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_ECDHE_PSK_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_DHE_PSK_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_RSA_PSK_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_RSA_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_DHE_RSA_ENABLED
+#undef MBEDTLS_PSA_KEY_EXCHANGE_ECDHE_RSA_ENABLED
+// TLS 1.3 is not viable on ESP8266 (heap / flash); keep MPS out too.
+#undef MBEDTLS_SSL_PROTO_TLS1_3
+#undef MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_ENABLED
+#undef MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED
+#undef MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_EPHEMERAL_ENABLED
 
 #undef MBEDTLS_MEMORY_DEBUG
 #undef MBEDTLS_MEMORY_BACKTRACE
@@ -308,6 +329,17 @@ extern void mbedtls_free_wrap(void *p);
 //   due to non-constant initializer element in app/mbedtls/library/ssl_tls.c:150
 // the buffer size is hardcoded here and value is taken from SSL_BUFFER_SIZE (user_config.h)
 #define MBEDTLS_SSL_MAX_CONTENT_LEN             SSL_BUFFER_SIZE /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
+
+// Asymmetric buffers: large IN to fit big server cert records, small OUT since
+// the client only sends small handshake messages. The defaults in ssl.h use
+// MAX_CONTENT_LEN for both which costs 32 KB of heap on the 16 KB setting and
+// OOMs during the handshake. See PR #3685 follow-up discussion.
+#ifndef MBEDTLS_SSL_IN_CONTENT_LEN
+#define MBEDTLS_SSL_IN_CONTENT_LEN              SSL_BUFFER_SIZE
+#endif
+#ifndef MBEDTLS_SSL_OUT_CONTENT_LEN
+#define MBEDTLS_SSL_OUT_CONTENT_LEN             4096
+#endif
 
 //#define MBEDTLS_SSL_DEFAULT_TICKET_LIFETIME     86400 /**< Lifetime of session tickets (if enabled) */
 //#define MBEDTLS_PSK_MAX_LEN               32 /**< Max size of TLS pre-shared keys, in bytes (default 256 bits) */

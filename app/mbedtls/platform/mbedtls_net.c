@@ -41,6 +41,7 @@
 #include <time.h>
 //
 #include <stdint.h>
+#include <fcntl.h>
 
 /*
  * Prepare for using the sockets interface

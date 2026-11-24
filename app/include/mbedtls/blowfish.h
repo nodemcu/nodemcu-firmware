@@ -4,28 +4,14 @@
  * \brief Blowfish block cipher
  */
 /*
- *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  This file is part of mbed TLS (https://tls.mbed.org)
+ *  Copyright The Mbed TLS Contributors
+ *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 #ifndef MBEDTLS_BLOWFISH_H
 #define MBEDTLS_BLOWFISH_H
 
 #if !defined(MBEDTLS_CONFIG_FILE)
-#include "config.h"
+#include "mbedtls/config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
@@ -33,7 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "platform_util.h"
+#include "mbedtls/platform_util.h"
 
 #define MBEDTLS_BLOWFISH_ENCRYPT     1
 #define MBEDTLS_BLOWFISH_DECRYPT     0
@@ -43,15 +29,18 @@
 #define MBEDTLS_BLOWFISH_BLOCKSIZE   8          /* Blowfish uses 64 bit blocks */
 
 #if !defined(MBEDTLS_DEPRECATED_REMOVED)
-#define MBEDTLS_ERR_BLOWFISH_INVALID_KEY_LENGTH   MBEDTLS_DEPRECATED_NUMERIC_CONSTANT( -0x0016 )
+#define MBEDTLS_ERR_BLOWFISH_INVALID_KEY_LENGTH   MBEDTLS_DEPRECATED_NUMERIC_CONSTANT(-0x0016)
 #endif /* !MBEDTLS_DEPRECATED_REMOVED */
-#define MBEDTLS_ERR_BLOWFISH_BAD_INPUT_DATA -0x0016 /**< Bad input data. */
+/** Bad input data. */
+#define MBEDTLS_ERR_BLOWFISH_BAD_INPUT_DATA -0x0016
 
-#define MBEDTLS_ERR_BLOWFISH_INVALID_INPUT_LENGTH -0x0018 /**< Invalid data input length. */
+/** Invalid data input length. */
+#define MBEDTLS_ERR_BLOWFISH_INVALID_INPUT_LENGTH -0x0018
 
 /* MBEDTLS_ERR_BLOWFISH_HW_ACCEL_FAILED is deprecated and should not be used.
  */
-#define MBEDTLS_ERR_BLOWFISH_HW_ACCEL_FAILED                   -0x0017  /**< Blowfish hardware accelerator failed. */
+/** Blowfish hardware accelerator failed. */
+#define MBEDTLS_ERR_BLOWFISH_HW_ACCEL_FAILED                   -0x0017
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,8 +53,7 @@ extern "C" {
 /**
  * \brief          Blowfish context structure
  */
-typedef struct mbedtls_blowfish_context
-{
+typedef struct mbedtls_blowfish_context {
     uint32_t P[MBEDTLS_BLOWFISH_ROUNDS + 2];    /*!<  Blowfish round keys    */
     uint32_t S[4][256];                 /*!<  key dependent S-boxes  */
 }
@@ -81,7 +69,7 @@ mbedtls_blowfish_context;
  * \param ctx      The Blowfish context to be initialized.
  *                 This must not be \c NULL.
  */
-void mbedtls_blowfish_init( mbedtls_blowfish_context *ctx );
+void mbedtls_blowfish_init(mbedtls_blowfish_context *ctx);
 
 /**
  * \brief          Clear a Blowfish context.
@@ -91,7 +79,7 @@ void mbedtls_blowfish_init( mbedtls_blowfish_context *ctx );
  *                 returns immediately. If it is not \c NULL, it must
  *                 point to an initialized Blowfish context.
  */
-void mbedtls_blowfish_free( mbedtls_blowfish_context *ctx );
+void mbedtls_blowfish_free(mbedtls_blowfish_context *ctx);
 
 /**
  * \brief          Perform a Blowfish key schedule operation.
@@ -105,8 +93,8 @@ void mbedtls_blowfish_free( mbedtls_blowfish_context *ctx );
  * \return         \c 0 if successful.
  * \return         A negative error code on failure.
  */
-int mbedtls_blowfish_setkey( mbedtls_blowfish_context *ctx, const unsigned char *key,
-                     unsigned int keybits );
+int mbedtls_blowfish_setkey(mbedtls_blowfish_context *ctx, const unsigned char *key,
+                            unsigned int keybits);
 
 /**
  * \brief          Perform a Blowfish-ECB block encryption/decryption operation.
@@ -124,10 +112,10 @@ int mbedtls_blowfish_setkey( mbedtls_blowfish_context *ctx, const unsigned char 
  * \return         \c 0 if successful.
  * \return         A negative error code on failure.
  */
-int mbedtls_blowfish_crypt_ecb( mbedtls_blowfish_context *ctx,
-                        int mode,
-                        const unsigned char input[MBEDTLS_BLOWFISH_BLOCKSIZE],
-                        unsigned char output[MBEDTLS_BLOWFISH_BLOCKSIZE] );
+int mbedtls_blowfish_crypt_ecb(mbedtls_blowfish_context *ctx,
+                               int mode,
+                               const unsigned char input[MBEDTLS_BLOWFISH_BLOCKSIZE],
+                               unsigned char output[MBEDTLS_BLOWFISH_BLOCKSIZE]);
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
 /**
@@ -158,12 +146,12 @@ int mbedtls_blowfish_crypt_ecb( mbedtls_blowfish_context *ctx,
  * \return         \c 0 if successful.
  * \return         A negative error code on failure.
  */
-int mbedtls_blowfish_crypt_cbc( mbedtls_blowfish_context *ctx,
-                        int mode,
-                        size_t length,
-                        unsigned char iv[MBEDTLS_BLOWFISH_BLOCKSIZE],
-                        const unsigned char *input,
-                        unsigned char *output );
+int mbedtls_blowfish_crypt_cbc(mbedtls_blowfish_context *ctx,
+                               int mode,
+                               size_t length,
+                               unsigned char iv[MBEDTLS_BLOWFISH_BLOCKSIZE],
+                               const unsigned char *input,
+                               unsigned char *output);
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
@@ -184,7 +172,7 @@ int mbedtls_blowfish_crypt_cbc( mbedtls_blowfish_context *ctx,
  *                 #MBEDTLS_BLOWFISH_ENCRYPT for encryption, or
  *                 #MBEDTLS_BLOWFISH_DECRYPT for decryption.
  * \param length   The length of the input data in Bytes.
- * \param iv_off   The offset in the initialiation vector.
+ * \param iv_off   The offset in the initialization vector.
  *                 The value pointed to must be smaller than \c 8 Bytes.
  *                 It is updated by this function to support the aforementioned
  *                 streaming usage.
@@ -198,13 +186,13 @@ int mbedtls_blowfish_crypt_cbc( mbedtls_blowfish_context *ctx,
  * \return         \c 0 if successful.
  * \return         A negative error code on failure.
  */
-int mbedtls_blowfish_crypt_cfb64( mbedtls_blowfish_context *ctx,
-                          int mode,
-                          size_t length,
-                          size_t *iv_off,
-                          unsigned char iv[MBEDTLS_BLOWFISH_BLOCKSIZE],
-                          const unsigned char *input,
-                          unsigned char *output );
+int mbedtls_blowfish_crypt_cfb64(mbedtls_blowfish_context *ctx,
+                                 int mode,
+                                 size_t length,
+                                 size_t *iv_off,
+                                 unsigned char iv[MBEDTLS_BLOWFISH_BLOCKSIZE],
+                                 const unsigned char *input,
+                                 unsigned char *output);
 #endif /*MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
@@ -245,7 +233,7 @@ int mbedtls_blowfish_crypt_cfb64( mbedtls_blowfish_context *ctx,
  *             The recommended way to ensure uniqueness is to use a message
  *             counter.
  *
- *             Note that for both stategies, sizes are measured in blocks and
+ *             Note that for both strategies, sizes are measured in blocks and
  *             that a Blowfish block is 8 bytes.
  *
  * \warning    Upon return, \p stream_block contains sensitive data. Its
@@ -271,13 +259,13 @@ int mbedtls_blowfish_crypt_cfb64( mbedtls_blowfish_context *ctx,
  * \return              \c 0 if successful.
  * \return              A negative error code on failure.
  */
-int mbedtls_blowfish_crypt_ctr( mbedtls_blowfish_context *ctx,
-                        size_t length,
-                        size_t *nc_off,
-                        unsigned char nonce_counter[MBEDTLS_BLOWFISH_BLOCKSIZE],
-                        unsigned char stream_block[MBEDTLS_BLOWFISH_BLOCKSIZE],
-                        const unsigned char *input,
-                        unsigned char *output );
+int mbedtls_blowfish_crypt_ctr(mbedtls_blowfish_context *ctx,
+                               size_t length,
+                               size_t *nc_off,
+                               unsigned char nonce_counter[MBEDTLS_BLOWFISH_BLOCKSIZE],
+                               unsigned char stream_block[MBEDTLS_BLOWFISH_BLOCKSIZE],
+                               const unsigned char *input,
+                               unsigned char *output);
 #endif /* MBEDTLS_CIPHER_MODE_CTR */
 
 #ifdef __cplusplus

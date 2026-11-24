@@ -65,6 +65,12 @@ ifndef BAUDRATE
   BAUDRATE=115200
 endif
 
+# Lua 5.3 has native integer and float number subtypes, so the legacy
+# Lua 5.1 integral build flag must not affect 5.3 builds.
+ifeq ("$(LUA)","53")
+override EXTRA_CCFLAGS := $(filter-out -DLUA_NUMBER_INTEGRAL,$(EXTRA_CCFLAGS))
+endif
+
 #############################################################
 # Select compile
 #
@@ -417,7 +423,7 @@ endif
 .PHONY: buildinfo
 
 buildinfo:
-	tools/update_buildinfo.sh
+	LUA=$(if $(LUA),$(LUA),51) tools/update_buildinfo.sh
 
 ifdef TARGET
 $(OBJODIR)/%.o: %.c

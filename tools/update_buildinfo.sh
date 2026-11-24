@@ -10,6 +10,26 @@ BUILD_DATE="$(date "+%Y-%m-%d %H:%M")"
 
 MODULES=$(awk '/^[ \t]*#define LUA_USE_MODULES/{modules=modules sep tolower(substr($2,17));sep=","}END{if(length(modules)==0)modules="-";print modules}' $USER_MODULES_H | tr -d '\r')
 
+if [ "${LUA:-51}" = "53" ]; then
+BUILD_TYPE_BLOCK='
+#ifdef LUA_NUMBER_64BITS
+#define BUILDINFO_BUILD_TYPE "double"
+#else
+#define BUILDINFO_BUILD_TYPE "float"
+#endif'
+else
+BUILD_TYPE_BLOCK='
+#ifdef LUA_NUMBER_INTEGRAL
+#define BUILDINFO_BUILD_TYPE "integer"
+#else
+#ifdef LUA_NUMBER_64BITS
+#define BUILDINFO_BUILD_TYPE "double"
+#else
+#define BUILDINFO_BUILD_TYPE "float"
+#endif
+#endif'
+fi
+
 # create temp buildinfo
 TEMPFILE=/tmp/buildinfo.h
 cat > $TEMPFILE << EndOfMessage
@@ -35,15 +55,7 @@ cat > $TEMPFILE << EndOfMessage
 #define BUILDINFO_SSL_STR "false"
 #endif
 
-#ifdef LUA_NUMBER_INTEGRAL
-#define BUILDINFO_BUILD_TYPE "integer"
-#else
-#ifdef LUA_NUMBER_64BITS
-#define BUILDINFO_BUILD_TYPE "double"
-#else
-#define BUILDINFO_BUILD_TYPE "float"
-#endif
-#endif
+$BUILD_TYPE_BLOCK
 
 #define USER_PROLOG "$USER_PROLOG"
 #define BUILDINFO_BRANCH "$BRANCH"
