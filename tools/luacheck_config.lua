@@ -619,6 +619,12 @@ stds.nodemcu_libs = {
         sync = empty
       }
     },
+    sntppkt = {
+      fields = {
+        make_ts = empty,
+        proc_pkt = empty,
+      }
+    },
     somfy = {
       fields = {
         DOWN = empty,
