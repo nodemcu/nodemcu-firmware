@@ -140,13 +140,21 @@ static int spi_send_recv( lua_State *L )
     else
     {
       luaL_Buffer b;
+      size_t datachars = spi_databits[id] / 8;
 
+      if (spi_databits[id] % 8 != 0) {
+        return luaL_error( L, "attempt to send string with non-character-divisible databits" );
+      }
+      if (datalen % datachars != 0) {
+        return luaL_error( L, "attempt to send string with non-databits-divisible length" );
+      }
+	    
       pdata = luaL_checklstring( L, argn, &datalen );
       if (recv > 0) {
         luaL_buffinit( L, &b );
       }
 
-      for( i = 0; i < datalen; i ++ )
+      for( i = 0; i < datalen; i += datachars )
       {
         if (recv > 0)
         {
